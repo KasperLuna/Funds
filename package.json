@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "dev": "concurrently --kill-others \"pnpm start --prefix finance-backend\" \"pnpm run dev --prefix finance-frontend\""
+    "dev": "concurrently --kill-others \"pnpm start --prefix finance-backend\" \"pnpm run dev --prefix finance-frontend\"",
+    "windev": "start pnpm start --prefix finance-backend && start pnpm run dev --prefix finance-frontend"
   },
   "devDependencies": {
     "concurrently": "^7.1.0"
