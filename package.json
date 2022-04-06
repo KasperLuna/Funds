@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "dev": "concurrently --kill-others \"pnpm start --prefix finance-backend\" \"pnpm run dev --prefix finance-frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^7.1.0"
+  }
+}
