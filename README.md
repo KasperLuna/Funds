@@ -1,4 +1,4 @@
-# Finance (fih·nan·chy)
+# Finance (fih·nan·chee)
  Finance Tracker WebApp Monorepo
  
  This repository houses both the front and backend of the finance tracker webapp.
