@@ -119,7 +119,7 @@ export function HeroText() {
         <Container p={0} size={600}>
           <Text size="lg" color="dimmed" className={classes.description}>
             Manage your assets with ease and grow your value with us – Financhee
-            gives you the tools to take control of your finances, taking
+            gives you the tools to take control of your finances. Empowering
             finanical responsibility is what we do.
           </Text>
         </Container>
