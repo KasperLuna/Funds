@@ -3,44 +3,29 @@ import Head from "next/head";
 import Image from "next/image";
 import { FeaturesGrid } from "../components/features";
 import { HeroText } from "../components/hero";
-import { HeaderAction } from "../components/navBar";
+import { HeaderMiddle } from "../components/navBar";
 import styles from "../styles/Home.module.css";
 
 const links = [
   {
-    link: "TestLink",
+    link: "Hehe",
     label: "Overview",
   },
   {
-    link: "TestLink1",
-    label: "Banks",
-    links: [
-      { link: "TestSubLink1", label: "BPI" },
-      { link: "TestSubLink1", label: "BDO" },
-      { link: "TestSubLink1", label: "AFP" },
-    ],
-  },
-  {
-    link: "TestLink1",
-    label: "Crypto",
-    links: [
-      { link: "TestSubLink1", label: "BTC" },
-      { link: "TestSubLink1", label: "ETH" },
-      { link: "TestSubLink1", label: "DOT" },
-      { link: "TestSubLink1", label: "ALGO" },
-      { link: "TestSubLink1", label: "AXS" },
-      { link: "TestSubLink1", label: "ADA" },
-    ],
+    link: "Hoho",
+    label: "Features",
   },
 ];
 const Home: NextPage = () => {
   return (
     <>
-      <HeaderAction links={links} />
+      <HeaderMiddle links={links} />
       <HeroText />
       <FeaturesGrid
-        title={"FINACHEE"}
-        description={"FINANCEE GOT U BROOOO DW"}
+        title={"Our Product"}
+        description={
+          "Financhee only cultivates the latest trends in technology, here's what we have up our sleeve (for now)"
+        }
       />
       <div className={styles.container}>
         <Head>
