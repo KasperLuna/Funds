@@ -14,6 +14,7 @@ import {
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
 import { ChevronDown } from "tabler-icons-react";
+import { SwitchToggle } from "./colorToggle";
 
 const HEADER_HEIGHT = 60;
 
@@ -159,6 +160,7 @@ export function HeaderAction({ links }: HeaderActionProps) {
         </Group>
         <Group>
           {" "}
+          <SwitchToggle />
           <Button variant="outline" radius="xl" sx={{ height: 30 }}>
             Log In
           </Button>
