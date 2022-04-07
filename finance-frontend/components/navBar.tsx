@@ -10,6 +10,7 @@ import {
   Menu,
   Transition,
   Paper,
+  Box,
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
 import { SwitchToggle } from "./colorToggle";
@@ -136,7 +137,7 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
   ));
 
   return (
-    <Header height={HEADER_HEIGHT} mb={120}>
+    <Header fixed={true} height={HEADER_HEIGHT}>
       <Container className={classes.inner}>
         <Burger
           opened={opened}
@@ -145,6 +146,7 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
           className={classes.burger}
         />
         <Group className={classes.links} spacing={10}>
+          <SwitchToggle />
           {items}
         </Group>
 
@@ -173,6 +175,9 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
           {(styles) => (
             <Paper className={classes.dropdown} withBorder style={styles}>
               {items}
+              <Box draggable={true} mt={-20} mb={-20}>
+                <SwitchToggle />
+              </Box>
             </Paper>
           )}
         </Transition>

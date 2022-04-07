@@ -99,7 +99,7 @@ export function HeroText() {
   const theme = useMantineTheme();
 
   return (
-    <Container className={classes.wrapper} size={1400} mb={100}>
+    <Container className={classes.wrapper} size={1400} mt={130} mb={100}>
       <Dots className={classes.dots} style={{ left: 0, top: 0 }} />
       <Dots className={classes.dots} style={{ left: 60, top: 0 }} />
       <Dots className={classes.dots} style={{ left: 0, top: 300 }} />
