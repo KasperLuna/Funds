@@ -1,54 +1,53 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   createStyles,
-  Menu,
-  Center,
   Header,
-  Container,
   Group,
-  Button,
+  Container,
   Burger,
+  Text,
+  Button,
+  Menu,
   Transition,
   Paper,
-  Text,
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
-import { ChevronDown } from "tabler-icons-react";
 import { SwitchToggle } from "./colorToggle";
+import { ChevronDown } from "tabler-icons-react";
 
-const HEADER_HEIGHT = 60;
+const HEADER_HEIGHT = 56;
 
 const useStyles = createStyles((theme) => ({
   inner: {
-    height: HEADER_HEIGHT,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    height: 56,
+
+    [theme.fn.smallerThan("sm")]: {
+      justifyContent: "flex-start",
+    },
   },
 
   links: {
+    width: 260,
+
     [theme.fn.smallerThan("sm")]: {
       display: "none",
     },
   },
 
-  burger: {
-    [theme.fn.largerThan("sm")]: {
-      display: "none",
+  account: {
+    width: 260,
+
+    [theme.fn.smallerThan("sm")]: {
+      width: "auto",
+      marginLeft: "auto",
     },
   },
 
-  dropdown: {
-    position: "absolute",
-    top: HEADER_HEIGHT,
-    left: 0,
-    right: 0,
-    zIndex: 0,
-    borderTopRightRadius: 0,
-    borderTopLeftRadius: 0,
-    borderTopWidth: 0,
-    overflow: "hidden",
-    width: "50%",
+  burger: {
+    marginRight: theme.spacing.md,
 
     [theme.fn.largerThan("sm")]: {
       display: "none",
@@ -76,100 +75,101 @@ const useStyles = createStyles((theme) => ({
     },
   },
 
-  linkLabel: {
-    marginRight: 5,
+  linkActive: {
+    "&, &:hover": {
+      backgroundColor:
+        theme.colorScheme === "dark"
+          ? theme.fn.rgba(theme.colors[theme.primaryColor][9], 0.25)
+          : theme.colors[theme.primaryColor][0],
+      color:
+        theme.colors[theme.primaryColor][theme.colorScheme === "dark" ? 3 : 7],
+    },
+  },
+
+  hideOnSmall: {
+    "@media (max-width: 445px)": {
+      display: "none",
+    },
+  },
+
+  dropdown: {
+    position: "absolute",
+    top: HEADER_HEIGHT,
+    left: 0,
+    right: 0,
+    zIndex: 0,
+    borderTopRightRadius: 0,
+    borderTopLeftRadius: 0,
+    borderTopWidth: 0,
+    overflow: "hidden",
+    width: "50%",
+
+    [theme.fn.largerThan("sm")]: {
+      display: "none",
+    },
   },
 }));
 
-interface HeaderActionProps {
-  links: {
-    link: string;
-    label: string;
-    links?: { link: string; label: string }[];
-  }[];
+interface HeaderMiddleProps {
+  links: { link: string; label: string }[];
 }
 
-export function HeaderAction({ links }: HeaderActionProps) {
-  const { classes } = useStyles();
+export function HeaderMiddle({ links }: HeaderMiddleProps) {
+  const { classes, cx } = useStyles();
   const [opened, toggleOpened] = useBooleanToggle(false);
-  const items = links.map((link) => {
-    const menuItems = link.links?.map((item) => (
-      <Menu.Item key={item.link}>{item.label}</Menu.Item>
-    ));
+  const [active, setActive] = useState(links[0].label);
 
-    if (menuItems) {
-      return (
-        <Menu
-          key={link.label}
-          trigger="hover"
-          delay={0}
-          transitionDuration={0}
-          placement="end"
-          gutter={1}
-          control={
-            <a
-              href={link.link}
-              className={classes.link}
-              onClick={(event) => event.preventDefault()}
-            >
-              <Center>
-                <span className={classes.linkLabel}>{link.label}</span>
-                <ChevronDown size={12} />
-              </Center>
-            </a>
-          }
-        >
-          {menuItems}
-        </Menu>
-      );
-    }
-
-    return (
-      <a
-        key={link.label}
-        href={link.link}
-        className={classes.link}
-        onClick={(event) => event.preventDefault()}
-      >
-        {link.label}
-      </a>
-    );
-  });
+  const items = links.map((link) => (
+    <a
+      key={link.label}
+      href={link.link}
+      className={cx(classes.link, {
+        [classes.linkActive]: active === link.label,
+      })}
+      onClick={(event) => {
+        event.preventDefault();
+        setActive(link.label);
+      }}
+    >
+      {link.label}
+    </a>
+  ));
 
   return (
-    <Header height={HEADER_HEIGHT} sx={{ borderBottom: 0 }} mb={80}>
-      <Container className={classes.inner} fluid>
-        <Group>
-          <Burger
-            opened={opened}
-            onClick={() => toggleOpened()}
-            className={classes.burger}
-            size="sm"
-          />
-          <Text
-            component="span"
-            inherit
-            variant="gradient"
-            gradient={{ from: "red", to: "yellow" }}
-          >
-            Financhee
-          </Text>
-        </Group>
-        <Group spacing={5} className={classes.links}>
+    <Header height={HEADER_HEIGHT} mb={120}>
+      <Container className={classes.inner}>
+        <Burger
+          opened={opened}
+          onClick={() => toggleOpened()}
+          size="sm"
+          className={classes.burger}
+        />
+        <Group className={classes.links} spacing={10}>
           {items}
         </Group>
-        <Group>
-          {" "}
-          <SwitchToggle />
+
+        <Text
+          component="span"
+          inherit
+          variant="gradient"
+          gradient={{ from: "red", to: "yellow" }}
+        >
+          Financhee
+        </Text>
+        <Group className={classes.account} position="right" noWrap>
           <Button variant="outline" radius="xl" sx={{ height: 30 }}>
             Log In
           </Button>
-          <Button radius="xl" sx={{ height: 30 }}>
+          <Button
+            className={classes.hideOnSmall}
+            radius="xl"
+            sx={{ height: 30 }}
+          >
             Sign Up
           </Button>
         </Group>
 
-        <Transition transition="pop-top-left" duration={200} mounted={opened}>
+        <Transition transition="rotate-right" duration={200} mounted={opened}>
           {(styles) => (
             <Paper className={classes.dropdown} withBorder style={styles}>
               {items}
