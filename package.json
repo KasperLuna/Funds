@@ -1,9 +1,9 @@
 {
   "scripts": {
-    "dev": "concurrently --kill-others \"pnpm dev --prefix finance-backend\" \"pnpm run dev --prefix finance-frontend\"",
-    "windev": "start pnpm dev --prefix finance-backend && start pnpm run dev --prefix finance-frontend",
-    "dev-frontend": "pnpm dev --prefix finance-frontend",
-    "dev-backend": "pnpm dev --prefix finance-backend",
+    "dev": "concurrently --kill-others \"pnpm run dev --prefix finance-backend\" \"pnpm run dev --prefix finance-frontend\"",
+    "windev": "start pnpm run dev --prefix finance-backend && start pnpm run dev --prefix finance-frontend",
+    "dev-frontend": "pnpm run dev --prefix finance-frontend",
+    "dev-backend": "pnpm run dev --prefix finance-backend",
     "backend": "pnpm start --prefix finance-backend",
     "build-frontend": "pnpm build --prefix finance-frontend",
     "run-frontend": "pnpm start --prefix finance-frontend"
