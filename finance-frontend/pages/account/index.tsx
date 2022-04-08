@@ -66,6 +66,7 @@ const Login = () => {
       <TextInput
         label="Email address"
         placeholder="hello@gmail.com"
+        type="email"
         size="md"
       />
       <PasswordInput
@@ -221,7 +222,9 @@ const Signup = () => {
       <TextInput
         label="Email address"
         placeholder="hello@gmail.com"
+        type="email"
         size="md"
+        required
       />
       <PasswordStrength />
       <Button fullWidth mt="xl" size="md">
