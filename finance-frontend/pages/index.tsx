@@ -2,24 +2,41 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import { FeaturesGrid } from "../components/features";
+import { FooterSimple } from "../components/footer";
 import { HeroText } from "../components/hero";
 import { HeaderMiddle } from "../components/navBar";
 import styles from "../styles/Home.module.css";
 
-const links = [
+const headerLinks = [
   {
-    link: "Hehe",
+    link: "overview",
     label: "Overview",
   },
   {
-    link: "Hoho",
+    link: "features",
     label: "Features",
   },
 ];
+
+const footerLinks = [
+  {
+    link: "about",
+    label: "About",
+  },
+  {
+    link: "team",
+    label: "Team",
+  },
+  {
+    link: "contact",
+    label: "Contact",
+  },
+];
+
 const Home: NextPage = () => {
   return (
     <>
-      <HeaderMiddle links={links} />
+      <HeaderMiddle links={headerLinks} />
       <HeroText />
       <FeaturesGrid
         title={"Our Product"}
@@ -27,6 +44,7 @@ const Home: NextPage = () => {
           "Financhee only cultivates the latest trends in technology, here's what we have up our sleeve (for now)"
         }
       />
+      <FooterSimple links={footerLinks} />
       <div className={styles.container}>
         <Head>
           <title>Finance</title>
