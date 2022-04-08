@@ -7,7 +7,7 @@ import {
   Container,
   useMantineTheme,
 } from "@mantine/core";
-import { Dots } from "../styles/Dots";
+import { Dots } from "./Dots";
 import Link from "next/link";
 
 const useStyles = createStyles((theme) => ({
