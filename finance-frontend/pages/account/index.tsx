@@ -25,7 +25,7 @@ const useStyles = createStyles((theme) => ({
     minHeight: 900,
     backgroundSize: "cover",
     backgroundImage:
-      "url(https://images.unsplash.com/photo-1484242857719-4b9144542727?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1280&q=80)",
+      "url(https://res.cloudinary.com/dy9kcczqb/image/upload/c_fill,f_webp,h_1007,w_1280/v1649429999/P1040311_bdvkrx.webp)",
   },
 
   form: {
