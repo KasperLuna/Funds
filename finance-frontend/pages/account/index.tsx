@@ -22,7 +22,6 @@ import { Check, X } from "tabler-icons-react";
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
-    direction: "rtl",
     minHeight: 900,
     backgroundSize: "cover",
     backgroundImage:
@@ -30,12 +29,15 @@ const useStyles = createStyles((theme) => ({
   },
 
   form: {
-    direction: "ltr",
     borderLeft: `1px solid ${
       theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.colors.gray[3]
     }`,
+    borderRight: `1px solid ${
+      theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.colors.gray[3]
+    }`,
+    margin: "auto",
     minHeight: 900,
-    maxWidth: 450,
+    maxWidth: 600,
     paddingTop: 80,
 
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
