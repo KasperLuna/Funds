@@ -1,22 +1,12 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import Image from "next/image";
+import { RefObject, useRef } from "react";
 import { FeaturesTitle } from "../components/features";
 import { FooterSimple } from "../components/footer";
 import { HeroText } from "../components/hero";
 import { HeaderMiddle } from "../components/navBar";
 import styles from "../styles/Home.module.css";
-
-const headerLinks = [
-  {
-    link: "overview",
-    label: "Overview",
-  },
-  {
-    link: "features",
-    label: "Features",
-  },
-];
+import useOnScreen from "../utils/useOnScreen";
 
 const footerLinks = [
   {
@@ -34,6 +24,20 @@ const footerLinks = [
 ];
 
 const Home: NextPage = () => {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
+
+  const headerLinks = [
+    {
+      ref: heroRef,
+      label: "Overview",
+    },
+    {
+      ref: featuresRef,
+      label: "Features",
+    },
+  ];
+
   return (
     <>
       <div className={styles.container}>
@@ -43,8 +47,13 @@ const Home: NextPage = () => {
           <link rel="icon" href="/favicon.ico" />
         </Head>
         <HeaderMiddle links={headerLinks} />
-        <HeroText />
-        <FeaturesTitle />
+        <div ref={heroRef}>
+          <HeroText />
+        </div>
+        <div ref={featuresRef}>
+          <FeaturesTitle />
+        </div>
+
         <FooterSimple links={footerLinks} />
       </div>
     </>

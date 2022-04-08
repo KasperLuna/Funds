@@ -21,6 +21,7 @@ import {
 const useStyles = createStyles((theme) => ({
   wrapper: {
     padding: `${theme.spacing.xl * 2}px ${theme.spacing.xl}px`,
+    height: "100va",
   },
 
   title: {
@@ -84,7 +85,7 @@ export function FeaturesTitle() {
 
   return (
     <div className={classes.wrapper}>
-      <Grid gutter={80} pt={50}>
+      <Grid gutter={80}>
         <Col span={12} md={5}>
           <Title className={classes.title} order={2}>
             The streamlined approach to managing and controlling your financial

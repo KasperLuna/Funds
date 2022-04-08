@@ -14,7 +14,8 @@ const useStyles = createStyles((theme) => ({
   wrapper: {
     position: "relative",
     paddingTop: 120,
-    paddingBottom: 80,
+    height: "100vh",
+    marginTop: "150px",
 
     "@media (max-width: 755px)": {
       paddingTop: 80,
@@ -100,7 +101,7 @@ export function HeroText() {
   const theme = useMantineTheme();
 
   return (
-    <Container className={classes.wrapper} size={1400} mt={130} mb={100}>
+    <Container className={classes.wrapper} size={1400}>
       <Dots className={classes.dots} style={{ left: 0, top: 0 }} />
       <Dots className={classes.dots} style={{ left: 60, top: 0 }} />
       <Dots className={classes.dots} style={{ left: 0, top: 300 }} />

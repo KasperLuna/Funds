@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { RefObject, useEffect, useState } from "react";
 import {
   createStyles,
   Header,
@@ -7,7 +7,6 @@ import {
   Burger,
   Text,
   Button,
-  Menu,
   Transition,
   Paper,
   Box,
@@ -15,6 +14,7 @@ import {
 import { useBooleanToggle } from "@mantine/hooks";
 import { SwitchToggle } from "./colorToggle";
 import Link from "next/link";
+import useOnScreen from "../utils/useOnScreen";
 
 const HEADER_HEIGHT = 56;
 
@@ -112,7 +112,10 @@ const useStyles = createStyles((theme) => ({
 }));
 
 interface HeaderMiddleProps {
-  links: { link: string; label: string }[];
+  links: {
+    ref: RefObject<HTMLDivElement>;
+    label: string;
+  }[];
 }
 
 export function HeaderMiddle({ links }: HeaderMiddleProps) {
@@ -120,20 +123,43 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
   const [opened, toggleOpened] = useBooleanToggle(false);
   const [active, setActive] = useState(links[0].label);
 
+  const scrollIntoView = (ref: RefObject<HTMLDivElement>) => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const heroOnScreen = useOnScreen(links[0].ref);
+  const featuresOnScreen = useOnScreen(links[1].ref);
+
+  //TODO IMPROVE THIS THING
+  useEffect(() => {
+    if (heroOnScreen) {
+      cx(classes.link, {
+        [classes.linkActive]: active === links[0].label,
+      });
+      setActive(links[0].label);
+    }
+    if (featuresOnScreen) {
+      cx(classes.link, {
+        [classes.linkActive]: active === links[1].label,
+      });
+      setActive(links[1].label);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heroOnScreen, featuresOnScreen]);
+
   const items = links.map((link) => (
-    <a
+    <Text
       key={link.label}
-      href={link.link}
       className={cx(classes.link, {
         [classes.linkActive]: active === link.label,
       })}
-      onClick={(event) => {
-        event.preventDefault();
+      onClick={() => {
+        scrollIntoView(link.ref);
         setActive(link.label);
       }}
     >
       {link.label}
-    </a>
+    </Text>
   ));
 
   return (
