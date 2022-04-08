@@ -248,7 +248,6 @@ export default function AuthenticationImage() {
   const router = useRouter();
   const { signup, login } = router.query;
 
-  console.log(signup);
   return (
     <div className={classes.wrapper}>
       <Paper className={classes.form} radius={0} p={30}>
