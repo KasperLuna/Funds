@@ -13,7 +13,7 @@ import {
   Anchor,
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
-import { SwitchToggle } from "../../../components/colorToggle";
+import { SwitchToggle } from "../../colorToggle";
 import Link from "next/link";
 
 const HEADER_HEIGHT = 56;
