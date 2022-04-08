@@ -47,7 +47,7 @@ const useStyles = createStyles((theme) => ({
   title: {
     textAlign: "center",
     fontWeight: 800,
-    fontSize: 40,
+    fontSize: 50,
     letterSpacing: -1,
     color: theme.colorScheme === "dark" ? theme.white : theme.black,
     marginBottom: theme.spacing.xs,
