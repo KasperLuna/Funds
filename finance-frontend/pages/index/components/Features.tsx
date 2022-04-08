@@ -4,24 +4,15 @@ import {
   Title,
   SimpleGrid,
   Text,
-  Button,
   ThemeIcon,
   Grid,
   Col,
 } from "@mantine/core";
-import {
-  ReceiptOff,
-  Flame,
-  CircleDotted,
-  FileCode,
-  ChartAreaLine,
-  Eye,
-} from "tabler-icons-react";
+import { ReceiptOff, FileCode, ChartAreaLine, Eye } from "tabler-icons-react";
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
     padding: `${theme.spacing.xl * 2}px ${theme.spacing.xl}px`,
-    height: "100va",
   },
 
   title: {
@@ -31,6 +22,11 @@ const useStyles = createStyles((theme) => ({
     lineHeight: 1.1,
     marginBottom: theme.spacing.md,
     color: theme.colorScheme === "dark" ? theme.white : theme.black,
+
+    "@media (max-width: 520px)": {
+      fontSize: 25,
+      textAlign: "left",
+    },
   },
 }));
 

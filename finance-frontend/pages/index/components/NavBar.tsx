@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useState } from "react";
+import React, { RefObject, useState } from "react";
 import {
   createStyles,
   Header,
@@ -10,11 +10,11 @@ import {
   Transition,
   Paper,
   Box,
+  Anchor,
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
-import { SwitchToggle } from "./colorToggle";
+import { SwitchToggle } from "../../../components/colorToggle";
 import Link from "next/link";
-import useOnScreen from "../utils/useOnScreen";
 
 const HEADER_HEIGHT = 56;
 
@@ -76,17 +76,6 @@ const useStyles = createStyles((theme) => ({
     },
   },
 
-  linkActive: {
-    "&, &:hover": {
-      backgroundColor:
-        theme.colorScheme === "dark"
-          ? theme.fn.rgba(theme.colors[theme.primaryColor][9], 0.25)
-          : theme.colors[theme.primaryColor][0],
-      color:
-        theme.colors[theme.primaryColor][theme.colorScheme === "dark" ? 3 : 7],
-    },
-  },
-
   hideOnSmall: {
     "@media (max-width: 445px)": {
       display: "none",
@@ -127,39 +116,17 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
     ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  const heroOnScreen = useOnScreen(links[0].ref);
-  const featuresOnScreen = useOnScreen(links[1].ref);
-
-  //TODO IMPROVE THIS THING
-  useEffect(() => {
-    if (heroOnScreen) {
-      cx(classes.link, {
-        [classes.linkActive]: active === links[0].label,
-      });
-      setActive(links[0].label);
-    }
-    if (featuresOnScreen) {
-      cx(classes.link, {
-        [classes.linkActive]: active === links[1].label,
-      });
-      setActive(links[1].label);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heroOnScreen, featuresOnScreen]);
-
   const items = links.map((link) => (
-    <Text
+    <Anchor
       key={link.label}
-      className={cx(classes.link, {
-        [classes.linkActive]: active === link.label,
-      })}
+      className={classes.link}
       onClick={() => {
         scrollIntoView(link.ref);
         setActive(link.label);
       }}
     >
       {link.label}
-    </Text>
+    </Anchor>
   ));
 
   return (
