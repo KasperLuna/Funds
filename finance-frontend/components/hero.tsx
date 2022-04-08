@@ -8,6 +8,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Dots } from "../graphics/Dots";
+import Link from "next/link";
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
@@ -133,14 +134,16 @@ export function HeroText() {
           >
             Learn More
           </Button>
-          <Button
-            className={classes.control}
-            size="lg"
-            variant="gradient"
-            gradient={{ from: "pink", to: "yellow" }}
-          >
-            Get Started
-          </Button>
+          <Link href="/account" passHref>
+            <Button
+              className={classes.control}
+              size="lg"
+              variant="gradient"
+              gradient={{ from: "pink", to: "yellow" }}
+            >
+              Get Started
+            </Button>
+          </Link>
         </div>
       </div>
     </Container>

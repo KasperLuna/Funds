@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { useBooleanToggle } from "@mantine/hooks";
 import { SwitchToggle } from "./colorToggle";
-import { ChevronDown } from "tabler-icons-react";
+import Link from "next/link";
 
 const HEADER_HEIGHT = 56;
 
@@ -159,16 +159,20 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
           Financhee
         </Text>
         <Group className={classes.account} position="right" noWrap>
-          <Button variant="outline" radius="xl" sx={{ height: 30 }}>
-            Log In
-          </Button>
-          <Button
-            className={classes.hideOnSmall}
-            radius="xl"
-            sx={{ height: 30 }}
-          >
-            Sign Up
-          </Button>
+          <Link href="/account?login" passHref>
+            <Button variant="outline" radius="xl" sx={{ height: 30 }}>
+              Log In
+            </Button>
+          </Link>
+          <Link href="/account?signup" passHref>
+            <Button
+              className={classes.hideOnSmall}
+              radius="xl"
+              sx={{ height: 30 }}
+            >
+              Sign Up
+            </Button>
+          </Link>
         </Group>
 
         <Transition transition="rotate-right" duration={200} mounted={opened}>
