@@ -84,7 +84,7 @@ export function FeaturesTitle() {
 
   return (
     <div className={classes.wrapper}>
-      <Grid gutter={80} px={50} pt={50}>
+      <Grid gutter={80} pt={50}>
         <Col span={12} md={5}>
           <Title className={classes.title} order={2}>
             The streamlined approach to managing and controlling your financial
