@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import { FeaturesGrid } from "../components/features";
+import { FeaturesTitle } from "../components/features";
 import { FooterSimple } from "../components/footer";
 import { HeroText } from "../components/hero";
 import { HeaderMiddle } from "../components/navBar";
@@ -38,12 +38,7 @@ const Home: NextPage = () => {
     <>
       <HeaderMiddle links={headerLinks} />
       <HeroText />
-      <FeaturesGrid
-        title={"Our Product"}
-        description={
-          "Financhee only cultivates the latest trends in technology, here's what we have up our sleeve (for now)"
-        }
-      />
+      <FeaturesTitle />
       <FooterSimple links={footerLinks} />
       <div className={styles.container}>
         <Head>
