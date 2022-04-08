@@ -7,15 +7,16 @@ import {
   Container,
   useMantineTheme,
 } from "@mantine/core";
-import { Dots } from "../graphics/Dots";
+import { Dots } from "../styles/Dots";
 import Link from "next/link";
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
     position: "relative",
     paddingTop: 120,
-    height: "100vh",
-    marginTop: "150px",
+    marginTop: 100,
+    marginBottom: 100,
+    paddingBottom: 120,
 
     "@media (max-width: 755px)": {
       paddingTop: 80,
@@ -28,21 +29,24 @@ const useStyles = createStyles((theme) => ({
     zIndex: 1,
   },
 
-  dots: {
+  dotsRight: {
     position: "absolute",
     color:
       theme.colorScheme === "dark"
         ? theme.colors.dark[5]
         : theme.colors.gray[1],
 
-    "@media (max-width: 445px)": {
+    "@media (max-width: 500px)": {
       display: "none",
     },
   },
 
   dotsLeft: {
-    left: 0,
-    top: 0,
+    position: "absolute",
+    color:
+      theme.colorScheme === "dark"
+        ? theme.colors.dark[5]
+        : theme.colors.gray[1],
   },
 
   title: {
@@ -55,7 +59,7 @@ const useStyles = createStyles((theme) => ({
     fontFamily: `Greycliff CF, ${theme.fontFamily}`,
 
     "@media (max-width: 520px)": {
-      fontSize: 28,
+      fontSize: 32,
       textAlign: "left",
     },
   },
@@ -102,12 +106,14 @@ export function HeroText() {
 
   return (
     <Container className={classes.wrapper} size={1400}>
-      <Dots className={classes.dots} style={{ left: 0, top: 0 }} />
-      <Dots className={classes.dots} style={{ left: 60, top: 0 }} />
-      <Dots className={classes.dots} style={{ left: 0, top: 300 }} />
-      <Dots className={classes.dots} style={{ left: 0, top: 140 }} />
-      <Dots className={classes.dots} style={{ right: 0, top: 60 }} />
-      <Dots className={classes.dots} style={{ right: 0, top: 240 }} />
+      <Dots className={classes.dotsLeft} style={{ left: 0, top: 0 }} />
+      <Dots className={classes.dotsLeft} style={{ left: 60, top: 0 }} />
+      <Dots className={classes.dotsLeft} style={{ left: 0, top: 300 }} />
+      <Dots className={classes.dotsLeft} style={{ left: 0, top: 140 }} />
+      <Dots className={classes.dotsRight} style={{ right: 0, top: 60 }} />
+      <Dots className={classes.dotsRight} style={{ right: 0, top: 240 }} />
+      <Dots className={classes.dotsRight} style={{ right: 0, top: 400 }} />
+      <Dots className={classes.dotsRight} style={{ right: 60, top: 400 }} />
 
       <div className={classes.inner}>
         <Title className={classes.title}>
@@ -127,14 +133,6 @@ export function HeroText() {
         </Container>
 
         <div className={classes.controls}>
-          <Button
-            className={classes.control}
-            size="lg"
-            variant="default"
-            color="gray"
-          >
-            Learn More
-          </Button>
           <Link href="/account" passHref>
             <Button
               className={classes.control}

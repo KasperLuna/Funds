@@ -1,12 +1,11 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { RefObject, useRef } from "react";
-import { FeaturesTitle } from "../components/features";
-import { FooterSimple } from "../components/footer";
-import { HeroText } from "../components/hero";
-import { HeaderMiddle } from "../components/navBar";
-import styles from "../styles/Home.module.css";
-import useOnScreen from "../utils/useOnScreen";
+import { useRef } from "react";
+import { FeaturesTitle } from "./index/components/Features";
+import { FooterSimple } from "./index/components/Footer";
+import { HeroText } from "./index/components/Hero";
+import { HeaderMiddle } from "./index/components/NavBar";
+import styles from "./index/styles/Home.module.css";
 
 const footerLinks = [
   {
