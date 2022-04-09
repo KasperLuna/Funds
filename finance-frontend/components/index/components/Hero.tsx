@@ -9,6 +9,7 @@ import {
 } from "@mantine/core";
 import { Dots } from "./Dots";
 import Link from "next/link";
+import { useUser } from "@auth0/nextjs-auth0";
 
 const useStyles = createStyles((theme) => ({
   wrapper: {
@@ -102,6 +103,7 @@ const useStyles = createStyles((theme) => ({
 
 export function HeroText() {
   const { classes } = useStyles();
+  const { user, isLoading } = useUser();
   const theme = useMantineTheme();
 
   return (
@@ -133,14 +135,17 @@ export function HeroText() {
         </Container>
 
         <div className={classes.controls}>
-          <Link href="/account" passHref>
+          <Link
+            href={!user && !isLoading ? "/api/auth/login" : "/dashboard"}
+            passHref
+          >
             <Button
               className={classes.control}
               size="lg"
               variant="gradient"
               gradient={{ from: "pink", to: "yellow" }}
             >
-              Get Started
+              {!user && !isLoading ? "Get Started" : "Return to Dashboard"}
             </Button>
           </Link>
         </div>
