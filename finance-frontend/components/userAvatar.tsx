@@ -30,7 +30,7 @@ export function ButtonMenu(props: AvatarProps) {
           />
         }
       >
-        <Text> {props.user.nickname}</Text>
+        <Text> {props.user.name}</Text>
       </Menu.Item>
 
       <Menu.Item
