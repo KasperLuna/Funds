@@ -1,12 +1,8 @@
 import { AppProps } from "next/app";
 import Head from "next/head";
-import {
-  ColorScheme,
-  ColorSchemeProvider,
-  MantineProvider,
-} from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
+import { ColorSchemeProvider, MantineProvider } from "@mantine/core";
 import useColorScheme from "../utils/useColorScheme";
+import { UserProvider } from "@auth0/nextjs-auth0";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
@@ -21,18 +17,20 @@ export default function App(props: AppProps) {
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
       </Head>
-      <ColorSchemeProvider
-        colorScheme={colorScheme}
-        toggleColorScheme={toggleColorScheme}
-      >
-        <MantineProvider
-          withGlobalStyles
-          withNormalizeCSS
-          theme={{ colorScheme }}
+      <UserProvider>
+        <ColorSchemeProvider
+          colorScheme={colorScheme}
+          toggleColorScheme={toggleColorScheme}
         >
-          <Component {...pageProps} />
-        </MantineProvider>
-      </ColorSchemeProvider>
+          <MantineProvider
+            withGlobalStyles
+            withNormalizeCSS
+            theme={{ colorScheme }}
+          >
+            <Component {...pageProps} />
+          </MantineProvider>
+        </ColorSchemeProvider>
+      </UserProvider>
     </>
   );
 }

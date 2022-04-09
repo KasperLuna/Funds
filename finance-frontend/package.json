@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^1.7.0",
+    "@babel/core": "^7.17.9",
     "@mantine/core": "^4.1.2",
     "@mantine/hooks": "^4.1.2",
     "@mantine/next": "^4.1.2",

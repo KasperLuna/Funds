@@ -15,6 +15,8 @@ import {
 import { useBooleanToggle } from "@mantine/hooks";
 import { SwitchToggle } from "../../colorToggle";
 import Link from "next/link";
+import { useUser } from "@auth0/nextjs-auth0";
+import { ButtonMenu } from "../../userAvatar";
 
 const HEADER_HEIGHT = 56;
 
@@ -106,10 +108,10 @@ interface HeaderMiddleProps {
     label: string;
   }[];
 }
-
 export function HeaderMiddle({ links }: HeaderMiddleProps) {
   const { classes, cx } = useStyles();
   const [opened, toggleOpened] = useBooleanToggle(false);
+  const { user, isLoading } = useUser();
   const [active, setActive] = useState(links[0].label);
 
   const scrollIntoView = (ref: RefObject<HTMLDivElement>) => {
@@ -152,27 +154,23 @@ export function HeaderMiddle({ links }: HeaderMiddleProps) {
           Financhee
         </Text>
         <Group className={classes.account} position="right" noWrap>
-          <Link href="/account?login" passHref>
-            <Button variant="outline" radius="xl" sx={{ height: 30 }}>
-              Log In
-            </Button>
-          </Link>
-          <Link href="/account?signup" passHref>
-            <Button
-              className={classes.hideOnSmall}
-              radius="xl"
-              sx={{ height: 30 }}
-            >
-              Sign Up
-            </Button>
-          </Link>
+          {user && <ButtonMenu user={user} />}
+          {!user && !isLoading && (
+            <>
+              <Link href="/api/auth/login" passHref>
+                <Button variant="outline" radius="xl" sx={{ height: 30 }}>
+                  Log In
+                </Button>
+              </Link>
+            </>
+          )}
         </Group>
 
         <Transition transition="rotate-right" duration={200} mounted={opened}>
           {(styles) => (
             <Paper className={classes.dropdown} withBorder style={styles}>
               {items}
-              <Box draggable={true} mt={-20} mb={-20}>
+              <Box mt={-20} mb={-20}>
                 <SwitchToggle />
               </Box>
             </Paper>
