@@ -1,7 +1,6 @@
 import React from "react";
 import { Avatar, Button, Menu, Text, useMantineTheme } from "@mantine/core";
 import { Calendar, Logout } from "tabler-icons-react";
-import Link from "next/link";
 import { UserProfile } from "@auth0/nextjs-auth0";
 
 type AvatarProps = {
@@ -22,6 +21,8 @@ export function ButtonMenu(props: AvatarProps) {
       size="auto"
     >
       <Menu.Item
+        component="a"
+        href="/dashboard"
         icon={
           <Avatar
             src={props.user.picture}
