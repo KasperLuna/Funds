@@ -6,20 +6,17 @@ import {
   UnstyledButton,
   createStyles,
   Group,
-  Button,
 } from "@mantine/core";
 import {
   Icon as TablerIcon,
   Home2,
-  Gauge,
   DeviceDesktopAnalytics,
-  Fingerprint,
-  CalendarStats,
   User,
   Settings,
   Logout,
-  SwitchHorizontal,
-  Wallet,
+  BuildingBank,
+  CurrencyBitcoin,
+  LayoutDashboard,
 } from "tabler-icons-react";
 import { SwitchToggle } from "../colorToggle";
 import Link from "next/link";
@@ -28,23 +25,24 @@ const useStyles = createStyles((theme) => ({
   link: {
     width: 50,
     height: 50,
-    borderRadius: theme.radius.md,
+    borderRadius: theme.radius.lg,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    color: theme.white,
-    opacity: 0.85,
+    opacity: 0.5,
 
     "&:hover": {
-      opacity: 1,
-      backgroundColor: theme.colors[theme.primaryColor][5],
+      opacity: 0.7,
+      color: "dodgerblue",
+      backgroundColor: theme.colors[theme.primaryColor][1],
     },
   },
 
   active: {
-    opacity: 1,
+    opacity: 0.7,
+    color: "azure",
     "&, &:hover": {
-      backgroundColor: theme.colors[theme.primaryColor][7],
+      backgroundColor: theme.colors[theme.primaryColor][3],
     },
   },
 }));
@@ -71,24 +69,22 @@ function NavbarLink({ icon: Icon, label, active, onClick }: NavbarLinkProps) {
 }
 
 const mockdata = [
-  { icon: Home2, label: "Home" },
-  { icon: Gauge, label: "Dashboard" },
-  { icon: DeviceDesktopAnalytics, label: "Analytics" },
-  { icon: CalendarStats, label: "Releases" },
+  { icon: LayoutDashboard, label: "Dashboard" },
+  { icon: BuildingBank, label: "Banks" },
+  { icon: CurrencyBitcoin, label: "Crypto" },
+  { icon: DeviceDesktopAnalytics, label: "Stats" },
   { icon: User, label: "Account" },
-  { icon: Fingerprint, label: "Security" },
   { icon: Settings, label: "Settings" },
 ];
 
 const useNavbarStyles = createStyles((theme) => ({
   navbar: {
-    backgroundColor: theme.colors[theme.primaryColor][3],
     height: "100vh",
   },
 }));
 
 export function NavbarMinimalColored() {
-  const [active, setActive] = useState(2);
+  const [active, setActive] = useState(0);
   const { classes } = useNavbarStyles();
 
   const links = mockdata.map((link, index) => (
@@ -104,7 +100,7 @@ export function NavbarMinimalColored() {
     <Navbar width={{ base: 80 }} p="md" className={classes.navbar}>
       <Center>
         <Link href="/" passHref>
-          <Button leftIcon={<Wallet />} radius="lg" />
+          <NavbarLink icon={Home2} label="Home" />
         </Link>
       </Center>
       <Navbar.Section grow mt={50}>
@@ -115,7 +111,9 @@ export function NavbarMinimalColored() {
       <Navbar.Section>
         <Group direction="column" align="center" spacing={0}>
           <SwitchToggle />
-          <NavbarLink icon={Logout} label="Logout" />
+          <Link href="/api/auth/logout" passHref>
+            <NavbarLink icon={Logout} label="Logout" />
+          </Link>
         </Group>
       </Navbar.Section>
     </Navbar>
