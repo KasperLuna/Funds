@@ -30,6 +30,7 @@ export function ButtonMenu(props: AvatarProps) {
             radius="xl"
           />
         }
+        rightSection={"Dashboard"}
       >
         <Text> {props.user.name}</Text>
       </Menu.Item>
