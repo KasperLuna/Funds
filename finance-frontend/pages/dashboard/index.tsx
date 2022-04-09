@@ -1,7 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 //import styles from "../styles/Home.module.css";
-import { NavbarMinimalColored } from "../../components/dashboard/navBar";
+import { NavbarMinimalColored } from "../../components/dashboard/NavBar";
 
 const Home: NextPage = () => {
   return (
