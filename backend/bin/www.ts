@@ -15,7 +15,7 @@ import { createServer } from "http";
 
 const port = normalizePort(
   //process.env.PORT ||
-  "3001"
+  "3000"
 );
 app.set("port", port);
 
@@ -37,17 +37,17 @@ server.on("listening", onListening);
  * Normalize a port into a number, string, or false.
  */
 
-function normalizePort(val) {
-  var port = parseInt(val, 10);
+function normalizePort(val: string) {
+  const portVal = parseInt(val, 10);
 
-  if (isNaN(port)) {
+  if (!isNaN(portVal)) {
     // named pipe
     return val;
   }
 
   if (port >= 0) {
     // port number
-    return port;
+    return portVal;
   }
 
   return false;
