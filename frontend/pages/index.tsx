@@ -1,8 +1,28 @@
-import { Anchor, Box, Button, Container, Grid, Table, Text } from '@mantine/core'
+import {
+  ActionIcon,
+  Anchor,
+  Box,
+  Button,
+  Container,
+  Grid,
+  Group,
+  NumberInput,
+  Popover,
+  Table,
+  Text,
+  TextInput,
+  Tooltip,
+  useMantineTheme
+} from '@mantine/core'
 import { BsChevronDoubleRight } from 'react-icons/bs'
+import { AiOutlineEdit } from 'react-icons/ai'
+import { BiTrash } from 'react-icons/bi'
+import { DatePicker } from '@mantine/dates';
 import type { NextPage } from 'next'
 import Head from 'next/head'
 import Link from 'next/link';
+import { useForm, useMediaQuery } from '@mantine/hooks'
+import { useState } from 'react'
 
 
 const banks = [
@@ -56,32 +76,39 @@ const StatItem = (props: StatItemProps) => {
   return (
     <>
       <Grid.Col span={2} >
-        <Container
-          sx={{
-            backgroundColor: color,
-            boxShadow: `5px 5px 5px 0px rgba(255,255,255,0.15)`,
-            height: "75px",
-            borderRadius: 10,
-            padding: "10px",
-            maxWidth: "200px",
-            minWidth: "130px",
-            // overflowWrap: "anywhere",
-          }}>
-          <Text
-            size={'sm'}
-            weight={'bolder'}
-            color={textColor}
-          >
-            {name}
-          </Text>
+        <Tooltip label={`Visit options for ${name}`} openDelay={600} withArrow color={"gray"}>
+          <Container
+            sx={{
+              backgroundColor: color,
+              boxShadow: `5px 5px 5px 0px rgba(255,255,255,0.15)`,
+              height: "75px",
+              borderRadius: 10,
+              padding: "10px",
+              maxWidth: "200px",
+              minWidth: "130px",
+              ':hover': {
+                transform: "scale(1.05)",
+                boxShadow: `5px 5px 5px 0px rgba(255,255,255,0.15)`,
+                filter: "brightness(110%)",
+              }
+              // overflowWrap: "anywhere",
+            }}>
+            <Text
+              size={'sm'}
+              weight={'bolder'}
+              color={textColor}
+            >
+              {name}
+            </Text>
 
-          <Text
-            size='lg'
-            weight="normal"
-            color={textColor}>
-            {`${balance.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}`}
-          </Text>
-        </Container>
+            <Text
+              size='lg'
+              weight="normal"
+              color={textColor}>
+              {`${balance.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}`}
+            </Text>
+          </Container>
+        </Tooltip>
       </Grid.Col>
     </>
   )
@@ -102,49 +129,168 @@ const TableHeaders = () => {
 
 const fakeTableData = [
   {
-    date: '2020-01-01',
+    date: new Date(2020, 0, 1),
     description: 'Initial Deposit',
     bank: 'BPI',
     balance: 100,
 
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Bought Shit',
     bank: 'BPI',
     balance: -100,
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Bought Shit',
     bank: 'BPI',
     balance: -100,
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Sold Shit',
     bank: 'BDO',
     balance: -100,
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Made Shit',
     bank: 'BPI',
     balance: -100,
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Burned Shit',
     bank: 'BPI',
     balance: -100,
   },
   {
-    date: '2020-01-02',
+    date: new Date(2020, 0, 1),
     description: 'Burned Shit',
     bank: 'BPI',
     balance: -100,
   },
 ]
+
+interface UserEditFormProps {
+  initialValues: { date: Date, description: string, bank: string, balance: number };
+  onSubmit(values: { date: Date, description: string, bank: string, balance: number }): void;
+  onCancel(): void;
+}
+
+function TransactionEditForm({ initialValues, onSubmit, onCancel }: UserEditFormProps) {
+  const isMobile = useMediaQuery('(max-width: 755px');
+
+  const form = useForm({
+    initialValues,
+    // validationRules: {
+    //   name: (value) => value.trim().length > 2,
+    //   email: (value) => value.trim().length > 2,
+    // },
+  });
+
+  return (
+    <form onSubmit={form.onSubmit(onSubmit)}>
+      <DatePicker
+        placeholder="Pick date"
+        label="Date"
+        style={{ minWidth: isMobile ? 220 : 300 }}
+        required
+        value={form.values.date} />
+      <TextInput
+        required
+        label="Description"
+        placeholder="Description"
+        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
+        value={form.values.description}
+        onChange={(event) => form.setFieldValue('description', event.currentTarget.value)}
+        error={form.errors.description}
+        variant="default"
+      />
+
+      <TextInput
+        required
+        label="Bank"
+        placeholder="Bank"
+        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
+        value={form.values.bank}
+        onChange={(event) => form.setFieldValue('bank', event.currentTarget.value)}
+        error={form.errors.bank}
+        variant="default"
+      />
+
+      <NumberInput
+        required
+        label="Balance"
+        placeholder="-100"
+        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
+        value={form.values.balance}
+        onChange={(event) => form.setFieldValue('bank', event!.valueOf().toString())}
+        error={form.errors.bank}
+        variant="default"
+      />
+
+      <Group position="apart" style={{ marginTop: 5 }}>
+        <Anchor component="button" color="gray" size="sm" onClick={onCancel}>
+          Cancel
+        </Anchor>
+
+        <Group spacing={"xs"}>
+          <ActionIcon variant='filled' color={"red"} size="lg"><BiTrash /></ActionIcon>
+          <Button type="submit" size="sm">
+            Save
+          </Button></Group>
+
+      </Group>
+    </form>
+  );
+}
+
+interface TransactionProps {
+  date: Date;
+  description: string;
+  bank: string;
+  balance: number;
+}
+
+
+export function EditTransactionPopover({ date, description, bank, balance }: TransactionProps) {
+  const [values, setValues] = useState({ date: date, description: description, bank: bank, balance: balance });
+  const [opened, setOpened] = useState(false);
+  const theme = useMantineTheme();
+
+  return (
+    <Group>
+      <Popover
+        opened={opened}
+        onClose={() => setOpened(false)}
+        position="right"
+        placement="end"
+        withCloseButton
+        title="Edit Transaction"
+        transition="pop"
+        target={
+          <ActionIcon
+            variant={theme.colorScheme === 'dark' ? 'hover' : 'light'}
+            onClick={() => setOpened((o) => !o)}
+          >
+            <AiOutlineEdit />
+          </ActionIcon>
+        }
+      >
+        <TransactionEditForm
+          initialValues={values}
+          onCancel={() => setOpened(false)}
+          onSubmit={(data) => {
+            setValues(data);
+            setOpened(false);
+          }}
+        />
+      </Popover>
+    </Group>
+  );
+}
 
 const Home: NextPage = () => {
   return (
@@ -198,10 +344,11 @@ const Home: NextPage = () => {
             {fakeTableData.map((data, index) => {
               return (
                 <tr key={index}>
-                  <td>{data.date}</td>
+                  <td>{data.date.toDateString()}</td>
                   <td>{data.description}</td>
                   <td>{data.bank}</td>
                   <td>{data.balance.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}</td>
+                  <td><EditTransactionPopover {...data} /></td>
                 </tr>)
             })}
           </tbody>
