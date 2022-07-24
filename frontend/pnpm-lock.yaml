@@ -2,6 +2,7 @@ lockfileVersion: 5.4
 
 specifiers:
   '@mantine/core': ^4.2.12
+  '@mantine/dates': ^4.2.12
   '@mantine/hooks': ^4.2.12
   '@mantine/next': ^4.2.12
   '@types/node': 18.0.6
@@ -9,6 +10,9 @@ specifiers:
   '@types/react-dom': 18.0.6
   '@typescript-eslint/eslint-plugin': ^5.30.7
   '@typescript-eslint/parser': ^5.30.7
+  dayjs: ^1.11.4
+  dexie: ^3.2.2
+  dexie-react-hooks: ^1.1.1
   eslint: 8.20.0
   eslint-config-next: 12.2.3
   next: 12.2.3
@@ -19,8 +23,12 @@ specifiers:
 
 dependencies:
   '@mantine/core': 4.2.12_bhlenwkd723lhai3utuqqpcmru
+  '@mantine/dates': 4.2.12_eu6ecr2ii34k3j4evqpacybtfq
   '@mantine/hooks': 4.2.12_react@18.2.0
   '@mantine/next': 4.2.12_ojkeujfq2n6rybiqiybg34xbbu
+  dayjs: 1.11.4
+  dexie: 3.2.2
+  dexie-react-hooks: 1.1.1_ugasl56bq7goab4h476ffxfsvu
   next: 12.2.3_biqbaboplfbrettd7655fr4n2y
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
@@ -183,6 +191,20 @@ packages:
     transitivePeerDependencies:
       - '@babel/core'
       - '@types/react'
+    dev: false
+
+  /@mantine/dates/4.2.12_eu6ecr2ii34k3j4evqpacybtfq:
+    resolution: {integrity: sha512-zyCZbU0Hx4pH3ylIFNvvg5EFh4b5ZnIE1nBWO0Yes9XI4j3exa6s5d1YQ5G8Hn+hrKWlu4YHVlXB08J0em83EA==}
+    peerDependencies:
+      '@mantine/core': 4.2.12
+      '@mantine/hooks': 4.2.12
+      dayjs: ^1.10.5
+      react: '>=16.8.0'
+    dependencies:
+      '@mantine/core': 4.2.12_bhlenwkd723lhai3utuqqpcmru
+      '@mantine/hooks': 4.2.12_react@18.2.0
+      dayjs: 1.11.4
+      react: 18.2.0
     dev: false
 
   /@mantine/hooks/4.2.12_react@18.2.0:
@@ -867,6 +889,10 @@ packages:
     resolution: {integrity: sha512-sdQSFB7+llfUcQHUQO3+B8ERRj0Oa4w9POWMI/puGtuf7gFywGmkaLCElnudfTiKZV+NvHqL0ifzdrI8Ro7ESA==}
     dev: true
 
+  /dayjs/1.11.4:
+    resolution: {integrity: sha512-Zj/lPM5hOvQ1Bf7uAvewDaUcsJoI6JmNqmHhHl3nyumwe0XHwt8sWdOVAPACJzCebL8gQCi+K49w7iKWnGwX9g==}
+    dev: false
+
   /debug/2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
     peerDependencies:
@@ -912,6 +938,23 @@ packages:
       has-property-descriptors: 1.0.0
       object-keys: 1.1.1
     dev: true
+
+  /dexie-react-hooks/1.1.1_ugasl56bq7goab4h476ffxfsvu:
+    resolution: {integrity: sha512-Cam5JP6PxHN564RvWEoe8cqLhosW0O4CAZ9XEVYeGHJBa6KEJlOpd9CUpV3kmU9dm2MrW97/lk7qkf1xpij7gA==}
+    peerDependencies:
+      '@types/react': '>=16'
+      dexie: '>=3.1.0-alpha.1 <5.0.0'
+      react: '>=16'
+    dependencies:
+      '@types/react': 18.0.15
+      dexie: 3.2.2
+      react: 18.2.0
+    dev: false
+
+  /dexie/3.2.2:
+    resolution: {integrity: sha512-q5dC3HPmir2DERlX+toCBbHQXW5MsyrFqPFcovkH9N2S/UW/H3H5AWAB6iEOExeraAu+j+zRDG+zg/D7YhH0qg==}
+    engines: {node: '>=6.0'}
+    dev: false
 
   /dir-glob/3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
