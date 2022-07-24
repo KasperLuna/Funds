@@ -147,7 +147,10 @@ function TransactionEditForm({ initialValues, onSubmit, onCancel }: UserEditForm
         label="Date"
         style={{ minWidth: isMobile ? 220 : 300 }}
         required
-        value={form.values.date} />
+        value={form.values.date}
+        onChange={(date) => { form.setFieldValue('date', date!) }}
+        withinPortal={false}
+      />
       <TextInput
         required
         label="Description"
@@ -190,8 +193,8 @@ function TransactionEditForm({ initialValues, onSubmit, onCancel }: UserEditForm
           <ActionIcon variant='filled' color={"red"} size="lg"><BiTrash /></ActionIcon>
           <Button type="submit" size="sm">
             Save
-          </Button></Group>
-
+          </Button>
+        </Group>
       </Group>
     </form>
   );
