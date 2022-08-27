@@ -1,251 +1,12 @@
-import {
-  ActionIcon,
-  Anchor,
-  Button,
-  Container,
-  Group,
-  NumberInput,
-  Popover,
-  Table,
-  Text,
-  TextInput,
-  useMantineTheme
-} from '@mantine/core'
-import { BsChevronDoubleRight } from 'react-icons/bs'
-import { AiOutlineEdit } from 'react-icons/ai'
-import { BiTrash } from 'react-icons/bi'
-import { DatePicker } from '@mantine/dates';
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import Link from 'next/link';
-import { useForm, useMediaQuery } from '@mantine/hooks'
-import { useState } from 'react'
-import { StatItem } from '../components/Statistics';
-
-
-const banks = [
-  {
-    name: 'BPI',
-    balance: 100,
-    color: 'red',
-    textColor: 'white',
-  },
-  {
-    name: 'CIMB',
-    balance: 200,
-    color: 'red',
-    textColor: 'white',
-  },
-  {
-    name: 'BDO',
-    balance: 300,
-    color: 'purple',
-    textColor: '#ffffff',
-  },
-  {
-    name: 'AFPSLAI Capital',
-    balance: 100,
-    color: 'green',
-    textColor: '#ffffff',
-  },
-  {
-    name: 'AFPSLAI Savings',
-    balance: 200,
-    color: 'green',
-    textColor: '#ffffff',
-  },
-  {
-    name: 'CASH',
-    balance: 300,
-    color: 'limegreen',
-    textColor: '#ffffff',
-  },
-];
-
-
-
-const TableHeaders = () => {
-  return (
-    <>
-      <tr>
-        <th>Date</th>
-        <th>Description</th>
-        <th>Bank</th>
-        <th>Balance</th>
-      </tr>
-    </>
-  )
-}
-
-const fakeTableData = [
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Initial Deposit',
-    bank: 'BPI',
-    balance: 100,
-
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Bought Shit',
-    bank: 'BPI',
-    balance: -100,
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Bought Shit',
-    bank: 'BPI',
-    balance: -100,
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Sold Shit',
-    bank: 'BDO',
-    balance: -100,
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Made Shit',
-    bank: 'BPI',
-    balance: -100,
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Burned Shit',
-    bank: 'BPI',
-    balance: -100,
-  },
-  {
-    date: new Date(2020, 0, 1),
-    description: 'Burned Shit',
-    bank: 'BPI',
-    balance: -100,
-  },
-]
-
-interface UserEditFormProps {
-  initialValues: { date: Date, description: string, bank: string, balance: number };
-  onSubmit(values: { date: Date, description: string, bank: string, balance: number }): void;
-  onCancel(): void;
-}
-
-function TransactionEditForm({ initialValues, onSubmit, onCancel }: UserEditFormProps) {
-  const isMobile = useMediaQuery('(max-width: 755px');
-
-  const form = useForm({
-    initialValues,
-    // validationRules: {
-    //   name: (value) => value.trim().length > 2,
-    //   email: (value) => value.trim().length > 2,
-    // },
-  });
-
-  return (
-    <form onSubmit={form.onSubmit(onSubmit)}>
-      <DatePicker
-        placeholder="Pick date"
-        label="Date"
-        style={{ minWidth: isMobile ? 220 : 300 }}
-        required
-        value={form.values.date}
-        onChange={(date) => { form.setFieldValue('date', date!) }}
-        withinPortal={false}
-      />
-      <TextInput
-        required
-        label="Description"
-        placeholder="Description"
-        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-        value={form.values.description}
-        onChange={(event) => form.setFieldValue('description', event.currentTarget.value)}
-        error={form.errors.description}
-        variant="default"
-      />
-
-      <TextInput
-        required
-        label="Bank"
-        placeholder="Bank"
-        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-        value={form.values.bank}
-        onChange={(event) => form.setFieldValue('bank', event.currentTarget.value)}
-        error={form.errors.bank}
-        variant="default"
-      />
-
-      <NumberInput
-        required
-        label="Balance"
-        placeholder="-100"
-        style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-        value={form.values.balance}
-        onChange={(event) => form.setFieldValue('bank', event!.valueOf().toString())}
-        error={form.errors.bank}
-        variant="default"
-      />
-
-      <Group position="apart" style={{ marginTop: 5 }}>
-        <Anchor component="button" color="gray" size="sm" onClick={onCancel}>
-          Cancel
-        </Anchor>
-
-        <Group spacing={"xs"}>
-          <ActionIcon variant='filled' color={"red"} size="lg"><BiTrash /></ActionIcon>
-          <Button type="submit" size="sm">
-            Save
-          </Button>
-        </Group>
-      </Group>
-    </form>
-  );
-}
-
-interface TransactionProps {
-  date: Date;
-  description: string;
-  bank: string;
-  balance: number;
-}
-
-
-export function EditTransactionPopover({ date, description, bank, balance }: TransactionProps) {
-  const [values, setValues] = useState({ date: date, description: description, bank: bank, balance: balance });
-  const [opened, setOpened] = useState(false);
-  const theme = useMantineTheme();
-
-  return (
-    <Group>
-      <Popover
-        opened={opened}
-        onClose={() => setOpened(false)}
-        position="right"
-        placement="end"
-        withCloseButton
-        title="Edit Transaction"
-        transition="pop"
-        target={
-          <ActionIcon
-            variant={theme.colorScheme === 'dark' ? 'hover' : 'light'}
-            onClick={() => setOpened((o) => !o)}
-          >
-            <AiOutlineEdit />
-          </ActionIcon>
-        }
-      >
-        <TransactionEditForm
-          initialValues={values}
-          onCancel={() => setOpened(false)}
-          onSubmit={(data) => {
-            setValues(data);
-            setOpened(false);
-          }}
-        />
-      </Popover>
-    </Group>
-  );
-}
+import { ActionIcon, Box, Container, Group } from '@mantine/core'
+import CreateForm from "../components/CreateForm"
+import TransactionList from '../components/TransactionList'
+import { IconAdjustmentsAlt, IconFilter, IconSettings } from '@tabler/icons'
 
 const Home: NextPage = () => {
+
   return (
     <>
       <Head>
@@ -254,59 +15,24 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Container sx={{ marginTop: "50px" }}>
-        <Container
-          sx={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}
-        >
-          <Text
-            weight={"bolder"}
-            sx={{
-              fontSize: "30px"
-            }}
-          >
-            Bank Balances
-          </Text>
+      <Container sx={{ marginTop: "50px", display: "flex", flexDirection: "column" }}>
+        <Box sx={{
+          justifyContent: "space-between",
+          display: "flex",
+        }}>
+          <Group>
+            <ActionIcon>
+              <IconSettings />
+            </ActionIcon>
+            <ActionIcon>
+              <IconFilter />
+            </ActionIcon>
 
-          <Link href="#z" passHref>
-            <Button
-              variant='outline'
-              component='a'
-              sx={{ height: "25px" }}
-              rightIcon={<BsChevronDoubleRight />}
-            >
-              Bank Actions
-            </Button>
-          </Link>
-        </Container>
+          </Group>
 
-        <Container>
-          {banks.map((bank, index) => {
-            return <StatItem key={index} {...bank} />
-          })}
-        </Container>
-
-        <Text weight={"bolder"} size="lg" sx={{ marginTop: "20px" }}>Latest Transactions</Text>
-        <Table striped highlightOnHover captionSide='bottom' >
-          <thead><TableHeaders /></thead>
-          <tbody>
-            {fakeTableData.map((data, index) => {
-              return (
-                <tr key={index}>
-                  <td>{data.date.toDateString()}</td>
-                  <td>{data.description}</td>
-                  <td>{data.bank}</td>
-                  <td>{data.balance.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}</td>
-                  <td><EditTransactionPopover {...data} /></td>
-                </tr>)
-            })}
-          </tbody>
-          <caption>Seven (7) latest recorded transactions.</caption>
-        </Table>
+          <CreateForm />
+        </Box>
+        <TransactionList />
       </Container>
     </>
   )
