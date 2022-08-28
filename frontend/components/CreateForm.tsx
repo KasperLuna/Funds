@@ -41,6 +41,7 @@ export default function CreateForm() {
                             variant="filled"
                             color={theme.primaryColor}
                             sx={{ borderBottomLeftRadius: 0, borderTopLeftRadius: 0, width: 15, height: 36 }}
+                            disabled
                         >
                             <IconChevronDown size={16} stroke={1.5} />
                         </ActionIcon>

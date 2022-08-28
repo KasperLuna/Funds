@@ -18,10 +18,10 @@ const Home: NextPage = () => {
       <Container sx={{ marginTop: "50px", display: "flex", flexDirection: "column" }}>
         <Group position="apart">
           <Group>
-            <ActionIcon>
+            <ActionIcon disabled>
               <IconSettings />
             </ActionIcon>
-            <ActionIcon>
+            <ActionIcon disabled>
               <IconFilter />
             </ActionIcon>
 
