@@ -23,7 +23,7 @@ export function EditTransactionForm(props: Transaction) {
 
     const isMobile = useMediaQuery('(max-width: 755px');
 
-    const { register, handleSubmit, control, formState: { errors } } = useForm<Transaction>({
+    const { register, handleSubmit, control, reset, formState: { errors } } = useForm<Transaction>({
         defaultValues: props,
     })
 
@@ -36,12 +36,19 @@ export function EditTransactionForm(props: Transaction) {
         });
     }
 
+    const onClose = () => {
+        setOpened(false);
+        reset();
+    }
+
     return (
         <Popover
             opened={opened}
-            onClose={() => setOpened(false)}
+            onClose={onClose}
             position="right"
             transition="pop"
+            trapFocus
+            closeOnClickOutside={false}
         >
             <Popover.Target>
                 <ActionIcon
@@ -53,7 +60,7 @@ export function EditTransactionForm(props: Transaction) {
             </Popover.Target>
             <Popover.Dropdown>
                 <form onSubmit={handleSubmit(onSubmit)}>
-                    <Controller control={control} name="date"
+                    <Controller control={control} name="date" rules={{ required: true }}
                         render={({ field }) => (
                             <DatePicker
                                 {...field}
@@ -117,7 +124,7 @@ export function EditTransactionForm(props: Transaction) {
 
 
                     <Group position="apart" style={{ marginTop: 10 }}>
-                        <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
+                        <Anchor component="button" color="teal" size="sm" onClick={onClose}>
                             Cancel
                         </Anchor>
 
@@ -168,7 +175,7 @@ export function DeleteTransactionPopover({ transactionID }: { transactionID?: In
                 <Stack>
                     Are you sure you want to delete this transaction?
                     <Group position="apart" style={{ marginTop: 10 }}>
-                        <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
+                        <Anchor component="button" color="teal" size="sm" onClick={() => setOpened(false)}>
                             Cancel
                         </Anchor>
 
