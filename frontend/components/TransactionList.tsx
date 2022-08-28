@@ -14,11 +14,12 @@ const headers = [
     "Category",
     "Bank",
     "Amount",
+    "",
 ]
 
 const TransactionList = () => {
     const transactions = useLiveQuery(async () => {
-        return db.transactions.toArray()
+        return db.transactions.orderBy("date").reverse().toArray()
     })
     return (
         <>
@@ -39,7 +40,7 @@ const TransactionList = () => {
                                     <td>{data.description}</td>
                                     <td>{data.category}</td>
                                     <td>{data.bank}</td>
-                                    <td>{data.amount.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}</td>
+                                    <td><Text color={data.amount > 0 ? "green" : "red"}>{data.amount.toLocaleString(undefined, { style: "currency", currency: "PHP", maximumFractionDigits: 2 })}</Text></td>
                                     <td><EditTransactionForm {...data} /></td>
                                 </tr>)
                         })}

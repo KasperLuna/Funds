@@ -4,6 +4,36 @@ import { ActionIcon, Container, Group } from '@mantine/core'
 import Create from "../components/Create"
 import TransactionList from '../components/TransactionList'
 import { IconFilter, IconSettings } from '@tabler/icons'
+import { BankStats, StatsGridType } from '../components/BankStats'
+
+const data: StatsGridType[] = [
+  {
+    "title": "BPI",
+    "value": "13,456",
+    "diff": 34
+  },
+  {
+    "title": "BDO",
+    "value": "4,145",
+    "diff": -13
+  },
+  {
+    "title": "CIMB",
+    "value": "745",
+    "diff": 18
+  },
+  {
+    "title": "AFPSLAI Capital Contrib",
+    "value": "188",
+    "diff": -30
+  },
+  {
+    "title": "Cash",
+    "value": "188",
+    "diff": -30
+  }
+]
+
 
 const Home: NextPage = () => {
 
@@ -16,6 +46,7 @@ const Home: NextPage = () => {
       </Head>
 
       <Container sx={{ marginTop: "50px", display: "flex", flexDirection: "column" }}>
+        <BankStats data={data} />
         <Group position="apart">
           <Group>
             <ActionIcon disabled>
