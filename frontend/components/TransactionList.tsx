@@ -28,10 +28,11 @@ const TransactionList = () => {
                     })}
                 </tr></thead>
                 <tbody>
+                    {Boolean(!transactions?.length) && (<tr><td colSpan={6} style={{ textAlign: "center" }}>No Items. Click "Add" to add a new transaction.</td></tr>)}
                     {transactions?.map((data, index) => {
                         return (
                             <tr key={index}>
-                                <td>{data.date.toISOString().split("T")[0]}</td>
+                                <td>{data.date.toDateString()}</td>
                                 <td>{data.description}</td>
                                 <td>{data.category}</td>
                                 <td>{data.bank}</td>

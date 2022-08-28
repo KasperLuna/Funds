@@ -1,4 +1,4 @@
-import { TextInput, NumberInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover } from "@mantine/core";
+import { TextInput, NumberInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
@@ -6,6 +6,9 @@ import { useForm, Controller } from "react-hook-form";
 import { IconTrash, IconEdit, IconCheck, IconX } from "@tabler/icons";
 import { db, Transaction } from "../utils/db";
 import { showNotification } from "@mantine/notifications";
+import { IndexableType } from "dexie";
+import { BankInput } from "./BankInput";
+import { CategoryInput } from "./CategoryInput";
 
 interface UserEditFormProps {
     initialValues: { id?: number, date: Date, description: string, bank: string, amount: number };
@@ -20,13 +23,13 @@ export function EditTransactionForm(props: Transaction) {
 
     const isMobile = useMediaQuery('(max-width: 755px');
 
-    const { register, handleSubmit, control } = useForm<Transaction>({
+    const { register, handleSubmit, control, formState: { errors } } = useForm<Transaction>({
         defaultValues: props,
     })
 
     const onSubmit = (data: Transaction) => {
         db.transactions.put(data).then(() => {
-            showNotification({ title: "Success", message: "Transaction edited.", icon: <IconCheck />, color: "green", autoClose: 1000 });
+            showNotification({ title: "Success", message: "Transaction edited.", icon: <IconCheck />, color: "green", autoClose: 2500 });
             setOpened(false);
         }).catch(() => {
             showNotification({ title: "Error", message: "An error cccurred, Try again.", icon: <IconX />, color: "red" });
@@ -51,16 +54,14 @@ export function EditTransactionForm(props: Transaction) {
             <Popover.Dropdown>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Controller control={control} name="date"
-                        render={({
-                            field: { onChange, value },
-                        }) => (
+                        render={({ field }) => (
                             <DatePicker
-                                onChange={onChange}
-                                value={value}
+                                {...field}
                                 placeholder="Date"
                                 label="Date"
                                 style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
                                 required
+                                withinPortal
                             />
                         )} />
 
@@ -76,7 +77,7 @@ export function EditTransactionForm(props: Transaction) {
                                 onChange={onChange}
                                 value={value}
                                 parser={(val): string => {
-                                    return val!.replace(/\$\s?|(,*)/g, '');
+                                    return val!.replace(/\₱\s?|(,*)/g, '');
                                 }}
                                 formatter={(val): string =>
                                     !Number.isNaN(parseFloat(val!))
@@ -99,25 +100,16 @@ export function EditTransactionForm(props: Transaction) {
                     />
 
 
-                    <Group>
-                        <TextInput
-                            required
-                            label="Category"
-                            placeholder="Category"
-                            // style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-                            style={{ marginTop: 5 }}
-                            {...register('category')}
-                            variant="default"
+                    <Group position="apart" sx={{ width: "100%" }}>
+                        <Controller control={control} name="bank" rules={{ required: true }}
+                            render={({ field }) => (
+                                <BankInput groupStyle={{ width: "47%" }} {...field} isError={Boolean(errors.bank)} />
+                            )}
                         />
-
-                        <TextInput
-                            required
-                            label="Bank"
-                            placeholder="Bank"
-                            // style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-                            style={{ marginTop: 5 }}
-                            {...register('bank')}
-                            variant="default"
+                        <Controller control={control} name="category" rules={{ required: true }}
+                            render={({ field }) => (
+                                <CategoryInput groupStyle={{ width: "47%" }} {...field} isError={Boolean(errors.category)} />
+                            )}
                         />
                     </Group>
 
@@ -130,7 +122,7 @@ export function EditTransactionForm(props: Transaction) {
                         </Anchor>
 
                         <Group spacing={"xs"}>
-                            <ActionIcon variant='filled' color={"red"} size="lg"><IconTrash size="20px" /></ActionIcon>
+                            <DeleteTransactionPopover transactionID={props.id} />
                             <Button type="submit" size="sm">
                                 Save
                             </Button>
@@ -138,6 +130,54 @@ export function EditTransactionForm(props: Transaction) {
                     </Group>
 
                 </form>
+            </Popover.Dropdown>
+        </Popover>
+    );
+}
+
+export function DeleteTransactionPopover({ transactionID }: { transactionID?: IndexableType }) {
+    const [opened, setOpened] = useState<boolean>(false);
+
+    const onDelete = () => {
+        db.transactions.delete(transactionID!).then(() => {
+            showNotification({ title: "Success", message: "Transaction deleted.", icon: <IconCheck />, color: "green", autoClose: 2500 });
+            setOpened(false);
+        }).catch(() => {
+            showNotification({ title: "Error", message: "An error cccurred, Try again.", icon: <IconX />, color: "red" });
+        });
+    }
+
+    return (
+        <Popover
+            opened={opened}
+            onClose={() => setOpened(false)}
+            position="right"
+            transition="pop"
+        >
+            <Popover.Target>
+                <ActionIcon
+                    variant='filled'
+                    color={"red"}
+                    onClick={() => setOpened((o) => !o)}
+                    size="lg"
+                >
+                    <IconTrash size="20px" />
+                </ActionIcon>
+            </Popover.Target>
+            <Popover.Dropdown sx={{ width: "200px" }}>
+                <Stack>
+                    Are you sure you want to delete this transaction?
+                    <Group position="apart" style={{ marginTop: 10 }}>
+                        <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
+                            Cancel
+                        </Anchor>
+
+                        <Button variant="filled" color={"red"} onClick={() => onDelete()} size="sm">
+                            Delete
+                        </Button>
+
+                    </Group>
+                </Stack>
             </Popover.Dropdown>
         </Popover>
     );

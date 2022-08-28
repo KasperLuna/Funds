@@ -2,9 +2,11 @@ import { db, Transaction } from "../utils/db";
 import { Controller, useForm } from "react-hook-form"
 import { Button, TextInput, Modal, NumberInput, useMantineTheme, Stack, Space, Group, ActionIcon, Menu } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
-import { IconApps, IconBuildingBank, IconCheck, IconChevronDown, IconX } from "@tabler/icons";
+import { IconApps, IconBuildingBank, IconCalendarEvent, IconCalendarMinus, IconCheck, IconChevronDown, IconX } from "@tabler/icons";
 import { showNotification } from "@mantine/notifications"
 import { useState } from "react";
+import { BankInput } from "./BankInput";
+import { CategoryInput } from "./CategoryInput";
 
 type FormProps = {
     description: string,
@@ -16,20 +18,19 @@ type FormProps = {
 
 export default function CreateForm() {
     const theme = useMantineTheme();
-    const { control, register, handleSubmit, reset } = useForm<Transaction>({ defaultValues: { amount: 0 } });
+    const { control, register, setValue, handleSubmit, formState: { errors }, reset } = useForm<Transaction>({ defaultValues: { amount: 0 } });
     const [isOpen, setIsOpen] = useState<boolean>(false);
 
-    const onSubmit = handleSubmit(async (data: FormProps) => {
+    const onSubmit = async (data: FormProps) => {
         try {
             await db.transactions.add(data);
-            showNotification({ title: "Success", message: "Transaction added.", icon: <IconCheck />, color: "green", autoClose: 1000 });
+            showNotification({ title: "Success", message: "Transaction added.", icon: <IconCheck />, color: "green", autoClose: 2500 });
             setIsOpen(false);
             reset();
         } catch (error) {
             showNotification({ title: "Error", message: "An error cccurred, Try again.", icon: <IconX />, color: "red" });
         }
-    });
-
+    };
     return (
         <>
             <Group noWrap spacing={0}>
@@ -63,42 +64,55 @@ export default function CreateForm() {
                 overlayBlur={3}
                 title="Add Transaction"
             >
-                <form onSubmit={onSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <Stack spacing={"sm"}>
-                        <Controller control={control} name="date"
-                            render={({
-                                field: { onChange, value },
-                            }) => (
-                                <DatePicker
-                                    data-autoFocus
-                                    onChange={onChange}
-                                    value={value}
-                                    placeholder="Date"
-                                    label="Date"
-                                    required
-                                />
-                            )}
-                        />
+                        <Group noWrap spacing={0} sx={{ width: "100%" }}>
+                            <Controller control={control} name="date" rules={{ required: true }}
+                                render={({ field }) => (
+                                    <DatePicker
+                                        {...field}
+                                        placeholder="Date"
+                                        label="Date"
+                                        sx={{ width: "100%" }} radius={0}
+                                    />
+                                )}
+                            />
+                            <Menu transition="pop" position="bottom-end">
+                                <Menu.Target>
+                                    <ActionIcon
+                                        variant="default"
+                                        color={theme.primaryColor}
+                                        sx={{ alignSelf: "end", borderBottomLeftRadius: 0, borderTopLeftRadius: 0, width: 15, height: 36 }}
+                                    >
+                                        <IconCalendarEvent size={16} stroke={1.5} />
+                                    </ActionIcon>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                    <Menu.Item onClick={() => { setValue("date", new Date()) }} icon={<IconCalendarEvent size={16} stroke={1.5} />}>
+                                        Set to Today
+                                    </Menu.Item>
+                                    <Menu.Item onClick={() => { setValue("date", new Date(Date.now() - 86400000)) }} icon={<IconCalendarMinus size={16} stroke={1.5} />}>
+                                        Set to Yesterday
+                                    </Menu.Item>
+                                </Menu.Dropdown>
+                            </Menu>
+                        </Group>
 
-                        <Controller control={control} name="amount"
-                            render={({
-                                field: { onChange, value },
-                            }) => (
+
+                        <Controller control={control} name="amount" rules={{ required: true }}
+                            render={({ field }) => (
                                 <NumberInput
-                                    required
                                     label="Amount"
                                     placeholder="100"
-                                    onChange={onChange}
-                                    value={value}
+                                    {...field}
                                     parser={(val): string => {
-                                        return val!.replace(/\$\s?|(,*)/g, '');
+                                        return val!.replace(/\₱\s?|(,*)/g, '');
                                     }}
                                     formatter={(val): string =>
                                         !Number.isNaN(parseFloat(val!))
                                             ? `₱ ${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
                                             : '₱ '
                                     }
-                                    // error={form.errors.bank}
                                     variant="default"
                                     stepHoldDelay={500}
                                     stepHoldInterval={100}
@@ -114,13 +128,17 @@ export default function CreateForm() {
                             placeholder="Bought groceries"
                         />
 
-
-
-
-                        <Group>
-                            <TextInput label="Bank" placeholder="BPI" required {...register("bank")} />
-
-                            <TextInput label="Category" placeholder="Expense" required {...register("category")} />
+                        <Group position="apart" sx={{ width: "100%" }}>
+                            <Controller control={control} name="bank" rules={{ required: true }}
+                                render={({ field }) => (
+                                    <BankInput groupStyle={{ width: "48%" }} {...field} isError={Boolean(errors.bank)} />
+                                )}
+                            />
+                            <Controller control={control} name="category" rules={{ required: true }}
+                                render={({ field }) => (
+                                    <CategoryInput groupStyle={{ width: "48%" }} {...field} isError={Boolean(errors.category)} />
+                                )}
+                            />
                         </Group>
 
                         <Space />
