@@ -28,7 +28,7 @@ const TransactionList = () => {
                     })}
                 </tr></thead>
                 <tbody>
-                    {Boolean(!transactions?.length) && (<tr><td colSpan={6} style={{ textAlign: "center" }}>No Items. Click "Add" to add a new transaction.</td></tr>)}
+                    {Boolean(!transactions?.length) && (<tr><td colSpan={6} style={{ textAlign: "center" }}>No Items. Click &quot;Add&quot; to add a new transaction.</td></tr>)}
                     {transactions?.map((data, index) => {
                         return (
                             <tr key={index}>
