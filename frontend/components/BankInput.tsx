@@ -38,9 +38,14 @@ const BankInput = ({ onChange, value, groupStyle, inputStyle, isError }: BankInp
 const AddBankButton = () => {
     const [bankName, setBankName] = useState<string>("")
     const [opened, setOpened] = useState<boolean>(false);
+    const [isError, setIsError] = useState<boolean>(false);
     const theme = useMantineTheme();
 
     const onSubmit = () => {
+        if (bankName.length == 0) {
+            setIsError(true)
+            return
+        }
         db.banks.put({ name: bankName, balance: 0, primaryColor: "", secondaryColor: "" }).then(() => {
             showNotification({ title: "Success", message: "New bank added.", icon: <IconCheck />, color: "green", autoClose: 2500 });
             setOpened(false);
@@ -74,8 +79,9 @@ const AddBankButton = () => {
                     sx={{ width: "250px" }}
                     description="Add the name of a bank, you can customize this with colors later in app settings."
                     value={bankName}
-                    onChange={(e) => setBankName(e.target.value)}
+                    onChange={(e) => { setIsError(false); setBankName(e.target.value) }}
                     variant="default"
+                    error={isError}
                 />
                 <Group position="apart" style={{ marginTop: 10 }}>
                     <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
