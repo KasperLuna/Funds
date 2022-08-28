@@ -38,9 +38,14 @@ const CategoryInput = ({ onChange, value, groupStyle, inputStyle, isError }: Cat
 const AddCategoryButton = () => {
     const [categoryName, setCategoryName] = useState<string>("")
     const [opened, setOpened] = useState<boolean>(false);
+    const [isError, setIsError] = useState<boolean>(false);
     const theme = useMantineTheme();
 
     const onSubmit = () => {
+        if (categoryName.length == 0) {
+            setIsError(true)
+            return
+        }
         db.categories.put({ name: categoryName, color: "" }).then(() => {
             showNotification({ title: "Success", message: "New Category added.", icon: <IconCheck />, color: "green", autoClose: 2500 });
             setOpened(false);
@@ -74,8 +79,9 @@ const AddCategoryButton = () => {
                     sx={{ width: "250px" }}
                     description="Add the name of a new category, you can customize this with a color later in app settings."
                     value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
+                    onChange={(e) => { setIsError(false); setCategoryName(e.target.value); }}
                     variant="default"
+                    error={isError}
                 />
                 <Group position="apart" style={{ marginTop: 10 }}>
                     <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
