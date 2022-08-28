@@ -147,13 +147,24 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
             <Stack spacing={"sm"}>
                 <Datecomponent control={control} setValue={setValue} />
 
-                <AmountInput control={control} name="originAmount" />
+                {!isSameAmount ? (
+                    <AmountInput control={control} name="originAmount" />
+                ) : (
+                    <>
+                        <Group sx={{ width: "100%" }}>
+                            <AmountInput control={control} name="originAmount" label="Origin Adjustment: " sx={{ width: "47%" }} />
+                            <AmountInput control={control} name="destinationAmount" label="Destination Adjustment: " sx={{ width: "47%" }} />
+                        </Group>
+
+                    </>
+                )}
+
                 <Checkbox size="xs" checked={isSameAmount} onChange={(event) => setIsSameAmount(event.currentTarget.checked)} label="The amount sent will differ from amount received" sx={{ justifySelf: "center" }} />
 
                 <Group position="apart" spacing={"xs"} sx={{ width: "100%", alignItems: "end" }}>
                     <Controller control={control} name="originBank" rules={{ required: true }}
                         render={({ field }) => (
-                            <BankInput groupStyle={{ width: "41%" }} {...field} isError={Boolean(errors.originBank)} label="Source Bank: " />
+                            <BankInput groupStyle={{ width: "41%" }} {...field} isError={Boolean(errors.originBank)} label="Origin Bank: " />
                         )}
                     />
                     <IconArrowRight size={20} stroke={2} style={{ alignSelf: "end", marginBottom: 10 }} />

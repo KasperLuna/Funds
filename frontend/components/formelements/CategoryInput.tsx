@@ -13,14 +13,22 @@ type CategoryInputProps = {
     isError?: boolean,
 }
 
+const DEFAULT_CATEGORIES = [
+    { name: "Expense", color: "red" },
+    { name: "Income", color: "green" },
+    { name: "Withdrawal", color: "red" },
+    { name: "Deposit", color: "green" },
+]
+
 const CategoryInput = ({ onChange, value, groupStyle, inputStyle, isError }: CategoryInputProps): JSX.Element => {
     const categories = useLiveQuery(async () => {
         return db.categories.toArray()
     })
+    const compiledCategories = categories?.concat(DEFAULT_CATEGORIES)
     return (
         <Group noWrap spacing={0} style={{ ...groupStyle }}>
             <NativeSelect
-                data={categories?.map((categ) => ({ value: categ.name, label: categ.name })) || []}
+                data={compiledCategories?.map((categ) => ({ value: categ.name, label: categ.name })) || []}
                 placeholder="Pick one"
                 style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
                 onChange={onChange}

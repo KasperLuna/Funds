@@ -1,4 +1,4 @@
-import { TextInput, NumberInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack } from "@mantine/core";
+import { TextInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -9,6 +9,7 @@ import { IndexableType } from "dexie";
 import { BankInput } from "./formelements/BankInput";
 import { CategoryInput } from "./formelements/CategoryInput";
 import Datecomponent from "./formelements/Datecomponent";
+import AmountInput from "./formelements/AmountInput";
 
 interface UserEditFormProps {
     initialValues: { id?: number, date: Date, description: string, bank: string, amount: number };
@@ -62,30 +63,7 @@ export function EditTransactionForm(props: Transaction) {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Datecomponent control={control} setValue={setValue} />
 
-                    <Controller control={control} name="amount"
-                        render={({
-                            field: { onChange, value },
-                        }) => (
-                            <NumberInput
-                                required
-                                label="Balance"
-                                placeholder="-100"
-                                style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-                                onChange={onChange}
-                                value={value}
-                                parser={(val): string => {
-                                    return val!.replace(/\₱\s?|(,*)/g, '');
-                                }}
-                                formatter={(val): string =>
-                                    !Number.isNaN(parseFloat(val!))
-                                        ? `₱ ${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                                        : '₱ '
-                                }
-                                stepHoldDelay={500}
-                                stepHoldInterval={100}
-                                variant="default"
-                            />
-                        )} />
+                    <AmountInput control={control} />
 
                     <TextInput
                         required
