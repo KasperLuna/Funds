@@ -72,7 +72,7 @@ const AddCategoryButton = () => {
                     label="Category:"
                     placeholder="Expense"
                     sx={{ width: "250px" }}
-                    description="Add the name of a new category, you can customize this with a colors later in app settings."
+                    description="Add the name of a new category, you can customize this with a color later in app settings."
                     value={categoryName}
                     onChange={(e) => setCategoryName(e.target.value)}
                     variant="default"
