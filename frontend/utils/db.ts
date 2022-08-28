@@ -49,6 +49,24 @@ const _SampleTransaction: Transaction = {
   category: "Food",
 };
 
+export type Transfer = {
+  description: string;
+  originAmount: number;
+  destinationAmount: number;
+  date: Date;
+  originBank: string;
+  destinationBank: string;
+};
+
+const _SampleTransfer: Transfer = {
+  description: "Transfer to BDO",
+  originAmount: 150,
+  destinationAmount: 100,
+  date: new Date(),
+  originBank: "BPI",
+  destinationBank: "BDO",
+};
+
 export class MySubClassedDexie extends Dexie {
   // 'friends' is added by dexie when declaring the stores()
   // We just tell the typing system this is the case
