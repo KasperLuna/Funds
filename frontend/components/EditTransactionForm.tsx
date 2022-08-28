@@ -1,5 +1,4 @@
 import { TextInput, NumberInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack } from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -7,8 +6,9 @@ import { IconTrash, IconEdit, IconCheck, IconX } from "@tabler/icons";
 import { db, Transaction } from "../utils/db";
 import { showNotification } from "@mantine/notifications";
 import { IndexableType } from "dexie";
-import { BankInput } from "./BankInput";
-import { CategoryInput } from "./CategoryInput";
+import { BankInput } from "./formelements/BankInput";
+import { CategoryInput } from "./formelements/CategoryInput";
+import Datecomponent from "./formelements/Datecomponent";
 
 interface UserEditFormProps {
     initialValues: { id?: number, date: Date, description: string, bank: string, amount: number };
@@ -23,7 +23,7 @@ export function EditTransactionForm(props: Transaction) {
 
     const isMobile = useMediaQuery('(max-width: 755px');
 
-    const { register, handleSubmit, control, reset, formState: { errors } } = useForm<Transaction>({
+    const { register, handleSubmit, control, reset, setValue, formState: { errors } } = useForm<Transaction>({
         defaultValues: props,
     })
 
@@ -60,17 +60,7 @@ export function EditTransactionForm(props: Transaction) {
             </Popover.Target>
             <Popover.Dropdown>
                 <form onSubmit={handleSubmit(onSubmit)}>
-                    <Controller control={control} name="date" rules={{ required: true }}
-                        render={({ field }) => (
-                            <DatePicker
-                                {...field}
-                                placeholder="Date"
-                                label="Date"
-                                style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
-                                required
-                                withinPortal
-                            />
-                        )} />
+                    <Datecomponent control={control} setValue={setValue} />
 
                     <Controller control={control} name="amount"
                         render={({

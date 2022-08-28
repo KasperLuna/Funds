@@ -3,7 +3,7 @@ import { showNotification } from "@mantine/notifications"
 import { IconCheck, IconPlus, IconX } from "@tabler/icons"
 import { useLiveQuery } from "dexie-react-hooks"
 import { useState } from "react"
-import { db } from "../utils/db"
+import { db } from "../../utils/db"
 
 type CategoryInputProps = {
     onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void,

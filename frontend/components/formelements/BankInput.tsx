@@ -3,7 +3,7 @@ import { showNotification } from "@mantine/notifications"
 import { IconCheck, IconPlus, IconX } from "@tabler/icons"
 import { useLiveQuery } from "dexie-react-hooks"
 import { useState } from "react"
-import { db } from "../utils/db"
+import { db } from "../../utils/db"
 
 type BankInputProps = {
     onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void,
@@ -11,21 +11,26 @@ type BankInputProps = {
     groupStyle?: React.CSSProperties,
     inputStyle?: React.CSSProperties,
     isError?: boolean,
+    label?: string,
+    filter?: string
 }
 
-const BankInput = ({ onChange, value, groupStyle, inputStyle, isError }: BankInputProps): JSX.Element => {
+const BankInput = ({ onChange, value, groupStyle, inputStyle, isError, label = "Bank: ", filter }: BankInputProps): JSX.Element => {
     const banks = useLiveQuery(async () => {
         return db.banks.toArray()
     })
+
+    const filteredBanks = banks?.filter((bank) => bank.name.toLowerCase() != filter?.toLowerCase())
+
     return (
         <Group noWrap spacing={0} style={{ ...groupStyle }}>
             <NativeSelect
-                data={banks?.map((bank) => ({ value: bank.name, label: bank.name })) || []}
+                data={filteredBanks?.map((bank) => ({ value: bank.name, label: bank.name })) || []}
                 placeholder="Pick one"
                 style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
                 onChange={onChange}
                 value={value}
-                label="Bank:"
+                label={label}
                 radius={0}
                 withAsterisk
                 error={isError}
