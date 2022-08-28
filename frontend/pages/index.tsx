@@ -1,9 +1,9 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import { ActionIcon, Box, Container, Group } from '@mantine/core'
+import { ActionIcon, Container, Group } from '@mantine/core'
 import CreateForm from "../components/CreateForm"
 import TransactionList from '../components/TransactionList'
-import { IconAdjustmentsAlt, IconFilter, IconSettings } from '@tabler/icons'
+import { IconFilter, IconSettings } from '@tabler/icons'
 
 const Home: NextPage = () => {
 
@@ -16,10 +16,7 @@ const Home: NextPage = () => {
       </Head>
 
       <Container sx={{ marginTop: "50px", display: "flex", flexDirection: "column" }}>
-        <Box sx={{
-          justifyContent: "space-between",
-          display: "flex",
-        }}>
+        <Group position="apart">
           <Group>
             <ActionIcon>
               <IconSettings />
@@ -31,7 +28,7 @@ const Home: NextPage = () => {
           </Group>
 
           <CreateForm />
-        </Box>
+        </Group>
         <TransactionList />
       </Container>
     </>

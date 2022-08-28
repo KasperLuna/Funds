@@ -117,10 +117,12 @@ export default function CreateForm() {
 
 
 
+                        <Group>
+                            <TextInput label="Bank" placeholder="BPI" required {...register("bank")} />
 
-                        <TextInput label="Bank" placeholder="BPI" required {...register("bank")} />
+                            <TextInput label="Category" placeholder="Expense" required {...register("category")} />
+                        </Group>
 
-                        <TextInput label="Category" placeholder="Expense" required {...register("category")} />
                         <Space />
                         <Button type="submit" >Submit</Button>
                     </Stack>
