@@ -38,9 +38,9 @@ const TransactionList = () => {
                 </td>
               </tr>
             )}
-            {transactions?.map((data, index) => {
+            {transactions?.map((data) => {
               return (
-                <tr key={index}>
+                <tr key={data.id}>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {dayjs(data.date).format("MMM D, YYYY")}
                   </td>
