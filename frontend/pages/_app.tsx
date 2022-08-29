@@ -1,10 +1,18 @@
 import { AppProps } from 'next/app';
 import Head from 'next/head';
-import { MantineProvider } from '@mantine/core';
+import { ColorScheme, ColorSchemeProvider, MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
+import { useLocalStorage } from '@mantine/hooks';
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
+  const [colorScheme, setColorScheme] = useLocalStorage<ColorScheme>({
+    key: 'mantine-color-scheme',
+    defaultValue: 'dark',
+    getInitialValueInEffect: true,
+  });
+  const toggleColorScheme = (value?: ColorScheme) =>
+    setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
 
   return (
     <>
@@ -22,19 +30,17 @@ export default function App(props: AppProps) {
           content="initial-scale=1, viewport-fit=cover, user-scalable=no"
         />
       </Head>
-
-      <MantineProvider
-        withGlobalStyles
-        withNormalizeCSS
-        theme={{
-          /** Put your mantine theme override here */
-          colorScheme: 'dark',
-        }}
-      >
-        <NotificationsProvider limit={5}>
-          <Component {...pageProps} />
-        </NotificationsProvider>
-      </MantineProvider>
+      <ColorSchemeProvider colorScheme={colorScheme} toggleColorScheme={toggleColorScheme}>
+        <MantineProvider
+          withGlobalStyles
+          withNormalizeCSS
+          theme={{ colorScheme }}
+        >
+          <NotificationsProvider limit={5}>
+            <Component {...pageProps} />
+          </NotificationsProvider>
+        </MantineProvider>
+      </ColorSchemeProvider>
     </>
   );
 }

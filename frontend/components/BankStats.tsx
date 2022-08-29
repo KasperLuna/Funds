@@ -41,13 +41,30 @@ const useStyles = createStyles((theme) => ({
     }
 }));
 
-export type StatsGridType = { title: string; value: string; diff: number }
+const data = [
+    {
+        "title": "BPI",
+        "value": "13,456",
+        "diff": 34
+    },
+    {
+        "title": "BDO",
+        "value": "4,145",
+        "diff": -13
+    },
+    {
+        "title": "CIMB",
+        "value": "745",
+        "diff": 18
+    },
+    {
+        "title": "Cash",
+        "value": "188",
+        "diff": -30
+    }
+]
 
-export interface StatsGridProps {
-    data: { title: string; value: string; diff: number }[];
-}
-
-export function BankStats({ data }: StatsGridProps) {
+export function BankStats() {
     const { classes } = useStyles();
     const stats = data.map((stat) => {
         const DiffIcon = stat.diff > 0 ? IconArrowUpRight : IconArrowDownRight;

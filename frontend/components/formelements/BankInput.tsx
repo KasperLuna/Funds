@@ -63,8 +63,9 @@ const AddBankButton = () => {
         <Popover
             opened={opened}
             onClose={() => setOpened(false)}
-            position="right"
-            transition="pop"
+            position="top"
+            withArrow
+            transition="skew-down"
             withinPortal
         >
             <Popover.Target>
@@ -89,7 +90,7 @@ const AddBankButton = () => {
                     error={isError}
                 />
                 <Group position="apart" style={{ marginTop: 10 }}>
-                    <Anchor component="button" color="gray" size="sm" onClick={() => setOpened(false)}>
+                    <Anchor component="button" color="teal" size="sm" onClick={() => setOpened(false)}>
                         Cancel
                     </Anchor>
 
