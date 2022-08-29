@@ -7,6 +7,7 @@ import {
   useMantineTheme,
   Popover,
   Stack,
+  Modal,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import React, { useState } from "react";
@@ -55,23 +56,20 @@ export function EditTransactionForm(props: Transaction) {
   };
 
   return (
-    <Popover
-      opened={opened}
-      onClose={onClose}
-      position="left"
-      withArrow
-      transition="pop"
-      closeOnClickOutside={false}
-    >
-      <Popover.Target>
-        <ActionIcon
-          variant={theme.colorScheme === "dark" ? "subtle" : "light"}
-          onClick={() => setOpened((o) => !o)}
-        >
-          <IconEdit size={"20px"} />
-        </ActionIcon>
-      </Popover.Target>
-      <Popover.Dropdown>
+    <>
+      <ActionIcon
+        variant={theme.colorScheme === "dark" ? "subtle" : "light"}
+        onClick={() => setOpened((o) => !o)}
+      >
+        <IconEdit size={"20px"} />
+      </ActionIcon>
+      <Modal
+        opened={opened}
+        onClose={onClose}
+        centered
+        withCloseButton={false}
+        overlayOpacity={0.7}
+      >
         <form onSubmit={handleSubmit(onSubmit)}>
           <Datecomponent control={control} setValue={setValue} />
 
@@ -129,8 +127,8 @@ export function EditTransactionForm(props: Transaction) {
             </Group>
           </Group>
         </form>
-      </Popover.Dropdown>
-    </Popover>
+      </Modal>
+    </>
   );
 }
 
