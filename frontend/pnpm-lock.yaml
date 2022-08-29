@@ -9,6 +9,7 @@ specifiers:
   '@mantine/hooks': 5.2.4
   '@mantine/next': ^5.2.4
   '@mantine/notifications': ^5.2.4
+  '@next/eslint-plugin-next': ^12.2.5
   '@tabler/icons': ^1.90.0
   '@types/node': 18.0.6
   '@types/react': 18.0.15
@@ -53,6 +54,7 @@ dependencies:
   react-hook-form: 7.34.2_react@17.0.2
 
 devDependencies:
+  '@next/eslint-plugin-next': 12.2.5
   '@types/node': 18.0.6
   '@types/react': 18.0.15
   '@types/react-dom': 18.0.6
@@ -578,6 +580,12 @@ packages:
 
   /@next/eslint-plugin-next/12.2.3:
     resolution: {integrity: sha512-B2e8Yg1MpuLsGxhCx4rU8/Tcnr5wFmCx1O2eyLXBPnaCcsFXfGCo067ujagtDLtWASL3GNgzg78U1SB0dbc38A==}
+    dependencies:
+      glob: 7.1.7
+    dev: true
+
+  /@next/eslint-plugin-next/12.2.5:
+    resolution: {integrity: sha512-VBjVbmqEzGiOTBq4+wpeVXt/KgknnGB6ahvC/AxiIGnN93/RCSyXhFRI4uSfftM2Ba3w7ZO7076bfKasZsA0fw==}
     dependencies:
       glob: 7.1.7
     dev: true
