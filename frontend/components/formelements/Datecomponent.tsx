@@ -19,8 +19,10 @@ export default function Datecomponent(props: DateComponentProps) {
                         <DatePicker
                             {...field}
                             placeholder="Date"
-                            label="Date"
-                            sx={{ width: "100%" }} radius={0}
+                            label="Date: "
+                            sx={{ width: "100%" }}
+                            radius={0}
+                            withAsterisk
                             withinPortal
                         />
                     )}

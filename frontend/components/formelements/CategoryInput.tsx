@@ -66,8 +66,9 @@ const AddCategoryButton = () => {
         <Popover
             opened={opened}
             onClose={() => setOpened(false)}
-            position="right"
-            transition="pop"
+            position="top-end"
+            withArrow
+            transition="skew-down"
             withinPortal
         >
             <Popover.Target>

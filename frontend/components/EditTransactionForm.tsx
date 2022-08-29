@@ -1,4 +1,4 @@
-import { TextInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack } from "@mantine/core";
+import { TextInput, Group, Anchor, ActionIcon, Button, useMantineTheme, Popover, Stack, Modal } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -43,23 +43,14 @@ export function EditTransactionForm(props: Transaction) {
     }
 
     return (
-        <Popover
-            opened={opened}
-            onClose={onClose}
-            position="right"
-            transition="pop"
-            trapFocus
-            closeOnClickOutside={false}
-        >
-            <Popover.Target>
-                <ActionIcon
-                    variant={theme.colorScheme === "dark" ? "subtle" : "light"}
-                    onClick={() => setOpened((o) => !o)}
-                >
-                    <IconEdit size={"20px"} />
-                </ActionIcon>
-            </Popover.Target>
-            <Popover.Dropdown>
+        <>
+            <ActionIcon
+                variant={theme.colorScheme === "dark" ? "subtle" : "light"}
+                onClick={() => setOpened((o) => !o)}
+            >
+                <IconEdit size={"20px"} />
+            </ActionIcon>
+            <Modal opened={opened} onClose={onClose} centered title="Edit Transaction" overlayOpacity={0.7}>
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Datecomponent control={control} setValue={setValue} />
 
@@ -68,7 +59,7 @@ export function EditTransactionForm(props: Transaction) {
                     <TextInput
                         required
                         label="Description"
-                        placeholder="Description"
+                        placeholder="Description: "
                         style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
                         {...register('description')}
                         variant="default"
@@ -105,8 +96,8 @@ export function EditTransactionForm(props: Transaction) {
                     </Group>
 
                 </form>
-            </Popover.Dropdown>
-        </Popover>
+            </Modal>
+        </>
     );
 }
 
@@ -126,8 +117,9 @@ export function DeleteTransactionPopover({ transactionID }: { transactionID?: In
         <Popover
             opened={opened}
             onClose={() => setOpened(false)}
-            position="right"
-            transition="pop"
+            position="top-end"
+            transition="skew-down"
+            withArrow
         >
             <Popover.Target>
                 <ActionIcon

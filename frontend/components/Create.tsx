@@ -1,6 +1,6 @@
 import { db, Transaction, Transfer } from "../utils/db";
 import { Controller, useForm } from "react-hook-form"
-import { Button, TextInput, Modal, useMantineTheme, Stack, Space, Group, ActionIcon, Menu, Tabs, Checkbox } from "@mantine/core";
+import { Button, TextInput, Modal, useMantineTheme, Stack, Space, Group, ActionIcon, Menu, Tabs, Checkbox, Tooltip } from "@mantine/core";
 import { IconApps, IconArrowRight, IconBuildingBank, IconCheck, IconChevronDown, IconX } from "@tabler/icons";
 import { showNotification } from "@mantine/notifications"
 import { useState } from "react";
@@ -57,15 +57,16 @@ export default function Create() {
             <Modal
                 opened={isOpen}
                 onClose={() => { setIsOpen(false) }}
-                overlayColor={theme.colorScheme === 'dark' ? theme.colors.dark[9] : theme.colors.gray[2]}
-                overlayOpacity={0.55}
-                overlayBlur={3}
+                overlayOpacity={0.7}
                 title={`Add ${tabValue}`}
+                centered
             >
                 <Tabs radius="md" variant="outline" value={tabValue} onTabChange={setTabValue}>
-                    <Tabs.List>
+                    <Tabs.List grow>
                         <Tabs.Tab value="Transaction">Transaction</Tabs.Tab>
-                        <Tabs.Tab disabled={!hasMoreThanOneBank} value="Transfer">Transfer</Tabs.Tab>
+                        <Tooltip label="*Transfers are available when more two or more banks have been added." position="top" withArrow arrowSize={7} multiline openDelay={850} events={{ hover: true, focus: true, touch: true }}>
+                            <Tabs.Tab disabled={!hasMoreThanOneBank} value="Transfer">Transfer</Tabs.Tab>
+                        </Tooltip>
                     </Tabs.List>
                     <Tabs.Panel value="Transaction"><TransactionForm setIsOpen={setIsOpen} /></Tabs.Panel>
                     <Tabs.Panel value="Transfer"><TransferForm setIsOpen={setIsOpen} /></Tabs.Panel>
@@ -102,7 +103,7 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
                     required
                     type="text"
                     {...register("description")}
-                    label="Description"
+                    label="Description: "
                     placeholder="Bought groceries"
                 />
 
@@ -179,7 +180,7 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
                     required
                     type="text"
                     {...register("description")}
-                    label="Description"
+                    label="Description: "
                     placeholder="Bought groceries"
                 />
 

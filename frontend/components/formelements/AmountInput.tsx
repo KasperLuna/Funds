@@ -17,15 +17,10 @@ export default function AmountInput({ control, name = "amount", sx, label = "Amo
                     label={label}
                     placeholder="100"
                     {...field}
-                    // parser={(val): string => {
-                    //     return val!.replace(/\₱\s?|(,*)/g, '');
-                    // }}
-                    // formatter={(val): string =>
-                    //     !Number.isNaN(parseFloat(val!))
-                    //         ? `₱ ${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                    //         : '₱ '
-                    // }
+                    decimalSeparator="."
+                    withAsterisk
                     variant="default"
+                    precision={2}
                     step={50}
                     stepHoldDelay={500}
                     stepHoldInterval={100}
