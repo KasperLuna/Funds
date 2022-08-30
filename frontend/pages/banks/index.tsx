@@ -4,8 +4,9 @@ import Head from "next/head";
 import { ActionIcon, Group } from "@mantine/core";
 import Create from "../../components/Create";
 import TransactionList from "../../components/TransactionList";
-import { IconFilter, IconSettings } from "@tabler/icons";
+import { IconFilter } from "@tabler/icons";
 import { BankStats } from "../../components/BankStats";
+import { BankSettings } from "../../components/BankSettings";
 
 const Home: NextPage = () => {
   return (
@@ -17,9 +18,7 @@ const Home: NextPage = () => {
       <BankStats />
       <Group position="apart">
         <Group>
-          <ActionIcon disabled>
-            <IconSettings />
-          </ActionIcon>
+          <BankSettings />
           <ActionIcon disabled>
             <IconFilter />
           </ActionIcon>

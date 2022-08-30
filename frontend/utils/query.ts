@@ -1,6 +1,6 @@
 import { IndexableType } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, Transaction, Type } from "./db";
+import { db, Transaction, Transfer, Type } from "./db";
 import { txPosOrNeg } from "./helpers";
 import { showSuccessNotif, showErrorNotif } from "./notifs";
 
@@ -50,6 +50,7 @@ export type TxFormProps = {
   date: Date;
   bank: string;
   type: Type;
+  category?: string[];
 };
 
 export const addTransaction = async (data: TxFormProps) => {
@@ -135,4 +136,33 @@ export const updateTransaction = async (
     .catch(() => {
       showErrorNotif();
     });
+};
+
+export const transferQuery = async (data: Transfer) => {
+  const {
+    date,
+    description,
+    category,
+    originBank,
+    originAmount,
+    destinationBank,
+    destinationAmount,
+  } = data;
+  await addTransaction({
+    amount: originAmount,
+    bank: originBank,
+    date,
+    description,
+    type: "withdrawal",
+    category: category,
+  }).then(async () => {
+    await addTransaction({
+      amount: destinationAmount ? destinationAmount : originAmount,
+      bank: destinationBank,
+      date,
+      description,
+      type: "deposit",
+      category: category,
+    });
+  });
 };
