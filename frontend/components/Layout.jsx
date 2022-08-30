@@ -9,23 +9,25 @@ const Layout = ({ children }) => {
       <NextNProgress
         color="rgba(255, 255, 255, 0.4)"
         startPosition={0.3}
-        stopDelayMs={0}
-        height={2}
+        height={3}
+        options={{ parent: "#loading-div" }}
       />
       <NavHeader />
-      <Container
-        size={"xl"}
-        sx={{
-          marginTop: 20,
-          display: "flex",
-          flexDirection: "column",
-          "@media screen and (display-mode: standalone)": {
-            paddingTop: "80px",
-          },
-        }}
-      >
-        {children}
-      </Container>
+      <div id="loading-div">
+        <Container
+          size={"xl"}
+          sx={{
+            marginTop: 20,
+            display: "flex",
+            flexDirection: "column",
+            "@media screen and (display-mode: standalone)": {
+              paddingTop: "80px",
+            },
+          }}
+        >
+          {children}
+        </Container>
+      </div>
     </>
   );
 };
