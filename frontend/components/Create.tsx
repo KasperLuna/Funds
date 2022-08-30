@@ -1,4 +1,4 @@
-import { db, Transaction, Transfer, Type } from "../utils/db";
+import { Transaction, Transfer } from "../utils/db";
 import { Controller, useForm } from "react-hook-form";
 import {
   Button,
@@ -24,27 +24,16 @@ import React, { useState } from "react";
 import { BankInput } from "./form/BankInput";
 import Datecomponent from "./form/Datecomponent";
 import AmountInput from "./form/AmountInput";
-import { useLiveQuery } from "dexie-react-hooks";
 import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
-import { txPosOrNeg } from "../utils/helpers";
 import { TypeInput } from "./form/TypeInput";
-
-type FormProps = {
-  description: string;
-  amount: number;
-  date: Date;
-  bank: string;
-  type: Type;
-};
+import { addTransaction, TxFormProps, useBanksQuery } from "../utils/query";
 
 export default function Create() {
   const theme = useMantineTheme();
   const [tabValue, setTabValue] = useState<string | null>("Transaction");
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const banksLength = useLiveQuery(async () => {
-    return (await db.banks.toArray()).length;
-  });
+  const banksLength = useBanksQuery()?.length;
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
 
   return (
@@ -139,30 +128,11 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     formState: { errors },
     reset,
   } = useForm<Transaction>({ defaultValues: { amount: 0 } });
-  const onSubmit = async (data: FormProps) => {
-    const { amount, bank, type } = data;
-    const tx = {
-      ...data,
-      amount: txPosOrNeg(amount, data.type),
-    };
-    try {
-      await db.transactions.add(tx);
-      await db.banks.get({ name: bank }).then(async (bankToUpdate) => {
-        if (bankToUpdate && bankToUpdate.id) {
-          await db.banks.update(bankToUpdate.id, {
-            balance: bankToUpdate.balance + txPosOrNeg(amount, type),
-          });
-        } else {
-          throw new Error("Bank not found");
-        }
-      });
-
-      showSuccessNotif("Transaction added.");
+  const onSubmit = async (data: TxFormProps) => {
+    addTransaction(data).then(() => {
       setIsOpen(false);
       reset();
-    } catch (error) {
-      showErrorNotif();
-    }
+    });
   };
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
