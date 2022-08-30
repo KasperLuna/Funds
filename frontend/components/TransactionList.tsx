@@ -1,5 +1,5 @@
 import React from "react";
-import { Container, Table, Text } from "@mantine/core";
+import { Box, Container, Table, Text } from "@mantine/core";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../utils/db";
 import { EditTransactionForm } from "../components/EditTransactionForm";
@@ -16,7 +16,7 @@ const TransactionList = () => {
       <Text weight={"bolder"} size="lg" sx={{ marginTop: "20px" }}>
         Latest Transactions
       </Text>
-      <Container sx={{ overflowX: "auto", width: "90vw", height: "100%" }}>
+      <Box sx={{ overflowX: "auto", height: "100%" }}>
         <Table
           striped
           highlightOnHover
@@ -65,7 +65,7 @@ const TransactionList = () => {
           </tbody>
           <caption>Seven (7) latest recorded transactions.</caption>
         </Table>
-      </Container>
+      </Box>
     </>
   );
 };

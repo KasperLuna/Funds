@@ -102,8 +102,9 @@ export function BankStats() {
   return (
     <div className={classes.root}>
       <SimpleGrid
-        cols={4}
+        cols={5}
         breakpoints={[
+          { maxWidth: "lg", cols: 4 },
           { maxWidth: "md", cols: 3 },
           { maxWidth: "xs", cols: 2 },
         ]}

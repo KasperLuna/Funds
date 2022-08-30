@@ -5,6 +5,7 @@ import {
   ColorScheme,
   ColorSchemeProvider,
   MantineProvider,
+  Container,
 } from "@mantine/core";
 import { NotificationsProvider } from "@mantine/notifications";
 import { useLocalStorage } from "@mantine/hooks";
@@ -50,7 +51,19 @@ export default function App(props: AppProps) {
         >
           <NotificationsProvider limit={5}>
             <NavHeader />
-            <Component {...pageProps} />
+            <Container
+              size={"xl"}
+              sx={{
+                marginTop: 20,
+                display: "flex",
+                flexDirection: "column",
+                "@media screen and (display-mode: standalone)": {
+                  paddingTop: "80px",
+                },
+              }}
+            >
+              <Component {...pageProps} />
+            </Container>
           </NotificationsProvider>
         </MantineProvider>
       </ColorSchemeProvider>
