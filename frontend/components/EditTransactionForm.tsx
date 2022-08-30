@@ -13,14 +13,14 @@ import { useMediaQuery } from "@mantine/hooks";
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { IconTrash, IconEdit } from "@tabler/icons";
-import { db, Transaction } from "../utils/db";
+import { Transaction } from "../utils/db";
 import { IndexableType } from "dexie";
 import { BankInput } from "./form/BankInput";
 import Datecomponent from "./form/Datecomponent";
 import AmountInput from "./form/AmountInput";
-import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
+import { showErrorNotif } from "../utils/notifs";
 import { TypeInput } from "./form/TypeInput";
-import { txPosOrNeg } from "../utils/helpers";
+import { deleteTransaction, updateTransaction } from "../utils/query";
 
 export function EditTransactionForm(props: Transaction) {
   const [opened, setOpened] = useState<boolean>(false);
@@ -46,32 +46,11 @@ export function EditTransactionForm(props: Transaction) {
   });
 
   const onSubmit = async (data: Transaction) => {
-    await db.banks.get({ name: data.bank }).then(async (bankToUpdate) => {
-      if (bankToUpdate && bankToUpdate.id) {
-        await db.banks.update(bankToUpdate.id, {
-          balance:
-            bankToUpdate.balance -
-            props.amount +
-            txPosOrNeg(data.amount, data.type),
-        });
-      } else {
-        throw new Error("Bank not found");
-      }
-    });
-
-    const tx = {
+    const updateVals = {
+      OrigTx: { ...props },
       ...data,
-      amount: txPosOrNeg(data.amount, data.type),
     };
-    await db.transactions
-      .update(props, tx)
-      .then(() => {
-        showSuccessNotif("Transaction Edited.");
-        setOpened(false);
-      })
-      .catch(() => {
-        showErrorNotif();
-      });
+    updateTransaction(updateVals).then(() => setOpened(false));
   };
 
   const onClose = () => {
@@ -162,26 +141,10 @@ export function DeleteTransactionPopover({
       showErrorNotif();
       return;
     }
-    await db.transactions.delete(transactionID);
-    await db.banks
-      .get({ name: bank })
-      .then(async (bankToUpdate) => {
-        if (bankToUpdate && bankToUpdate.id) {
-          await db.banks.update(bankToUpdate.id, {
-            balance: bankToUpdate.balance - transactionAmount,
-          });
-        } else {
-          throw new Error("Bank not found");
-        }
-      })
-      .then(() => {
-        closeModal();
-        setOpened(false);
-        showSuccessNotif("Transaction deleted.");
-      })
-      .catch(() => {
-        showErrorNotif();
-      });
+    deleteTransaction(bank, transactionAmount, transactionID).then(() => {
+      closeModal();
+      setOpened(false);
+    });
   };
   return (
     <Popover

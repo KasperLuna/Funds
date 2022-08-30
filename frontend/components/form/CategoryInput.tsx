@@ -9,10 +9,8 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons";
-import { useLiveQuery } from "dexie-react-hooks";
 import React, { useState } from "react";
-import { db } from "../../utils/db";
-import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
+import { addCategory, useCategoriesQuery } from "../../utils/query";
 
 type CategoryInputProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -36,9 +34,7 @@ const CategoryInput = ({
   inputStyle,
   isError,
 }: CategoryInputProps): JSX.Element => {
-  const categories = useLiveQuery(async () => {
-    return db.categories.toArray();
-  });
+  const categories = useCategoriesQuery();
   const compiledCategories = categories?.concat(DEFAULT_CATEGORIES);
   return (
     <Group noWrap spacing={0} style={{ ...groupStyle }}>
@@ -74,15 +70,7 @@ const AddCategoryButton = () => {
       setIsError(true);
       return;
     }
-    db.categories
-      .put({ name: categoryName, color: "" })
-      .then(() => {
-        showSuccessNotif("New Category added.");
-        setOpened(false);
-      })
-      .catch(() => {
-        showErrorNotif();
-      });
+    addCategory(categoryName).then(() => setOpened(false));
   };
 
   return (

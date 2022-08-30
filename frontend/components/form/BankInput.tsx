@@ -9,10 +9,8 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons";
-import { useLiveQuery } from "dexie-react-hooks";
 import React, { useState } from "react";
-import { db } from "../../utils/db";
-import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
+import { addBank, useBanksQuery } from "../../utils/query";
 
 type BankInputProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -33,10 +31,7 @@ const BankInput = ({
   label = "Bank: ",
   filter,
 }: BankInputProps): JSX.Element => {
-  const banks = useLiveQuery(async () => {
-    return db.banks.toArray();
-  });
-
+  const banks = useBanksQuery();
   const filteredBanks = banks?.filter(
     (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
   );
@@ -75,15 +70,9 @@ const AddBankButton = () => {
       setIsError(true);
       return;
     }
-    db.banks
-      .put({ name: bankName, balance: 0, primaryColor: "", secondaryColor: "" })
-      .then(() => {
-        showSuccessNotif("New bank added.");
-        setOpened(false);
-      })
-      .catch(() => {
-        showErrorNotif();
-      });
+    addBank(bankName).then(() => {
+      setOpened(false);
+    });
   };
 
   return (

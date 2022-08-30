@@ -8,8 +8,7 @@ import {
   Text,
 } from "@mantine/core";
 import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../utils/db";
+import { useBanksQuery } from "../utils/query";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -63,9 +62,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export function BankStats() {
-  const banks = useLiveQuery(async () => {
-    return db.banks.toArray();
-  });
+  const banks = useBanksQuery();
   const { classes } = useStyles();
   const stats = banks?.map((bank) => {
     const diff = 1;

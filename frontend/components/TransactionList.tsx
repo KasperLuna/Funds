@@ -1,16 +1,13 @@
 import React from "react";
 import { Box, Table, Text } from "@mantine/core";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../utils/db";
 import { EditTransactionForm } from "../components/EditTransactionForm";
 import dayjs from "dayjs";
+import { useTransactionsQuery } from "../utils/query";
 
 const headers = ["Date", "Description", "Bank", "Amount", ""];
 
 const TransactionList = () => {
-  const transactions = useLiveQuery(async () => {
-    return db.transactions.orderBy("date").reverse().toArray();
-  });
+  const transactions = useTransactionsQuery();
   return (
     <>
       <Text weight={"bolder"} size="lg" sx={{ marginTop: "20px" }}>
