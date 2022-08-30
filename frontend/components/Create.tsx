@@ -1,4 +1,4 @@
-import { db, Transaction, Transfer } from "../utils/db";
+import { db, Transaction, Transfer, Type } from "../utils/db";
 import { Controller, useForm } from "react-hook-form";
 import {
   Button,
@@ -22,18 +22,19 @@ import {
 } from "@tabler/icons";
 import React, { useState } from "react";
 import { BankInput } from "./form/BankInput";
-import { CategoryInput } from "./form/CategoryInput";
 import Datecomponent from "./form/Datecomponent";
 import AmountInput from "./form/AmountInput";
 import { useLiveQuery } from "dexie-react-hooks";
 import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
+import { txPosOrNeg } from "../utils/helpers";
+import { TypeInput } from "./form/TypeInput";
 
 type FormProps = {
   description: string;
   amount: number;
   date: Date;
   bank: string;
-  category: string;
+  type: Type;
 };
 
 export default function Create() {
@@ -139,13 +140,17 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     reset,
   } = useForm<Transaction>({ defaultValues: { amount: 0 } });
   const onSubmit = async (data: FormProps) => {
-    const { bank } = data;
+    const { amount, bank, type } = data;
+    const tx = {
+      ...data,
+      amount: txPosOrNeg(amount, data.type),
+    };
     try {
-      await db.transactions.add(data);
+      await db.transactions.add(tx);
       await db.banks.get({ name: bank }).then(async (bankToUpdate) => {
         if (bankToUpdate && bankToUpdate.id) {
           await db.banks.update(bankToUpdate.id, {
-            balance: bankToUpdate.balance + data.amount,
+            balance: bankToUpdate.balance + txPosOrNeg(amount, type),
           });
         } else {
           throw new Error("Bank not found");
@@ -164,7 +169,23 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
       <Stack spacing={"sm"}>
         <Datecomponent control={control} setValue={setValue} />
 
-        <AmountInput control={control} />
+        <Group spacing={"xs"} noWrap>
+          <TypeInput register={register} isError={Boolean(errors.type)} />
+          <AmountInput control={control} sx={{ width: "100%" }} />
+        </Group>
+
+        <Controller
+          control={control}
+          name="bank"
+          rules={{ required: true }}
+          render={({ field }) => (
+            <BankInput
+              groupStyle={{ width: "100%" }}
+              {...field}
+              isError={Boolean(errors.bank)}
+            />
+          )}
+        />
 
         <TextInput
           required
@@ -173,34 +194,6 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
           label="Description: "
           placeholder="Bought groceries"
         />
-
-        <Group position="apart" sx={{ width: "100%" }}>
-          <Controller
-            control={control}
-            name="bank"
-            rules={{ required: true }}
-            render={({ field }) => (
-              <BankInput
-                groupStyle={{ width: "45%" }}
-                {...field}
-                isError={Boolean(errors.bank)}
-              />
-            )}
-          />
-          <Controller
-            control={control}
-            name="category"
-            rules={{ required: true }}
-            render={({ field }) => (
-              <CategoryInput
-                groupStyle={{ width: "45%" }}
-                {...field}
-                isError={Boolean(errors.category)}
-              />
-            )}
-          />
-        </Group>
-
         <Space />
         <Button type="submit">Submit</Button>
       </Stack>

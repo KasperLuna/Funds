@@ -1,27 +1,30 @@
 import Dexie, { Table } from "dexie";
 
-export interface Bank {
+export type Bank = {
   id?: number;
   name: string;
   balance: number;
   primaryColor: string;
   secondaryColor: string;
-}
+};
 
-export interface Category {
+export type Category = {
   id?: number;
   name: string;
   color: string;
-}
+};
 
-export interface Transaction {
+export type Type = "income" | "expense" | "deposit" | "withdrawal";
+
+export type Transaction = {
   id?: number; // primary key, auto increments
   description: string;
+  type: Type;
   amount: number;
   date: Date;
   bank: string; // referring to bank account, will query Banks (e.g. BPI, BDO)
-  category: string; // referring to category (e.g. food, transportation, etc)
-}
+  category?: string[]; // referring to category (e.g. food, transportation, etc)
+};
 
 export type Transfer = {
   description: string;
@@ -29,6 +32,7 @@ export type Transfer = {
   destinationAmount: number;
   date: Date;
   originBank: string;
+  category: string[];
   destinationBank: string;
 };
 

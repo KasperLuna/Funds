@@ -95,7 +95,13 @@ export function BankStats() {
         </Group>
 
         <Group sx={{ justifyContent: "center" }} spacing="xs" mt={10}>
-          <Text className={classes.value}>₱ {bank.balance}</Text>
+          <Text className={classes.value}>
+            {bank.balance.toLocaleString(undefined, {
+              style: "currency",
+              currency: "PHP",
+              maximumFractionDigits: 1,
+            })}
+          </Text>
         </Group>
       </Paper>
     );
