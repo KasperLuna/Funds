@@ -5,11 +5,10 @@ import {
   ColorScheme,
   ColorSchemeProvider,
   MantineProvider,
-  Container,
 } from "@mantine/core";
 import { NotificationsProvider } from "@mantine/notifications";
 import { useLocalStorage } from "@mantine/hooks";
-import { NavHeader } from "../components/NavHeader";
+import Layout from "../components/Layout";
 
 export default function App(props: AppProps) {
   const { Component, pageProps } = props;
@@ -50,20 +49,9 @@ export default function App(props: AppProps) {
           theme={{ colorScheme }}
         >
           <NotificationsProvider limit={5}>
-            <NavHeader />
-            <Container
-              size={"xl"}
-              sx={{
-                marginTop: 20,
-                display: "flex",
-                flexDirection: "column",
-                "@media screen and (display-mode: standalone)": {
-                  paddingTop: "80px",
-                },
-              }}
-            >
+            <Layout>
               <Component {...pageProps} />
-            </Container>
+            </Layout>
           </NotificationsProvider>
         </MantineProvider>
       </ColorSchemeProvider>

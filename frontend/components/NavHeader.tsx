@@ -17,6 +17,7 @@ import {
   IconMoonStars,
   IconSun,
 } from "@tabler/icons";
+import { useRouter } from "next/router";
 
 const useStyles = createStyles((theme) => ({
   header: {
@@ -111,10 +112,25 @@ const data = {
     email: "mail@kasperluna.com",
     image: "https://kasperluna.com/face.webp",
   },
-  tabs: ["Home", "Banks"],
+  // tabs: ["Home", "Banks"],
+  tabs: [
+    {
+      name: "Home",
+      href: "/",
+    },
+    {
+      name: "Banks",
+      href: "/banks",
+    },
+    {
+      name: "Crypto",
+      href: "/crypto",
+    },
+  ],
 };
 
-export function NavHeader() {
+export default function NavHeader() {
+  const router = useRouter();
   const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
@@ -122,8 +138,12 @@ export function NavHeader() {
   const { user, tabs } = data;
 
   const items = tabs.map((tab) => (
-    <Tabs.Tab value={tab} key={tab} disabled={tab == "Crypto" ? true : false}>
-      {tab}
+    <Tabs.Tab
+      value={tab.href}
+      key={tab.href}
+      disabled={tab.name == "Crypto" ? true : false}
+    >
+      {tab.name}
     </Tabs.Tab>
   ));
 
@@ -134,8 +154,9 @@ export function NavHeader() {
           <Text className={classes.logoText}>Funds</Text>
 
           <Tabs
-            defaultValue="Home"
+            defaultValue="/"
             variant="outline"
+            onTabChange={(value) => router.push(`/${value}`)}
             classNames={{
               root: classes.tabs,
               tabsList: classes.tabsList,
