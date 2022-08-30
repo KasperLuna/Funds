@@ -27,6 +27,7 @@ import AmountInput from "./form/AmountInput";
 import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
 import { TypeInput } from "./form/TypeInput";
 import { addTransaction, TxFormProps, useBanksQuery } from "../utils/query";
+import { CategoryInput } from "./form/CategoryInput";
 
 export default function Create() {
   const theme = useMantineTheme();
@@ -163,6 +164,18 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
           {...register("description")}
           label="Description: "
           placeholder="Bought groceries"
+        />
+
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <CategoryInput
+              groupStyle={{ width: "100%" }}
+              {...field}
+              isError={Boolean(errors.bank)}
+            />
+          )}
         />
         <Space />
         <Button type="submit">Submit</Button>

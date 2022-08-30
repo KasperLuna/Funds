@@ -21,6 +21,7 @@ import AmountInput from "./form/AmountInput";
 import { showErrorNotif } from "../utils/notifs";
 import { TypeInput } from "./form/TypeInput";
 import { deleteTransaction, updateTransaction } from "../utils/query";
+import { CategoryInput } from "./form/CategoryInput";
 
 export function EditTransactionForm(props: Transaction) {
   const [opened, setOpened] = useState<boolean>(false);
@@ -42,6 +43,7 @@ export function EditTransactionForm(props: Transaction) {
       date: props.date,
       bank: props.bank,
       description: props.description,
+      category: props.category,
     },
   });
 
@@ -99,7 +101,17 @@ export function EditTransactionForm(props: Transaction) {
             {...register("description")}
             variant="default"
           />
-
+          <Controller
+            control={control}
+            name="category"
+            render={({ field }) => (
+              <CategoryInput
+                groupStyle={{ width: "100%" }}
+                {...field}
+                isError={Boolean(errors.bank)}
+              />
+            )}
+          />
           <Group position="apart" style={{ marginTop: 10 }}>
             <Anchor component="button" color="teal" size="sm" onClick={onClose}>
               Cancel
