@@ -34,7 +34,7 @@ const useStyles = createStyles((theme) => ({
 
     "@media screen and (display-mode: standalone)": {
       position: "fixed",
-      paddingTop: "45px",
+      paddingTop: theme.spacing.lg * 3,
     },
   },
 
@@ -154,7 +154,7 @@ export default function NavHeader() {
           <Text className={classes.logoText}>Funds</Text>
 
           <Tabs
-            defaultValue="/"
+            defaultValue={router.pathname}
             variant="outline"
             onTabChange={(value) => router.push(`/${value}`)}
             classNames={{
