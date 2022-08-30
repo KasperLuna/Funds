@@ -139,8 +139,19 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     reset,
   } = useForm<Transaction>({ defaultValues: { amount: 0 } });
   const onSubmit = async (data: FormProps) => {
+    const { bank } = data;
     try {
       await db.transactions.add(data);
+      await db.banks.get({ name: bank }).then(async (bankToUpdate) => {
+        if (bankToUpdate && bankToUpdate.id) {
+          await db.banks.update(bankToUpdate.id, {
+            balance: bankToUpdate.balance + data.amount,
+          });
+        } else {
+          throw new Error("Bank not found");
+        }
+      });
+
       showSuccessNotif("Transaction added.");
       setIsOpen(false);
       reset();
