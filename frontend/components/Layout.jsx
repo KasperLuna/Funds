@@ -25,6 +25,7 @@ const Layout = ({ children }) => {
         startPosition={0.3}
         height={3}
         options={{ parent: "#loading-box" }}
+        showOnShallow={false}
       />
       <NavHeader />
       <Box id="loading-box" className={classes.loadingBox}>

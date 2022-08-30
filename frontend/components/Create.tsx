@@ -24,9 +24,13 @@ import React, { useState } from "react";
 import { BankInput } from "./form/BankInput";
 import Datecomponent from "./form/Datecomponent";
 import AmountInput from "./form/AmountInput";
-import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
 import { TypeInput } from "./form/TypeInput";
-import { addTransaction, TxFormProps, useBanksQuery } from "../utils/query";
+import {
+  addTransaction,
+  transferQuery,
+  TxFormProps,
+  useBanksQuery,
+} from "../utils/query";
 import { CategoryInput } from "./form/CategoryInput";
 
 export default function Create() {
@@ -173,7 +177,7 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
             <CategoryInput
               groupStyle={{ width: "100%" }}
               {...field}
-              isError={Boolean(errors.bank)}
+              isError={Boolean(errors.category)}
             />
           )}
         />
@@ -198,14 +202,10 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
   });
   const [isSameAmount, setIsSameAmount] = useState<boolean>(false);
   const onSubmit = async (data: Transfer) => {
-    try {
-      console.log(data);
-      showSuccessNotif("Transaction added.");
+    transferQuery(data).then(() => {
       setIsOpen(false);
       reset();
-    } catch (error) {
-      showErrorNotif();
-    }
+    });
   };
 
   const originBank = watch("originBank");
@@ -219,7 +219,7 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
           <AmountInput control={control} name="originAmount" />
         ) : (
           <>
-            <Group sx={{ width: "100%" }}>
+            <Group sx={{ width: "100%", alignItems: "end" }}>
               <AmountInput
                 control={control}
                 name="originAmount"
@@ -247,6 +247,7 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
         <Group
           position="apart"
           spacing={"xs"}
+          noWrap
           sx={{ width: "100%", alignItems: "end" }}
         >
           <Controller
@@ -291,6 +292,17 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
           placeholder="Bought groceries"
         />
 
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <CategoryInput
+              groupStyle={{ width: "100%" }}
+              {...field}
+              isError={Boolean(errors.category)}
+            />
+          )}
+        />
         <Space />
         <Button type="submit">Submit</Button>
       </Stack>

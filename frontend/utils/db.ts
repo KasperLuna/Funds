@@ -30,10 +30,10 @@ export type Transfer = {
   description: string;
   originAmount: number;
   destinationAmount: number;
-  date: Date;
   originBank: string;
-  category: string[];
   destinationBank: string;
+  date: Date;
+  category?: string[];
 };
 
 export class MySubClassedDexie extends Dexie {
