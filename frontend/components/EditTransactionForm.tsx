@@ -38,8 +38,17 @@ export function EditTransactionForm(props: Transaction) {
     defaultValues: props,
   });
 
-  const onSubmit = (data: Transaction) => {
-    db.transactions
+  const onSubmit = async (data: Transaction) => {
+    await db.banks.get({ name: data.bank }).then(async (bankToUpdate) => {
+      if (bankToUpdate && bankToUpdate.id) {
+        await db.banks.update(bankToUpdate.id, {
+          balance: bankToUpdate.balance - props.amount + data.amount,
+        });
+      } else {
+        throw new Error("Bank not found");
+      }
+    });
+    await db.transactions
       .put(data)
       .then(() => {
         showSuccessNotif("Transaction Edited.");
@@ -119,7 +128,9 @@ export function EditTransactionForm(props: Transaction) {
             <Group spacing={"xs"}>
               <DeleteTransactionPopover
                 transactionID={props.id}
+                transactionAmount={props.amount}
                 closeModal={onClose}
+                bank={props.bank}
               />
               <Button type="submit" size="sm">
                 Save
@@ -134,20 +145,34 @@ export function EditTransactionForm(props: Transaction) {
 
 export function DeleteTransactionPopover({
   transactionID,
+  transactionAmount,
   closeModal,
+  bank,
 }: {
   transactionID?: IndexableType;
+  transactionAmount: number;
   closeModal: () => void;
+  bank: string;
 }) {
   const [opened, setOpened] = useState<boolean>(false);
 
-  const onDelete = () => {
+  const onDelete = async () => {
     if (!transactionID) {
       showErrorNotif();
       return;
     }
-    db.transactions
-      .delete(transactionID)
+    await db.transactions.delete(transactionID);
+    await db.banks
+      .get({ name: bank })
+      .then(async (bankToUpdate) => {
+        if (bankToUpdate && bankToUpdate.id) {
+          await db.banks.update(bankToUpdate.id, {
+            balance: bankToUpdate.balance - transactionAmount,
+          });
+        } else {
+          throw new Error("Bank not found");
+        }
+      })
       .then(() => {
         closeModal();
         setOpened(false);

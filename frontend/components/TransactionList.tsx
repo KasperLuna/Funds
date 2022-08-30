@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Container, Table, Text } from "@mantine/core";
+import { Box, Table, Text } from "@mantine/core";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../utils/db";
 import { EditTransactionForm } from "../components/EditTransactionForm";

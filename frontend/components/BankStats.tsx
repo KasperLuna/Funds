@@ -1,6 +1,15 @@
 import React from "react";
-import { createStyles, Group, Paper, SimpleGrid, Text } from "@mantine/core";
+import {
+  Box,
+  createStyles,
+  Group,
+  Paper,
+  SimpleGrid,
+  Text,
+} from "@mantine/core";
 import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../utils/db";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -40,67 +49,67 @@ const useStyles = createStyles((theme) => ({
   paper: {
     paddingLeft: 0,
   },
+
+  noBanksBox: {
+    textAlign: "center",
+    border: `1px dashed ${theme.colors.gray[6]}`,
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+  },
+
+  banksText: {
+    marginBottom: theme.spacing.md,
+  },
 }));
 
-const data = [
-  {
-    title: "BPI",
-    value: "13,456",
-    diff: 34,
-  },
-  {
-    title: "BDO",
-    value: "4,145",
-    diff: -13,
-  },
-  {
-    title: "CIMB",
-    value: "745",
-    diff: 18,
-  },
-  {
-    title: "Cash",
-    value: "188",
-    diff: -30,
-  },
-];
-
 export function BankStats() {
+  const banks = useLiveQuery(async () => {
+    return db.banks.toArray();
+  });
   const { classes } = useStyles();
-  const stats = data.map((stat) => {
-    const DiffIcon = stat.diff > 0 ? IconArrowUpRight : IconArrowDownRight;
+  const stats = banks?.map((bank) => {
+    const diff = 1;
+    const DiffIcon = diff > 0 ? IconArrowUpRight : IconArrowDownRight;
 
     return (
       <Paper
         withBorder
         p="md"
         radius="md"
-        key={stat.title}
+        key={bank.name}
         className={classes.paper}
       >
         <Group position="apart" spacing={0}>
           <Text size="xs" color="dimmed" className={classes.title}>
-            {stat.title}
+            {bank.name}
           </Text>
           <Text
-            color={stat.diff > 0 ? "teal" : "red"}
+            color={diff > 0 ? "teal" : "red"}
             size="xs"
             weight={500}
             className={classes.diff}
           >
-            <span>{stat.diff}%</span>
+            <span>{diff}%</span>
             <DiffIcon size={12} stroke={1.5} />
           </Text>
         </Group>
 
         <Group sx={{ justifyContent: "center" }} spacing="xs" mt={10}>
-          <Text className={classes.value}>₱ {stat.value}</Text>
+          <Text className={classes.value}>₱ {bank.balance}</Text>
         </Group>
       </Paper>
     );
   });
   return (
     <div className={classes.root}>
+      <Text weight={"bolder"} size="xl" className={classes.banksText}>
+        Bank Balances
+      </Text>
+      {Boolean(!banks?.length) && (
+        <Box className={classes.noBanksBox}>
+          <Text>No Banks! Select the dropdown and add a bank.</Text>
+        </Box>
+      )}
       <SimpleGrid
         cols={5}
         breakpoints={[
