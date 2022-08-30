@@ -111,7 +111,7 @@ const data = {
     email: "mail@kasperluna.com",
     image: "https://kasperluna.com/face.webp",
   },
-  tabs: ["Home", "Banks", "Crypto"],
+  tabs: ["Home", "Banks"],
 };
 
 export function NavHeader() {
@@ -129,7 +129,7 @@ export function NavHeader() {
 
   return (
     <div className={classes.header}>
-      <Container>
+      <Container size={"xl"}>
         <Group position="apart">
           <Text className={classes.logoText}>Funds</Text>
 
