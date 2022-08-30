@@ -16,10 +16,11 @@ import { IconTrash, IconEdit } from "@tabler/icons";
 import { db, Transaction } from "../utils/db";
 import { IndexableType } from "dexie";
 import { BankInput } from "./form/BankInput";
-import { CategoryInput } from "./form/CategoryInput";
 import Datecomponent from "./form/Datecomponent";
 import AmountInput from "./form/AmountInput";
 import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
+import { TypeInput } from "./form/TypeInput";
+import { txPosOrNeg } from "../utils/helpers";
 
 export function EditTransactionForm(props: Transaction) {
   const [opened, setOpened] = useState<boolean>(false);
@@ -35,21 +36,35 @@ export function EditTransactionForm(props: Transaction) {
     setValue,
     formState: { errors },
   } = useForm<Transaction>({
-    defaultValues: props,
+    defaultValues: {
+      amount: Math.abs(props.amount),
+      type: props.type,
+      date: props.date,
+      bank: props.bank,
+      description: props.description,
+    },
   });
 
   const onSubmit = async (data: Transaction) => {
     await db.banks.get({ name: data.bank }).then(async (bankToUpdate) => {
       if (bankToUpdate && bankToUpdate.id) {
         await db.banks.update(bankToUpdate.id, {
-          balance: bankToUpdate.balance - props.amount + data.amount,
+          balance:
+            bankToUpdate.balance -
+            props.amount +
+            txPosOrNeg(data.amount, data.type),
         });
       } else {
         throw new Error("Bank not found");
       }
     });
+
+    const tx = {
+      ...data,
+      amount: txPosOrNeg(data.amount, data.type),
+    };
     await db.transactions
-      .put(data)
+      .update(props, tx)
       .then(() => {
         showSuccessNotif("Transaction Edited.");
         setOpened(false);
@@ -73,6 +88,7 @@ export function EditTransactionForm(props: Transaction) {
         <IconEdit size={"20px"} />
       </ActionIcon>
       <Modal
+        title="Edit Transaction"
         opened={opened}
         onClose={onClose}
         centered
@@ -82,7 +98,19 @@ export function EditTransactionForm(props: Transaction) {
         <form onSubmit={handleSubmit(onSubmit)}>
           <Datecomponent control={control} setValue={setValue} />
 
-          <AmountInput control={control} />
+          <Group spacing={"xs"} noWrap>
+            <TypeInput register={register} isError={Boolean(errors.type)} />
+            <AmountInput control={control} sx={{ width: "100%" }} />
+          </Group>
+
+          <Controller
+            control={control}
+            name="bank"
+            rules={{ required: true }}
+            render={({ field }) => (
+              <BankInput {...field} isError={Boolean(errors.bank)} />
+            )}
+          />
 
           <TextInput
             required
@@ -92,33 +120,6 @@ export function EditTransactionForm(props: Transaction) {
             {...register("description")}
             variant="default"
           />
-
-          <Group position="apart" sx={{ width: "100%" }}>
-            <Controller
-              control={control}
-              name="bank"
-              rules={{ required: true }}
-              render={({ field }) => (
-                <BankInput
-                  groupStyle={{ width: "47%" }}
-                  {...field}
-                  isError={Boolean(errors.bank)}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="category"
-              rules={{ required: true }}
-              render={({ field }) => (
-                <CategoryInput
-                  groupStyle={{ width: "47%" }}
-                  {...field}
-                  isError={Boolean(errors.category)}
-                />
-              )}
-            />
-          </Group>
 
           <Group position="apart" style={{ marginTop: 10 }}>
             <Anchor component="button" color="teal" size="sm" onClick={onClose}>

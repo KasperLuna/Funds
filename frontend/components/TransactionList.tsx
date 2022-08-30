@@ -5,7 +5,7 @@ import { db } from "../utils/db";
 import { EditTransactionForm } from "../components/EditTransactionForm";
 import dayjs from "dayjs";
 
-const headers = ["Date", "Description", "Category", "Bank", "Amount", ""];
+const headers = ["Date", "Description", "Bank", "Amount", ""];
 
 const TransactionList = () => {
   const transactions = useLiveQuery(async () => {
@@ -45,14 +45,13 @@ const TransactionList = () => {
                     {dayjs(data.date).format("MMM D, YYYY")}
                   </td>
                   <td>{data.description}</td>
-                  <td>{data.category}</td>
                   <td>{data.bank}</td>
                   <td>
                     <Text color={data.amount > 0 ? "green" : "red"}>
                       {data.amount.toLocaleString(undefined, {
                         style: "currency",
                         currency: "PHP",
-                        maximumFractionDigits: 2,
+                        maximumFractionDigits: 1,
                       })}
                     </Text>
                   </td>

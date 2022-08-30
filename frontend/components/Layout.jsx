@@ -11,7 +11,6 @@ const useStyles = createStyles((theme) => ({
   },
   container: {
     paddingTop: theme.spacing.sm,
-    marginBottom: 1000,
     display: "flex",
     flexDirection: "column",
   },

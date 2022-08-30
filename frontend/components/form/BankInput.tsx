@@ -90,9 +90,9 @@ const AddBankButton = () => {
     <Popover
       opened={opened}
       onClose={() => setOpened(false)}
-      position="top"
+      position="top-end"
       withArrow
-      transition="skew-down"
+      transition="pop-bottom-right"
       withinPortal
     >
       <Popover.Target>
