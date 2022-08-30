@@ -29,6 +29,7 @@ specifiers:
   eslint-plugin-promise: ^6.0.0
   eslint-plugin-react: ^7.31.1
   next: 12.2.5
+  nextjs-progressbar: ^0.0.14
   prettier: ^2.7.1
   react: '17.0'
   react-dom: '17.0'
@@ -49,6 +50,7 @@ dependencies:
   dexie: 3.2.2
   dexie-react-hooks: 1.1.1_xkjphv2ebrutypr5lbflyrfezu
   next: 12.2.5_minu3cnzmhm3eyimgy6ry7vi4e
+  nextjs-progressbar: 0.0.14_next@12.2.5+react@17.0.2
   react: 17.0.2
   react-dom: 17.0.2_react@17.0.2
   react-hook-form: 7.34.2_react@17.0.2
@@ -2538,6 +2540,22 @@ packages:
     transitivePeerDependencies:
       - '@babel/core'
       - babel-plugin-macros
+    dev: false
+
+  /nextjs-progressbar/0.0.14_next@12.2.5+react@17.0.2:
+    resolution: {integrity: sha512-AXYXHDN6M52AwFnGqH/vlwyo0gbC9zM7QS/4ryOTI0RUqfze5FJl8uSrxKJMzK6hGFdDeQXcZoWsLGXeCVtTwg==}
+    peerDependencies:
+      next: '>= 6.0.0'
+      react: '>= 16.0.0'
+    dependencies:
+      next: 12.2.5_minu3cnzmhm3eyimgy6ry7vi4e
+      nprogress: 0.2.0
+      prop-types: 15.8.1
+      react: 17.0.2
+    dev: false
+
+  /nprogress/0.2.0:
+    resolution: {integrity: sha512-I19aIingLgR1fmhftnbWWO3dXc0hSxqHQHQb3H8m+K3TnEn/iSeTZZOyvKXWqQESMwuUVnatlCnZdLBZZt2VSA==}
     dev: false
 
   /object-assign/4.1.1:
