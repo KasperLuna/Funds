@@ -35,7 +35,7 @@ export const addBank = async (name: string) => {
 
 export const addCategory = async (name: string) => {
   db.categories
-    .put({ name: name, color: "" })
+    .put({ name: name, group: "" })
     .then(() => {
       showSuccessNotif("New category added.");
     })

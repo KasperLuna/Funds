@@ -11,7 +11,7 @@ export type Bank = {
 export type Category = {
   id?: number;
   name: string;
-  color: string;
+  group: string;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
@@ -43,10 +43,10 @@ export class MySubClassedDexie extends Dexie {
 
   constructor() {
     super("myDatabase");
-    this.version(5).stores({
+    this.version(6).stores({
       transactions: "++id, description, amount, date, account, category",
       banks: "++id, name, balance, primaryColor, secondaryColor",
-      categories: "++id, name, color",
+      categories: "++id, name, group",
     });
   }
 }
