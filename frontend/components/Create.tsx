@@ -132,7 +132,7 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<Transaction>({ defaultValues: { amount: 0 } });
+  } = useForm<Transaction>();
   const onSubmit = async (data: TxFormProps) => {
     addTransaction(data).then(() => {
       setIsOpen(false);
