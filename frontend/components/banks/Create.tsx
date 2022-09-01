@@ -25,7 +25,6 @@ import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";
 import { TypeInput } from "../form/TypeInput";
-import { transferQuery, TxFormProps } from "../../utils/query";
 import { CategoryInput } from "../form/CategoryInput";
 import { createTransaction } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
@@ -132,7 +131,7 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     formState: { errors },
     reset,
   } = useForm<AppTxTypes>();
-  const onSubmit = async (data: TxFormProps) => {
+  const onSubmit = async (data: AppTxTypes) => {
     createTransaction({ userId: user?.uid || "", ...data }).then(() => {
       setIsOpen(false);
       reset();
@@ -201,10 +200,11 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
   });
   const [isSameAmount, setIsSameAmount] = useState<boolean>(false);
   const onSubmit = async (data: Transfer) => {
-    transferQuery(data).then(() => {
-      setIsOpen(false);
-      reset();
-    });
+    console.log(data);
+    // transferQuery(data).then(() => {
+    //   setIsOpen(false);
+    //   reset();
+    // });
   };
 
   const originBank = watch("originBank");

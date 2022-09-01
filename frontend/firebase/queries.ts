@@ -13,7 +13,6 @@ import {
 import { useEffect, useState } from "react";
 import { AppTxTypes, Bank, Category, FirebaseTxTypes } from "../utils/db";
 import { txPosOrNeg } from "../utils/helpers";
-import { TxFormProps } from "../utils/query";
 import { db } from "./initFirebase";
 
 export const useBanksQuery = (id?: string) => {
@@ -95,7 +94,7 @@ export const createCategory = async (data: Category & { userId: string }) => {
 };
 
 export const createTransaction = async (
-  data: TxFormProps & { userId: string }
+  data: AppTxTypes & { userId: string }
 ) => {
   const { userId, amount, category, ...txData } = data;
   const tx = {
