@@ -3,11 +3,11 @@ import { Group, Menu, ActionIcon } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
 import { IconCalendarEvent, IconCalendarMinus } from "@tabler/icons";
 import { Control, Controller, UseFormSetValue } from "react-hook-form";
-import { Transaction, Transfer } from "../../utils/db";
+import { AppTxTypes, Transfer } from "../../utils/db";
 
 type DateComponentProps = {
-  control: Control<Transaction | any>;
-  setValue: UseFormSetValue<Transaction | Transfer | any>;
+  control: Control<AppTxTypes | any>;
+  setValue: UseFormSetValue<AppTxTypes | Transfer | any>;
 };
 
 export default function Datecomponent(props: DateComponentProps) {
