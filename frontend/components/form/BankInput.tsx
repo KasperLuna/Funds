@@ -10,7 +10,11 @@ import {
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons";
 import React, { useState } from "react";
-import { addBank, useBanksQuery } from "../../utils/query";
+import { useForm } from "react-hook-form";
+import { Bank } from "../../utils/db";
+import { createBank, useBanksQuery } from "../../firebase/queries";
+import { useAuth } from "../config/AuthContext";
+import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 
 type BankInputProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -31,7 +35,8 @@ const BankInput = ({
   label = "Bank: ",
   filter,
 }: BankInputProps): JSX.Element => {
-  const banks = useBanksQuery();
+  const { user } = useAuth();
+  const { banks } = useBanksQuery(user?.uid);
   const filteredBanks = banks?.filter(
     (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
   );
@@ -60,19 +65,33 @@ const BankInput = ({
 };
 
 const AddBankButton = () => {
-  const [bankName, setBankName] = useState<string>("");
+  const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
-  const [isError, setIsError] = useState<boolean>(false);
+
   const theme = useMantineTheme();
 
-  const onSubmit = () => {
-    if (bankName.length == 0) {
-      setIsError(true);
-      return;
-    }
-    addBank(bankName).then(() => {
+  const {
+    register,
+    reset,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<Bank>({
+    defaultValues: { primaryColor: "red", secondaryColor: "white", balance: 0 },
+  });
+
+  const onSubmit = async (data: Bank) => {
+    try {
+      const newBank = {
+        userId: user?.uid || "",
+        ...data,
+      };
+      await createBank(newBank);
+      showSuccessNotif(`${data.name} added to banks.`);
       setOpened(false);
-    });
+      reset();
+    } catch {
+      showErrorNotif();
+    }
   };
 
   return (
@@ -106,13 +125,9 @@ const AddBankButton = () => {
           placeholder="BDO"
           sx={{ width: "250px" }}
           description="Add the name of a bank, you can customize this with colors later in app settings."
-          value={bankName}
-          onChange={(e) => {
-            setIsError(false);
-            setBankName(e.target.value);
-          }}
+          {...register("name", { required: true })}
           variant="default"
-          error={isError}
+          error={errors.name?.message}
         />
         <Group position="apart" style={{ marginTop: 10 }}>
           <Anchor
@@ -125,7 +140,7 @@ const AddBankButton = () => {
           </Anchor>
 
           <Group spacing={"xs"}>
-            <Button onClick={() => onSubmit()} size="sm">
+            <Button onClick={() => handleSubmit(onSubmit)()} size="sm">
               Add
             </Button>
           </Group>

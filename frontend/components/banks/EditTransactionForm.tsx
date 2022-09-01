@@ -13,17 +13,18 @@ import { useMediaQuery } from "@mantine/hooks";
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { IconTrash, IconEdit } from "@tabler/icons";
-import { Transaction } from "../utils/db";
-import { IndexableType } from "dexie";
-import { BankInput } from "./form/BankInput";
-import Datecomponent from "./form/Datecomponent";
-import AmountInput from "./form/AmountInput";
-import { showErrorNotif } from "../utils/notifs";
-import { TypeInput } from "./form/TypeInput";
-import { deleteTransaction, updateTransaction } from "../utils/query";
-import { CategoryInput } from "./form/CategoryInput";
+import { BankInput } from "../form/BankInput";
+import Datecomponent from "../form/Datecomponent";
+import AmountInput from "../form/AmountInput";
+import { showErrorNotif } from "../../utils/notifs";
+import { TypeInput } from "../form/TypeInput";
+import { CategoryInput } from "../form/CategoryInput";
+import { deleteTransaction, updateTransaction } from "../../firebase/queries";
+import { AppTxTypes, FirebaseTxTypes } from "../../utils/db";
+import { useAuth } from "../config/AuthContext";
 
-export function EditTransactionForm(props: Transaction) {
+export function EditTransactionForm(props: FirebaseTxTypes) {
+  const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const theme = useMantineTheme();
 
@@ -36,19 +37,20 @@ export function EditTransactionForm(props: Transaction) {
     reset,
     setValue,
     formState: { errors },
-  } = useForm<Transaction>({
+  } = useForm<AppTxTypes>({
     defaultValues: {
       amount: Math.abs(props.amount),
       type: props.type,
-      date: props.date,
+      date: new Date(props.date.seconds * 1000),
       bank: props.bank,
       description: props.description,
       category: props.category,
     },
   });
 
-  const onSubmit = async (data: Transaction) => {
+  const onSubmit = async (data: AppTxTypes) => {
     const updateVals = {
+      userId: user?.uid || "",
       OrigTx: { ...props },
       ...data,
     };
@@ -141,11 +143,12 @@ export function DeleteTransactionPopover({
   closeModal,
   bank,
 }: {
-  transactionID?: IndexableType;
+  transactionID?: string;
   transactionAmount: number;
   closeModal: () => void;
   bank: string;
 }) {
+  const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
 
   const onDelete = async () => {
@@ -153,7 +156,13 @@ export function DeleteTransactionPopover({
       showErrorNotif();
       return;
     }
-    deleteTransaction(bank, transactionAmount, transactionID).then(() => {
+    const deleteVals = {
+      userId: user?.uid || "",
+      transactionID: transactionID,
+      transactionAmount: transactionAmount,
+      bank: bank,
+    };
+    deleteTransaction(deleteVals).then(() => {
       closeModal();
       setOpened(false);
     });

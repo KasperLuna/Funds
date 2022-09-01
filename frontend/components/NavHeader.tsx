@@ -18,6 +18,7 @@ import {
   IconSun,
 } from "@tabler/icons";
 import { useRouter } from "next/router";
+import { useAuth } from "./config/AuthContext";
 
 const useStyles = createStyles((theme) => ({
   header: {
@@ -106,36 +107,40 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const data = {
-  user: {
-    name: "Kasper",
-    email: "mail@kasperluna.com",
-    image: "https://kasperluna.com/face.webp",
+// user: {
+//   name: "Kasper",
+//   email: "mail@kasperluna.com",
+//   image: "https://kasperluna.com/face.webp",
+// },
+
+const tabs = [
+  {
+    name: "Dashboard",
+    href: "/dashboard",
   },
-  // tabs: ["Home", "Banks"],
-  tabs: [
-    {
-      name: "Home",
-      href: "/",
-    },
-    {
-      name: "Banks",
-      href: "/banks",
-    },
-    {
-      name: "Crypto",
-      href: "/crypto",
-    },
-  ],
-};
+  {
+    name: "Banks",
+    href: "/banks",
+  },
+  {
+    name: "Crypto",
+    href: "/crypto",
+  },
+];
+
+// const user = {
+//   name: "Kasper",
+//   photoURL: "https://kasperluna.com/face.webp",
+//   displayName: "Kasper Luna",
+//   email: "dev@kasperluna.com",
+// };
 
 export default function NavHeader() {
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
-
-  const { user, tabs } = data;
 
   const items = tabs.map((tab) => (
     <Tabs.Tab
@@ -152,71 +157,84 @@ export default function NavHeader() {
       <Container size={"xl"}>
         <Group position="apart">
           <Text className={classes.logoText}>Funds</Text>
-
-          <Tabs
-            defaultValue={router.pathname}
-            variant="outline"
-            onTabChange={(value) => router.push(`/${value}`)}
-            classNames={{
-              root: classes.tabs,
-              tabsList: classes.tabsList,
-              tab: classes.tab,
-            }}
-          >
-            <Tabs.List>{items}</Tabs.List>
-          </Tabs>
-          <Menu
-            width={210}
-            position="bottom-end"
-            transition="pop-top-right"
-            onClose={() => setUserMenuOpened(false)}
-            onOpen={() => setUserMenuOpened(true)}
-            withArrow
-          >
-            <Menu.Target>
-              <UnstyledButton
-                className={cx(classes.user, {
-                  [classes.userActive]: userMenuOpened,
-                })}
-              >
-                <Group spacing={7}>
-                  <Avatar
-                    src={user.image}
-                    alt={user.name}
-                    radius="xl"
-                    size={20}
-                  />
-                  <Text weight={500} className={classes.userName} size="sm">
-                    {user.name}
-                  </Text>
-                  <IconChevronDown size={12} stroke={1.5} />
-                </Group>
-              </UnstyledButton>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item icon={<IconSettings size={14} stroke={1.5} />}>
-                Settings
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => {
-                  toggleColorScheme();
+          {user ? (
+            <>
+              {" "}
+              <Tabs
+                defaultValue={router.pathname}
+                variant="outline"
+                onTabChange={(value) => router.push(`${value}`)}
+                classNames={{
+                  root: classes.tabs,
+                  tabsList: classes.tabsList,
+                  tab: classes.tab,
                 }}
-                icon={
-                  colorScheme === "dark" ? (
-                    <IconSun size={14} stroke={1.5} />
-                  ) : (
-                    <IconMoonStars size={14} stroke={1.5} />
-                  )
-                }
               >
-                Toggle Color Scheme
-              </Menu.Item>
-              <Menu.Item icon={<IconLogout size={14} stroke={1.5} />}>
-                Logout
-              </Menu.Item>
-              {/* <Menu.Divider /> */}
-            </Menu.Dropdown>
-          </Menu>
+                <Tabs.List>{items}</Tabs.List>
+              </Tabs>
+              <Menu
+                width={210}
+                position="bottom-end"
+                transition="pop-top-right"
+                onClose={() => setUserMenuOpened(false)}
+                onOpen={() => setUserMenuOpened(true)}
+                withArrow
+              >
+                <Menu.Target>
+                  <UnstyledButton
+                    className={cx(classes.user, {
+                      [classes.userActive]: userMenuOpened,
+                    })}
+                  >
+                    <Group spacing={7}>
+                      <Avatar
+                        src={(user && user.photoURL) || ""}
+                        alt={(user && user.displayName) || ""}
+                        radius="xl"
+                        size={30}
+                      />
+                      <Text weight={500} className={classes.userName} size="sm">
+                        {user.displayName ||
+                          user.email?.split("@")[0] ||
+                          "Anonymous"}
+                      </Text>
+                      <IconChevronDown size={12} stroke={1.5} />
+                    </Group>
+                  </UnstyledButton>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item icon={<IconSettings size={14} stroke={1.5} />}>
+                    Settings
+                  </Menu.Item>
+                  <Menu.Item
+                    onClick={() => {
+                      toggleColorScheme();
+                    }}
+                    icon={
+                      colorScheme === "dark" ? (
+                        <IconSun size={14} stroke={1.5} />
+                      ) : (
+                        <IconMoonStars size={14} stroke={1.5} />
+                      )
+                    }
+                  >
+                    Toggle Color Scheme
+                  </Menu.Item>
+                  <Menu.Item
+                    onClick={async () => {
+                      await signOut();
+                      router.push("/");
+                    }}
+                    icon={<IconLogout size={14} stroke={1.5} />}
+                  >
+                    Logout
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </>
+          ) : (
+            <></>
+          )}
         </Group>
       </Container>
     </div>

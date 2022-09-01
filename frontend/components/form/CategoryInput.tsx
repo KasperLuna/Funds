@@ -1,6 +1,7 @@
 import { Group, MultiSelect } from "@mantine/core";
 import React from "react";
-import { addCategory, useCategoriesQuery } from "../../utils/query";
+import { createCategory, useCategoriesQuery } from "../../firebase/queries";
+import { useAuth } from "../config/AuthContext";
 
 type CategoryInputProps = {
   onChange: (value: string[]) => void;
@@ -17,10 +18,10 @@ const CategoryInput = ({
   inputStyle,
   isError,
 }: CategoryInputProps): JSX.Element => {
-  const categories = useCategoriesQuery();
-
+  const { user } = useAuth();
+  const { categories } = useCategoriesQuery(user?.uid);
   const create = (name: string) => {
-    addCategory(name);
+    createCategory({ userId: user?.uid || "", name: name || "" });
     return name;
   };
 
