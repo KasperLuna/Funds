@@ -42,10 +42,11 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
   dateText: {
-    borderBottom: `1px solid ${theme.colorScheme === "dark"
+    borderBottom: `1px solid ${
+      theme.colorScheme === "dark"
         ? "rgba(255, 255, 255, 0.6)"
         : "rgba(0, 0, 0, 0.5)"
-      }`,
+    }`,
   },
   description: {
     paddingBlock: theme.spacing.xs,
