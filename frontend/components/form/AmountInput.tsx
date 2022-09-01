@@ -1,10 +1,10 @@
 import React from "react";
 import { NumberInput, Sx } from "@mantine/core";
 import { Control, Controller } from "react-hook-form";
-import { Transaction, Transfer } from "../../utils/db";
+import { AppTxTypes, Transfer } from "../../utils/db";
 
 type AmountInputProps = {
-  control: Control<Transaction | Transfer | any>;
+  control: Control<AppTxTypes | Transfer | any>;
   name?: string;
   label?: string;
   sx?: Sx;
