@@ -9,8 +9,14 @@ import {
 import { NotificationsProvider } from "@mantine/notifications";
 import { useLocalStorage } from "@mantine/hooks";
 import Layout from "../components/Layout";
+import { AuthProvider } from "../components/config/AuthContext";
+import ProtectedRoute from "../components/config/ProtectedRoute";
+import { useRouter } from "next/router";
+
+const noAuth = ["/"];
 
 export default function App(props: AppProps) {
+  const router = useRouter();
   const { Component, pageProps } = props;
   const [colorScheme, setColorScheme] = useLocalStorage<ColorScheme>({
     key: "mantine-color-scheme",
@@ -48,11 +54,19 @@ export default function App(props: AppProps) {
           withNormalizeCSS
           theme={{ colorScheme }}
         >
-          <NotificationsProvider limit={5}>
-            <Layout>
-              <Component {...pageProps} />
-            </Layout>
-          </NotificationsProvider>
+          <AuthProvider>
+            <NotificationsProvider limit={5}>
+              <Layout>
+                {noAuth.includes(router.pathname) ? (
+                  <Component {...pageProps} />
+                ) : (
+                  <ProtectedRoute>
+                    <Component {...pageProps} />
+                  </ProtectedRoute>
+                )}
+              </Layout>
+            </NotificationsProvider>
+          </AuthProvider>
         </MantineProvider>
       </ColorSchemeProvider>
     </>

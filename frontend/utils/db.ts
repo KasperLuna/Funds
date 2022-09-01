@@ -1,4 +1,4 @@
-import Dexie, { Table } from "dexie";
+import { Timestamp } from "firebase/firestore";
 
 export type Bank = {
   id?: number;
@@ -11,20 +11,22 @@ export type Bank = {
 export type Category = {
   id?: number;
   name: string;
-  group: string;
+  group?: string;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
 
-export type Transaction = {
-  id?: number; // primary key, auto increments
+export type BaseTxTypes = {
+  id?: string;
   description: string;
   type: Type;
   amount: number;
-  date: Date;
   bank: string; // referring to bank account, will query Banks (e.g. BPI, BDO)
   category?: string[]; // referring to category (e.g. food, transportation, etc)
 };
+
+export type AppTxTypes = BaseTxTypes & { date: Date };
+export type FirebaseTxTypes = BaseTxTypes & { date: Timestamp };
 
 export type Transfer = {
   description: string;
@@ -35,20 +37,3 @@ export type Transfer = {
   date: Date;
   category?: string[];
 };
-
-export class MySubClassedDexie extends Dexie {
-  transactions!: Table<Transaction>;
-  banks!: Table<Bank>;
-  categories!: Table<Category>;
-
-  constructor() {
-    super("myDatabase");
-    this.version(6).stores({
-      transactions: "++id, description, amount, date, account, category",
-      banks: "++id, name, balance, primaryColor, secondaryColor",
-      categories: "++id, name, group",
-    });
-  }
-}
-
-export const db = new MySubClassedDexie();

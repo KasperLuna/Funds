@@ -2,11 +2,11 @@ import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { ActionIcon, Group } from "@mantine/core";
-import Create from "../../components/Create";
-import TransactionList from "../../components/TransactionList";
+import Create from "../../components/banks/Create";
+import TransactionList from "../../components/banks/TransactionList";
 import { IconFilter } from "@tabler/icons";
-import { BankStats } from "../../components/BankStats";
-import { BankSettings } from "../../components/BankSettings";
+import { BankStats } from "../../components/banks/BankStats";
+import { BankSettings } from "../../components/banks/BankSettings";
 
 const Home: NextPage = () => {
   return (

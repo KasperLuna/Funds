@@ -10,11 +10,15 @@ import {
   Table,
   Text,
 } from "@mantine/core";
-import { EditTransactionForm } from "../components/EditTransactionForm";
+import { EditTransactionForm } from "./EditTransactionForm";
 import dayjs from "dayjs";
-import { useCategoriesQuery, useTransactionsQuery } from "../utils/query";
+import {
+  useCategoriesQuery,
+  useTransactionsQuery,
+} from "../../firebase/queries";
 import { useRouter } from "next/router";
-import { Category, Transaction } from "../utils/db";
+import { Category, FirebaseTxTypes } from "../../utils/db";
+import { useAuth } from "../config/AuthContext";
 
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
@@ -38,11 +42,10 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
   dateText: {
-    borderBottom: `1px solid ${
-      theme.colorScheme === "dark"
+    borderBottom: `1px solid ${theme.colorScheme === "dark"
         ? "rgba(255, 255, 255, 0.6)"
         : "rgba(0, 0, 0, 0.5)"
-    }`,
+      }`,
   },
   description: {
     paddingBlock: theme.spacing.xs,
@@ -64,10 +67,12 @@ const useStyles = createStyles((theme) => ({
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
 const TransactionList = () => {
+  const { user } = useAuth();
+  const { transactions } = useTransactionsQuery(user?.uid);
+  console.log(transactions);
+  const { categories } = useCategoriesQuery(user?.uid);
   const { classes } = useStyles();
   const { query } = useRouter();
-  const transactions = useTransactionsQuery();
-  const categories = useCategoriesQuery();
   return (
     <>
       <Text
@@ -121,7 +126,7 @@ const TransactionList = () => {
                 return (
                   <tr key={data.id}>
                     <td style={{ whiteSpace: "nowrap" }}>
-                      {dayjs(data.date).format("MMM D")}
+                      {dayjs(data.date?.seconds * 1000).format("MMM D")}
                     </td>
                     <td>{data.bank}</td>
                     <td>
@@ -169,7 +174,7 @@ const TransactionCard = ({
   data,
   categories,
 }: {
-  data: Transaction;
+  data: FirebaseTxTypes;
   categories?: Category[];
 }) => {
   const { classes } = useStyles();
@@ -180,7 +185,7 @@ const TransactionCard = ({
           <Group position="apart" align="flex-start" noWrap>
             <Stack spacing={0} align="center">
               <Text weight={"bold"} size="xs" className={classes.dateText}>
-                {dayjs(data.date).format("MMM D")}
+                {dayjs(data.date.seconds * 1000).format("MMM D")}
               </Text>
 
               <Text weight={"bolder"} size="md">

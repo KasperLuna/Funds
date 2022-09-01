@@ -1,6 +1,7 @@
 import { IndexableType } from "dexie";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db, Transaction, Transfer, Type } from "./db";
+import { Timestamp } from "firebase/firestore";
+import { db, Transaction, Transfer, Type, Bank } from "./db";
 import { txPosOrNeg } from "./helpers";
 import { showSuccessNotif, showErrorNotif } from "./notifs";
 
@@ -47,7 +48,7 @@ export const addCategory = async (name: string) => {
 export type TxFormProps = {
   description: string;
   amount: number;
-  date: Date;
+  date: Date | Timestamp;
   bank: string;
   type: Type;
   category?: string[];
@@ -62,7 +63,7 @@ export const addTransaction = async (data: TxFormProps) => {
   db.transaction("rw", db.transactions, db.banks, () => {
     db.banks
       .get({ name: bank })
-      .then((updateBank) => {
+      .then((updateBank: Bank) => {
         if (!updateBank) {
           throw new Error("Bank not found");
         }
@@ -89,7 +90,7 @@ export const deleteTransaction = async (
   db.transaction("rw", db.transactions, db.banks, () => {
     db.banks
       .get({ name: bank })
-      .then((updateBank) => {
+      .then((updateBank: Bank) => {
         if (!updateBank) {
           throw new Error("Bank not found");
         }
@@ -118,7 +119,7 @@ export const updateTransaction = async (
   db.transaction("rw", db.banks, db.transactions, () => {
     db.banks
       .get({ name: tx.bank })
-      .then((updateBank) => {
+      .then((updateBank: Bank) => {
         if (!updateBank) {
           throw new Error("Bank not found");
         }

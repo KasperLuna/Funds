@@ -5,10 +5,13 @@ import {
   Group,
   Paper,
   SimpleGrid,
+  Skeleton,
   Text,
 } from "@mantine/core";
 import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons";
-import { useBanksQuery } from "../utils/query";
+// import { useBanksQuery } from "../../firebase/queries";
+import { useAuth } from "../config/AuthContext";
+import { useBanksQuery } from "../../firebase/queries";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -54,15 +57,22 @@ const useStyles = createStyles((theme) => ({
     border: `1px dashed ${theme.colors.gray[6]}`,
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
+    height: "100%",
   },
 
   banksText: {
     marginBottom: theme.spacing.md,
   },
+  skeleton: {
+    minHeight: 70,
+    width: "100%",
+  },
 }));
 
 export function BankStats() {
-  const banks = useBanksQuery();
+  const { user } = useAuth();
+  const { banks, loading } = useBanksQuery(user?.uid);
+
   const { classes } = useStyles();
   const stats = banks?.map((bank) => {
     const diff = 1;
@@ -73,7 +83,7 @@ export function BankStats() {
         withBorder
         p="md"
         radius="md"
-        key={bank.name}
+        key={bank.name || ""}
         className={classes.paper}
       >
         <Group position="apart" spacing={0}>
@@ -108,21 +118,25 @@ export function BankStats() {
       <Text weight={"bolder"} size="xl" className={classes.banksText}>
         Bank Balances
       </Text>
-      {Boolean(!banks?.length) && (
-        <Box className={classes.noBanksBox}>
-          <Text>No Banks! Select the dropdown and add a bank.</Text>
-        </Box>
-      )}
-      <SimpleGrid
-        cols={5}
-        breakpoints={[
-          { maxWidth: "lg", cols: 4 },
-          { maxWidth: "md", cols: 3 },
-          { maxWidth: "xs", cols: 2 },
-        ]}
-      >
-        {stats}
-      </SimpleGrid>
+
+      <Skeleton visible={loading} className={classes.skeleton}>
+        {Boolean(!banks?.length) ? (
+          <Box className={classes.noBanksBox}>
+            <Text>No Banks! Select the dropdown and add a bank.</Text>
+          </Box>
+        ) : (
+          <SimpleGrid
+            cols={5}
+            breakpoints={[
+              { maxWidth: "lg", cols: 4 },
+              { maxWidth: "md", cols: 3 },
+              { maxWidth: "xs", cols: 2 },
+            ]}
+          >
+            {stats}
+          </SimpleGrid>
+        )}
+      </Skeleton>
     </div>
   );
 }

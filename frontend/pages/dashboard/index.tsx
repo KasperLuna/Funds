@@ -2,7 +2,6 @@ import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { Container } from "@mantine/core";
-import { AuthForm } from "../components/form/AuthForm";
 
 const Home: NextPage = () => {
   return (
@@ -12,9 +11,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Container size={"xl"}>
-        <AuthForm />
-      </Container>
+      <Container size={"xl"}>Dashboard Coming soon!</Container>
     </>
   );
 };
