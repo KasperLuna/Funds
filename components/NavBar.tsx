@@ -34,7 +34,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   tab: {
-    paddingBlock: theme.spacing.xs * 2,
+    paddingBlock: theme.spacing.md * 1.25,
     fontWeight: "bold",
     marginBottom: theme.spacing.xs,
     justifyContent: "center",
@@ -88,7 +88,7 @@ export const NavBar = () => {
     <Navbar
       hiddenBreakpoint="sm"
       height="calc(100vh - 66px)"
-      width={{ sm: 200, lg: 200 }}
+      width={{ sm: 140, lg: 200 }}
       className={classes.navBar}
     >
       <Stack justify={"space-between"} className={classes.navStack}>
