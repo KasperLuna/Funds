@@ -120,7 +120,7 @@ export function BankStats() {
   });
   return (
     <div className={classes.root}>
-      <Title weight={"bolder"} size="head " className={classes.banksText}>
+      <Title weight={"bolder"} size="h2" className={classes.banksText}>
         Bank Balances
       </Title>
 
