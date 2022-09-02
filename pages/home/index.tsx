@@ -1,7 +1,7 @@
 import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { Container } from "@mantine/core";
+import { Container, Title } from "@mantine/core";
 
 const Home: NextPage = () => {
   return (
@@ -11,7 +11,9 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Container size={"xl"}>Dashboard Coming soon!</Container>
+      <Container size={"xl"}>
+        <Title>Dashboard Coming soon!</Title>
+      </Container>
     </>
   );
 };

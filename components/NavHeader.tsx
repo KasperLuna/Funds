@@ -7,8 +7,8 @@ import {
   Group,
   Text,
   Menu,
-  Tabs,
   useMantineColorScheme,
+  Box,
 } from "@mantine/core";
 import {
   IconLogout,
@@ -19,6 +19,7 @@ import {
 } from "@tabler/icons";
 import { useRouter } from "next/router";
 import { useAuth } from "./config/AuthContext";
+import { Logo } from "./Logo";
 
 const useStyles = createStyles((theme) => ({
   header: {
@@ -30,7 +31,7 @@ const useStyles = createStyles((theme) => ({
     background:
       theme.colorScheme === "dark"
         ? "rgba(0, 0, 0, 0.6)"
-        : "rgba(240, 240, 240, 0.8)",
+        : "rgba(220, 220, 220, 0.8)",
     backdropFilter: "blur(10px)",
 
     "@media screen and (display-mode: standalone)": {
@@ -40,10 +41,12 @@ const useStyles = createStyles((theme) => ({
   },
 
   logoText: {
-    paddingBottom: 10,
+    paddingBottom: 5,
     paddingLeft: 1,
-    [theme.fn.smallerThan("xs")]: {
-      display: "none",
+    maxWidth: 90,
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      paddingBottom: 10,
+      maxWidth: 80,
     },
   },
 
@@ -60,15 +63,16 @@ const useStyles = createStyles((theme) => ({
     },
 
     "@media screen and (display-mode: standalone)": {
-      marginBottom: 0,
+      marginBottom: 5,
+    },
+
+    [theme.fn.largerThan("sm")]: {
+      pointerEvents: "none",
     },
   },
 
   userName: {
     lineHeight: 1,
-    [theme.fn.smallerThan("xs")]: {
-      display: "none",
-    },
   },
 
   userActive: {
@@ -76,64 +80,12 @@ const useStyles = createStyles((theme) => ({
       theme.colorScheme === "dark" ? theme.colors.dark[8] : theme.white,
   },
 
-  tabs: {
-    alignSelf: "end",
-  },
-
-  tabsList: {
-    borderBottom: "0 !important",
-  },
-
-  tab: {
-    fontWeight: 500,
-    height: 35,
-    backgroundColor: "transparent",
-
-    "&:hover": {
-      backgroundColor:
-        theme.colorScheme === "dark"
-          ? theme.colors.dark[5]
-          : theme.colors.gray[1],
-    },
-
-    "&[data-active]": {
-      backgroundColor:
-        theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
-      borderColor:
-        theme.colorScheme === "dark"
-          ? theme.colors.dark[7]
-          : theme.colors.gray[2],
+  chevron: {
+    [theme.fn.largerThan("sm")]: {
+      display: "none",
     },
   },
 }));
-
-// user: {
-//   name: "Kasper",
-//   email: "mail@kasperluna.com",
-//   image: "https://kasperluna.com/face.webp",
-// },
-
-const tabs = [
-  {
-    name: "Dashboard",
-    href: "/dashboard",
-  },
-  {
-    name: "Banks",
-    href: "/banks",
-  },
-  {
-    name: "Crypto",
-    href: "/crypto",
-  },
-];
-
-// const user = {
-//   name: "Kasper",
-//   photoURL: "https://kasperluna.com/face.webp",
-//   displayName: "Kasper Luna",
-//   email: "dev@kasperluna.com",
-// };
 
 export default function NavHeader() {
   const { user, signOut } = useAuth();
@@ -142,36 +94,15 @@ export default function NavHeader() {
   const [userMenuOpened, setUserMenuOpened] = useState(false);
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
-  const items = tabs.map((tab) => (
-    <Tabs.Tab
-      value={tab.href}
-      key={tab.href}
-      disabled={tab.name == "Crypto" ? true : false}
-    >
-      {tab.name}
-    </Tabs.Tab>
-  ));
-
   return (
     <div className={classes.header}>
       <Container size={"xl"}>
-        <Group position="apart">
-          <Text className={classes.logoText}>Funds</Text>
+        <Group position={user ? "apart" : "center"}>
+          <Box className={classes.logoText}>
+            <Logo />
+          </Box>
           {user ? (
             <>
-              {" "}
-              <Tabs
-                defaultValue={router.pathname}
-                variant="outline"
-                onTabChange={(value) => router.push(`${value}`)}
-                classNames={{
-                  root: classes.tabs,
-                  tabsList: classes.tabsList,
-                  tab: classes.tab,
-                }}
-              >
-                <Tabs.List>{items}</Tabs.List>
-              </Tabs>
               <Menu
                 width={210}
                 position="bottom-end"
@@ -198,7 +129,12 @@ export default function NavHeader() {
                           user.email?.split("@")[0] ||
                           "Anonymous"}
                       </Text>
-                      <IconChevronDown size={12} stroke={1.5} />
+
+                      <IconChevronDown
+                        className={classes.chevron}
+                        size={12}
+                        stroke={1.5}
+                      />
                     </Group>
                   </UnstyledButton>
                 </Menu.Target>
