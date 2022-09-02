@@ -42,12 +42,13 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
   dateText: {
-    borderBottom: `1px solid ${
-      theme.colorScheme === "dark"
+    borderBottom: `1px solid ${theme.colorScheme === "dark"
         ? "rgba(255, 255, 255, 0.6)"
         : "rgba(0, 0, 0, 0.5)"
-    }`,
+      }`,
+    whiteSpace: "nowrap",
   },
+  bankName: { maxWidth: 75, lineHeight: 1.2, textAlign: "center" },
   description: {
     paddingBlock: theme.spacing.xs,
   },
@@ -62,6 +63,7 @@ const useStyles = createStyles((theme) => ({
     fontSize: 23,
     marginBottom: -10,
     flexShrink: 1,
+    whiteSpace: "nowrap",
   },
 }));
 
@@ -94,7 +96,8 @@ const TransactionList = () => {
           <SimpleGrid
             cols={4}
             breakpoints={[
-              { maxWidth: "md", cols: 3 },
+              { maxWidth: "lg", cols: 3 },
+              { maxWidth: "md", cols: 2 },
               { maxWidth: "sm", cols: 2 },
               { maxWidth: "xs", cols: 1 },
             ]}
@@ -195,7 +198,12 @@ const TransactionCard = ({
                 {dayjs(data.date.seconds * 1000).format("MMM D")}
               </Text>
 
-              <Text weight={"bolder"} size="md">
+              <Text
+                weight={"bolder"}
+                size="md"
+                lineClamp={2}
+                className={classes.bankName}
+              >
                 {data.bank}
               </Text>
             </Stack>
