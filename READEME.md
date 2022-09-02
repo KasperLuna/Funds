@@ -1,7 +1,7 @@
 # Funds (formerly fih·nan·chee)
  Finance Tracker WebApp
  
-Conveniently track your finances with Funds: follow transactions and manage your financial accounts from one location. 
+Conveniently track your finances with Funds: follow transactions and manage your financial accounts from one location across all your devices. Designed to work as a PWA.
 
 
  ### Requirements
@@ -12,8 +12,8 @@ Conveniently track your finances with Funds: follow transactions and manage your
 To begin development, you need to clone this repository and install dependencies.
 
 ```
-git clone https://github.com/KasperLuna/Finance.git
-cd Finance
+git clone https://github.com/KasperLuna/Funds.git
+cd Funds
 pnpm install
 ```
 
