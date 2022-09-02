@@ -46,7 +46,7 @@ export function AuthForm(props: PaperProps) {
   const callGoogleSignIn = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      router.push("/dashboard");
+      router.push("/home");
     } catch (error) {
       console.log(error);
     }
@@ -55,7 +55,7 @@ export function AuthForm(props: PaperProps) {
   const callAnonymousSignIn = async () => {
     try {
       await signInAnonymously(auth);
-      router.push("/dashboard");
+      router.push("/home");
     } catch (error) {
       console.log(error);
     }
@@ -83,7 +83,7 @@ export function AuthForm(props: PaperProps) {
             data.password
           );
           console.log(userCredential);
-          router.push("/dashboard");
+          router.push("/home");
         } else {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
@@ -91,7 +91,7 @@ export function AuthForm(props: PaperProps) {
             data.password
           );
           console.log(userCredential);
-          router.push("/dashboard");
+          router.push("/home");
         }
       }
     } catch (error) {

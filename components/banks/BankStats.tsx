@@ -2,11 +2,12 @@ import React from "react";
 import {
   Box,
   createStyles,
+  Grid,
   Group,
   Paper,
-  SimpleGrid,
   Skeleton,
   Text,
+  Title,
 } from "@mantine/core";
 import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons";
 // import { useBanksQuery } from "../../firebase/queries";
@@ -79,45 +80,49 @@ export function BankStats() {
     const DiffIcon = diff > 0 ? IconArrowUpRight : IconArrowDownRight;
 
     return (
-      <Paper
-        withBorder
-        p="md"
-        radius="md"
+      <Grid.Col
+        span={5}
+        xs={3}
+        sm={3}
+        md={4}
+        lg={2}
+        xl={2}
         key={bank.name || ""}
-        className={classes.paper}
       >
-        <Group position="apart" spacing={0}>
-          <Text size="xs" color="dimmed" className={classes.title}>
-            {bank.name}
-          </Text>
-          <Text
-            color={diff > 0 ? "teal" : "red"}
-            size="xs"
-            weight={500}
-            className={classes.diff}
-          >
-            <span>{diff}%</span>
-            <DiffIcon size={12} stroke={1.5} />
-          </Text>
-        </Group>
+        <Paper withBorder p="md" radius="md" className={classes.paper}>
+          <Group position="apart" spacing={0}>
+            <Text size="xs" color="dimmed" className={classes.title}>
+              {bank.name}
+            </Text>
+            <Text
+              color={diff > 0 ? "teal" : "red"}
+              size="xs"
+              weight={500}
+              className={classes.diff}
+            >
+              <span>{diff}%</span>
+              <DiffIcon size={12} stroke={1.5} />
+            </Text>
+          </Group>
 
-        <Group sx={{ justifyContent: "center" }} spacing="xs" mt={10}>
-          <Text className={classes.value}>
-            {bank.balance.toLocaleString(undefined, {
-              style: "currency",
-              currency: "PHP",
-              maximumFractionDigits: 1,
-            })}
-          </Text>
-        </Group>
-      </Paper>
+          <Group sx={{ justifyContent: "center" }} spacing="xs" mt={10}>
+            <Text className={classes.value}>
+              {bank.balance.toLocaleString(undefined, {
+                style: "currency",
+                currency: "PHP",
+                maximumFractionDigits: 1,
+              })}
+            </Text>
+          </Group>
+        </Paper>
+      </Grid.Col>
     );
   });
   return (
     <div className={classes.root}>
-      <Text weight={"bolder"} size="xl" className={classes.banksText}>
+      <Title weight={"bolder"} size="head " className={classes.banksText}>
         Bank Balances
-      </Text>
+      </Title>
 
       <Skeleton visible={loading} className={classes.skeleton}>
         {Boolean(!banks?.length) ? (
@@ -125,16 +130,7 @@ export function BankStats() {
             <Text>No Banks! Select the dropdown and add a bank.</Text>
           </Box>
         ) : (
-          <SimpleGrid
-            cols={5}
-            breakpoints={[
-              { maxWidth: "lg", cols: 4 },
-              { maxWidth: "md", cols: 3 },
-              { maxWidth: "xs", cols: 2 },
-            ]}
-          >
-            {stats}
-          </SimpleGrid>
+          <Grid grow>{stats}</Grid>
         )}
       </Skeleton>
     </div>

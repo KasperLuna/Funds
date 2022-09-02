@@ -96,6 +96,7 @@ export const createCategory = async (data: Category & { userId: string }) => {
 export const createTransaction = async (
   data: AppTxTypes & { userId: string }
 ) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userId, amount, category, ...txData } = data;
   const tx = {
     amount: txPosOrNeg(amount, data.type),

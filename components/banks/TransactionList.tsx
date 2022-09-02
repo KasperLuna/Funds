@@ -27,7 +27,7 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
   card: {
-    border: `1px solid ${theme.colors.gray[7]}`,
+    // border: `1px solid ${theme.colors.gray[7]}`,
     padding: theme.spacing.xs,
     justifyContent: "space-between",
     alignItems: "center",
@@ -70,10 +70,16 @@ const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 const TransactionList = () => {
   const { user } = useAuth();
   const { transactions } = useTransactionsQuery(user?.uid);
-  console.log(transactions);
   const { categories } = useCategoriesQuery(user?.uid);
   const { classes } = useStyles();
   const { query } = useRouter();
+
+  const sortedTransactions = transactions.sort((a, b) => {
+    return dayjs(a.date?.seconds * 1000).isBefore(dayjs(b.date?.seconds * 1000))
+      ? 1
+      : -1;
+  });
+
   return (
     <>
       <Text
@@ -93,7 +99,7 @@ const TransactionList = () => {
               { maxWidth: "xs", cols: 1 },
             ]}
           >
-            {transactions?.map((transaction) => {
+            {sortedTransactions?.map((transaction) => {
               return (
                 <div key={transaction.id}>
                   <TransactionCard data={transaction} categories={categories} />
@@ -123,7 +129,7 @@ const TransactionList = () => {
                   </td>
                 </tr>
               )}
-              {transactions?.map((data) => {
+              {sortedTransactions?.map((data) => {
                 return (
                   <tr key={data.id}>
                     <td style={{ whiteSpace: "nowrap" }}>
@@ -181,7 +187,7 @@ const TransactionCard = ({
   const { classes } = useStyles();
   return (
     <>
-      <Paper className={classes.card}>
+      <Paper withBorder className={classes.card}>
         <Stack spacing={0} className={classes.stack} justify="space-between">
           <Group position="apart" align="flex-start" noWrap>
             <Stack spacing={0} align="center">
