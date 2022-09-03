@@ -12,7 +12,13 @@ import {
   where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { AppTxTypes, Bank, Category, FirebaseTxTypes } from "../utils/db";
+import {
+  AppTxTypes,
+  Bank,
+  Category,
+  FirebaseTxTypes,
+  Transfer,
+} from "../utils/db";
 import { txPosOrNeg } from "../utils/helpers";
 import { db } from "./initFirebase";
 
@@ -123,7 +129,6 @@ export const createTransaction = async (
 export const updateTransaction = async (
   data: AppTxTypes & { OrigTx: FirebaseTxTypes } & { userId: string }
 ) => {
-  console.log(data);
   const { userId, OrigTx, ...txData } = data;
 
   const newTx = {
@@ -133,14 +138,17 @@ export const updateTransaction = async (
   };
   try {
     const bankRef = collection(db, "users", userId, "banks");
-    const bankQuery = query(bankRef, where("name", "==", data.bank));
+    const bankQuery = query(bankRef, where("name", "==", OrigTx.bank));
     const bankQuerySnap = await getDocs(bankQuery);
     const returnBank = bankQuerySnap.docs[0].data();
     await updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
-      balance:
-        returnBank.balance -
-        OrigTx.amount +
-        txPosOrNeg(txData.amount, txData.type),
+      balance: returnBank.balance - OrigTx.amount,
+    } as Bank);
+    const bankQuery2 = query(bankRef, where("name", "==", data.bank));
+    const bankQuerySnap2 = await getDocs(bankQuery2);
+    const returnBank2 = bankQuerySnap2.docs[0].data();
+    await updateDoc(doc(db, "users", userId, "banks", returnBank2.name), {
+      balance: returnBank2.balance + txPosOrNeg(data.amount, data.type),
     } as Bank);
     await updateDoc(
       doc(db, "users", userId, "transactions", OrigTx.id || ""),
@@ -176,4 +184,36 @@ export const deleteTransaction = async ({
   } catch (e) {
     console.log("Transaction failed: ", e);
   }
+};
+
+export const createTransfer = async (data: Transfer & { userId: string }) => {
+  const {
+    date,
+    description,
+    category,
+    originBank,
+    originAmount,
+    destinationBank,
+    destinationAmount,
+    userId,
+  } = data;
+  await createTransaction({
+    amount: originAmount,
+    bank: originBank,
+    date,
+    description,
+    type: "withdrawal",
+    category,
+    userId,
+  }).then(() => {
+    createTransaction({
+      amount: destinationAmount ? destinationAmount : originAmount,
+      bank: destinationBank,
+      date,
+      description,
+      type: "deposit",
+      category,
+      userId,
+    });
+  });
 };
