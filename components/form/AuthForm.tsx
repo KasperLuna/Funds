@@ -12,7 +12,6 @@ import {
   Checkbox,
   Anchor,
   Stack,
-  Overlay,
   Box,
 } from "@mantine/core";
 import { useForm } from "react-hook-form";
@@ -106,7 +105,6 @@ export function AuthForm(props: PaperProps) {
   return (
     <Box sx={{ height: "100%", position: "relative" }}>
       <Paper radius="md" p="xl" withBorder {...props}>
-        {user && <Overlay opacity={0.1} color="#000" blur={2} />}
         <Text size="lg" weight={500}>
           Welcome to Funds, {type} with
         </Text>
