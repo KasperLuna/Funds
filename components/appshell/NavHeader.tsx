@@ -18,6 +18,7 @@ import {
   IconSun,
 } from "@tabler/icons";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useAuth } from "../../components/config/AuthContext";
 import { Logo } from "./Logo";
 
@@ -35,16 +36,16 @@ const useStyles = createStyles((theme) => ({
     backdropFilter: "blur(10px)",
 
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
-    {
-      position: "fixed",
-      paddingTop: theme.spacing.lg * 3,
-    },
+      {
+        position: "fixed",
+        paddingTop: theme.spacing.lg * 3,
+      },
 
     "@media screen and (display-mode: standalone) and (orientation: landscape)":
-    {
-      position: "fixed",
-      paddingTop: theme.spacing.lg * 1.05,
-    },
+      {
+        position: "fixed",
+        paddingTop: theme.spacing.lg * 1.05,
+      },
   },
 
   logoText: {
@@ -105,9 +106,11 @@ export default function NavHeader() {
     <div className={classes.header}>
       <Container size={"xl"}>
         <Group position={user ? "apart" : "center"}>
-          <Box className={classes.logoText}>
-            <Logo />
-          </Box>
+          <Link href="/" passHref>
+            <Box component="a" className={classes.logoText}>
+              <Logo />
+            </Box>
+          </Link>
           {user ? (
             <>
               <Menu
