@@ -14,6 +14,7 @@ const Home: NextPage = () => {
 
       <Container size={"xl"}>
         <AuthForm />
+        <a href="/home">Home</a>
       </Container>
     </>
   );

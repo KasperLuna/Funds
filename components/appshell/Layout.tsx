@@ -6,6 +6,7 @@ import { IconBuildingBank, IconCoinBitcoin, IconHome } from "@tabler/icons";
 import { NavFooter } from "./NavFooter";
 import { NavBar } from "./NavBar";
 import { useAuth } from "../../components/config/AuthContext";
+import router from "next/router";
 
 export const tabs = [
   {
@@ -47,6 +48,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { classes } = useStyles();
 
+  const isInApp = router.pathname !== "/";
+
   return (
     <>
       <NextNProgress
@@ -60,8 +63,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         className={classes.appShell}
         navbarOffsetBreakpoint="sm"
         asideOffsetBreakpoint="sm"
-        navbar={user ? <NavBar /> : <></>}
-        footer={user ? <NavFooter /> : <></>}
+        navbar={user && isInApp ? <NavBar /> : <></>}
+        footer={user && isInApp ? <NavFooter /> : <></>}
         header={<NavHeader />}
       >
         <Box id="loading-box" className={classes.loadingBox}>
