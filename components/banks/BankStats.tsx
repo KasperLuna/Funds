@@ -62,7 +62,7 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
 
-  banksText: {
+  headerGroup: {
     marginBottom: theme.spacing.md,
   },
   skeleton: {
@@ -125,8 +125,8 @@ export function BankStats() {
   });
   return (
     <div className={classes.root}>
-      <Group position="apart">
-        <Title weight={"bolder"} size="h2" className={classes.banksText}>
+      <Group position="apart" align={"center"} className={classes.headerGroup}>
+        <Title weight={"bolder"} size="h2">
           Bank Balances
         </Title>
         <Badge>

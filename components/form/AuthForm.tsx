@@ -33,7 +33,11 @@ import { IconAt, IconBrandGoogle, IconLock, IconUser } from "@tabler/icons";
 import { useAuth } from "../config/AuthContext";
 import Link from "next/link";
 import PasswordComponent from "./PasswordComponent";
-import { AuthErrorNotifHandler, showSuccessNotif } from "../../utils/notifs";
+import {
+  AuthErrorNotifHandler,
+  showErrorNotif,
+  showSuccessNotif,
+} from "../../utils/notifs";
 
 export type AuthFormProps = {
   email?: string;
@@ -78,6 +82,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
       await signInWithPopup(auth, googleProvider);
       router.push("/home");
     } catch (error) {
+      showErrorNotif("Google sign in failed");
       console.log(error);
     }
   };
@@ -87,6 +92,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
       await signInAnonymously(auth);
       router.push("/home");
     } catch (error) {
+      showErrorNotif("Anonymous sign in failed");
       console.log(error);
     }
   };

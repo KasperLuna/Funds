@@ -241,13 +241,13 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
               <AmountInput
                 control={control}
                 name="originAmount"
-                label="Origin Adjustment: "
+                label="Origin Deduction: "
                 sx={{ width: "47%" }}
               />
               <AmountInput
                 control={control}
                 name="destinationAmount"
-                label="Destination Adjustment: "
+                label="Destination Addition: "
                 sx={{ width: "47%" }}
               />
             </Group>
