@@ -34,9 +34,16 @@ const useStyles = createStyles((theme) => ({
         : "rgba(220, 220, 220, 0.8)",
     backdropFilter: "blur(10px)",
 
-    "@media screen and (display-mode: standalone)": {
+    "@media screen and (display-mode: standalone) and (orientation: portrait)":
+    {
       position: "fixed",
       paddingTop: theme.spacing.lg * 3,
+    },
+
+    "@media screen and (display-mode: standalone) and (orientation: landscape)":
+    {
+      position: "fixed",
+      paddingTop: theme.spacing.lg * 1.05,
     },
   },
 

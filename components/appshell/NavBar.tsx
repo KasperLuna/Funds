@@ -14,6 +14,7 @@ import { tabs } from "./Layout";
 import { IconLogout, IconSettings } from "@tabler/icons";
 import { ColorToggle } from "./ColorToggle";
 import { useAuth } from "../../components/config/AuthContext";
+import { useViewportSize } from "@mantine/hooks";
 
 const useStyles = createStyles((theme) => ({
   navBar: {
@@ -23,6 +24,8 @@ const useStyles = createStyles((theme) => ({
       theme.colorScheme === "dark"
         ? theme.colors.dark[6]
         : theme.colors.gray[2],
+    overflowY: "auto",
+    overflowX: "hidden",
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
       display: "none",
     },
@@ -36,7 +39,7 @@ const useStyles = createStyles((theme) => ({
   tab: {
     paddingBlock: theme.spacing.md * 1.25,
     fontWeight: "bold",
-    marginBottom: theme.spacing.xs,
+    marginBottom: 5,
     justifyContent: "center",
     borderTopLeftRadius: theme.radius.lg,
     borderBottomLeftRadius: theme.radius.lg,
@@ -65,6 +68,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export const NavBar = () => {
+  const { height } = useViewportSize();
   const [activeTab, setActiveTab] = useState<TabsValue>(router.pathname || "/");
   useEffect(() => {
     setActiveTab(router.pathname);
@@ -87,7 +91,7 @@ export const NavBar = () => {
   return (
     <Navbar
       hiddenBreakpoint="sm"
-      height="calc(100vh - 66px)"
+      height={`calc(${height}px - 66px)`}
       width={{ sm: 140, lg: 200 }}
       className={classes.navBar}
     >
