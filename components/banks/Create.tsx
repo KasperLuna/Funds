@@ -26,16 +26,20 @@ import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";
 import { TypeInput } from "../form/TypeInput";
 import { CategoryInput } from "../form/CategoryInput";
-import { createTransaction } from "../../firebase/queries";
+import {
+  createTransaction,
+  createTransfer,
+  useBanksQuery,
+} from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 
 export default function Create() {
+  const { user } = useAuth();
   const theme = useMantineTheme();
   const [tabValue, setTabValue] = useState<string | null>("Transaction");
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  // const banksLength = useBanksQuery()?.length;
-  const banksLength = 0;
+  const banksLength = useBanksQuery(user?.uid || "")?.banks.length;
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
 
   return (
@@ -187,23 +191,28 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
 };
 
 const TransferForm = ({ setIsOpen }: CreateProps) => {
+  const { user } = useAuth();
   const {
     control,
     register,
     setValue,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
   } = useForm<Transfer>({
     defaultValues: { destinationAmount: 0, originAmount: 0 },
   });
   const [isSameAmount, setIsSameAmount] = useState<boolean>(false);
   const onSubmit = async (data: Transfer) => {
-    console.log(data);
-    // transferQuery(data).then(() => {
-    //   setIsOpen(false);
-    //   reset();
-    // });
+    const transferProps = {
+      userId: user?.uid || "",
+      ...data,
+    };
+    createTransfer(transferProps).then(() => {
+      setIsOpen(false);
+      reset();
+    });
   };
 
   const originBank = watch("originBank");
