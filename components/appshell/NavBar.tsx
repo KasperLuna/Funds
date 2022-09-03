@@ -13,7 +13,7 @@ import router from "next/router";
 import { tabs } from "./Layout";
 import { IconLogout, IconSettings } from "@tabler/icons";
 import { ColorToggle } from "./ColorToggle";
-import { useAuth } from "./config/AuthContext";
+import { useAuth } from "../../components/config/AuthContext";
 
 const useStyles = createStyles((theme) => ({
   navBar: {

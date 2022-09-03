@@ -18,7 +18,7 @@ import {
   IconSun,
 } from "@tabler/icons";
 import { useRouter } from "next/router";
-import { useAuth } from "./config/AuthContext";
+import { useAuth } from "../../components/config/AuthContext";
 import { Logo } from "./Logo";
 
 const useStyles = createStyles((theme) => ({

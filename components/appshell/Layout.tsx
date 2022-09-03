@@ -5,7 +5,7 @@ import { AppShell, Container, Box, createStyles } from "@mantine/core";
 import { IconBuildingBank, IconCoinBitcoin, IconHome } from "@tabler/icons";
 import { NavFooter } from "./NavFooter";
 import { NavBar } from "./NavBar";
-import { useAuth } from "./config/AuthContext";
+import { useAuth } from "../../components/config/AuthContext";
 
 export const tabs = [
   {

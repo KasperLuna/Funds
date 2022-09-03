@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import { NotificationsProvider } from "@mantine/notifications";
 import { useLocalStorage } from "@mantine/hooks";
-import Layout from "../components/Layout";
+import Layout from "../components/appshell/Layout";
 import { AuthProvider } from "../components/config/AuthContext";
 import ProtectedRoute from "../components/config/ProtectedRoute";
 import { useRouter } from "next/router";
