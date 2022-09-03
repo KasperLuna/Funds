@@ -28,9 +28,14 @@ export const tabs = [
 
 const useStyles = createStyles((theme) => ({
   loadingBox: {
-    "@media screen and (display-mode: standalone)": {
-      marginTop: theme.spacing.xl * 4.5,
-    },
+    "@media screen and (display-mode: standalone) and (orientation: portrait)":
+      {
+        marginTop: theme.spacing.xl * 4.5,
+      },
+    "@media screen and (display-mode: standalone) and (orientation: landscape)":
+      {
+        marginTop: theme.spacing.xl * 3,
+      },
   },
   container: {
     paddingTop: theme.spacing.sm,
