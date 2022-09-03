@@ -134,7 +134,6 @@ const TransactionList = () => {
                     <td style={{ whiteSpace: "nowrap" }}>
                       {dayjs(data.date?.seconds * 1000).format("MMM D")}
                     </td>
-                    <td>{data.bank}</td>
                     <td>
                       <Text color={data.amount > 0 ? "green" : "red"}>
                         {data.amount.toLocaleString(undefined, {
@@ -144,6 +143,7 @@ const TransactionList = () => {
                         })}
                       </Text>
                     </td>
+                    <td>{data.bank}</td>
                     <td>{data.description}</td>
                     <td style={{ alignItems: "start" }}>
                       <Box className={classes.tableCategory}>
