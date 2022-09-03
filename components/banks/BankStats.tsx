@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Badge,
   Box,
   createStyles,
   Grid,
@@ -74,6 +75,10 @@ export function BankStats() {
   const { user } = useAuth();
   const { banks, loading } = useBanksQuery(user?.uid);
 
+  const totalAmount = banks.reduce((acc, bank) => {
+    return acc + bank.balance;
+  }, 0);
+
   const { classes } = useStyles();
   const stats = banks?.map((bank) => {
     const diff = 1;
@@ -120,10 +125,18 @@ export function BankStats() {
   });
   return (
     <div className={classes.root}>
-      <Title weight={"bolder"} size="h2" className={classes.banksText}>
-        Bank Balances
-      </Title>
-
+      <Group position="apart">
+        <Title weight={"bolder"} size="h2" className={classes.banksText}>
+          Bank Balances
+        </Title>
+        <Badge>
+          {`Total: ${totalAmount.toLocaleString(undefined, {
+            style: "currency",
+            currency: "PHP",
+            maximumFractionDigits: 1,
+          })}`}
+        </Badge>
+      </Group>
       <Skeleton visible={loading} className={classes.skeleton}>
         {Boolean(!banks?.length) ? (
           <Box className={classes.noBanksBox}>
