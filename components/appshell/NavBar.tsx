@@ -18,7 +18,6 @@ import { useViewportSize } from "@mantine/hooks";
 
 const useStyles = createStyles((theme) => ({
   navBar: {
-    paddingTop: theme.spacing.md,
     borderRight: 0,
     backgroundColor:
       theme.colorScheme === "dark"
