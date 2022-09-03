@@ -49,11 +49,12 @@ const useStyles = createStyles((theme) => ({
     }`,
     whiteSpace: "nowrap",
   },
-  bankName: { maxWidth: 75, lineHeight: 1.2, textAlign: "center" },
+  bankName: { paddingTop: 5, maxWidth: 55, lineHeight: 1, textAlign: "start" },
   description: {
     paddingBlock: theme.spacing.xs,
   },
   category: {
+    marginTop: 5,
     justifySelf: "end",
   },
   tableCategory: {
@@ -62,7 +63,7 @@ const useStyles = createStyles((theme) => ({
   },
   cardPesoValue: {
     fontSize: 23,
-    marginBottom: -10,
+    lineHeight: 1,
     flexShrink: 1,
     whiteSpace: "nowrap",
   },
@@ -76,12 +77,6 @@ const TransactionList = () => {
   const { categories } = useCategoriesQuery(user?.uid);
   const { classes } = useStyles();
   const { query } = useRouter();
-
-  const sortedTransactions = transactions.sort((a, b) => {
-    return dayjs(a.date?.seconds * 1000).isBefore(dayjs(b.date?.seconds * 1000))
-      ? 1
-      : -1;
-  });
 
   return (
     <>
@@ -103,7 +98,7 @@ const TransactionList = () => {
               { maxWidth: "xs", cols: 1 },
             ]}
           >
-            {sortedTransactions?.map((transaction) => {
+            {transactions?.map((transaction) => {
               return (
                 <div key={transaction.id}>
                   <TransactionCard data={transaction} categories={categories} />
@@ -133,7 +128,7 @@ const TransactionList = () => {
                   </td>
                 </tr>
               )}
-              {sortedTransactions?.map((data) => {
+              {transactions?.map((data) => {
                 return (
                   <tr key={data.id}>
                     <td style={{ whiteSpace: "nowrap" }}>
@@ -173,7 +168,6 @@ const TransactionList = () => {
                 );
               })}
             </tbody>
-            <caption>Seven (7) latest recorded transactions.</caption>
           </Table>
         )}
       </Box>
@@ -195,13 +189,13 @@ const TransactionCard = ({
         <Stack spacing={0} className={classes.stack} justify="space-between">
           <Group position="apart" align="flex-start" noWrap>
             <Stack spacing={0} align="center">
-              <Text weight={"bold"} size="xs" className={classes.dateText}>
+              <Text weight={"bolder"} size="md" className={classes.dateText}>
                 {dayjs(data.date.seconds * 1000).format("MMM D")}
               </Text>
 
               <Text
-                weight={"bolder"}
-                size="md"
+                weight={"normal"}
+                size="xs"
                 lineClamp={2}
                 className={classes.bankName}
               >
@@ -218,16 +212,14 @@ const TransactionCard = ({
                 {data.amount.toLocaleString(undefined, {
                   style: "currency",
                   currency: "PHP",
-                  maximumFractionDigits: 1,
+                  maximumFractionDigits: 0,
                 })}
               </Text>
-              <Text size={"xs"}>{data.type}</Text>
+              <Text size={"xs"}> {data.description}</Text>
             </Stack>
             <EditTransactionForm {...data} />
           </Group>
-          <Text size="sm" className={classes.description}>
-            {data.description}
-          </Text>
+
           <Box className={classes.category}>
             <MultiSelect
               data={

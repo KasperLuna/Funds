@@ -5,6 +5,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   setDoc,
   updateDoc,
@@ -60,9 +61,10 @@ export const useTransactionsQuery = (id?: string) => {
   const [loading, setLoading] = useState(true);
 
   const txRef = collection(db, "users", id || "", "transactions");
+  const q = query(txRef, orderBy("date", "desc"));
   useEffect(() => {
     const getTxns = async () => {
-      const unsubscribe = onSnapshot(txRef, (snap) => {
+      const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as FirebaseTxTypes);
         setTransactions(data);
       });

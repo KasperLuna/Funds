@@ -67,6 +67,8 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
       <ActionIcon
         variant={theme.colorScheme === "dark" ? "subtle" : "light"}
         onClick={() => setOpened((o) => !o)}
+        aria-label="Edit transaction"
+        role="button"
       >
         <IconEdit size={"20px"} />
       </ActionIcon>
