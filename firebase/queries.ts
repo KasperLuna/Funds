@@ -20,6 +20,7 @@ import {
   Transfer,
 } from "../utils/db";
 import { txPosOrNeg } from "../utils/helpers";
+import { showErrorNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
 export const useBanksQuery = (id?: string) => {
@@ -88,7 +89,8 @@ export const createBank = async (data: Bank & { userId: string }) => {
   try {
     await setDoc(doc(db, "users", userId, "banks", bank.name), bank);
   } catch (e) {
-    console.error("Error adding document: ", e);
+    console.error("Error adding bank: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
 
@@ -98,6 +100,7 @@ export const createCategory = async (data: Category & { userId: string }) => {
     addDoc(collection(db, "users", userId, "categories"), category);
   } catch (e) {
     console.error("Error adding document: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
 
@@ -123,6 +126,7 @@ export const createTransaction = async (
     await setDoc(docRef, { ...tx, id: docRef.id });
   } catch (e) {
     console.log("Transaction failed: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
 
@@ -156,6 +160,7 @@ export const updateTransaction = async (
     );
   } catch (e) {
     console.log("Transaction failed: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
 
@@ -183,6 +188,7 @@ export const deleteTransaction = async ({
     );
   } catch (e) {
     console.log("Transaction failed: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
 

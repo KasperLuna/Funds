@@ -16,7 +16,7 @@ import { IconTrash, IconEdit } from "@tabler/icons";
 import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";
-import { showErrorNotif } from "../../utils/notifs";
+import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { TypeInput } from "../form/TypeInput";
 import { CategoryInput } from "../form/CategoryInput";
 import { deleteTransaction, updateTransaction } from "../../firebase/queries";
@@ -24,6 +24,7 @@ import { AppTxTypes, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 
 export function EditTransactionForm(props: FirebaseTxTypes) {
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const theme = useMantineTheme();
@@ -49,12 +50,18 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
   });
 
   const onSubmit = async (data: AppTxTypes) => {
+    setIsSubmitting(true);
     const updateVals = {
       userId: user?.uid || "",
       OrigTx: { ...props },
       ...data,
     };
-    updateTransaction(updateVals).then(() => setOpened(false));
+    updateTransaction(updateVals).then(() => {
+      setOpened(false);
+      setIsSubmitting(false);
+      showSuccessNotif("Transaction updated successfully");
+      reset();
+    });
   };
 
   const onClose = () => {
@@ -128,7 +135,7 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
                 closeModal={onClose}
                 bank={props.bank}
               />
-              <Button type="submit" size="sm">
+              <Button loading={isSubmitting} type="submit" size="sm">
                 Save
               </Button>
             </Group>
@@ -166,6 +173,7 @@ export function DeleteTransactionPopover({
     };
     deleteTransaction(deleteVals).then(() => {
       closeModal();
+      showSuccessNotif("Transaction deleted successfully");
       setOpened(false);
     });
   };
