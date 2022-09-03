@@ -20,6 +20,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   tab: {
+    paddingInline: theme.spacing.md * 1.25,
     height: 45,
     fontWeight: "bold",
     justifyContent: "center",
@@ -44,7 +45,7 @@ const useStyles = createStyles((theme) => ({
     backgroundColor:
       theme.colorScheme === "dark"
         ? "rgba(0, 0, 0, 0.55)"
-        : "rgba(240, 240, 240, 0.8)",
+        : "rgba(200, 200, 200, 0.6)",
     backdropFilter: "blur(10px)",
     paddingInline: theme.spacing.md,
 
