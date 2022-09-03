@@ -1,18 +1,16 @@
-import React from "react";
-import { useToggle, upperFirst } from "@mantine/hooks";
+import React, { useState } from "react";
+import { upperFirst } from "@mantine/hooks";
 import {
   TextInput,
   PasswordInput,
-  Text,
-  Paper,
   Group,
-  PaperProps,
   Button,
   Divider,
   Checkbox,
   Anchor,
   Stack,
-  Box,
+  Drawer,
+  createStyles,
 } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import {
@@ -24,8 +22,9 @@ import {
   signInAnonymously,
 } from "firebase/auth";
 import router from "next/router";
-import { IconBrandGoogle, IconUser } from "@tabler/icons";
+import { IconAt, IconBrandGoogle, IconLock, IconUser } from "@tabler/icons";
 import { useAuth } from "../config/AuthContext";
+import Link from "next/link";
 
 type AuthFormProps = {
   email?: string;
@@ -34,10 +33,22 @@ type AuthFormProps = {
   terms?: boolean;
 };
 
-export function AuthForm(props: PaperProps) {
+const useStyles = createStyles((theme) => ({
+  drawer: {
+    overflowY: "auto",
+    "@media screen and (display-mode: standalone) and (orientation: portrait)":
+      {
+        paddingTop: theme.spacing.lg * 4,
+      },
+  },
+}));
+
+export function AuthForm({ inHeader }: { inHeader?: boolean }) {
+  const { classes } = useStyles();
   const auth = getAuth();
   const { user } = useAuth();
-  const [type, toggle] = useToggle(["login", "register"]);
+  const [type, setType] = useState<"login" | "sign up">("login");
+  const [opened, setOpened] = useState<boolean>(false);
   const googleProvider = new GoogleAuthProvider();
   googleProvider.addScope("profile");
   googleProvider.addScope("email");
@@ -103,11 +114,51 @@ export function AuthForm(props: PaperProps) {
   };
 
   return (
-    <Box sx={{ height: "100%", position: "relative" }}>
-      <Paper radius="md" p="xl" withBorder {...props}>
-        <Text size="lg" weight={500}>
-          Welcome to Funds, {type} with
-        </Text>
+    <>
+      {user ? (
+        <>
+          <Link href="/home" passHref>
+            <Button radius={"lg"} component="a">
+              Return to Dashboard
+            </Button>
+          </Link>
+        </>
+      ) : (
+        <Group spacing={7}>
+          {!inHeader && (
+            <Button
+              radius="lg"
+              variant="outline"
+              onClick={() => {
+                setType("sign up");
+                setOpened(true);
+              }}
+            >
+              Sign Up
+            </Button>
+          )}
+          <Button
+            radius="lg"
+            onClick={() => {
+              setType("login");
+              setOpened(true);
+            }}
+            size={inHeader ? "xs" : "sm"}
+          >
+            Log In
+          </Button>
+        </Group>
+      )}
+
+      <Drawer
+        opened={opened}
+        onClose={() => setOpened(false)}
+        title={` Welcome to Funds, ${type} with`}
+        padding="xl"
+        size="xl"
+        position="right"
+        className={classes.drawer}
+      >
         <Group grow mb="md" mt="md">
           <Button
             onClick={() => callGoogleSignIn()}
@@ -137,6 +188,7 @@ export function AuthForm(props: PaperProps) {
               required
               label="Email"
               placeholder="hello@mantine.dev"
+              icon={<IconAt size={15} />}
               {...register("email", {
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -145,12 +197,13 @@ export function AuthForm(props: PaperProps) {
               })}
               error={errors.email && errors.email.message}
             />
-            {type === "register" ? (
+            {type === "sign up" ? (
               <>
                 <PasswordInput
                   required
                   label="Password"
                   placeholder="Your password"
+                  icon={<IconLock size={15} />}
                   {...register("password", {
                     required: "required",
                     minLength: {
@@ -164,7 +217,8 @@ export function AuthForm(props: PaperProps) {
                 <PasswordInput
                   required
                   label="Repeat Password"
-                  placeholder="Your password"
+                  placeholder="Your password again"
+                  icon={<IconLock size={15} />}
                   {...register("repeatPassword", {
                     required: "required",
                     minLength: {
@@ -187,6 +241,7 @@ export function AuthForm(props: PaperProps) {
                   required
                   label="Password"
                   placeholder="Your password"
+                  icon={<IconLock size={15} />}
                   {...register("password", {
                     required: "required",
                     minLength: {
@@ -205,17 +260,21 @@ export function AuthForm(props: PaperProps) {
               component="button"
               type="button"
               color="dimmed"
-              onClick={() => toggle()}
+              onClick={() =>
+                setType((prevType) =>
+                  prevType === "login" ? "sign up" : "login"
+                )
+              }
               size="xs"
             >
-              {type === "register"
+              {type === "sign up"
                 ? "Already have an account? Login"
-                : "Don't have an account? Register"}
+                : "Don't have an account? Sign up"}
             </Anchor>
             <Button type="submit">{upperFirst(type)}</Button>
           </Group>
         </form>
-      </Paper>
-    </Box>
+      </Drawer>
+    </>
   );
 }
