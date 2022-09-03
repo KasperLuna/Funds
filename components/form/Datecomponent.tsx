@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Group, Menu, ActionIcon } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";

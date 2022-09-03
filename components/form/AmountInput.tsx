@@ -4,6 +4,7 @@ import { Control, Controller } from "react-hook-form";
 import { AppTxTypes, Transfer } from "../../utils/db";
 
 type AmountInputProps = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<AppTxTypes | Transfer | any>;
   name?: string;
   label?: string;
