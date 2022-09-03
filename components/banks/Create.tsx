@@ -194,7 +194,6 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
     handleSubmit,
     watch,
     formState: { errors },
-    reset,
   } = useForm<Transfer>({
     defaultValues: { destinationAmount: 0, originAmount: 0 },
   });
