@@ -32,6 +32,7 @@ import {
   useBanksQuery,
 } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
+import { showSuccessNotif } from "../../utils/notifs";
 
 export default function Create() {
   const { user } = useAuth();
@@ -126,6 +127,7 @@ type CreateProps = {
 };
 
 const TransactionForm = ({ setIsOpen }: CreateProps) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { user } = useAuth();
   const {
     control,
@@ -136,8 +138,11 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     reset,
   } = useForm<AppTxTypes>();
   const onSubmit = async (data: AppTxTypes) => {
+    setIsLoading(true);
     createTransaction({ userId: user?.uid || "", ...data }).then(() => {
       setIsOpen(false);
+      setIsLoading(false);
+      showSuccessNotif("Transaction created successfully");
       reset();
     });
   };
@@ -184,13 +189,16 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
           )}
         />
         <Space />
-        <Button type="submit">Submit</Button>
+        <Button loading={isLoading} type="submit">
+          Submit
+        </Button>
       </Stack>
     </form>
   );
 };
 
 const TransferForm = ({ setIsOpen }: CreateProps) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const { user } = useAuth();
   const {
     control,
@@ -205,12 +213,15 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
   });
   const [isSameAmount, setIsSameAmount] = useState<boolean>(false);
   const onSubmit = async (data: Transfer) => {
+    setIsLoading(true);
     const transferProps = {
       userId: user?.uid || "",
       ...data,
     };
     createTransfer(transferProps).then(() => {
       setIsOpen(false);
+      setIsLoading(false);
+      showSuccessNotif("Transfer created successfully");
       reset();
     });
   };
@@ -311,7 +322,9 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
           )}
         />
         <Space />
-        <Button type="submit">Submit</Button>
+        <Button loading={isLoading} type="submit">
+          Submit
+        </Button>
       </Stack>
     </form>
   );
