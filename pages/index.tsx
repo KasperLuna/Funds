@@ -4,6 +4,7 @@ import Head from "next/head";
 import { Container, createStyles } from "@mantine/core";
 import { HeroSection } from "../components/frontpage/HeroSection";
 import ScrollToTop from "../components/frontpage/ScrollToTop";
+import FeatureSection from "../components/frontpage/FeatureSection";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -27,6 +28,7 @@ const Home: NextPage = () => {
       <Container size={"lg"} className={classes.root}>
         <ScrollToTop />
         <HeroSection />
+        <FeatureSection />
       </Container>
     </>
   );
