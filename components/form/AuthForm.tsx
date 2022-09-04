@@ -49,9 +49,9 @@ const useStyles = createStyles((theme) => ({
   drawer: {
     overflowY: "auto",
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
-    {
-      paddingTop: theme.spacing.lg * 4,
-    },
+      {
+        paddingTop: theme.spacing.lg * 4,
+      },
   },
   title: {
     fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
@@ -275,7 +275,12 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
                   label={
                     <>
                       I agree to the{" "}
-                      <a href={"/agreement"} target="_blank" rel="noreferrer">
+                      <a
+                        href={"/agreement"}
+                        target="_blank"
+                        style={{ color: "teal" }}
+                        rel="noreferrer"
+                      >
                         {"Terms and Conditions"}
                       </a>
                     </>
