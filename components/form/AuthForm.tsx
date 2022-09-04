@@ -202,6 +202,8 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
         <>
           <Link href="/home" passHref>
             <Button
+              variant="filled"
+              color="orange"
               className={classes.retToDashButton}
               radius={"xl"}
               component="a"
@@ -217,6 +219,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
               radius="xl"
               className={classes.mainButtons}
               variant="outline"
+              color={"cyan"}
               onClick={() => {
                 setType("Sign up");
                 setOpened(true);
@@ -227,6 +230,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
           )}
           <Button
             radius="xl"
+            color={"teal"}
             className={classes.mainButtons}
             onClick={() => {
               setType("Log in");
@@ -250,7 +254,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
           <Button
             onClick={() => callGoogleSignIn()}
             leftIcon={<IconBrandGoogle />}
-            color="gray"
+            color="cyan"
             radius={"lg"}
           >
             Google
@@ -258,7 +262,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
           <Button
             onClick={() => callAnonymousSignIn()}
             leftIcon={<IconUser />}
-            color="gray"
+            color="cyan"
             radius={"lg"}
           >
             As Guest
@@ -365,7 +369,11 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
                         size="xs"
                         icon={<IconAt size={15} />}
                       />
-                      <Button variant="outline" onClick={onPasswordReset}>
+                      <Button
+                        color="orange"
+                        variant="outline"
+                        onClick={onPasswordReset}
+                      >
                         Send Password Reset Email
                       </Button>
                     </Stack>
@@ -373,7 +381,9 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
                 </Popover>
               )}
             </Group>
-            <Button type="submit">{type}</Button>
+            <Button radius={"xl"} color="orange" type="submit">
+              {type}
+            </Button>
           </Stack>
         </form>
       </Drawer>
@@ -422,7 +432,7 @@ const UnverifiedUserModal = ({
           for the verification email. If you wish to resend the verification
           email, click the button below.`}
           </Text>
-          <Button onClick={resendVerificationEmail}>
+          <Button color={"orange"} onClick={resendVerificationEmail}>
             Resend Verification Email
           </Button>
         </Stack>

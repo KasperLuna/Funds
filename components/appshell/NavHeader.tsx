@@ -164,7 +164,7 @@ export default function NavHeader() {
                       )
                     }
                   >
-                    Toggle Color Scheme
+                    Toggle Site Colors
                   </Menu.Item>
                   <Menu.Item
                     onClick={async () => {
