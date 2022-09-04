@@ -23,7 +23,6 @@ const Home: NextPage = () => {
         ]}
       >
         <BanksStats />
-        {/* <BanksStats /> */}
       </SimpleGrid>
     </>
   );

@@ -57,9 +57,9 @@ const useStyles = createStyles((theme) => ({
   drawer: {
     overflowY: "auto",
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
-    {
-      paddingTop: theme.spacing.lg * 4,
-    },
+      {
+        paddingTop: theme.spacing.lg * 4,
+      },
   },
   title: {
     fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
