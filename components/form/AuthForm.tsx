@@ -14,6 +14,7 @@ import {
   createStyles,
   Popover,
   Modal,
+  Box,
 } from "@mantine/core";
 import { useForm } from "react-hook-form";
 import {
@@ -46,12 +47,19 @@ export type AuthFormProps = {
 };
 
 const useStyles = createStyles((theme) => ({
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   drawer: {
     overflowY: "auto",
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
-      {
-        paddingTop: theme.spacing.lg * 4,
-      },
+    {
+      paddingTop: theme.spacing.lg * 4,
+    },
   },
   title: {
     fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
@@ -198,201 +206,203 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
 
   return (
     <>
-      {user ? (
-        <>
-          <Link href="/home" passHref>
-            <Button
-              variant="filled"
-              color="orange"
-              className={classes.retToDashButton}
-              radius={"xl"}
-              component="a"
-            >
-              Return to Dashboard
-            </Button>
-          </Link>
-        </>
-      ) : (
-        <Group spacing={7}>
-          {!inHeader && (
+      <Box className={classes.root}>
+        {user ? (
+          <>
+            <Link href="/home" passHref>
+              <Button
+                variant="filled"
+                color="orange"
+                className={classes.retToDashButton}
+                radius={"xl"}
+                component="a"
+              >
+                Return to Dashboard
+              </Button>
+            </Link>
+          </>
+        ) : (
+          <Group spacing={7}>
+            {!inHeader && (
+              <Button
+                radius="xl"
+                className={classes.mainButtons}
+                variant="outline"
+                color={"cyan"}
+                onClick={() => {
+                  setType("Sign up");
+                  setOpened(true);
+                }}
+              >
+                Sign Up
+              </Button>
+            )}
             <Button
               radius="xl"
+              color={"teal"}
               className={classes.mainButtons}
-              variant="outline"
-              color={"cyan"}
               onClick={() => {
-                setType("Sign up");
+                setType("Log in");
                 setOpened(true);
               }}
             >
-              Sign Up
+              Log In
             </Button>
-          )}
-          <Button
-            radius="xl"
-            color={"teal"}
-            className={classes.mainButtons}
-            onClick={() => {
-              setType("Log in");
-              setOpened(true);
-            }}
-          >
-            Log In
-          </Button>
-        </Group>
-      )}
-      <Drawer
-        opened={opened}
-        onClose={() => setOpened(false)}
-        title={`${type} with`}
-        padding="xl"
-        size="xl"
-        position="right"
-        classNames={{ drawer: classes.drawer, title: classes.title }}
-      >
-        <Group grow mb="md" mt="md">
-          <Button
-            onClick={() => callGoogleSignIn()}
-            leftIcon={<IconBrandGoogle />}
-            color="cyan"
-            radius={"lg"}
-          >
-            Google
-          </Button>
-          <Button
-            onClick={() => callAnonymousSignIn()}
-            leftIcon={<IconUser />}
-            color="cyan"
-            radius={"lg"}
-          >
-            As Guest
-          </Button>
-        </Group>
-        <Divider
-          label="Or continue with email"
-          labelPosition="center"
-          my="lg"
-        />
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <Stack>
-            <TextInput
-              required
-              label="Email: "
-              placeholder="dev@kasperluna.com"
-              icon={<IconAt size={15} />}
-              {...register("email", {
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: "invalid email address",
-                },
-              })}
-              error={errors.email && errors.email.message}
-            />
-            {type === "Sign up" ? (
-              <>
-                <PasswordComponent
-                  register={register}
-                  value={password || ""}
-                  setStrength={setStrength}
-                  passwordError={passwordError}
-                />
-                <Checkbox
-                  required
-                  label={
-                    <>
-                      I agree to the{" "}
-                      <a
-                        href={"/agreement"}
-                        target="_blank"
-                        style={{ color: "teal" }}
-                        rel="noreferrer"
-                      >
-                        {"Terms and Conditions"}
-                      </a>
-                    </>
-                  }
-                  {...register("terms")}
-                />
-              </>
-            ) : (
-              <PasswordInput
+          </Group>
+        )}
+        <Drawer
+          opened={opened}
+          onClose={() => setOpened(false)}
+          title={`${type} with`}
+          padding="xl"
+          size="xl"
+          position="right"
+          classNames={{ drawer: classes.drawer, title: classes.title }}
+        >
+          <Group grow mb="md" mt="md">
+            <Button
+              onClick={() => callGoogleSignIn()}
+              leftIcon={<IconBrandGoogle />}
+              color="cyan"
+              radius={"lg"}
+            >
+              Google
+            </Button>
+            <Button
+              onClick={() => callAnonymousSignIn()}
+              leftIcon={<IconUser />}
+              color="cyan"
+              radius={"lg"}
+            >
+              As Guest
+            </Button>
+          </Group>
+          <Divider
+            label="Or continue with email"
+            labelPosition="center"
+            my="lg"
+          />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Stack>
+              <TextInput
                 required
-                label="Password: "
-                placeholder="Password"
-                icon={<IconLock size={15} />}
-                {...register("password")}
-                error={errors.password && errors.password.message}
+                label="Email: "
+                placeholder="dev@kasperluna.com"
+                icon={<IconAt size={15} />}
+                {...register("email", {
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "invalid email address",
+                  },
+                })}
+                error={errors.email && errors.email.message}
               />
-            )}
-          </Stack>
-          <Stack>
-            <Group position="apart" mt="xl">
-              <Anchor
-                component="button"
-                type="button"
-                color="dimmed"
-                onClick={toggleType}
-                size="xs"
-              >
-                {type === "Sign up"
-                  ? "Already have an account? Log in"
-                  : "Don't have an account? Sign up"}
-              </Anchor>
-              {type === "Log in" && (
-                <Popover
-                  trapFocus
-                  position="top-end"
-                  withArrow
-                  width={300}
-                  withinPortal={true}
-                >
-                  <Popover.Target>
-                    <Anchor
-                      component="button"
-                      type="button"
-                      color="dimmed"
-                      onClick={toggleType}
-                      size="xs"
-                    >
-                      Forgot Password?
-                    </Anchor>
-                  </Popover.Target>
-                  <Popover.Dropdown>
-                    <Stack>
-                      <TextInput
-                        label="Email"
-                        placeholder="dev@kasperluna.com"
-                        onChange={(e) => {
-                          setPasswordResetEmail(e.target.value);
-                        }}
-                        onKeyDown={handlePassResetKeypress}
-                        size="xs"
-                        icon={<IconAt size={15} />}
-                      />
-                      <Button
-                        color="orange"
-                        variant="outline"
-                        onClick={onPasswordReset}
-                      >
-                        Send Password Reset Email
-                      </Button>
-                    </Stack>
-                  </Popover.Dropdown>
-                </Popover>
+              {type === "Sign up" ? (
+                <>
+                  <PasswordComponent
+                    register={register}
+                    value={password || ""}
+                    setStrength={setStrength}
+                    passwordError={passwordError}
+                  />
+                  <Checkbox
+                    required
+                    label={
+                      <>
+                        I agree to the{" "}
+                        <a
+                          href={"/agreement"}
+                          target="_blank"
+                          style={{ color: "teal" }}
+                          rel="noreferrer"
+                        >
+                          {"Terms and Conditions"}
+                        </a>
+                      </>
+                    }
+                    {...register("terms")}
+                  />
+                </>
+              ) : (
+                <PasswordInput
+                  required
+                  label="Password: "
+                  placeholder="Password"
+                  icon={<IconLock size={15} />}
+                  {...register("password")}
+                  error={errors.password && errors.password.message}
+                />
               )}
-            </Group>
-            <Button radius={"xl"} color="orange" type="submit">
-              {type}
-            </Button>
-          </Stack>
-        </form>
-      </Drawer>
+            </Stack>
+            <Stack>
+              <Group position="apart" mt="xl">
+                <Anchor
+                  component="button"
+                  type="button"
+                  color="dimmed"
+                  onClick={toggleType}
+                  size="xs"
+                >
+                  {type === "Sign up"
+                    ? "Already have an account? Log in"
+                    : "Don't have an account? Sign up"}
+                </Anchor>
+                {type === "Log in" && (
+                  <Popover
+                    trapFocus
+                    position="top-end"
+                    withArrow
+                    width={300}
+                    withinPortal={true}
+                  >
+                    <Popover.Target>
+                      <Anchor
+                        component="button"
+                        type="button"
+                        color="dimmed"
+                        onClick={toggleType}
+                        size="xs"
+                      >
+                        Forgot Password?
+                      </Anchor>
+                    </Popover.Target>
+                    <Popover.Dropdown>
+                      <Stack>
+                        <TextInput
+                          label="Email"
+                          placeholder="dev@kasperluna.com"
+                          onChange={(e) => {
+                            setPasswordResetEmail(e.target.value);
+                          }}
+                          onKeyDown={handlePassResetKeypress}
+                          size="xs"
+                          icon={<IconAt size={15} />}
+                        />
+                        <Button
+                          color="orange"
+                          variant="outline"
+                          onClick={onPasswordReset}
+                        >
+                          Send Password Reset Email
+                        </Button>
+                      </Stack>
+                    </Popover.Dropdown>
+                  </Popover>
+                )}
+              </Group>
+              <Button radius={"xl"} color="orange" type="submit">
+                {type}
+              </Button>
+            </Stack>
+          </form>
+        </Drawer>
 
-      <UnverifiedUserModal
-        opened={verifyUserModal}
-        setOpened={setVerifyUserModal}
-        user={unverifiedUser}
-      />
+        <UnverifiedUserModal
+          opened={verifyUserModal}
+          setOpened={setVerifyUserModal}
+          user={unverifiedUser}
+        />
+      </Box>
     </>
   );
 }
