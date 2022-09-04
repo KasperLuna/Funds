@@ -1,4 +1,5 @@
 import {
+  Anchor,
   Box,
   createStyles,
   Group,
@@ -10,6 +11,7 @@ import {
   Title,
 } from "@mantine/core";
 import { IconExternalLink } from "@tabler/icons";
+import Link from "next/link";
 import React from "react";
 import { useBanksQuery } from "../../firebase/queries";
 import { Bank } from "../../utils/db";
@@ -37,6 +39,9 @@ const useStyles = createStyles((theme) => ({
   card: {
     paddingRight: theme.spacing.xs,
     paddingBlock: theme.spacing.xs,
+  },
+  emptyPageCard: {
+    padding: theme.spacing.xl,
   },
 }));
 
@@ -138,7 +143,7 @@ const BanksStats = () => {
 
   return (
     <>
-      {banks.length > 0 && (
+      {banks.length > 0 ? (
         <Paper withBorder radius={"lg"} className={classes.card}>
           <Stack spacing={0}>
             <Group position="apart" sx={{ paddingLeft: 20 }}>
@@ -181,6 +186,15 @@ const BanksStats = () => {
               </Stack>
             </SimpleGrid>
           </Stack>
+        </Paper>
+      ) : (
+        <Paper withBorder radius={"lg"} className={classes.emptyPageCard}>
+          <Title size={"h3"}>Banks</Title>
+          You don&apos;t seem to have any banks yet. Head over to the{" "}
+          <Link href="/banks" passHref>
+            <Anchor>Banks Tab</Anchor>
+          </Link>{" "}
+          and add a couple along with your transactions to see your stats!
         </Paper>
       )}
     </>
