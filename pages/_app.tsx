@@ -13,7 +13,7 @@ import { AuthProvider } from "../components/config/AuthContext";
 import ProtectedRoute from "../components/config/ProtectedRoute";
 import { useRouter } from "next/router";
 
-const noAuth = ["/"];
+export const noAuth = ["/", "/agreement"];
 
 export default function App(props: AppProps) {
   const router = useRouter();

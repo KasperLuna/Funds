@@ -7,6 +7,7 @@ import { NavFooter } from "./NavFooter";
 import { NavBar } from "./NavBar";
 import { useAuth } from "../../components/config/AuthContext";
 import router from "next/router";
+import { noAuth } from "../../pages/_app";
 
 export const tabs = [
   {
@@ -53,7 +54,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { classes } = useStyles();
 
-  const isInApp = router.pathname !== "/";
+  const isInApp = !Boolean(noAuth.includes(router.pathname));
 
   return (
     <>
