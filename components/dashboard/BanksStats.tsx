@@ -101,7 +101,7 @@ const TopLeaderRow = ({
   percentage: string;
   color: string;
 }) => {
-  const scale = 1.1 - index * 0.1;
+  const scale = 1; //1.1 - index * 0.1;
   return (
     <>
       <Text
@@ -148,7 +148,11 @@ const BanksStats = () => {
           <Stack spacing={0}>
             <Group position="apart" sx={{ paddingLeft: 20 }}>
               <Title size={"h3"}>Banks</Title>
-              <IconExternalLink />
+              <Link href="/banks" passHref>
+                <Anchor>
+                  <IconExternalLink />
+                </Anchor>
+              </Link>
             </Group>
 
             <SimpleGrid
