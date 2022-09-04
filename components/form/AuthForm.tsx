@@ -58,7 +58,24 @@ const useStyles = createStyles((theme) => ({
     letterSpacing: -1.5,
     textAlign: "center",
     fontSize: "25px",
-    fontWeight: 700,
+    fontWeight: 1000,
+  },
+  mainButtons: {
+    width: 250,
+    height: 50,
+
+    [`@media (max-width: ${theme.breakpoints.md}px)`]: {
+      width: 150,
+    },
+  },
+
+  retToDashButton: {
+    width: 250,
+    height: 50,
+
+    [`@media (max-width: ${theme.breakpoints.md}px)`]: {
+      width: 220,
+    },
   },
 }));
 
@@ -184,7 +201,11 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
       {user ? (
         <>
           <Link href="/home" passHref>
-            <Button radius={"lg"} component="a">
+            <Button
+              className={classes.retToDashButton}
+              radius={"xl"}
+              component="a"
+            >
               Return to Dashboard
             </Button>
           </Link>
@@ -193,7 +214,8 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
         <Group spacing={7}>
           {!inHeader && (
             <Button
-              radius="lg"
+              radius="xl"
+              className={classes.mainButtons}
               variant="outline"
               onClick={() => {
                 setType("Sign up");
@@ -204,12 +226,12 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             </Button>
           )}
           <Button
-            radius="lg"
+            radius="xl"
+            className={classes.mainButtons}
             onClick={() => {
               setType("Log in");
               setOpened(true);
             }}
-            size={inHeader ? "xs" : "sm"}
           >
             Log In
           </Button>
