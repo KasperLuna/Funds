@@ -10,7 +10,6 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { IconArrowUpRight, IconArrowDownRight } from "@tabler/icons";
 // import { useBanksQuery } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { useBanksQuery } from "../../firebase/queries";
@@ -56,7 +55,13 @@ const useStyles = createStyles((theme) => ({
 
   noBanksBox: {
     textAlign: "center",
-    border: `1px dashed ${theme.colors.gray[6]}`,
+    border: `1px dashed ${
+      theme.colorScheme === "dark" ? theme.colors.dark[5] : theme.colors.gray[4]
+    }`,
+    color:
+      theme.colorScheme === "dark"
+        ? theme.colors.gray[7]
+        : theme.colors.gray[5],
     borderRadius: theme.radius.lg,
     padding: theme.spacing.lg,
     height: "100%",
@@ -65,6 +70,15 @@ const useStyles = createStyles((theme) => ({
   headerGroup: {
     marginBottom: theme.spacing.md,
   },
+
+  bankBalancesText: {
+    flexShrink: 1,
+  },
+
+  totalBadge: {
+    flexShrink: 0,
+  },
+
   skeleton: {
     minHeight: 70,
     width: "100%",
@@ -81,9 +95,7 @@ export function BankStats() {
 
   const { classes } = useStyles();
   const stats = banks?.map((bank) => {
-    const diff = 1;
-    const DiffIcon = diff > 0 ? IconArrowUpRight : IconArrowDownRight;
-
+    const percentage = (bank.balance / totalAmount) * 100;
     return (
       <Grid.Col
         span={5}
@@ -100,13 +112,12 @@ export function BankStats() {
               {bank.name}
             </Text>
             <Text
-              color={diff > 0 ? "teal" : "red"}
+              color="orange" //{diff > 0 ? "teal" : "red"}
               size="xs"
               weight={500}
               className={classes.diff}
             >
-              <span>{diff}%</span>
-              <DiffIcon size={12} stroke={1.5} />
+              <span>{percentage.toPrecision(2)}%</span>
             </Text>
           </Group>
 
@@ -125,11 +136,16 @@ export function BankStats() {
   });
   return (
     <div className={classes.root}>
-      <Group position="apart" align={"center"} className={classes.headerGroup}>
-        <Title weight={"bolder"} size="h2">
+      <Group
+        position="apart"
+        align={"center"}
+        className={classes.headerGroup}
+        noWrap
+      >
+        <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
           Bank Balances
         </Title>
-        <Badge>
+        <Badge className={classes.totalBadge}>
           {`Total: ${totalAmount.toLocaleString(undefined, {
             style: "currency",
             currency: "PHP",

@@ -28,9 +28,10 @@ export const useBanksQuery = (id?: string) => {
   const [loading, setLoading] = useState(true);
 
   const banksRef = collection(db, "users", id || "", "banks");
+  const q = query(banksRef, orderBy("balance", "desc"));
   useEffect(() => {
     const getBanks = async () => {
-      const unsubscribe = onSnapshot(banksRef, (snap) => {
+      const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Bank);
         setBanks(data);
       });

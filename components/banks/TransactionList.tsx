@@ -67,6 +67,20 @@ const useStyles = createStyles((theme) => ({
     flexShrink: 1,
     whiteSpace: "nowrap",
   },
+
+  noBanksBox: {
+    textAlign: "center",
+    border: `1px dashed ${
+      theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[4]
+    }`,
+    color:
+      theme.colorScheme === "dark"
+        ? theme.colors.gray[5]
+        : theme.colors.gray[8],
+    borderRadius: theme.radius.lg,
+    padding: theme.spacing.lg,
+    height: "100%",
+  },
 }));
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
@@ -88,87 +102,103 @@ const TransactionList = () => {
         Latest Transactions
       </Text>
       <Box className={classes.tableContainer}>
-        {query.layout != "table" ? (
-          <SimpleGrid
-            cols={4}
-            breakpoints={[
-              { maxWidth: "lg", cols: 3 },
-              { maxWidth: "md", cols: 2 },
-              { maxWidth: "sm", cols: 2 },
-              { maxWidth: "xs", cols: 1 },
-            ]}
-          >
-            {transactions?.map((transaction) => {
-              return (
-                <div key={transaction.id}>
-                  <TransactionCard data={transaction} categories={categories} />
-                </div>
-              );
-            })}
-          </SimpleGrid>
-        ) : (
-          <Table
-            striped
-            highlightOnHover
-            captionSide="bottom"
-            horizontalSpacing={"sm"}
-          >
-            <thead>
-              <tr>
-                {headers.map((header, index) => {
-                  return <th key={index}>{header}</th>;
+        {Boolean(transactions?.length) ? (
+          <>
+            {query.layout != "table" ? (
+              <SimpleGrid
+                cols={4}
+                breakpoints={[
+                  { maxWidth: "lg", cols: 3 },
+                  { maxWidth: "md", cols: 2 },
+                  { maxWidth: "sm", cols: 2 },
+                  { maxWidth: "xs", cols: 1 },
+                ]}
+              >
+                {transactions?.map((transaction) => {
+                  return (
+                    <div key={transaction.id}>
+                      <TransactionCard
+                        data={transaction}
+                        categories={categories}
+                      />
+                    </div>
+                  );
                 })}
-              </tr>
-            </thead>
-            <tbody>
-              {Boolean(!transactions?.length) && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: "center" }}>
-                    No Items. Click &quot;Add&quot; to add a new transaction.
-                  </td>
-                </tr>
-              )}
-              {transactions?.map((data) => {
-                return (
-                  <tr key={data.id}>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      {dayjs(data.date?.seconds * 1000).format("MMM D")}
-                    </td>
-                    <td>
-                      <Text color={data.amount > 0 ? "green" : "red"}>
-                        {data.amount.toLocaleString(undefined, {
-                          style: "currency",
-                          currency: "PHP",
-                          maximumFractionDigits: 1,
-                        })}
-                      </Text>
-                    </td>
-                    <td>{data.bank}</td>
-                    <td>{data.description}</td>
-                    <td style={{ alignItems: "start" }}>
-                      <Box className={classes.tableCategory}>
-                        <MultiSelect
-                          data={
-                            categories?.map((categ) => ({
-                              value: categ.name,
-                              label: categ.name,
-                              group: categ.group,
-                            })) || []
-                          }
-                          size="xs"
-                          value={data.category}
-                          readOnly
-                        />
-                      </Box>
-                    </td>
-                    <td>
-                      <EditTransactionForm {...data} />
-                    </td>
+              </SimpleGrid>
+            ) : (
+              <Table
+                striped
+                highlightOnHover
+                captionSide="bottom"
+                horizontalSpacing={"sm"}
+              >
+                <thead>
+                  <tr>
+                    {headers.map((header, index) => {
+                      return <th key={index}>{header}</th>;
+                    })}
                   </tr>
-                );
-              })}
-            </tbody>
-          </Table>
+                </thead>
+                <tbody>
+                  {Boolean(!transactions?.length) && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center" }}>
+                        No Items. Click &quot;Add&quot; to add a new
+                        transaction.
+                      </td>
+                    </tr>
+                  )}
+                  {transactions?.map((data) => {
+                    return (
+                      <tr key={data.id}>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {dayjs(data.date?.seconds * 1000).format("MMM D")}
+                        </td>
+                        <td>
+                          <Text color={data.amount > 0 ? "green" : "red"}>
+                            {data.amount.toLocaleString(undefined, {
+                              style: "currency",
+                              currency: "PHP",
+                              maximumFractionDigits: 1,
+                            })}
+                          </Text>
+                        </td>
+                        <td>{data.bank}</td>
+                        <td>{data.description}</td>
+                        <td style={{ alignItems: "start" }}>
+                          <Box className={classes.tableCategory}>
+                            <MultiSelect
+                              data={
+                                categories?.map((categ) => ({
+                                  value: categ.name,
+                                  label: categ.name,
+                                  group: categ.group,
+                                })) || []
+                              }
+                              size="xs"
+                              value={data.category}
+                              readOnly
+                            />
+                          </Box>
+                        </td>
+                        <td>
+                          <EditTransactionForm {...data} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            )}
+          </>
+        ) : (
+          <Box className={classes.noBanksBox}>
+            <Text>
+              No transactions exist or match the current filters, Click
+              &quot;Add&quot; and add a transaction or change the selected
+              filters.
+            </Text>
+          </Box>
         )}
       </Box>
     </>
