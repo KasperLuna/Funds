@@ -47,6 +47,7 @@ export default function Create() {
     <>
       <Group noWrap spacing={0}>
         <Button
+          color={"orange"}
           onClick={() => setIsOpen(true)}
           sx={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
         >

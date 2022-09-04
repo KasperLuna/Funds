@@ -39,17 +39,17 @@ const useStyles = createStyles((theme) => ({
     textSizeAdjust: "50%",
     fontWeight: 1000,
     flex: "0 1 auto",
-    paddingTop: "7%",
+    paddingTop: "10%",
     marginBottom: "20px",
     color: theme.colorScheme === "dark" ? theme.colors.gray[0] : theme.black,
 
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {
-      fontSize: "5rem",
+      fontSize: "6rem",
       marginBottom: "10px",
     },
 
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
-      fontSize: "4.5rem",
+      fontSize: "5rem",
     },
   },
 
@@ -59,7 +59,6 @@ const useStyles = createStyles((theme) => ({
 
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {
       fontSize: 20,
-      marginBottom: 15,
     },
 
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {

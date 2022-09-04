@@ -111,12 +111,7 @@ export function BankStats() {
             <Text size="xs" color="dimmed" className={classes.title}>
               {bank.name}
             </Text>
-            <Text
-              color="orange" //{diff > 0 ? "teal" : "red"}
-              size="xs"
-              weight={500}
-              className={classes.diff}
-            >
+            <Text color="cyan" size="xs" weight={500} className={classes.diff}>
               <span>{percentage.toPrecision(2)}%</span>
             </Text>
           </Group>
