@@ -1,10 +1,19 @@
-import { createStyles, Title, Text, Stack, Group, Box } from "@mantine/core";
+import {
+  createStyles,
+  Title,
+  Text,
+  Stack,
+  Group,
+  Box,
+  Anchor,
+} from "@mantine/core";
 import {
   IconCashOff,
   IconDeviceMobile,
   IconDevices,
   IconLockOpenOff,
 } from "@tabler/icons";
+import Link from "next/link";
 import React from "react";
 
 const useStyles = createStyles((theme) => ({
@@ -87,7 +96,7 @@ const useStyles = createStyles((theme) => ({
     width: 100,
     height: 100,
     borderRadius: "25%",
-    backgroundImage: "linear-gradient(45deg, orange, teal)",
+    backgroundImage: "linear-gradient(45deg, #E8580F, #85CB33)",
     color:
       theme.colorScheme === "dark"
         ? theme.colors.dark[8]
@@ -127,8 +136,8 @@ const FeatureSection = () => {
               Progressive. Web. App.
             </Title>
             <Text className={classes.featureDescriptionRight}>
-              Using an iPhone? Use the share sheet and Add this page to your
-              homescreen to get the app experience.
+              Using an iPhone? Use the share sheet in Safari and Add this page
+              to your homescreen to get the app experience.
             </Text>
           </Stack>
           <Box className={classes.featureIconBox}>
@@ -142,8 +151,11 @@ const FeatureSection = () => {
           <Stack spacing={2}>
             <Title className={classes.featureTitleLeft}>Open Source</Title>
             <Text className={classes.featureDescriptionLeft}>
-              Funds is fully open-source so you know what&apos;s going on with
-              your data and how its managed.
+              Funds is{" "}
+              <Link href="https://github.com/KasperLuna/Funds" passHref>
+                <Anchor target={"_blank"}>fully open-source</Anchor>
+              </Link>{" "}
+              so you know what&apos;s going on with the site.
             </Text>
           </Stack>
         </Group>
