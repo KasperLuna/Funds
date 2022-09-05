@@ -71,7 +71,6 @@ const useStyles = createStyles((theme) => ({
   mainButtons: {
     width: 250,
     height: 50,
-
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {
       width: 150,
     },
@@ -176,6 +175,10 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             data.password
           );
           await sendEmailVerification(userCredential.user);
+          showSuccessNotif(
+            "Account created! check your email for verification."
+          );
+          setType("Log in");
         }
       }
     } catch (error: string | any) {
@@ -228,7 +231,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
                 radius="xl"
                 className={classes.mainButtons}
                 variant="outline"
-                color={"cyan"}
+                color={"yellow"}
                 onClick={() => {
                   setType("Sign up");
                   setOpened(true);
@@ -239,7 +242,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             )}
             <Button
               radius="xl"
-              color={"teal"}
+              color={"orange"}
               className={classes.mainButtons}
               onClick={() => {
                 setType("Log in");
@@ -263,7 +266,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             <Button
               onClick={() => callGoogleSignIn()}
               leftIcon={<IconBrandGoogle />}
-              color="cyan"
+              color="blue"
               radius={"lg"}
             >
               Google
@@ -271,7 +274,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             <Button
               onClick={() => callAnonymousSignIn()}
               leftIcon={<IconUser />}
-              color="cyan"
+              color="blue"
               radius={"lg"}
             >
               As Guest

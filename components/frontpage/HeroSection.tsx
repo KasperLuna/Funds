@@ -15,6 +15,7 @@ const useStyles = createStyles((theme) => ({
   dots: {
     position: "absolute",
     zIndex: -1,
+    opacity: 0.6,
     color:
       theme.colorScheme === "dark"
         ? theme.colors.dark[3]
@@ -35,8 +36,9 @@ const useStyles = createStyles((theme) => ({
 
   title: {
     textAlign: "center",
-    fontSize: "6rem",
+    fontSize: "5.7rem",
     textSizeAdjust: "50%",
+    fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
     fontWeight: 1000,
     flex: "0 1 auto",
     paddingTop: "10%",
@@ -44,17 +46,18 @@ const useStyles = createStyles((theme) => ({
     color: theme.colorScheme === "dark" ? theme.colors.gray[0] : theme.black,
 
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {
-      fontSize: "6rem",
+      fontSize: "5.5rem",
       marginBottom: "10px",
     },
 
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
-      fontSize: "5rem",
+      fontSize: "4.8rem",
     },
   },
 
   description: {
     fontSize: 23,
+    textAlign: "center",
     marginBottom: 20,
 
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {

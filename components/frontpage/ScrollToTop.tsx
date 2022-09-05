@@ -9,9 +9,10 @@ export default function ScrollToTop() {
   return (
     <>
       <Affix position={{ bottom: 20, right: 20 }}>
-        <Transition transition="slide-up" mounted={scroll.y > 0}>
+        <Transition transition="slide-up" mounted={scroll.y > 250}>
           {(transitionStyles) => (
             <Button
+              radius="xl"
               leftIcon={<IconArrowUp size={16} />}
               style={transitionStyles}
               onClick={() => scrollTo({ y: 0 })}
