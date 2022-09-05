@@ -1,10 +1,9 @@
-import { AppTxTypes, Transfer } from "../../utils/db";
+import { AppTxTypes, Bank, Category, Transfer } from "../../utils/db";
 import { Controller, useForm } from "react-hook-form";
 import {
   Button,
   TextInput,
   Modal,
-  useMantineTheme,
   Stack,
   Space,
   Group,
@@ -13,6 +12,7 @@ import {
   Tabs,
   Checkbox,
   Tooltip,
+  MultiSelect,
 } from "@mantine/core";
 import {
   IconApps,
@@ -27,18 +27,25 @@ import AmountInput from "../form/AmountInput";
 import { TypeInput } from "../form/TypeInput";
 import { CategoryInput } from "../form/CategoryInput";
 import {
+  createBank,
+  createCategory,
   createTransaction,
   createTransfer,
   useBanksQuery,
+  useCategoriesQuery,
 } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
-import { showSuccessNotif } from "../../utils/notifs";
+import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 
 export default function Create() {
   const { user } = useAuth();
-  const theme = useMantineTheme();
   const [tabValue, setTabValue] = useState<string | null>("Transaction");
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [dropdownModalForm, setDropdownModalForm] = useState<
+    "Bank" | "Category" | null
+  >(null);
+
+  const closeDropdownModalForm = () => setDropdownModalForm(null);
 
   const banksLength = useBanksQuery(user?.uid || "")?.banks.length;
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
@@ -57,29 +64,35 @@ export default function Create() {
           <Menu.Target>
             <ActionIcon
               variant="filled"
-              color={theme.primaryColor}
+              color={"gray"}
               sx={{
                 borderBottomLeftRadius: 0,
                 borderTopLeftRadius: 0,
                 width: 15,
                 height: 36,
               }}
-              disabled
             >
               <IconChevronDown size={16} stroke={1.5} />
             </ActionIcon>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Item icon={<IconBuildingBank size={16} stroke={1.5} />}>
+            <Menu.Item
+              onClick={() => setDropdownModalForm("Bank")}
+              icon={<IconBuildingBank size={16} stroke={1.5} />}
+            >
               Add Bank
             </Menu.Item>
-            <Menu.Item icon={<IconApps size={16} stroke={1.5} />}>
+            <Menu.Item
+              onClick={() => setDropdownModalForm("Category")}
+              icon={<IconApps size={16} stroke={1.5} />}
+            >
               Add Category
             </Menu.Item>
           </Menu.Dropdown>
         </Menu>
       </Group>
 
+      {/* Transaction / Transfer Form */}
       <Modal
         opened={isOpen}
         onClose={() => {
@@ -118,6 +131,20 @@ export default function Create() {
             <TransferForm setIsOpen={setIsOpen} />
           </Tabs.Panel>
         </Tabs>
+      </Modal>
+
+      {/* Bank / Category Form */}
+      <Modal
+        centered
+        opened={Boolean(dropdownModalForm)}
+        onClose={() => setDropdownModalForm(null)}
+        title={`Add a ${dropdownModalForm}`}
+      >
+        {dropdownModalForm === "Bank" ? (
+          <BankForm closeModal={closeDropdownModalForm} />
+        ) : (
+          <CategoryForm closeModal={closeDropdownModalForm} />
+        )}
       </Modal>
     </>
   );
@@ -328,5 +355,135 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
         </Button>
       </Stack>
     </form>
+  );
+};
+
+const BankForm = ({ closeModal }: { closeModal: () => void }) => {
+  const { user } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<Bank>({ defaultValues: { balance: 0 } });
+  const { banks } = useBanksQuery(user?.uid || "");
+
+  const onSubmit = (data: Bank) => {
+    createBank({ userId: user?.uid || "", ...data })
+      .then(() => {
+        closeModal();
+        showSuccessNotif(`${data.name} successfully added to banks!`);
+        reset();
+      })
+      .catch(() => {
+        showErrorNotif("An error occurred, please try again.");
+      });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Stack spacing={"sm"}>
+        <TextInput
+          required
+          type="text"
+          label="Bank Name: "
+          placeholder="Bank Name"
+          description="Use the name of the bank you want to add, e.g. Metrobank"
+          {...register("name", { required: true })}
+          error={errors.name?.message}
+        />
+
+        {Boolean(banks.length) && (
+          <MultiSelect
+            description="For your reference, here are all your existing categories"
+            multiple
+            readOnly
+            disabled
+            data={banks.map((bank, index) => {
+              return {
+                label: bank.name,
+                value: index.toString(),
+              };
+            })}
+            value={[
+              ...banks.map((_category, index) => {
+                return index.toString() || "";
+              }),
+            ]}
+          />
+        )}
+        <Group position="right">
+          <Button radius={"xl"} color="orange" type="submit">
+            Submit
+          </Button>
+        </Group>
+      </Stack>
+    </form>
+  );
+};
+
+const CategoryForm = ({ closeModal }: { closeModal: () => void }) => {
+  const { user } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<Category>();
+  const { categories } = useCategoriesQuery(user?.uid || "");
+
+  const onSubmit = (data: Category) => {
+    createCategory({ userId: user?.uid || "", ...data })
+      .then(() => {
+        closeModal();
+        showSuccessNotif(`"${data.name}" successfully added to categories!`);
+        reset();
+      })
+      .catch(() => {
+        showErrorNotif("An error occurred, please try again.");
+      });
+  };
+
+  return (
+    <>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Stack spacing={"sm"}>
+          <TextInput
+            required
+            type="text"
+            description="A category is a tag that you can use to group your transactions, each transaction can have up to 3 categories."
+            label="Category Name: "
+            placeholder="Category Name"
+            {...register("name", { required: true })}
+            error={errors.name?.message}
+          />
+          {Boolean(categories.length) && (
+            <MultiSelect
+              description="For your reference, here are all your existing categories"
+              multiple
+              readOnly
+              disabled
+              data={categories.map((category, index) => {
+                return {
+                  label: category.name,
+                  value: index.toString(),
+                };
+              })}
+              value={[
+                ...categories.map((_category, index) => {
+                  return index.toString() || "";
+                }),
+              ]}
+            />
+          )}
+
+          <Group position="right">
+            <Button radius={"xl"} color="orange" type="submit">
+              Submit
+            </Button>
+          </Group>
+        </Stack>
+      </form>
+    </>
   );
 };

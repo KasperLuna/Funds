@@ -76,7 +76,7 @@ const AddBankButton = () => {
     handleSubmit,
     formState: { errors },
   } = useForm<Bank>({
-    defaultValues: { primaryColor: "red", secondaryColor: "white", balance: 0 },
+    defaultValues: { balance: 0 },
   });
 
   const onSubmit = async (data: Bank) => {

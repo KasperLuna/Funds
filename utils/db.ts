@@ -11,7 +11,6 @@ export type Bank = {
 export type Category = {
   id?: number;
   name: string;
-  group?: string;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";

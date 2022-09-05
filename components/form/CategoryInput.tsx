@@ -29,7 +29,6 @@ const CategoryInput = ({
     ? categories?.map((categ) => ({
         value: categ.name,
         label: categ.name,
-        group: categ.group,
       })) || []
     : [
         {
