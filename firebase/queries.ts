@@ -49,9 +49,10 @@ export const useCategoriesQuery = (id?: string) => {
   const [loading, setLoading] = useState(true);
 
   const categoriesRef = collection(db, "users", id || "", "categories");
+  const q = query(categoriesRef, orderBy("name", "asc"));
   useEffect(() => {
     const getCategories = async () => {
-      const unsubscribe = onSnapshot(categoriesRef, (snap) => {
+      const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Category);
         setCategories(data);
       });
