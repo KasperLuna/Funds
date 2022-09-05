@@ -42,11 +42,10 @@ const useStyles = createStyles((theme) => ({
     height: "100%",
   },
   dateText: {
-    borderBottom: `1px solid ${
-      theme.colorScheme === "dark"
+    borderBottom: `1px solid ${theme.colorScheme === "dark"
         ? "rgba(255, 255, 255, 0.6)"
         : "rgba(0, 0, 0, 0.5)"
-    }`,
+      }`,
     whiteSpace: "nowrap",
   },
   bankName: { paddingTop: 5, maxWidth: 55, lineHeight: 1, textAlign: "start" },
@@ -70,9 +69,8 @@ const useStyles = createStyles((theme) => ({
 
   noBanksBox: {
     textAlign: "center",
-    border: `1px dashed ${
-      theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[4]
-    }`,
+    border: `1px dashed ${theme.colorScheme === "dark" ? theme.colors.gray[8] : theme.colors.gray[4]
+      }`,
     color:
       theme.colorScheme === "dark"
         ? theme.colors.gray[5]
@@ -172,7 +170,6 @@ const TransactionList = () => {
                                 categories?.map((categ) => ({
                                   value: categ.name,
                                   label: categ.name,
-                                  group: categ.group,
                                 })) || []
                               }
                               size="xs"
@@ -256,7 +253,6 @@ const TransactionCard = ({
                 categories?.map((categ) => ({
                   value: categ.name,
                   label: categ.name,
-                  group: categ.group,
                 })) || []
               }
               size="xs"
