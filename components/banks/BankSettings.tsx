@@ -9,8 +9,11 @@ export const BankSettings = () => {
   const isTableLayout = query.layout === "table";
 
   const toggleLayoutQuery = () => {
-    const newLayout = isTableLayout ? "" : "table";
-    push(`${pathname}?layout=${newLayout}`);
+    const newLayout = isTableLayout ? null : "table";
+    push({
+      pathname: pathname,
+      query: { ...query, layout: newLayout },
+    });
   };
   return (
     <Menu withArrow position="bottom-start">

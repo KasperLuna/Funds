@@ -1,5 +1,7 @@
 import React from "react";
 import {
+  ActionIcon,
+  Anchor,
   Badge,
   Box,
   createStyles,
@@ -13,6 +15,8 @@ import {
 // import { useBanksQuery } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { useBanksQuery } from "../../firebase/queries";
+import Link from "next/link";
+import { IconExternalLink } from "@tabler/icons";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -85,9 +89,9 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-export function BankStats() {
+export function BankStats({ bank }: { bank?: string | string[] }) {
   const { user } = useAuth();
-  const { banks, loading } = useBanksQuery(user?.uid);
+  const { banks, loading } = useBanksQuery(user?.uid, bank);
 
   const totalAmount = banks.reduce((acc, bank) => {
     return acc + bank.balance;
@@ -111,12 +115,13 @@ export function BankStats() {
             <Text size="xs" color="dimmed" className={classes.title}>
               {bank.name}
             </Text>
+
             <Text color="cyan" size="xs" weight={500} className={classes.diff}>
               <span>{percentage.toPrecision(2)}%</span>
             </Text>
           </Group>
 
-          <Group sx={{ justifyContent: "center" }} spacing="xs" mt={10}>
+          <Group sx={{ justifyContent: "center" }} spacing={0} mt={10} noWrap>
             <Text className={classes.value}>
               {bank.balance.toLocaleString(undefined, {
                 style: "currency",
@@ -124,6 +129,11 @@ export function BankStats() {
                 maximumFractionDigits: 1,
               })}
             </Text>
+            <Link href={`/banks/${bank.name}`} passHref>
+              <ActionIcon component={Anchor}>
+                <IconExternalLink size={10} />
+              </ActionIcon>
+            </Link>
           </Group>
         </Paper>
       </Grid.Col>

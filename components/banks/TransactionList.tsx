@@ -85,9 +85,9 @@ const useStyles = createStyles((theme) => ({
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
-const TransactionList = () => {
+const TransactionList = ({ bank }: { bank?: string | string[] }) => {
   const { user } = useAuth();
-  const { transactions } = useTransactionsQuery(user?.uid);
+  const { transactions } = useTransactionsQuery(user?.uid, bank);
   const { categories } = useCategoriesQuery(user?.uid);
   const { classes } = useStyles();
   const { query } = useRouter();
