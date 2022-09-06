@@ -77,7 +77,7 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
 
   const txRef = collection(db, "users", id || "", "transactions");
   const q = bank
-    ? query(txRef, bankFilter)
+    ? query(txRef, bankFilter, orderBy("date", "desc"))
     : query(txRef, orderBy("date", "desc"));
   useEffect(() => {
     const getTxns = async () => {
