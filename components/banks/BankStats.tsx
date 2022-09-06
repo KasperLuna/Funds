@@ -92,6 +92,7 @@ const useStyles = createStyles((theme) => ({
 export function BankStats({ bank }: { bank?: string | string[] }) {
   const { user } = useAuth();
   const { banks, loading } = useBanksQuery(user?.uid, bank);
+  const hasBankInProps = bank !== undefined;
 
   const totalAmount = banks.reduce((acc, bank) => {
     return acc + bank.balance;
@@ -111,17 +112,31 @@ export function BankStats({ bank }: { bank?: string | string[] }) {
         key={bank.name || ""}
       >
         <Paper withBorder p="md" radius="md" className={classes.paper}>
-          <Group position="apart" spacing={0}>
+          <Group position="apart" spacing={0} noWrap>
             <Text size="xs" color="dimmed" className={classes.title}>
               {bank.name}
             </Text>
 
-            <Text color="cyan" size="xs" weight={500} className={classes.diff}>
-              <span>{percentage.toPrecision(2)}%</span>
-            </Text>
+            {!hasBankInProps && (
+              <Group spacing={0} noWrap>
+                <Text
+                  color="cyan"
+                  size="xs"
+                  weight={500}
+                  className={classes.diff}
+                >
+                  <span>{percentage.toPrecision(2)}%</span>
+                </Text>
+                <Link href={`/banks/${bank.name}`} passHref>
+                  <ActionIcon component={Anchor} size="xs" m={0}>
+                    <IconExternalLink size={20} />
+                  </ActionIcon>
+                </Link>
+              </Group>
+            )}
           </Group>
 
-          <Group sx={{ justifyContent: "center" }} spacing={0} mt={10} noWrap>
+          <Group sx={{ justifyContent: "center" }} spacing={0} mt={10}>
             <Text className={classes.value}>
               {bank.balance.toLocaleString(undefined, {
                 style: "currency",
@@ -129,11 +144,6 @@ export function BankStats({ bank }: { bank?: string | string[] }) {
                 maximumFractionDigits: 1,
               })}
             </Text>
-            <Link href={`/banks/${bank.name}`} passHref>
-              <ActionIcon component={Anchor}>
-                <IconExternalLink size={10} />
-              </ActionIcon>
-            </Link>
           </Group>
         </Paper>
       </Grid.Col>
@@ -150,13 +160,15 @@ export function BankStats({ bank }: { bank?: string | string[] }) {
         <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
           Bank Balances
         </Title>
-        <Badge className={classes.totalBadge}>
-          {`Total: ${totalAmount.toLocaleString(undefined, {
-            style: "currency",
-            currency: "PHP",
-            maximumFractionDigits: 1,
-          })}`}
-        </Badge>
+        {!hasBankInProps && (
+          <Badge className={classes.totalBadge}>
+            {`Total: ${totalAmount.toLocaleString(undefined, {
+              style: "currency",
+              currency: "PHP",
+              maximumFractionDigits: 1,
+            })}`}
+          </Badge>
+        )}
       </Group>
       <Skeleton visible={loading} className={classes.skeleton}>
         {Boolean(!banks?.length) ? (
