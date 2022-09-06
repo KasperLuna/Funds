@@ -7,11 +7,18 @@ import TransactionList from "../../components/banks/TransactionList";
 import { IconFilter } from "@tabler/icons";
 import { BankStats } from "../../components/banks/BankStats";
 import { BankSettings } from "../../components/banks/BankSettings";
+import { useRouter } from "next/router";
 import Link from "next/link";
 
 const Home: NextPage = () => {
-  const pages = [{ title: "Banks", href: "/banks" }].map((page) => (
-    <Link href={page.href} key={page.title} passHref>
+  const router = useRouter();
+  const bank = router.query["bank"];
+
+  const pages = [
+    { title: "Banks", href: "/banks" },
+    { title: bank, href: `/banks/${bank}` },
+  ].map((page, index) => (
+    <Link href={page.href} key={index} passHref>
       <Anchor>{page.title}</Anchor>
     </Link>
   ));
@@ -22,8 +29,10 @@ const Home: NextPage = () => {
         <title>Banks | Funds</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Breadcrumbs>{pages}</Breadcrumbs>
-      <BankStats />
+      <Breadcrumbs separator="→">{pages}</Breadcrumbs>
+      <BankStats
+        bank={typeof bank === "string" ? bank.replace(/%20/g, "") : ""}
+      />
       <Group position="apart">
         <Group>
           <BankSettings />
@@ -33,7 +42,9 @@ const Home: NextPage = () => {
         </Group>
         <Create />
       </Group>
-      <TransactionList />
+      <TransactionList
+        bank={typeof bank === "string" ? bank.replace(/%20/g, "") : ""}
+      />
     </>
   );
 };

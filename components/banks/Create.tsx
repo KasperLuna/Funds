@@ -395,7 +395,7 @@ const BankForm = ({ closeModal }: { closeModal: () => void }) => {
 
         {Boolean(banks.length) && (
           <MultiSelect
-            description="For your reference, here are all your existing categories"
+            description="For your reference, here are all your existing banks."
             multiple
             readOnly
             disabled
@@ -459,7 +459,7 @@ const CategoryForm = ({ closeModal }: { closeModal: () => void }) => {
           />
           {Boolean(categories.length) && (
             <MultiSelect
-              description="For your reference, here are all your existing categories"
+              description="For your reference, here are all your existing categories."
               multiple
               readOnly
               disabled

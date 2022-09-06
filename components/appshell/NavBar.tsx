@@ -70,7 +70,11 @@ export const NavBar = () => {
   const { height } = useViewportSize();
   const [activeTab, setActiveTab] = useState<TabsValue>(router.pathname || "/");
   useEffect(() => {
-    setActiveTab(router.pathname);
+    if (router.pathname.includes("/banks")) {
+      setActiveTab("/banks");
+    } else {
+      setActiveTab(router.pathname);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router.pathname]);
 

@@ -23,12 +23,16 @@ import { txPosOrNeg } from "../utils/helpers";
 import { showErrorNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
-export const useBanksQuery = (id?: string) => {
+export const useBanksQuery = (id?: string, bank?: string | string[]) => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const bankFilter = bank ? where("name", "==", bank) : where("name", "!=", "");
+
   const banksRef = collection(db, "users", id || "", "banks");
-  const q = query(banksRef, orderBy("balance", "desc"));
+  const q = bank
+    ? query(banksRef, bankFilter)
+    : query(banksRef, orderBy("balance", "desc"));
   useEffect(() => {
     const getBanks = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
@@ -65,12 +69,16 @@ export const useCategoriesQuery = (id?: string) => {
   return { categories, loading };
 };
 
-export const useTransactionsQuery = (id?: string) => {
+export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const bankFilter = bank ? where("bank", "==", bank) : where("bank", "!=", "");
+
   const txRef = collection(db, "users", id || "", "transactions");
-  const q = query(txRef, orderBy("date", "desc"));
+  const q = bank
+    ? query(txRef, bankFilter)
+    : query(txRef, orderBy("date", "desc"));
   useEffect(() => {
     const getTxns = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
@@ -82,7 +90,7 @@ export const useTransactionsQuery = (id?: string) => {
     getTxns();
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [bank]);
   return { transactions, loading };
 };
 
