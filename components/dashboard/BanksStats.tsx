@@ -6,6 +6,7 @@ import {
   Paper,
   RingProgress,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Title,
@@ -46,8 +47,6 @@ const useStyles = createStyles((theme) => ({
 }));
 
 const BankRingsTotal = ({ banks }: { banks: Bank[] | undefined }) => {
-  const { classes } = useStyles();
-
   if (!banks) return null;
   const total =
     banks.reduce((acc, bank) => {
@@ -134,7 +133,7 @@ const TopLeaderRow = ({
 const BanksStats = () => {
   const { classes } = useStyles();
   const { user } = useAuth();
-  const { banks } = useBanksQuery(user?.uid);
+  const { banks, loading } = useBanksQuery(user?.uid);
 
   const total =
     banks.reduce((acc, bank) => {
@@ -143,64 +142,66 @@ const BanksStats = () => {
 
   return (
     <>
-      {banks.length > 0 ? (
-        <Paper withBorder radius={"lg"} className={classes.card}>
-          <Stack spacing={0}>
-            <Group position="apart" sx={{ paddingLeft: 20 }}>
-              <Title size={"h3"}>Banks</Title>
-              <Link href="/banks" passHref>
-                <Anchor>
-                  <IconExternalLink />
-                </Anchor>
-              </Link>
-            </Group>
+      <Skeleton visible={loading} radius="md">
+        {banks.length > 0 ? (
+          <Paper withBorder radius={"lg"} className={classes.card}>
+            <Stack spacing={0}>
+              <Group position="apart" sx={{ paddingLeft: 20 }}>
+                <Title size={"h3"}>Banks</Title>
+                <Link href="/banks" passHref>
+                  <Anchor>
+                    <IconExternalLink />
+                  </Anchor>
+                </Link>
+              </Group>
 
-            <SimpleGrid
-              cols={2}
-              breakpoints={[
-                { maxWidth: "lg", cols: 2 },
-                { maxWidth: "md", cols: 2 },
-                { maxWidth: "sm", cols: 1 },
-                { maxWidth: "xs", cols: 1 },
-              ]}
-            >
-              <BankRingsTotal banks={banks} />
-              <Stack
-                justify={"center"}
-                align="center"
-                sx={{ marginInline: 30, flexShrink: 0 }}
+              <SimpleGrid
+                cols={2}
+                breakpoints={[
+                  { maxWidth: "lg", cols: 2 },
+                  { maxWidth: "md", cols: 2 },
+                  { maxWidth: "sm", cols: 1 },
+                  { maxWidth: "xs", cols: 1 },
+                ]}
               >
-                <Title size={"h4"} sx={{ whiteSpace: "nowrap" }}>
-                  Highest Value Accounts
-                </Title>
-                <Stack spacing={5}>
-                  {banks.slice(0, 4).map((bank, index) => {
-                    return (
-                      <TopLeaderRow
-                        key={index}
-                        index={index}
-                        name={bank.name}
-                        balance={bank.balance}
-                        color={colorsArray[index]}
-                        percentage={((bank.balance / total) * 100).toFixed(0)}
-                      />
-                    );
-                  })}
+                <BankRingsTotal banks={banks} />
+                <Stack
+                  justify={"center"}
+                  align="center"
+                  sx={{ marginInline: 30, flexShrink: 0 }}
+                >
+                  <Title size={"h4"} sx={{ whiteSpace: "nowrap" }}>
+                    Highest Value Accounts
+                  </Title>
+                  <Stack spacing={5}>
+                    {banks.slice(0, 4).map((bank, index) => {
+                      return (
+                        <TopLeaderRow
+                          key={index}
+                          index={index}
+                          name={bank.name}
+                          balance={bank.balance}
+                          color={colorsArray[index]}
+                          percentage={((bank.balance / total) * 100).toFixed(0)}
+                        />
+                      );
+                    })}
+                  </Stack>
                 </Stack>
-              </Stack>
-            </SimpleGrid>
-          </Stack>
-        </Paper>
-      ) : (
-        <Paper withBorder radius={"lg"} className={classes.emptyPageCard}>
-          <Title size={"h3"}>Banks</Title>
-          You don&apos;t seem to have any banks yet. Head over to the{" "}
-          <Link href="/banks" passHref>
-            <Anchor>Banks Tab</Anchor>
-          </Link>{" "}
-          and add a couple along with your transactions to see your stats!
-        </Paper>
-      )}
+              </SimpleGrid>
+            </Stack>
+          </Paper>
+        ) : (
+          <Paper withBorder radius={"lg"} className={classes.emptyPageCard}>
+            <Title size={"h3"}>Banks</Title>
+            You don&apos;t seem to have any banks yet. Head over to the{" "}
+            <Link href="/banks" passHref>
+              <Anchor>Banks Tab</Anchor>
+            </Link>{" "}
+            and add a couple along with your transactions to see your stats!
+          </Paper>
+        )}
+      </Skeleton>
     </>
   );
 };

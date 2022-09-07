@@ -67,12 +67,7 @@ export const NavFooter = () => {
   }, [router.pathname]);
 
   const items = tabs.map((tab) => (
-    <Tabs.Tab
-      icon={tab.icon}
-      value={tab.href}
-      key={tab.href}
-      disabled={tab.name == "Crypto" ? true : false}
-    >
+    <Tabs.Tab icon={tab.icon} value={tab.href} key={tab.href}>
       {tab.name}
     </Tabs.Tab>
   ));

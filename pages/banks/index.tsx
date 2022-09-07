@@ -1,13 +1,13 @@
 import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { ActionIcon, Anchor, Breadcrumbs, Group } from "@mantine/core";
+import { Anchor, Breadcrumbs, Group } from "@mantine/core";
 import Create from "../../components/banks/Create";
 import TransactionList from "../../components/banks/TransactionList";
-import { IconFilter } from "@tabler/icons";
 import { BankStats } from "../../components/banks/BankStats";
 import { BankSettings } from "../../components/banks/BankSettings";
 import Link from "next/link";
+import { Filter } from "../../components/banks/Filter";
 
 const Home: NextPage = () => {
   const pages = [{ title: "Banks", href: "/banks" }].map((page) => (
@@ -27,9 +27,7 @@ const Home: NextPage = () => {
       <Group position="apart">
         <Group>
           <BankSettings />
-          <ActionIcon disabled>
-            <IconFilter />
-          </ActionIcon>
+          <Filter />
         </Group>
         <Create />
       </Group>
