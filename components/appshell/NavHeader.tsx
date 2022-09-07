@@ -21,6 +21,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "../../components/config/AuthContext";
 import { Logo } from "./Logo";
+import { AppSettingsModal } from "../config/AppSettingsModal";
 
 const useStyles = createStyles((theme) => ({
   header: {
@@ -100,6 +101,7 @@ export default function NavHeader() {
   const router = useRouter();
   const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
+  const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
   return (
@@ -149,7 +151,10 @@ export default function NavHeader() {
                   </UnstyledButton>
                 </Menu.Target>
                 <Menu.Dropdown>
-                  <Menu.Item icon={<IconSettings size={14} stroke={1.5} />}>
+                  <Menu.Item
+                    icon={<IconSettings size={14} stroke={1.5} />}
+                    onClick={() => setSettingsIsOpen(true)}
+                  >
                     Settings
                   </Menu.Item>
                   <Menu.Item
@@ -183,6 +188,7 @@ export default function NavHeader() {
           )}
         </Group>
       </Container>
+      <AppSettingsModal isOpen={settingsIsOpen} setIsOpen={setSettingsIsOpen} />
     </div>
   );
 }

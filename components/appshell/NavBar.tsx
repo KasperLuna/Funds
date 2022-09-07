@@ -15,6 +15,7 @@ import { IconLogout, IconSettings } from "@tabler/icons";
 import { ColorToggle } from "./ColorToggle";
 import { useAuth } from "../../components/config/AuthContext";
 import { useViewportSize } from "@mantine/hooks";
+import { AppSettingsModal } from "../config/AppSettingsModal";
 
 const useStyles = createStyles((theme) => ({
   navBar: {
@@ -69,6 +70,7 @@ const useStyles = createStyles((theme) => ({
 export const NavBar = () => {
   const { height } = useViewportSize();
   const [activeTab, setActiveTab] = useState<TabsValue>(router.pathname || "/");
+  const [settingsIsOpen, setSettingsIsOpen] = useState<boolean>(false);
   useEffect(() => {
     if (router.pathname.includes("/banks")) {
       setActiveTab("/banks");
@@ -87,59 +89,63 @@ export const NavBar = () => {
   ));
 
   return (
-    <Navbar
-      hiddenBreakpoint="sm"
-      height={`calc(${height}px - 66px)`}
-      width={{ sm: 140, lg: 200 }}
-      className={classes.navBar}
-    >
-      <Stack justify={"space-between"} className={classes.navStack}>
-        <Box>
-          <Tabs
-            value={activeTab}
-            variant="outline"
-            onTabChange={(value) => {
-              router.push(`${value}`);
-              setActiveTab(value);
-            }}
-            orientation="vertical"
-            classNames={{
-              root: classes.tabs,
-              tabsList: classes.tabsList,
-              tab: classes.tab,
-            }}
-          >
-            <Tabs.List position="apart" grow sx={{ width: "100%" }}>
-              {items}
-            </Tabs.List>
-          </Tabs>
-        </Box>
+    <>
+      <Navbar
+        hiddenBreakpoint="sm"
+        height={`calc(${height}px - 66px)`}
+        width={{ sm: 140, lg: 200 }}
+        className={classes.navBar}
+      >
+        <Stack justify={"space-between"} className={classes.navStack}>
+          <Box>
+            <Tabs
+              value={activeTab}
+              variant="outline"
+              onTabChange={(value) => {
+                router.push(`${value}`);
+                setActiveTab(value);
+              }}
+              orientation="vertical"
+              classNames={{
+                root: classes.tabs,
+                tabsList: classes.tabsList,
+                tab: classes.tab,
+              }}
+            >
+              <Tabs.List position="apart" grow sx={{ width: "100%" }}>
+                {items}
+              </Tabs.List>
+            </Tabs>
+          </Box>
 
-        <Button.Group orientation="vertical">
-          <ColorToggle />
-          <Divider />
-          <Button
-            leftIcon={<IconSettings size={18} />}
-            color="gray"
-            variant="subtle"
-          >
-            Settings
-          </Button>
-          <Divider />
-          <Button
-            leftIcon={<IconLogout size={18} />}
-            color="gray"
-            variant="subtle"
-            onClick={async () => {
-              await signOut();
-              router.push("/");
-            }}
-          >
-            Sign Out
-          </Button>
-          <Divider />
-        </Button.Group>
-      </Stack>
-    </Navbar>
+          <Button.Group orientation="vertical">
+            <ColorToggle />
+            <Divider />
+            <Button
+              leftIcon={<IconSettings size={18} />}
+              color="gray"
+              variant="subtle"
+              onClick={() => setSettingsIsOpen(true)}
+            >
+              Settings
+            </Button>
+            <Divider />
+            <Button
+              leftIcon={<IconLogout size={18} />}
+              color="gray"
+              variant="subtle"
+              onClick={async () => {
+                await signOut();
+                router.push("/");
+              }}
+            >
+              Sign Out
+            </Button>
+            <Divider />
+          </Button.Group>
+        </Stack>
+      </Navbar>
+      <AppSettingsModal isOpen={settingsIsOpen} setIsOpen={setSettingsIsOpen} />
+    </>
   );
 };
