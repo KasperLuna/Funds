@@ -191,7 +191,6 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
                   </tbody>
                 </Table>
               )}
-              ]
             </>
           ) : (
             <Box className={classes.noBanksBox}>
