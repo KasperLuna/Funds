@@ -158,7 +158,7 @@ export function BankStats({ bank }: { bank?: string | string[] }) {
         noWrap
       >
         <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
-          Bank Balances
+          {hasBankInProps ? `${bank} Balance` : "Bank Balances"}
         </Title>
         {!hasBankInProps && (
           <Badge className={classes.totalBadge}>
@@ -170,7 +170,7 @@ export function BankStats({ bank }: { bank?: string | string[] }) {
           </Badge>
         )}
       </Group>
-      <Skeleton visible={loading} className={classes.skeleton}>
+      <Skeleton visible={loading} className={classes.skeleton} radius="md">
         {Boolean(!banks?.length) ? (
           <Box className={classes.noBanksBox}>
             <Text>No Banks! Select the dropdown and add a bank.</Text>

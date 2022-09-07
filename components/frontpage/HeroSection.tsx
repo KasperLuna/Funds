@@ -37,6 +37,7 @@ const useStyles = createStyles((theme) => ({
   title: {
     textAlign: "center",
     fontSize: "5.7rem",
+    letterSpacing: -6,
     textSizeAdjust: "50%",
     fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
     fontWeight: 1000,
@@ -46,12 +47,14 @@ const useStyles = createStyles((theme) => ({
     color: theme.colorScheme === "dark" ? theme.colors.gray[0] : theme.black,
 
     [`@media (max-width: ${theme.breakpoints.md}px)`]: {
+      letterSpacing: -1,
       fontSize: "5.5rem",
       marginBottom: "10px",
     },
 
     [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
-      fontSize: "4.8rem",
+      fontSize: "5rem",
+      letterSpacing: -3,
     },
   },
 

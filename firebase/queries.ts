@@ -38,11 +38,11 @@ export const useBanksQuery = (id?: string, bank?: string | string[]) => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Bank);
         setBanks(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
     getBanks();
-    setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { banks, loading };
@@ -59,11 +59,11 @@ export const useCategoriesQuery = (id?: string) => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Category);
         setCategories(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
     getCategories();
-    setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { categories, loading };
@@ -84,11 +84,11 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as FirebaseTxTypes);
         setTransactions(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
     getTxns();
-    setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bank]);
   return { transactions, loading };
