@@ -27,6 +27,10 @@ const useStyles = createStyles((theme) => ({
     overflowX: "auto",
     height: "100%",
   },
+  table: {
+    // overflowX: "auto",
+    // whiteSpace: "normal",
+  },
   card: {
     // border: `1px solid ${theme.colors.gray[7]}`,
     padding: theme.spacing.xs,
@@ -103,96 +107,97 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
         Latest Transactions
       </Text>
       <Box className={classes.tableContainer}>
-        <Skeleton visible={loading} radius="md">
-          {Boolean(transactions?.length) ? (
-            <>
-              {query.layout != "table" ? (
-                <SimpleGrid
-                  cols={4}
-                  breakpoints={[
-                    { maxWidth: "lg", cols: 3 },
-                    { maxWidth: "md", cols: 2 },
-                    { maxWidth: "sm", cols: 2 },
-                    { maxWidth: "xs", cols: 1 },
-                  ]}
-                >
-                  {transactions?.map((transaction) => {
-                    return (
-                      <div key={transaction.id}>
-                        <TransactionCard
-                          data={transaction}
-                          categories={categories}
-                        />
-                      </div>
-                    );
-                  })}
-                </SimpleGrid>
-              ) : (
-                <Table
-                  striped
-                  highlightOnHover
-                  captionSide="bottom"
-                  horizontalSpacing={"sm"}
-                >
-                  <thead>
+        {Boolean(transactions?.length) ? (
+          <>
+            {query.layout != "table" ? (
+              <SimpleGrid
+                cols={4}
+                breakpoints={[
+                  { maxWidth: "lg", cols: 3 },
+                  { maxWidth: "md", cols: 2 },
+                  { maxWidth: "sm", cols: 2 },
+                  { maxWidth: "xs", cols: 1 },
+                ]}
+              >
+                {transactions?.map((transaction) => {
+                  return (
+                    <div key={transaction.id}>
+                      <TransactionCard
+                        data={transaction}
+                        categories={categories}
+                      />
+                    </div>
+                  );
+                })}
+              </SimpleGrid>
+            ) : (
+              <Table
+                striped
+                highlightOnHover
+                captionSide="bottom"
+                horizontalSpacing={"xs"}
+                className={classes.table}
+              >
+                <thead>
+                  <tr>
+                    {headers.map((header, index) => {
+                      return <th key={index}>{header}</th>;
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Boolean(!transactions?.length) && (
                     <tr>
-                      {headers.map((header, index) => {
-                        return <th key={index}>{header}</th>;
-                      })}
+                      <td colSpan={6} style={{ textAlign: "center" }}>
+                        No Items. Click &quot;Add&quot; to add a new
+                        transaction.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {Boolean(!transactions?.length) && (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: "center" }}>
-                          No Items. Click &quot;Add&quot; to add a new
-                          transaction.
+                  )}
+                  {transactions?.map((data) => {
+                    return (
+                      <tr key={data.id}>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {dayjs(data.date?.seconds * 1000).format("MMM D")}
+                        </td>
+                        <td>
+                          <Text color={data.amount > 0 ? "green" : "red"}>
+                            {data.amount.toLocaleString(undefined, {
+                              style: "currency",
+                              currency: "PHP",
+                              maximumFractionDigits: 1,
+                            })}
+                          </Text>
+                        </td>
+                        <td>{data.bank}</td>
+                        <td>{data.description}</td>
+                        <td style={{ alignItems: "start" }}>
+                          <Box className={classes.tableCategory}>
+                            <MultiSelect
+                              data={
+                                categories?.map((categ) => ({
+                                  value: categ.name,
+                                  label: categ.name,
+                                })) || []
+                              }
+                              size="xs"
+                              value={data.category}
+                              readOnly
+                            />
+                          </Box>
+                        </td>
+                        <td>
+                          <EditTransactionForm {...data} />
                         </td>
                       </tr>
-                    )}
-                    {transactions?.map((data) => {
-                      return (
-                        <tr key={data.id}>
-                          <td style={{ whiteSpace: "nowrap" }}>
-                            {dayjs(data.date?.seconds * 1000).format("MMM D")}
-                          </td>
-                          <td>
-                            <Text color={data.amount > 0 ? "green" : "red"}>
-                              {data.amount.toLocaleString(undefined, {
-                                style: "currency",
-                                currency: "PHP",
-                                maximumFractionDigits: 1,
-                              })}
-                            </Text>
-                          </td>
-                          <td>{data.bank}</td>
-                          <td>{data.description}</td>
-                          <td style={{ alignItems: "start" }}>
-                            <Box className={classes.tableCategory}>
-                              <MultiSelect
-                                data={
-                                  categories?.map((categ) => ({
-                                    value: categ.name,
-                                    label: categ.name,
-                                  })) || []
-                                }
-                                size="xs"
-                                value={data.category}
-                                readOnly
-                              />
-                            </Box>
-                          </td>
-                          <td>
-                            <EditTransactionForm {...data} />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </Table>
-              )}
-            </>
-          ) : (
+                    );
+                  })}
+                </tbody>
+              </Table>
+            )}
+          </>
+        ) : (
+          <Skeleton visible={loading} radius="md">
             <Box className={classes.noBanksBox}>
               <Text>
                 No transactions exist or match the current filters, Click
@@ -200,8 +205,8 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
                 filters.
               </Text>
             </Box>
-          )}
-        </Skeleton>
+          </Skeleton>
+        )}
       </Box>
     </>
   );
