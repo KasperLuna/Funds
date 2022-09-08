@@ -25,11 +25,21 @@ const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
   tableContainer: {
     overflowX: "auto",
-    height: "100%",
+    overflowY: "auto",
+    maxHeight: "65vh",
   },
   table: {
     // overflowX: "auto",
     // whiteSpace: "normal",
+  },
+  tableHeader: {
+    backgroundColor:
+      theme.colorScheme === "dark"
+        ? theme.colors.dark[7]
+        : theme.colors.gray[1],
+    position: "sticky",
+    top: 0,
+    zIndex: 5,
   },
   card: {
     // border: `1px solid ${theme.colors.gray[7]}`,
@@ -138,7 +148,7 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
                 horizontalSpacing={"xs"}
                 className={classes.table}
               >
-                <thead>
+                <thead className={classes.tableHeader}>
                   <tr>
                     {headers.map((header, index) => {
                       return <th key={index}>{header}</th>;
@@ -183,6 +193,7 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
                               size="xs"
                               value={data.category}
                               readOnly
+                              zIndex={1}
                             />
                           </Box>
                         </td>

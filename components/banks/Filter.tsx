@@ -5,7 +5,7 @@ import { IconFilter } from "@tabler/icons";
 export const Filter = () => {
   return (
     <>
-      <Popover position="right">
+      <Popover position="right" shadow={"lg"}>
         <Popover.Target>
           <ActionIcon>
             <IconFilter />

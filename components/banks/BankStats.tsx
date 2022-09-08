@@ -27,6 +27,10 @@ const useStyles = createStyles((theme) => ({
     fontSize: 24,
     fontWeight: 700,
     lineHeight: 1,
+
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      fontSize: 22,
+    },
   },
 
   diff: {

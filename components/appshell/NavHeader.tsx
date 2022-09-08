@@ -122,6 +122,7 @@ export default function NavHeader() {
                 onClose={() => setUserMenuOpened(false)}
                 onOpen={() => setUserMenuOpened(true)}
                 withArrow
+                shadow={"lg"}
               >
                 <Menu.Target>
                   <UnstyledButton

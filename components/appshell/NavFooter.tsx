@@ -36,6 +36,21 @@ const useStyles = createStyles((theme) => ({
     "&[data-active]": {
       backgroundColor:
         theme.colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
+      borderBottom: `2px solid ${
+        theme.colorScheme === "dark"
+          ? theme.colors.gray[1]
+          : theme.colors.gray[2]
+      }`,
+      borderRight: `2px solid ${
+        theme.colorScheme === "dark"
+          ? theme.colors.gray[1]
+          : theme.colors.gray[2]
+      }`,
+      borderLeft: `2px solid ${
+        theme.colorScheme === "dark"
+          ? theme.colors.gray[1]
+          : theme.colors.gray[2]
+      }`,
     },
   },
 
@@ -49,9 +64,10 @@ const useStyles = createStyles((theme) => ({
     backdropFilter: "blur(10px)",
     paddingInline: theme.spacing.md,
 
-    "@media screen and (display-mode: standalone)": {
-      height: 75,
-    },
+    "@media screen and (display-mode: standalone) and (orientation: portrait)":
+      {
+        height: 75,
+      },
   },
 }));
 

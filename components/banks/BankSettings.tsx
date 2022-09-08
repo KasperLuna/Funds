@@ -18,7 +18,7 @@ export const BankSettings = () => {
   };
   return (
     <>
-      <Menu withArrow position="bottom-start">
+      <Menu withArrow position="bottom-start" shadow={"lg"}>
         <Menu.Target>
           <ActionIcon>
             <IconSettings />
