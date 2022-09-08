@@ -67,7 +67,6 @@ const BankInput = React.forwardRef(
             ) || placeholderItem
           }
           // ref={ref}
-          placeholder="Pick a Bank"
           style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
           onChange={onChange}
           value={value}
