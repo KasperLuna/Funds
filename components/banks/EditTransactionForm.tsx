@@ -5,23 +5,22 @@ import {
   ActionIcon,
   Button,
   useMantineTheme,
-  Popover,
-  Stack,
   Modal,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { IconTrash, IconEdit } from "@tabler/icons";
+import { IconEdit } from "@tabler/icons";
 import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { TypeInput } from "../form/TypeInput";
 import { CategoryInput } from "../form/CategoryInput";
-import { deleteTransaction, updateTransaction } from "../../firebase/queries";
+import { updateTransaction } from "../../firebase/queries";
 import { AppTxTypes, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
+import { DeleteTransactionPopover } from "./DeleteTransactionPopover";
 
 export function EditTransactionForm(props: FirebaseTxTypes) {
   const theme = useMantineTheme();
@@ -132,7 +131,6 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
               <DeleteTransactionPopover
                 transactionID={props.id}
                 transactionAmount={props.amount}
-                closeModal={onClose}
                 bank={props.bank}
               />
               <Button loading={isSubmitting} type="submit" size="sm">
@@ -143,82 +141,5 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
         </form>
       </Modal>
     </>
-  );
-}
-
-export function DeleteTransactionPopover({
-  transactionID,
-  transactionAmount,
-  closeModal,
-  bank,
-}: {
-  transactionID?: string;
-  transactionAmount: number;
-  closeModal: () => void;
-  bank: string;
-}) {
-  const { user } = useAuth();
-  const [opened, setOpened] = useState<boolean>(false);
-
-  const onDelete = async () => {
-    if (!transactionID) {
-      showErrorNotif();
-      return;
-    }
-    const deleteVals = {
-      userId: user?.uid || "",
-      transactionID: transactionID,
-      transactionAmount: transactionAmount,
-      bank: bank,
-    };
-    deleteTransaction(deleteVals).then(() => {
-      closeModal();
-      showSuccessNotif("Transaction deleted successfully");
-      setOpened(false);
-    });
-  };
-  return (
-    <Popover
-      opened={opened}
-      onClose={() => setOpened(false)}
-      position="top-end"
-      transition="skew-down"
-      withArrow
-    >
-      <Popover.Target>
-        <ActionIcon
-          variant="filled"
-          color={"red"}
-          onClick={() => setOpened((o) => !o)}
-          size="lg"
-        >
-          <IconTrash size="20px" />
-        </ActionIcon>
-      </Popover.Target>
-      <Popover.Dropdown sx={{ width: "200px" }}>
-        <Stack>
-          Are you sure you want to delete this transaction?
-          <Group position="apart" style={{ marginTop: 10 }}>
-            <Anchor
-              component="button"
-              color="teal"
-              size="sm"
-              onClick={() => setOpened(false)}
-            >
-              Cancel
-            </Anchor>
-
-            <Button
-              variant="filled"
-              color={"red"}
-              onClick={() => onDelete()}
-              size="sm"
-            >
-              Delete
-            </Button>
-          </Group>
-        </Stack>
-      </Popover.Dropdown>
-    </Popover>
   );
 }
