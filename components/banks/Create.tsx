@@ -60,7 +60,7 @@ export default function Create() {
         >
           Add
         </Button>
-        <Menu transition="pop" position="bottom-end">
+        <Menu transition="pop" position="bottom-end" shadow={"lg"}>
           <Menu.Target>
             <ActionIcon
               variant="filled"

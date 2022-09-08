@@ -8,6 +8,7 @@ import { NavBar } from "./NavBar";
 import { useAuth } from "../../components/config/AuthContext";
 import router from "next/router";
 import { noAuth } from "../../pages/_app";
+import { useMediaQuery } from "@mantine/hooks";
 
 export const tabs = [
   {
@@ -40,6 +41,7 @@ const useStyles = createStyles((theme) => ({
   },
   container: {
     paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
     display: "flex",
     flexDirection: "column",
   },
@@ -53,6 +55,8 @@ const useStyles = createStyles((theme) => ({
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const { classes } = useStyles();
+
+  const isMd = useMediaQuery("(min-width: 768px)");
 
   const isInApp = !Boolean(noAuth.includes(router.pathname));
 
@@ -70,7 +74,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         navbarOffsetBreakpoint="sm"
         asideOffsetBreakpoint="sm"
         navbar={user && isInApp ? <NavBar /> : <></>}
-        footer={user && isInApp ? <NavFooter /> : <></>}
+        footer={user && isInApp && !isMd ? <NavFooter /> : <></>}
         header={<NavHeader />}
       >
         <Box id="loading-box" className={classes.loadingBox}>
