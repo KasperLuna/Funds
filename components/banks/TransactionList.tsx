@@ -5,6 +5,7 @@ import {
   Group,
   MultiSelect,
   Paper,
+  ScrollArea,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -24,9 +25,7 @@ import { useAuth } from "../config/AuthContext";
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
   tableContainer: {
-    overflowX: "auto",
-    overflowY: "auto",
-    maxHeight: "65vh",
+    height: "65vh",
   },
   table: {
     // overflowX: "auto",
@@ -116,7 +115,11 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
       >
         Latest Transactions
       </Text>
-      <Box className={classes.tableContainer}>
+      <ScrollArea
+        className={classes.tableContainer}
+        type="auto"
+        offsetScrollbars={true}
+      >
         {Boolean(transactions?.length) ? (
           <>
             {query.layout != "table" ? (
@@ -218,7 +221,7 @@ const TransactionList = ({ bank }: { bank?: string | string[] }) => {
             </Box>
           </Skeleton>
         )}
-      </Box>
+      </ScrollArea>
     </>
   );
 };
