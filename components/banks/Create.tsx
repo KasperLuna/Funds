@@ -164,7 +164,7 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<AppTxTypes>();
+  } = useForm<AppTxTypes>({ defaultValues: { bank: "" } });
   const onSubmit = async (data: AppTxTypes) => {
     setIsLoading(true);
     createTransaction({ userId: user?.uid || "", ...data }).then(() => {
@@ -237,7 +237,7 @@ const TransferForm = ({ setIsOpen }: CreateProps) => {
     reset,
     formState: { errors },
   } = useForm<Transfer>({
-    defaultValues: { destinationAmount: 0, originAmount: 0 },
+    defaultValues: { originBank: "", destinationBank: "" },
   });
   const [isSameAmount, setIsSameAmount] = useState<boolean>(false);
   const onSubmit = async (data: Transfer) => {

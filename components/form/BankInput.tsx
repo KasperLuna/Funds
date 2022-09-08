@@ -46,17 +46,28 @@ const BankInput = React.forwardRef(
       (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
     );
 
+    const placeholderItem = [
+      {
+        label: "Select a bank",
+        value: "",
+        disabled: true,
+      },
+    ];
+
     return (
       <Group noWrap spacing={0} style={{ ...groupStyle }}>
         <NativeSelect
           data={
-            filteredBanks?.map((bank) => ({
-              value: bank.name,
-              label: bank.name,
-            })) || []
+            placeholderItem.concat(
+              filteredBanks?.map((bank) => ({
+                value: bank.name,
+                label: bank.name,
+                disabled: false,
+              }))
+            ) || placeholderItem
           }
           // ref={ref}
-          placeholder="Pick one"
+          placeholder="Pick a Bank"
           style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
           onChange={onChange}
           value={value}
@@ -131,7 +142,7 @@ const AddBankButton = () => {
           label="Bank"
           placeholder="BDO"
           sx={{ width: "250px" }}
-          description="Add the name of a bank, you can customize this with colors later in app settings."
+          description="Add the name of a bank, you can customize this with colors later in bank settings."
           {...register("name", { required: true })}
           variant="default"
           error={errors.name?.message}
