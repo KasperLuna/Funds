@@ -33,16 +33,27 @@ export const useBanksQuery = (id?: string, bank?: string | string[]) => {
   const q = bank
     ? query(banksRef, bankFilter)
     : query(banksRef, orderBy("balance", "desc"));
+
   useEffect(() => {
+    let isMounted = true;
     const getBanks = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Bank);
-        setBanks(data);
-        setLoading(false);
+        if (isMounted) {
+          setBanks(data);
+          setLoading(false);
+        }
       });
       return () => unsubscribe();
     };
-    getBanks();
+    getBanks().catch(() => {
+      if (!isMounted) return;
+      showErrorNotif("Error fetching banks");
+      setLoading(false);
+    });
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { banks, loading };
@@ -55,15 +66,25 @@ export const useCategoriesQuery = (id?: string) => {
   const categoriesRef = collection(db, "users", id || "", "categories");
   const q = query(categoriesRef, orderBy("name", "asc"));
   useEffect(() => {
+    let isMounted = true;
     const getCategories = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as Category);
-        setCategories(data);
-        setLoading(false);
+        if (isMounted) {
+          setCategories(data);
+          setLoading(false);
+        }
       });
       return () => unsubscribe();
     };
-    getCategories();
+    getCategories().catch(() => {
+      if (!isMounted) return;
+      showErrorNotif("Error fetching categories");
+      setLoading(false);
+    });
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return { categories, loading };
@@ -80,15 +101,25 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
     ? query(txRef, bankFilter, orderBy("date", "desc"))
     : query(txRef, orderBy("date", "desc"));
   useEffect(() => {
+    let isMounted = true;
     const getTxns = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as FirebaseTxTypes);
-        setTransactions(data);
-        setLoading(false);
+        if (isMounted) {
+          setTransactions(data);
+          setLoading(false);
+        }
       });
       return () => unsubscribe();
     };
-    getTxns();
+    getTxns().catch(() => {
+      if (!isMounted) return;
+      showErrorNotif("Error fetching transactions");
+      setLoading(false);
+    });
+    return () => {
+      isMounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bank]);
   return { transactions, loading };
