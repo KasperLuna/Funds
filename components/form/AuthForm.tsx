@@ -285,12 +285,13 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             labelPosition="center"
             my="lg"
           />
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} autoComplete="on">
             <Stack>
               <TextInput
                 required
                 label="Email: "
                 placeholder="dev@kasperluna.com"
+                autoComplete="username"
                 icon={<IconAt size={15} />}
                 {...register("email", {
                   pattern: {
