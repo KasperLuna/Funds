@@ -331,6 +331,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
                   required
                   label="Password: "
                   placeholder="Password"
+                  autoComplete="current-password"
                   icon={<IconLock size={15} />}
                   {...register("password")}
                   error={errors.password && errors.password.message}

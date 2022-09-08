@@ -26,43 +26,50 @@ type BankInputProps = {
   filter?: string;
 };
 
-const BankInput = ({
-  onChange,
-  value,
-  groupStyle,
-  inputStyle,
-  isError,
-  label = "Bank: ",
-  filter,
-}: BankInputProps): JSX.Element => {
-  const { user } = useAuth();
-  const { banks } = useBanksQuery(user?.uid);
-  const filteredBanks = banks?.filter(
-    (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
-  );
+const BankInput = React.forwardRef(
+  (
+    {
+      onChange,
+      value,
+      groupStyle,
+      inputStyle,
+      isError,
+      label = "Bank: ",
+      filter,
+    }: BankInputProps,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ref: React.Ref<HTMLSelectElement>
+  ): JSX.Element => {
+    const { user } = useAuth();
+    const { banks } = useBanksQuery(user?.uid);
+    const filteredBanks = banks?.filter(
+      (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
+    );
 
-  return (
-    <Group noWrap spacing={0} style={{ ...groupStyle }}>
-      <NativeSelect
-        data={
-          filteredBanks?.map((bank) => ({
-            value: bank.name,
-            label: bank.name,
-          })) || []
-        }
-        placeholder="Pick one"
-        style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
-        onChange={onChange}
-        value={value}
-        label={label}
-        radius={0}
-        withAsterisk
-        error={isError}
-      />
-      <AddBankButton />
-    </Group>
-  );
-};
+    return (
+      <Group noWrap spacing={0} style={{ ...groupStyle }}>
+        <NativeSelect
+          data={
+            filteredBanks?.map((bank) => ({
+              value: bank.name,
+              label: bank.name,
+            })) || []
+          }
+          // ref={ref}
+          placeholder="Pick one"
+          style={{ width: "100%", borderTopRightRadius: 0, ...inputStyle }}
+          onChange={onChange}
+          value={value}
+          label={label}
+          radius={0}
+          withAsterisk
+          error={isError}
+        />
+        <AddBankButton />
+      </Group>
+    );
+  }
+);
 
 const AddBankButton = () => {
   const { user } = useAuth();
