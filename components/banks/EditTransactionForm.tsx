@@ -24,10 +24,10 @@ import { AppTxTypes, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 
 export function EditTransactionForm(props: FirebaseTxTypes) {
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const { user } = useAuth();
-  const [opened, setOpened] = useState<boolean>(false);
   const theme = useMantineTheme();
+  const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [opened, setOpened] = useState<boolean>(false);
 
   const isMobile = useMediaQuery("(max-width: 755px");
 
@@ -35,7 +35,6 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
     register,
     handleSubmit,
     control,
-    reset,
     setValue,
     formState: { errors },
   } = useForm<AppTxTypes>({
@@ -56,17 +55,18 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
       OrigTx: { ...props },
       ...data,
     };
-    updateTransaction(updateVals).then(() => {
-      setOpened(false);
+    try {
+      await updateTransaction(updateVals);
       setIsSubmitting(false);
       showSuccessNotif("Transaction updated successfully");
-      reset();
-    });
+      setOpened(false);
+    } catch {
+      showErrorNotif("Error updating transaction, please try again");
+    }
   };
 
   const onClose = () => {
     setOpened(false);
-    reset();
   };
 
   return (

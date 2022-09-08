@@ -85,6 +85,7 @@ export default function PasswordComponent({
         >
           <PasswordInput
             withAsterisk
+            autoComplete="new-password"
             label="Password: "
             placeholder="Password"
             value={value}
