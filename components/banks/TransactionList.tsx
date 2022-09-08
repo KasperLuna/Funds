@@ -25,7 +25,7 @@ import { useAuth } from "../config/AuthContext";
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
   tableContainer: {
-    maxHeight: "65vh",
+    height: "65vh",
   },
   table: {
     // overflowX: "auto",
