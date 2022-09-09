@@ -20,7 +20,7 @@ import {
   IconBuildingBank,
   IconChevronDown,
 } from "@tabler/icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";
@@ -50,48 +50,77 @@ export default function Create() {
   const banksLength = useBanksQuery(user?.uid || "")?.banks.length;
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
 
+  const [isOnline, setIsOnline] = useState<boolean>(false);
+  useEffect(() => {
+    let isMounted = true;
+    const ping = async () => {
+      try {
+        const res = await fetch("https://funds.kasperluna.com");
+        if (isMounted && res.status === 200) {
+          setIsOnline(true);
+        } else {
+          setIsOnline(false);
+        }
+      } catch (err) {
+        setIsOnline(false);
+      }
+    };
+    ping();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <>
-      <Group noWrap spacing={0}>
-        <Button
-          color={"orange"}
-          onClick={() => setIsOpen(true)}
-          sx={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-        >
-          Add
-        </Button>
-        <Menu transition="pop" position="bottom-end" shadow={"lg"}>
-          <Menu.Target>
-            <ActionIcon
-              variant="filled"
-              color={"gray"}
-              sx={{
-                borderBottomLeftRadius: 0,
-                borderTopLeftRadius: 0,
-                width: 15,
-                height: 36,
-              }}
-            >
-              <IconChevronDown size={16} stroke={1.5} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item
-              onClick={() => setDropdownModalForm("Bank")}
-              icon={<IconBuildingBank size={16} stroke={1.5} />}
-            >
-              Add Bank
-            </Menu.Item>
-            <Menu.Item
-              onClick={() => setDropdownModalForm("Category")}
-              icon={<IconApps size={16} stroke={1.5} />}
-            >
-              Add Category
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
-      </Group>
-
+      <Tooltip
+        position="top-end"
+        disabled={isOnline}
+        opened={!isOnline}
+        label={"Adding new transactions are disabled when offline."}
+      >
+        <Group noWrap spacing={0}>
+          <Button
+            color={"orange"}
+            onClick={() => setIsOpen(true)}
+            sx={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+            disabled={!isOnline}
+          >
+            Add
+          </Button>
+          <Menu transition="pop" position="bottom-end" shadow={"lg"}>
+            <Menu.Target>
+              <ActionIcon
+                variant="filled"
+                color={"gray"}
+                disabled={!isOnline}
+                sx={{
+                  borderBottomLeftRadius: 0,
+                  borderTopLeftRadius: 0,
+                  width: 15,
+                  height: 36,
+                }}
+              >
+                <IconChevronDown size={16} stroke={1.5} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                onClick={() => setDropdownModalForm("Bank")}
+                icon={<IconBuildingBank size={16} stroke={1.5} />}
+              >
+                Add Bank
+              </Menu.Item>
+              <Menu.Item
+                onClick={() => setDropdownModalForm("Category")}
+                icon={<IconApps size={16} stroke={1.5} />}
+              >
+                Add Category
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </Tooltip>
       {/* Transaction / Transfer Form */}
       <Modal
         opened={isOpen}
