@@ -2,7 +2,6 @@ import React, { createContext, useContext } from "react";
 import { useBanksQuery, useCategoriesQuery } from "../../firebase/queries";
 import { useAuth } from "../../components/config/AuthContext";
 import { Bank, Category } from "../../utils/db";
-import { useRouter } from "next/router";
 
 export type BanksCategsContextType = {
   bankData?: { banks: Bank[]; loading: boolean };
@@ -21,10 +20,8 @@ export const BanksCategsProvider = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const router = useRouter();
-  const bank = router.query["bank"];
   const { user } = useAuth();
-  const bankData = useBanksQuery(user?.uid || "", bank);
+  const bankData = useBanksQuery(user?.uid || "");
   const categoryData = useCategoriesQuery(user?.uid || "");
 
   return (

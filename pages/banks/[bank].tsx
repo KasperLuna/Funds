@@ -40,9 +40,7 @@ const Home: NextPage = () => {
         </Group>
         <Create />
       </Group>
-      <TransactionList
-        bank={typeof bank === "string" ? bank.replace(/%20/g, "") : ""}
-      />
+      <TransactionList />
     </>
   );
 };

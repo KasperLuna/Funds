@@ -23,16 +23,12 @@ import { txPosOrNeg } from "../utils/helpers";
 import { showErrorNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
-export const useBanksQuery = (id?: string, bank?: string | string[]) => {
+export const useBanksQuery = (id?: string) => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const bankFilter = bank ? where("name", "==", bank) : where("name", "!=", "");
-
   const banksRef = collection(db, "users", id || "", "banks");
-  const q = bank
-    ? query(banksRef, bankFilter)
-    : query(banksRef, orderBy("balance", "desc"));
+  const q = query(banksRef, orderBy("balance", "desc"));
 
   useEffect(() => {
     let isMounted = true;

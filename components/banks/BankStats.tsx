@@ -94,18 +94,22 @@ const useStyles = createStyles((theme) => ({
 
 export function BankStats() {
   const router = useRouter();
-  const bank = router.query["bank"];
+  const bankQuery = router.query["bank"];
   const { bankData } = useBanksCategsContext();
   const { loading, banks } = bankData || {};
 
-  const hasBankInProps = bank !== undefined;
+  const hasBankInProps = bankQuery !== undefined;
   const totalAmount =
     banks?.reduce((acc, bank) => {
       return acc + bank.balance;
     }, 0) || 0;
 
+  const filteredBanks = hasBankInProps
+    ? banks?.filter((bank) => bank.name === bankQuery)
+    : banks;
+
   const { classes } = useStyles();
-  const stats = banks?.map((bank) => {
+  const stats = filteredBanks?.map((bank) => {
     const percentage = (bank.balance / totalAmount) * 100;
     return (
       <Grid.Col
@@ -164,7 +168,7 @@ export function BankStats() {
         noWrap
       >
         <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
-          {hasBankInProps ? `${bank} Balance` : "Bank Balances"}
+          {hasBankInProps ? `${bankQuery} Balance` : "Bank Balances"}
         </Title>
         {!hasBankInProps && (
           <Badge className={classes.totalBadge}>

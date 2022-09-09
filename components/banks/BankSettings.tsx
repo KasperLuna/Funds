@@ -1,20 +1,16 @@
 import React from "react";
 import { ActionIcon, Menu, Modal } from "@mantine/core";
 import { IconLayoutGrid, IconSettings, IconTable } from "@tabler/icons";
-import { useRouter } from "next/router";
+import { useTxLayout } from "../../utils/helpers";
 
 export const BankSettings = () => {
-  const { query, push, pathname } = useRouter();
   const [opened, setOpened] = React.useState<boolean>(false);
+  const { txLayout, setTxLayout } = useTxLayout();
 
-  const isTableLayout = query.layout === "table";
+  const isTableLayout = txLayout === "table";
 
   const toggleLayoutQuery = () => {
-    const newLayout = isTableLayout ? null : "table";
-    push({
-      pathname: pathname,
-      query: { ...query, layout: newLayout },
-    });
+    txLayout === "table" ? setTxLayout("card") : setTxLayout("table");
   };
   return (
     <>
