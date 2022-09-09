@@ -9,10 +9,14 @@ import {
   Group,
   ActionIcon,
   Menu,
+  Text,
   Tabs,
   Checkbox,
   Tooltip,
   MultiSelect,
+  Overlay,
+  Center,
+  Loader,
 } from "@mantine/core";
 import {
   IconApps,
@@ -51,76 +55,83 @@ export default function Create() {
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
 
   const [isOnline, setIsOnline] = useState<boolean>(false);
+  const [checkingConnection, setCheckingConnection] = useState<boolean>(false);
   useEffect(() => {
     let isMounted = true;
     const ping = async () => {
-      try {
-        const res = await fetch("https://funds.kasperluna.com");
-        if (isMounted && res.status === 200) {
-          setIsOnline(true);
-        } else {
+      if (isMounted && checkingConnection) {
+        try {
+          const res = await fetch("https://kasperluna.com");
+          if (res.status === 200) {
+            setIsOnline(true);
+            setCheckingConnection(false);
+          } else {
+            setIsOnline(false);
+            setCheckingConnection(false);
+          }
+        } catch (err) {
           setIsOnline(false);
+          setCheckingConnection(false);
         }
-      } catch (err) {
-        setIsOnline(false);
       }
     };
     ping();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [checkingConnection]);
 
   return (
     <>
-      <Tooltip
-        position="top-end"
-        disabled={isOnline}
-        opened={!isOnline}
-        label={"Adding new transactions are disabled when offline."}
-      >
-        <Group noWrap spacing={0}>
-          <Button
-            color={"orange"}
-            onClick={() => setIsOpen(true)}
-            sx={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-            disabled={!isOnline}
-          >
-            Add
-          </Button>
-          <Menu transition="pop" position="bottom-end" shadow={"lg"}>
-            <Menu.Target>
-              <ActionIcon
-                variant="filled"
-                color={"gray"}
-                disabled={!isOnline}
-                sx={{
-                  borderBottomLeftRadius: 0,
-                  borderTopLeftRadius: 0,
-                  width: 15,
-                  height: 36,
-                }}
-              >
-                <IconChevronDown size={16} stroke={1.5} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                onClick={() => setDropdownModalForm("Bank")}
-                icon={<IconBuildingBank size={16} stroke={1.5} />}
-              >
-                Add Bank
-              </Menu.Item>
-              <Menu.Item
-                onClick={() => setDropdownModalForm("Category")}
-                icon={<IconApps size={16} stroke={1.5} />}
-              >
-                Add Category
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-      </Tooltip>
+      <Group noWrap spacing={0}>
+        <Button
+          color={"orange"}
+          onClick={() => {
+            setIsOpen(true);
+            setCheckingConnection(true);
+          }}
+          sx={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+        >
+          Add
+        </Button>
+        <Menu transition="pop" position="bottom-end" shadow={"lg"}>
+          <Menu.Target>
+            <ActionIcon
+              variant="filled"
+              color={"gray"}
+              sx={{
+                borderBottomLeftRadius: 0,
+                borderTopLeftRadius: 0,
+                width: 15,
+                height: 36,
+              }}
+            >
+              <IconChevronDown size={16} stroke={1.5} />
+            </ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item
+              onClick={() => {
+                setDropdownModalForm("Bank");
+                setCheckingConnection(true);
+              }}
+              icon={<IconBuildingBank size={16} stroke={1.5} />}
+            >
+              Add Bank
+            </Menu.Item>
+            <Menu.Item
+              onClick={() => {
+                setDropdownModalForm("Category");
+                setCheckingConnection(true);
+              }}
+              icon={<IconApps size={16} stroke={1.5} />}
+            >
+              Add Category
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
+
       {/* Transaction / Transfer Form */}
       <Modal
         opened={isOpen}
@@ -131,6 +142,19 @@ export default function Create() {
         title={`Add ${tabValue}`}
         centered
       >
+        {!isOnline && !checkingConnection && (
+          <Overlay opacity={0.75} color="#000" zIndex={5}>
+            <Center mt={"50%"} px={"lg"}>
+              <Stack justify={"center"} align="center">
+                <Text>
+                  Checking Connection! Reconnect to the internet to add
+                  transactions.
+                </Text>
+                <Loader />
+              </Stack>
+            </Center>
+          </Overlay>
+        )}
         <Tabs
           radius="md"
           variant="outline"
@@ -169,6 +193,19 @@ export default function Create() {
         onClose={() => setDropdownModalForm(null)}
         title={`Add a ${dropdownModalForm}`}
       >
+        {!isOnline && !checkingConnection && (
+          <Overlay opacity={0.75} color="#000" zIndex={5}>
+            <Center mt={"25%"} px={"lg"}>
+              <Stack justify={"center"} align="center">
+                <Text>
+                  Checking Connection! Reconnect to the internet to add
+                  transactions.
+                </Text>
+                <Loader />
+              </Stack>
+            </Center>
+          </Overlay>
+        )}
         {dropdownModalForm === "Bank" ? (
           <BankForm closeModal={closeDropdownModalForm} />
         ) : (
