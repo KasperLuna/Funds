@@ -26,14 +26,16 @@ export const db = initializeFirestore(firebase, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
 });
 
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err.code == "failed-precondition") {
-    showErrorNotif(
-      "Offline persistence can only be enabled in one tab at a time. Close other tabs."
-    );
-  } else if (err.code == "unimplemented") {
-    showErrorNotif("Current browser does not support offline persistence");
-  }
-});
+if (process.browser) {
+  enableIndexedDbPersistence(db).catch((err) => {
+    if (err.code == "failed-precondition") {
+      showErrorNotif(
+        "Offline persistence can only be enabled in one tab at a time. Close other tabs."
+      );
+    } else if (err.code == "unimplemented") {
+      showErrorNotif("Current browser does not support offline persistence");
+    }
+  });
+}
 
 export const auth = getAuth(firebase);
