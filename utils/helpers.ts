@@ -1,4 +1,5 @@
 import { Type } from "./db";
+import { useLocalStorage } from "@mantine/hooks";
 
 export const txPosOrNeg = (num: number, type: Type) => {
   if (type === "income" || type === "deposit") {
@@ -6,4 +7,13 @@ export const txPosOrNeg = (num: number, type: Type) => {
   } else {
     return -num;
   }
+};
+
+export const useTxLayout = () => {
+  const [txLayout, setTxLayout] = useLocalStorage<"table" | "card">({
+    key: "transaction-layout",
+    defaultValue: "card",
+  });
+
+  return { txLayout, setTxLayout };
 };

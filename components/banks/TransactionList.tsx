@@ -19,6 +19,7 @@ import { useRouter } from "next/router";
 import { Category, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 import { useBanksCategsContext } from "./BanksCategoryContext";
+import { useTxLayout } from "../../utils/helpers";
 
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
@@ -97,13 +98,15 @@ const useStyles = createStyles((theme) => ({
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
-const TransactionList = ({ bank }: { bank?: string }) => {
+const TransactionList = () => {
+  const { query } = useRouter();
   const { user } = useAuth();
+  const bank = query["bank"];
   const { transactions, loading } = useTransactionsQuery(user?.uid, bank);
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
   const { classes } = useStyles();
-  const { query } = useRouter();
+  const { txLayout } = useTxLayout();
 
   return (
     <>
@@ -121,7 +124,7 @@ const TransactionList = ({ bank }: { bank?: string }) => {
       >
         {Boolean(transactions?.length) ? (
           <>
-            {query.layout != "table" ? (
+            {txLayout != "table" ? (
               <SimpleGrid
                 cols={4}
                 breakpoints={[
