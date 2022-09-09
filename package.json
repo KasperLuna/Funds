@@ -12,11 +12,11 @@
 		"@babel/core": "7.0.0",
 		"@emotion/react": "11.9.0",
 		"@emotion/server": "^11.10.0",
-		"@mantine/core": "5.2.6",
-		"@mantine/dates": "5.2.6",
-		"@mantine/hooks": "5.2.6",
-		"@mantine/next": "^5.2.6",
-		"@mantine/notifications": "^5.2.6",
+		"@mantine/core": "5.3.0",
+		"@mantine/dates": "5.3.0",
+		"@mantine/hooks": "5.3.0",
+		"@mantine/next": "^5.3.0",
+		"@mantine/notifications": "^5.3.0",
 		"@tabler/icons": "^1.90.0",
 		"dayjs": "^1.11.4",
 		"firebase": "9.9.3",
@@ -61,7 +61,7 @@
 			"plugin:prettier/recommended",
 			"plugin:react/recommended",
 			"plugin:react-hooks/recommended",
-      "plugin:@next/next/recommended"
+			"plugin:@next/next/recommended"
 		],
 		"settings": {
 			"react": {
