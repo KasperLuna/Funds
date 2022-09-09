@@ -31,14 +31,14 @@ import {
   createCategory,
   createTransaction,
   createTransfer,
-  useBanksQuery,
-  useCategoriesQuery,
 } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
+import { useBanksCategsContext } from "./BanksCategoryContext";
 
 export default function Create() {
-  const { user } = useAuth();
+  const { bankData } = useBanksCategsContext();
+  const { banks } = bankData || { banks: [] };
   const [tabValue, setTabValue] = useState<string | null>("Transaction");
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [dropdownModalForm, setDropdownModalForm] = useState<
@@ -47,7 +47,7 @@ export default function Create() {
 
   const closeDropdownModalForm = () => setDropdownModalForm(null);
 
-  const banksLength = useBanksQuery(user?.uid || "")?.banks.length;
+  const banksLength = banks.length;
   const hasMoreThanOneBank = parseInt(banksLength?.toString() || "0") > 1;
   return (
     <>
@@ -371,7 +371,8 @@ const BankForm = ({ closeModal }: { closeModal: () => void }) => {
     formState: { errors },
     reset,
   } = useForm<Bank>({ defaultValues: { balance: 0 } });
-  const { banks } = useBanksQuery(user?.uid || "");
+  const { bankData } = useBanksCategsContext();
+  const { banks } = bankData || {};
 
   const onSubmit = (data: Bank) => {
     createBank({ userId: user?.uid || "", ...data })
@@ -398,23 +399,28 @@ const BankForm = ({ closeModal }: { closeModal: () => void }) => {
           error={errors.name?.message}
         />
 
-        {Boolean(banks.length) && (
+        {Boolean(banks?.length) && (
           <MultiSelect
             description="For your reference, here are all your existing banks."
             multiple
             readOnly
             disabled
-            data={banks.map((bank, index) => {
-              return {
-                label: bank.name,
-                value: index.toString(),
-              };
-            })}
-            value={[
-              ...banks.map((_category, index) => {
-                return index.toString() || "";
-              }),
-            ]}
+            data={
+              banks?.map((bank, index) => {
+                return {
+                  label: bank.name,
+                  value: index.toString(),
+                };
+              }) || []
+            }
+            value={
+              (banks && [
+                ...banks.map((_category, index) => {
+                  return index.toString() || "";
+                }),
+              ]) ||
+              []
+            }
           />
         )}
         <Group position="right">
@@ -435,7 +441,8 @@ const CategoryForm = ({ closeModal }: { closeModal: () => void }) => {
     formState: { errors },
     reset,
   } = useForm<Category>();
-  const { categories } = useCategoriesQuery(user?.uid || "");
+  const { categoryData } = useBanksCategsContext();
+  const { categories } = categoryData || {};
 
   const onSubmit = (data: Category) => {
     createCategory({ userId: user?.uid || "", ...data })
@@ -462,23 +469,28 @@ const CategoryForm = ({ closeModal }: { closeModal: () => void }) => {
             {...register("name", { required: true })}
             error={errors.name?.message}
           />
-          {Boolean(categories.length) && (
+          {Boolean(categories?.length) && (
             <MultiSelect
               description="For your reference, here are all your existing categories."
               multiple
               readOnly
               disabled
-              data={categories.map((category, index) => {
-                return {
-                  label: category.name,
-                  value: index.toString(),
-                };
-              })}
-              value={[
-                ...categories.map((_category, index) => {
-                  return index.toString() || "";
-                }),
-              ]}
+              data={
+                categories?.map((category, index) => {
+                  return {
+                    label: category.name,
+                    value: index.toString(),
+                  };
+                }) || []
+              }
+              value={
+                (categories && [
+                  ...categories.map((_category, index) => {
+                    return index.toString() || "";
+                  }),
+                ]) ||
+                []
+              }
             />
           )}
 

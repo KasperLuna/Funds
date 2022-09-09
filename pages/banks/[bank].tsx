@@ -30,9 +30,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Breadcrumbs separator="→">{pages}</Breadcrumbs>
-      <BankStats
-        bank={typeof bank === "string" ? bank.replace(/%20/g, "") : ""}
-      />
+      <BankStats />
       <Group position="apart">
         <Group>
           <BankSettings />

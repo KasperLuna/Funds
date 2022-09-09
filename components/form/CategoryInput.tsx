@@ -1,6 +1,7 @@
 import { Group, MultiSelect } from "@mantine/core";
 import React from "react";
-import { createCategory, useCategoriesQuery } from "../../firebase/queries";
+import { createCategory } from "../../firebase/queries";
+import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 import { useAuth } from "../config/AuthContext";
 
 type CategoryInputProps = {
@@ -18,7 +19,8 @@ const CategoryInput = React.forwardRef(
     ref: React.Ref<HTMLInputElement>
   ): JSX.Element => {
     const { user } = useAuth();
-    const { categories } = useCategoriesQuery(user?.uid);
+    const { categoryData } = useBanksCategsContext();
+    const { categories } = categoryData || {};
     const create = (name: string) => {
       createCategory({ userId: user?.uid || "", name: name || "" });
       return name;

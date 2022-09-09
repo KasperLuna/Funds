@@ -14,13 +14,11 @@ import {
 } from "@mantine/core";
 import { EditTransactionForm } from "./EditTransactionForm";
 import dayjs from "dayjs";
-import {
-  useCategoriesQuery,
-  useTransactionsQuery,
-} from "../../firebase/queries";
+import { useTransactionsQuery } from "../../firebase/queries";
 import { useRouter } from "next/router";
 import { Category, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
+import { useBanksCategsContext } from "./BanksCategoryContext";
 
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
@@ -99,10 +97,11 @@ const useStyles = createStyles((theme) => ({
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
-const TransactionList = ({ bank }: { bank?: string | string[] }) => {
+const TransactionList = ({ bank }: { bank?: string }) => {
   const { user } = useAuth();
   const { transactions, loading } = useTransactionsQuery(user?.uid, bank);
-  const { categories } = useCategoriesQuery(user?.uid);
+  const { categoryData } = useBanksCategsContext();
+  const { categories } = categoryData || {};
   const { classes } = useStyles();
   const { query } = useRouter();
 

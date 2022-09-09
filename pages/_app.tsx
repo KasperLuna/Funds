@@ -12,6 +12,7 @@ import Layout from "../components/appshell/Layout";
 import { AuthProvider } from "../components/config/AuthContext";
 import ProtectedRoute from "../components/config/ProtectedRoute";
 import { useRouter } from "next/router";
+import { BanksCategsProvider } from "../components/banks/BanksCategoryContext";
 
 export const noAuth = ["/", "/agreement"];
 
@@ -194,17 +195,19 @@ export default function App(props: AppProps) {
           theme={{ colorScheme }}
         >
           <AuthProvider>
-            <NotificationsProvider limit={5}>
-              <Layout>
-                {noAuth.includes(router.pathname) ? (
-                  <Component {...pageProps} />
-                ) : (
-                  <ProtectedRoute>
+            <BanksCategsProvider>
+              <NotificationsProvider limit={5}>
+                <Layout>
+                  {noAuth.includes(router.pathname) ? (
                     <Component {...pageProps} />
-                  </ProtectedRoute>
-                )}
-              </Layout>
-            </NotificationsProvider>
+                  ) : (
+                    <ProtectedRoute>
+                      <Component {...pageProps} />
+                    </ProtectedRoute>
+                  )}
+                </Layout>
+              </NotificationsProvider>
+            </BanksCategsProvider>
           </AuthProvider>
         </MantineProvider>
       </ColorSchemeProvider>
