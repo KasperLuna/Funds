@@ -34,7 +34,7 @@ export default function App(props: AppProps) {
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width"
         />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="manifest" href="/manifest.json" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
           content="black-translucent"
