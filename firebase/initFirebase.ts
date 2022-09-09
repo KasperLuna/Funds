@@ -1,6 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import {
+  CACHE_SIZE_UNLIMITED,
+  enableIndexedDbPersistence,
+  initializeFirestore,
+} from "firebase/firestore";
+import { showErrorNotif } from "../utils/notifs";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -17,6 +22,18 @@ const firebaseConfig = {
 // Initialize Firebase
 export const firebase = initializeApp(firebaseConfig);
 
-export const db = getFirestore(firebase);
+export const db = initializeFirestore(firebase, {
+  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+});
+
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err.code == "failed-precondition") {
+    showErrorNotif(
+      "Offline persistence can only be enabled in one tab at a time. Close other tabs."
+    );
+  } else if (err.code == "unimplemented") {
+    showErrorNotif("Current browser does not support offline persistence");
+  }
+});
 
 export const auth = getAuth(firebase);
