@@ -21,6 +21,7 @@
 		"dayjs": "^1.11.4",
 		"firebase": "9.9.3",
 		"next": "12.2.5",
+		"next-pwa": "^5.6.0",
 		"nextjs-progressbar": "^0.0.14",
 		"react": "17.0",
 		"react-dom": "17.0",
