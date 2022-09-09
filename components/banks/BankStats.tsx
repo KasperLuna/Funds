@@ -12,11 +12,10 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-// import { useBanksQuery } from "../../firebase/queries";
-import { useAuth } from "../config/AuthContext";
-import { useBanksQuery } from "../../firebase/queries";
 import Link from "next/link";
 import { IconExternalLink } from "@tabler/icons";
+import { useBanksCategsContext } from "./BanksCategoryContext";
+import { useRouter } from "next/router";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -93,14 +92,17 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-export function BankStats({ bank }: { bank?: string | string[] }) {
-  const { user } = useAuth();
-  const { banks, loading } = useBanksQuery(user?.uid, bank);
-  const hasBankInProps = bank !== undefined;
+export function BankStats() {
+  const router = useRouter();
+  const bank = router.query["bank"];
+  const { bankData } = useBanksCategsContext();
+  const { loading, banks } = bankData || {};
 
-  const totalAmount = banks.reduce((acc, bank) => {
-    return acc + bank.balance;
-  }, 0);
+  const hasBankInProps = bank !== undefined;
+  const totalAmount =
+    banks?.reduce((acc, bank) => {
+      return acc + bank.balance;
+    }, 0) || 0;
 
   const { classes } = useStyles();
   const stats = banks?.map((bank) => {

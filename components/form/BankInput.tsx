@@ -12,9 +12,10 @@ import { IconPlus } from "@tabler/icons";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Bank } from "../../utils/db";
-import { createBank, useBanksQuery } from "../../firebase/queries";
+import { createBank } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
+import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 
 type BankInputProps = {
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
@@ -40,8 +41,8 @@ const BankInput = React.forwardRef(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ref: React.Ref<HTMLSelectElement>
   ): JSX.Element => {
-    const { user } = useAuth();
-    const { banks } = useBanksQuery(user?.uid);
+    const { bankData } = useBanksCategsContext();
+    const { banks } = bankData || { banks: [] };
     const filteredBanks = banks?.filter(
       (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
     );

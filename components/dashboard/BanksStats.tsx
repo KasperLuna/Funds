@@ -14,9 +14,8 @@ import {
 import { IconExternalLink } from "@tabler/icons";
 import Link from "next/link";
 import React from "react";
-import { useBanksQuery } from "../../firebase/queries";
 import { Bank } from "../../utils/db";
-import { useAuth } from "../config/AuthContext";
+import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 
 export const colorsArray = [
   "red",
@@ -132,18 +131,18 @@ const TopLeaderRow = ({
 
 const BanksStats = () => {
   const { classes } = useStyles();
-  const { user } = useAuth();
-  const { banks, loading } = useBanksQuery(user?.uid);
+  const { bankData } = useBanksCategsContext();
+  const { banks, loading } = bankData || {};
 
   const total =
-    banks.reduce((acc, bank) => {
+    banks?.reduce((acc, bank) => {
       return acc + bank.balance;
     }, 0) || 0;
 
   return (
     <>
       <Skeleton visible={loading} radius="md">
-        {banks.length > 0 ? (
+        {banks && banks.length > 0 ? (
           <Paper withBorder radius={"lg"} className={classes.card}>
             <Stack spacing={0}>
               <Group position="apart" sx={{ paddingLeft: 20 }}>
