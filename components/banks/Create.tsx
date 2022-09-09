@@ -59,7 +59,7 @@ export default function Create() {
   useEffect(() => {
     let isMounted = true;
     const ping = async () => {
-      if (isMounted && checkingConnection) {
+      if (isMounted) {
         try {
           const res = await fetch("https://kasperluna.com");
           if (res.status === 200) {
@@ -69,7 +69,7 @@ export default function Create() {
             setIsOnline(false);
             setCheckingConnection(false);
           }
-        } catch (err) {
+        } catch {
           setIsOnline(false);
           setCheckingConnection(false);
         }
