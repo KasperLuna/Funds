@@ -128,7 +128,7 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
 export const createBank = async (data: Bank & { userId: string }) => {
   const { userId, ...bank } = data;
   try {
-    await setDoc(doc(db, "users", userId, "banks", bank.name), bank);
+    setDoc(doc(db, "users", userId, "banks", bank.name), bank);
   } catch (e) {
     console.error("Error adding bank: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -160,11 +160,11 @@ export const createTransaction = async (
     const bankQuery = query(bankRef, where("name", "==", data.bank));
     const bankQuerySnap = await getDocs(bankQuery);
     const returnBank = bankQuerySnap.docs[0].data();
-    await updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
+    updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
       balance: returnBank.balance + txPosOrNeg(amount, data.type),
     } as Bank);
     const docRef = doc(collection(db, "users", userId, "transactions"));
-    await setDoc(docRef, { ...tx, id: docRef.id });
+    setDoc(docRef, { ...tx, id: docRef.id });
   } catch (e) {
     console.log("Transaction failed: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -186,19 +186,16 @@ export const updateTransaction = async (
     const bankQuery = query(bankRef, where("name", "==", OrigTx.bank));
     const bankQuerySnap = await getDocs(bankQuery);
     const returnBank = bankQuerySnap.docs[0].data();
-    await updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
+    updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
       balance: returnBank.balance - OrigTx.amount,
     } as Bank);
     const bankQuery2 = query(bankRef, where("name", "==", data.bank));
     const bankQuerySnap2 = await getDocs(bankQuery2);
     const returnBank2 = bankQuerySnap2.docs[0].data();
-    await updateDoc(doc(db, "users", userId, "banks", returnBank2.name), {
+    updateDoc(doc(db, "users", userId, "banks", returnBank2.name), {
       balance: returnBank2.balance + txPosOrNeg(data.amount, data.type),
     } as Bank);
-    await updateDoc(
-      doc(db, "users", userId, "transactions", OrigTx.id || ""),
-      newTx
-    );
+    updateDoc(doc(db, "users", userId, "transactions", OrigTx.id || ""), newTx);
   } catch (e) {
     console.log("Transaction failed: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -221,12 +218,10 @@ export const deleteTransaction = async ({
     const bankQuery = query(bankRef, where("name", "==", bank));
     const bankQuerySnap = await getDocs(bankQuery);
     const returnBank = bankQuerySnap.docs[0].data();
-    await updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
+    updateDoc(doc(db, "users", userId, "banks", returnBank.name), {
       balance: returnBank.balance - transactionAmount,
     } as Bank);
-    await deleteDoc(
-      doc(db, "users", userId, "transactions", transactionID || "")
-    );
+    deleteDoc(doc(db, "users", userId, "transactions", transactionID || ""));
   } catch (e) {
     console.log("Transaction failed: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -244,7 +239,7 @@ export const createTransfer = async (data: Transfer & { userId: string }) => {
     destinationAmount,
     userId,
   } = data;
-  await createTransaction({
+  createTransaction({
     amount: originAmount,
     bank: originBank,
     date,
