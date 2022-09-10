@@ -7,6 +7,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  QuerySnapshot,
   setDoc,
   updateDoc,
   where,
@@ -254,4 +255,149 @@ export const createTransfer = async (data: Transfer & { userId: string }) => {
       userId,
     });
   });
+};
+
+export const customizeBank = async (
+  data: Bank & { userId: string; bankName: string }
+) => {
+  const { userId, bankName, ...bank } = data;
+  try {
+    updateDoc(doc(db, "users", userId, "banks", bankName), bank);
+  } catch (e) {
+    console.error("Error updating bank: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const deleteBank = async (data: Bank & { userId: string }) => {
+  const { userId, ...bank } = data;
+  try {
+    // First delete all transactions associated with the bank
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(txRef, where("bank", "==", bank.name));
+    const txQuerySnap = await getDocs(txQuery);
+    txQuerySnap.forEach((doc) => {
+      deleteDoc(doc.ref);
+    });
+    // Then delete the bank
+    deleteDoc(doc(db, "users", userId, "banks", bank.name));
+  } catch (e) {
+    console.error("Error deleting bank: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const transferBankTransactions = async ({
+  originBank,
+  destinationBank,
+  userId,
+}: {
+  originBank: string;
+  destinationBank: string;
+  userId: string;
+}) => {
+  try {
+    // First get all transactions associated with the origin bank
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(txRef, where("bank", "==", originBank));
+    const txQuerySnap = await getDocs(txQuery);
+    // Then update the bank name for each transaction
+    txQuerySnap.forEach((doc) => {
+      updateDoc(doc.ref, { bank: destinationBank });
+    });
+  } catch (e) {
+    console.error("Error transferring transactions: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const recomputeBankBalance = async ({
+  userId,
+  bankName,
+}: {
+  userId: string;
+  bankName: string;
+}) => {
+  try {
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(txRef, where("bank", "==", bankName));
+    const txQuerySnap = await getDocs(txQuery);
+    let balance = 0;
+    txQuerySnap.forEach((doc) => {
+      const tx = doc.data();
+      balance += tx.amount;
+    });
+    updateDoc(doc(db, "users", userId, "banks", bankName), { balance });
+  } catch (e) {
+    console.error("Error re-computing bank balance: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const deleteCategory = async ({
+  userId,
+  categoryName,
+}: {
+  userId: string;
+  categoryName: string;
+}) => {
+  try {
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(
+      txRef,
+      where("category", "array-contains", categoryName)
+    );
+    const txQuerySnap = (await getDocs(
+      txQuery
+    )) as QuerySnapshot<FirebaseTxTypes>;
+    // then remove the category from each transaction
+    txQuerySnap.forEach((doc) => {
+      const tx = doc.data();
+      const newCategories = tx.category?.filter(
+        (category) => category !== categoryName
+      );
+      updateDoc(doc.ref, { category: newCategories });
+    });
+    // then delete the category
+    deleteDoc(doc(db, "users", userId, "categories", categoryName));
+  } catch (e) {
+    console.error("Error deleting category: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const updateCategory = async ({
+  userId,
+  categoryName,
+  newCategoryName,
+}: {
+  userId: string;
+  categoryName: string;
+  newCategoryName: string;
+}) => {
+  try {
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(
+      txRef,
+      where("category", "array-contains", categoryName)
+    );
+    const txQuerySnap = (await getDocs(
+      txQuery
+    )) as QuerySnapshot<FirebaseTxTypes>;
+    // then update the category for each transaction
+    txQuerySnap.forEach((doc) => {
+      const tx = doc.data();
+      const newCategories = tx.category?.map((category) =>
+        category === categoryName ? newCategoryName : category
+      );
+      updateDoc(doc.ref, { category: newCategories });
+    });
+    // then update the category
+    updateDoc(doc(db, "users", userId, "categories", categoryName), {
+      name: newCategoryName,
+    });
+  } catch (e) {
+    console.error("Error updating category: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
 };
