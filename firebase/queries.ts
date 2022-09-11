@@ -25,13 +25,15 @@ import { showErrorNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
 export const useBanksQuery = (id?: string) => {
+  const hasId = id ? true : false;
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const banksRef = collection(db, "users", id || "", "banks");
+  const banksRef = collection(db, "users", id || "null", "banks");
   const q = query(banksRef, orderBy("balance", "desc"));
 
   useEffect(() => {
+    if (!hasId) return;
     let isMounted = true;
     const getBanks = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
@@ -52,17 +54,19 @@ export const useBanksQuery = (id?: string) => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasId]);
   return { banks, loading };
 };
 
 export const useCategoriesQuery = (id?: string) => {
+  const hasId = id ? true : false;
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const categoriesRef = collection(db, "users", id || "", "categories");
+  const categoriesRef = collection(db, "users", id || "null", "categories");
   const q = query(categoriesRef, orderBy("name", "asc"));
   useEffect(() => {
+    if (!hasId) return;
     let isMounted = true;
     const getCategories = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
@@ -83,7 +87,7 @@ export const useCategoriesQuery = (id?: string) => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasId]);
   return { categories, loading };
 };
 
