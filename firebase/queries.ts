@@ -273,18 +273,23 @@ export const customizeBank = async (
   }
 };
 
-export const deleteBank = async (data: Bank & { userId: string }) => {
-  const { userId, ...bank } = data;
+export const deleteBank = async ({
+  bankName,
+  userId,
+}: {
+  bankName: string;
+  userId: string;
+}) => {
   try {
     // First delete all transactions associated with the bank
     const txRef = collection(db, "users", userId, "transactions");
-    const txQuery = query(txRef, where("bank", "==", bank.name));
+    const txQuery = query(txRef, where("bank", "==", bankName));
     const txQuerySnap = await getDocs(txQuery);
     txQuerySnap.forEach((doc) => {
       deleteDoc(doc.ref);
     });
     // Then delete the bank
-    deleteDoc(doc(db, "users", userId, "banks", bank.name));
+    deleteDoc(doc(db, "users", userId, "banks", bankName));
   } catch (e) {
     console.error("Error deleting bank: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -309,6 +314,8 @@ export const transferBankTransactions = async ({
     txQuerySnap.forEach((doc) => {
       updateDoc(doc.ref, { bank: destinationBank });
     });
+    recomputeBankBalance({ userId, bankName: originBank });
+    recomputeBankBalance({ userId, bankName: destinationBank });
   } catch (e) {
     console.error("Error transferring transactions: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");

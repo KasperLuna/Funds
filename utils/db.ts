@@ -1,11 +1,10 @@
 import { Timestamp } from "firebase/firestore";
 
 export type Bank = {
-  id?: number;
   name: string;
   balance: number;
-  primaryColor: string;
-  secondaryColor: string;
+  primaryColor?: string;
+  secondaryColor?: string;
 };
 
 export type Category = {
