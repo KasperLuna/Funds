@@ -7,6 +7,7 @@ import {
   Popover,
   TextInput,
   useMantineTheme,
+  Text,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons";
 import React, { useState } from "react";
@@ -82,7 +83,11 @@ const BankInput = React.forwardRef(
   }
 );
 
-const AddBankButton = () => {
+export const AddBankButton = ({
+  variant = "AddIcon",
+}: {
+  variant?: "AddIcon" | "Settings";
+}) => {
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
 
@@ -116,25 +121,36 @@ const AddBankButton = () => {
     <Popover
       opened={opened}
       onClose={() => setOpened(false)}
-      position="top-end"
+      position={variant == "AddIcon" ? "top-end" : "top-start"}
       withArrow
       transition="pop-bottom-right"
       withinPortal
     >
       <Popover.Target>
-        <ActionIcon
-          variant={theme.colorScheme === "dark" ? "default" : "light"}
-          style={{
-            borderTopLeftRadius: 0,
-            borderBottomLeftRadius: 0,
-            width: 15,
-            height: 36,
-            alignSelf: "end",
-          }}
-          onClick={() => setOpened((o) => !o)}
-        >
-          <IconPlus size={16} stroke={1.5} />
-        </ActionIcon>
+        {variant === "AddIcon" ? (
+          <ActionIcon
+            variant={theme.colorScheme === "dark" ? "default" : "light"}
+            style={{
+              borderTopLeftRadius: 0,
+              borderBottomLeftRadius: 0,
+              width: 15,
+              height: 36,
+              alignSelf: "end",
+            }}
+            onClick={() => setOpened((o) => !o)}
+          >
+            <IconPlus size={16} stroke={1.5} />
+          </ActionIcon>
+        ) : (
+          <Button
+            variant="subtle"
+            leftIcon={<IconPlus size={"15px"} />}
+            color="gray"
+            onClick={() => setOpened((o) => !o)}
+          >
+            <Text size={"sm"}>Add Bank</Text>
+          </Button>
+        )}
       </Popover.Target>
       <Popover.Dropdown>
         <TextInput
