@@ -4,10 +4,12 @@ import {
   Button,
   ColorInput,
   Divider,
+  Group,
   Highlight,
   Menu,
   Modal,
   Popover,
+  Select,
   Stack,
   Tabs,
   Text,
@@ -143,14 +145,30 @@ const BanksPanel = () => {
 };
 
 const CategoriesPanel = () => {
+  const { categoryData } = useBanksCategsContext();
+  const { categories } = categoryData || {};
   return (
-    <Stack spacing="md">
-      <Stack spacing="sm">
-        <Text size="sm" weight={500}>
-          {"Categories Settings coming soon"}
-        </Text>
-        <Divider />
-      </Stack>
+    <Stack
+      spacing="md"
+      sx={(theme) => ({
+        marginTop: theme.spacing.sm,
+      })}
+    >
+      <Select
+        label="Select a category to manage: "
+        data={
+          categories?.map((category, index) => {
+            return {
+              label: category.name,
+              value: index.toString(),
+            };
+          }) || []
+        }
+      />
+      <Group position={"center"}>
+        <Button>Delete</Button>
+        <Button>Rename</Button>
+      </Group>
     </Stack>
   );
 };
@@ -297,7 +315,7 @@ const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
           <BankInput
             label="Select bank to transfer to: "
             value={selectedBank}
-            onChange={(e) => setSelectedBank(e.currentTarget.value)}
+            onChange={(e: any) => setSelectedBank(e.currentTarget.value)}
             filter={bank.name}
           />
           {Boolean(selectedBank) && (
