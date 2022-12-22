@@ -1,7 +1,6 @@
-import { NativeSelect } from "@mantine/core";
+import { Select } from "@mantine/core";
 import React from "react";
-import { UseFormRegister } from "react-hook-form";
-import { AppTxTypes, Type } from "../../utils/db";
+import { Type } from "../../utils/db";
 
 type TypeSelectType = {
   label: string;
@@ -19,11 +18,11 @@ export const TypeInput = ({
   register,
   isError,
 }: {
-  register: UseFormRegister<AppTxTypes>;
+  register: any; //UseFormRegister<AppTxTypes>;
   isError: boolean;
 }) => {
   return (
-    <NativeSelect
+    <Select
       {...register("type")}
       data={
         types?.map((type) => ({
