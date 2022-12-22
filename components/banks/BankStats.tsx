@@ -4,11 +4,13 @@ import {
   Anchor,
   Badge,
   Box,
+  Button,
   createStyles,
   Grid,
   Group,
   Paper,
   Skeleton,
+  Stack,
   Text,
   Title,
 } from "@mantine/core";
@@ -97,6 +99,7 @@ export function BankStats() {
   const bankQuery = router.query["bank"];
   const { bankData } = useBanksCategsContext();
   const { loading, banks } = bankData || {};
+  const [hideBals, setHideBals] = React.useState(true);
 
   const hasBankInProps = bankQuery !== undefined;
   const totalAmount =
@@ -148,11 +151,13 @@ export function BankStats() {
 
           <Group sx={{ justifyContent: "center" }} spacing={0} mt={10}>
             <Text className={classes.value}>
-              {bank.balance.toLocaleString(undefined, {
-                style: "currency",
-                currency: "PHP",
-                maximumFractionDigits: 1,
-              })}
+              {hideBals
+                ? "₱••••••"
+                : bank.balance.toLocaleString(undefined, {
+                    style: "currency",
+                    currency: "PHP",
+                    maximumFractionDigits: 1,
+                  })}
             </Text>
           </Group>
         </Paper>
@@ -163,22 +168,34 @@ export function BankStats() {
     <div className={classes.root}>
       <Group
         position="apart"
-        align={"center"}
+        align={"end"}
         className={classes.headerGroup}
         noWrap
       >
         <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
           {hasBankInProps ? `${bankQuery} Balance` : "Bank Balances"}
         </Title>
-        {!hasBankInProps && (
-          <Badge className={classes.totalBadge}>
-            {`Total: ${totalAmount.toLocaleString(undefined, {
-              style: "currency",
-              currency: "PHP",
-              maximumFractionDigits: 1,
-            })}`}
-          </Badge>
-        )}
+        <Stack>
+          {!hasBankInProps && (
+            <Badge className={classes.totalBadge}>
+              {`Total: ${totalAmount.toLocaleString(undefined, {
+                style: "currency",
+                currency: "PHP",
+                maximumFractionDigits: 1,
+              })}`}
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            radius={"xl"}
+            size={"xs"}
+            onClick={() => {
+              setHideBals(!hideBals);
+            }}
+          >
+            Toggle Bal.
+          </Button>
+        </Stack>
       </Group>
       <Skeleton visible={loading} className={classes.skeleton} radius="md">
         {Boolean(!banks?.length) ? (
