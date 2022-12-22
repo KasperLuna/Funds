@@ -3,11 +3,11 @@ import {
   Anchor,
   Button,
   Group,
-  NativeSelect,
   Popover,
   TextInput,
   useMantineTheme,
   Text,
+  Select,
 } from "@mantine/core";
 import { IconPlus } from "@tabler/icons";
 import React, { useState } from "react";
@@ -19,7 +19,7 @@ import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 
 type BankInputProps = {
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onChange: any; //(e: React.ChangeEvent<HTMLSelectElement>) => void;
   value: string;
   groupStyle?: React.CSSProperties;
   inputStyle?: React.CSSProperties;
@@ -58,7 +58,7 @@ const BankInput = React.forwardRef(
 
     return (
       <Group noWrap spacing={0} style={{ ...groupStyle }}>
-        <NativeSelect
+        <Select
           data={
             placeholderItem.concat(
               filteredBanks?.map((bank) => ({
