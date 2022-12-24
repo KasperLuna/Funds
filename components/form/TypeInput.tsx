@@ -14,27 +14,34 @@ const types: TypeSelectType[] = [
   { label: "Withdrawal ( - )", value: "withdrawal" },
 ];
 
-export const TypeInput = ({
-  register,
-  isError,
-}: {
-  register: any; //UseFormRegister<AppTxTypes>;
-  isError: boolean;
-}) => {
-  return (
-    <Select
-      {...register("type")}
-      data={
-        types?.map((type) => ({
-          value: type.value,
-          label: type.label,
-        })) || []
-      }
-      placeholder="Pick one"
-      label="Type: "
-      withAsterisk
-      error={isError}
-      sx={{ width: "100%" }}
-    />
-  );
+type TypeInputProps = {
+  onChange: any;
+  value: string;
+  isError?: boolean;
 };
+
+export const TypeInput = React.forwardRef(
+  (
+    { onChange, value, isError }: TypeInputProps,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ref: React.Ref<HTMLSelectElement>
+  ): JSX.Element => {
+    return (
+      <Select
+        data={
+          types?.map((type) => ({
+            value: type.value,
+            label: type.label,
+          })) || []
+        }
+        onChange={onChange}
+        value={value}
+        placeholder="Pick one"
+        label="Type: "
+        withAsterisk
+        error={isError}
+        sx={{ width: "100%" }}
+      />
+    );
+  }
+);
