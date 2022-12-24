@@ -185,7 +185,14 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
         <Datecomponent control={control} setValue={setValue} />
 
         <Group spacing={"xs"} noWrap>
-          <TypeInput register={register} isError={Boolean(errors.type)} />
+          <Controller
+            control={control}
+            name="type"
+            rules={{ required: true }}
+            render={({ field }) => (
+              <TypeInput {...field} isError={Boolean(errors.type)} />
+            )}
+          />
           <AmountInput control={control} sx={{ width: "100%" }} />
         </Group>
 
