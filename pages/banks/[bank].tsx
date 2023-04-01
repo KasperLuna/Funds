@@ -17,8 +17,8 @@ const Home: NextPage = () => {
   const pages = [
     { title: "Banks", href: "/banks" },
     { title: bank, href: `/banks/${bank}` },
-  ].map((page, index) => (
-    <Link href={page.href} key={index} passHref>
+  ].map((page) => (
+    <Link href={page.href} key={page.href} passHref>
       <Anchor>{page.title}</Anchor>
     </Link>
   ));
