@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { IconExternalLink } from "@tabler/icons";
+import { IconExternalLink, IconEye, IconEyeOff } from "@tabler/icons";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useRouter } from "next/router";
 
@@ -178,11 +178,14 @@ export function BankStats() {
         <Stack>
           {!hasBankInProps && (
             <Badge className={classes.totalBadge}>
-              {`Total: ${totalAmount.toLocaleString(undefined, {
-                style: "currency",
-                currency: "PHP",
-                maximumFractionDigits: 1,
-              })}`}
+              Total:{" "}
+              {hideBals
+                ? "₱••••••"
+                : `${totalAmount.toLocaleString(undefined, {
+                    style: "currency",
+                    currency: "PHP",
+                    maximumFractionDigits: 1,
+                  })}`}
             </Badge>
           )}
           <Button
@@ -192,8 +195,9 @@ export function BankStats() {
             onClick={() => {
               setHideBals(!hideBals);
             }}
+            leftIcon={hideBals ? <IconEyeOff /> : <IconEye />}
           >
-            Toggle Bal.
+            {hideBals ? "Show" : "Hide"}
           </Button>
         </Stack>
       </Group>
