@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  ActionIcon,
   Button,
   ColorInput,
   Divider,
   Group,
   Highlight,
-  Menu,
-  Modal,
   Popover,
   Select,
   Stack,
@@ -15,8 +12,6 @@ import {
   Text,
   TextInput,
 } from "@mantine/core";
-import { IconLayoutGrid, IconSettings, IconTable } from "@tabler/icons";
-import { useTxLayout } from "../../utils/helpers";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { Bank } from "../../utils/db";
 import {
@@ -28,69 +23,7 @@ import { useAuth } from "../config/AuthContext";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { AddBankButton, BankInput } from "../form/BankInput";
 
-export const BankSettings = () => {
-  const [opened, setOpened] = React.useState<boolean>(false);
-  const { txLayout, setTxLayout } = useTxLayout();
-
-  const isTableLayout = txLayout === "table";
-
-  const toggleLayoutQuery = () => {
-    txLayout === "table" ? setTxLayout("card") : setTxLayout("table");
-  };
-  return (
-    <>
-      <Menu withArrow position="bottom-start" shadow={"lg"}>
-        <Menu.Target>
-          <ActionIcon>
-            <IconSettings />
-          </ActionIcon>
-        </Menu.Target>
-        <Menu.Dropdown>
-          <Menu.Item
-            onClick={() => setOpened(true)}
-            icon={<IconSettings size={14} />}
-          >
-            {"Bank Settings"}
-          </Menu.Item>
-          <Menu.Item
-            onClick={() => toggleLayoutQuery()}
-            icon={
-              isTableLayout ? (
-                <IconLayoutGrid size={14} stroke={1.5} />
-              ) : (
-                <IconTable size={14} stroke={1.5} />
-              )
-            }
-          >
-            {isTableLayout ? "Toggle Card View" : "Toggle Table View"}
-          </Menu.Item>
-        </Menu.Dropdown>
-      </Menu>
-
-      <Modal
-        opened={opened}
-        onClose={() => setOpened(false)}
-        title="Banks Settings"
-        centered
-      >
-        <Tabs orientation="horizontal" defaultValue={"banks"}>
-          <Tabs.List grow>
-            <Tabs.Tab value="banks">Banks</Tabs.Tab>
-            <Tabs.Tab value="categories">Categories</Tabs.Tab>
-          </Tabs.List>
-          <Tabs.Panel value="banks">
-            <BanksPanel />
-          </Tabs.Panel>
-          <Tabs.Panel value="categories">
-            <CategoriesPanel />
-          </Tabs.Panel>
-        </Tabs>
-      </Modal>
-    </>
-  );
-};
-
-const BanksPanel = () => {
+export const BanksPanel = () => {
   const { bankData } = useBanksCategsContext();
   const { banks } = bankData || {};
   return (
@@ -144,7 +77,7 @@ const BanksPanel = () => {
   );
 };
 
-const CategoriesPanel = () => {
+export const CategoriesPanel = () => {
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
   return (
@@ -173,7 +106,7 @@ const CategoriesPanel = () => {
   );
 };
 
-const RecomputeBalButton = ({ bank }: { bank: Bank }) => {
+export const RecomputeBalButton = ({ bank }: { bank: Bank }) => {
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -252,7 +185,7 @@ const RecomputeBalButton = ({ bank }: { bank: Bank }) => {
   );
 };
 
-const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
+export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -345,7 +278,7 @@ const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
   );
 };
 
-const DeleteBankButton = ({ bank }: { bank: Bank }) => {
+export const DeleteBankButton = ({ bank }: { bank: Bank }) => {
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");

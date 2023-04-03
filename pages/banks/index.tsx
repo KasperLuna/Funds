@@ -1,15 +1,24 @@
 import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { Anchor, Breadcrumbs, Group } from "@mantine/core";
+import { ActionIcon, Anchor, Breadcrumbs, Group, Tooltip } from "@mantine/core";
 import Create from "../../components/banks/Create";
 import TransactionList from "../../components/banks/TransactionList";
 import { BankStats } from "../../components/banks/BankStats";
-import { BankSettings } from "../../components/banks/BankSettings";
 import Link from "next/link";
 import { Filter } from "../../components/banks/Filter";
+import { useTxLayout } from "../../utils/helpers";
+import { IconLayoutGrid, IconTable } from "@tabler/icons";
 
 const Home: NextPage = () => {
+  const { txLayout, setTxLayout } = useTxLayout();
+
+  const isTableLayout = txLayout === "table";
+
+  const toggleLayoutQuery = () => {
+    txLayout === "table" ? setTxLayout("card") : setTxLayout("table");
+  };
+
   const pages = [{ title: "Banks", href: "/banks" }].map((page) => (
     <Link href={page.href} key={page.title} passHref>
       <Anchor>{page.title}</Anchor>
@@ -26,7 +35,19 @@ const Home: NextPage = () => {
       <BankStats />
       <Group position="apart">
         <Group>
-          <BankSettings />
+          <Tooltip
+            label={
+              isTableLayout ? "Toggle to Card View" : "Toggle to Table View"
+            }
+          >
+            <ActionIcon onClick={() => toggleLayoutQuery()}>
+              {isTableLayout ? (
+                <IconLayoutGrid size={24} stroke={1.5} />
+              ) : (
+                <IconTable size={24} stroke={1.5} />
+              )}
+            </ActionIcon>
+          </Tooltip>
           <Filter />
         </Group>
         <Create />
