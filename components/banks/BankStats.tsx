@@ -18,6 +18,7 @@ import Link from "next/link";
 import { IconExternalLink, IconEye, IconEyeOff } from "@tabler/icons";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useRouter } from "next/router";
+import { usePrivacyMode } from "../../utils/helpers";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -99,7 +100,7 @@ export function BankStats() {
   const bankQuery = router.query["bank"];
   const { bankData } = useBanksCategsContext();
   const { loading, banks } = bankData || {};
-  const [hideBals, setHideBals] = React.useState(true);
+  const { privacyMode, setPrivacyMode } = usePrivacyMode();
 
   const hasBankInProps = bankQuery !== undefined;
   const totalAmount =
@@ -151,7 +152,7 @@ export function BankStats() {
 
           <Group sx={{ justifyContent: "center" }} spacing={0} mt={10}>
             <Text className={classes.value}>
-              {hideBals
+              {privacyMode
                 ? "₱••••••"
                 : bank.balance.toLocaleString(undefined, {
                     style: "currency",
@@ -179,7 +180,7 @@ export function BankStats() {
           {!hasBankInProps && (
             <Badge className={classes.totalBadge}>
               Total:{" "}
-              {hideBals
+              {privacyMode
                 ? "₱••••••"
                 : `${totalAmount.toLocaleString(undefined, {
                     style: "currency",
@@ -193,11 +194,11 @@ export function BankStats() {
             radius={"xl"}
             size={"xs"}
             onClick={() => {
-              setHideBals(!hideBals);
+              setPrivacyMode(!privacyMode);
             }}
-            leftIcon={hideBals ? <IconEyeOff /> : <IconEye />}
+            leftIcon={privacyMode ? <IconEyeOff /> : <IconEye />}
           >
-            {hideBals ? "Show" : "Hide"}
+            {privacyMode ? "Show" : "Hide"}
           </Button>
         </Stack>
       </Group>

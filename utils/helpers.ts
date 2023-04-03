@@ -17,3 +17,12 @@ export const useTxLayout = () => {
 
   return { txLayout, setTxLayout };
 };
+
+export const usePrivacyMode = () => {
+  const [privacyMode, setPrivacyMode] = useLocalStorage<boolean>({
+    key: "privacy-mode",
+    defaultValue: false,
+  });
+
+  return { privacyMode, setPrivacyMode };
+};
