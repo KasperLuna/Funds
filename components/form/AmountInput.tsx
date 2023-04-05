@@ -25,7 +25,8 @@ export default function AmountInput({
       render={({ field }) => (
         <NumberInput
           label={label}
-          placeholder="100"
+          placeholder="100.12"
+          inputMode="decimal"
           {...field}
           decimalSeparator="."
           withAsterisk
