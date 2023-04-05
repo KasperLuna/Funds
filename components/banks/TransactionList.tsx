@@ -155,8 +155,8 @@ const TransactionList = () => {
               >
                 <thead className={classes.tableHeader}>
                   <tr>
-                    {headers.map((header, index) => {
-                      return <th key={index}>{header}</th>;
+                    {headers.map((header) => {
+                      return <th key={header}>{header}</th>;
                     })}
                   </tr>
                 </thead>
