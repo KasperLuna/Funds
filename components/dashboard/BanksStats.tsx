@@ -101,7 +101,7 @@ const TopLeaderRow = ({
   percentage: string;
   color: string;
 }) => {
-  const scale = 1; //1.1 - index * 0.1;
+  const scale = 1;
   return (
     <>
       <Text
@@ -179,7 +179,7 @@ const BanksStats = () => {
                     {banks.slice(0, 4).map((bank, index) => {
                       return (
                         <TopLeaderRow
-                          key={index}
+                          key={bank.name}
                           index={index}
                           name={bank.name}
                           balance={bank.balance}

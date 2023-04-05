@@ -271,14 +271,35 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
             >
               Google
             </Button>
-            <Button
-              onClick={() => callAnonymousSignIn()}
-              leftIcon={<IconUser />}
-              color="blue"
-              radius={"lg"}
+            <Popover
+              trapFocus
+              position="top-end"
+              withArrow
+              width={300}
+              withinPortal={true}
             >
-              As Guest
-            </Button>
+              <Popover.Target>
+                <Button leftIcon={<IconUser />} color="blue" radius={"lg"}>
+                  As Guest
+                </Button>
+              </Popover.Target>
+              <Popover.Dropdown>
+                <Stack>
+                  <Text>
+                    Guest sign-in allows you a preview of Funds, but if your
+                    session gets terminated, you will lose all your data.
+                  </Text>
+                  <Button
+                    color="orange"
+                    variant="filled"
+                    radius={"lg"}
+                    onClick={() => callAnonymousSignIn()}
+                  >
+                    Log in Anonymously
+                  </Button>
+                </Stack>
+              </Popover.Dropdown>
+            </Popover>
           </Group>
           <Divider
             label="Or continue with email"

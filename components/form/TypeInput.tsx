@@ -15,7 +15,7 @@ const types: TypeSelectType[] = [
 ];
 
 type TypeInputProps = {
-  onChange: any;
+  onChange: (value: string | null) => void;
   value: string;
   isError?: boolean;
 };

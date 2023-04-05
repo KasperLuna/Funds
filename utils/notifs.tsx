@@ -2,6 +2,7 @@ import { showNotification } from "@mantine/notifications";
 import { IconCheck, IconX } from "@tabler/icons";
 import React from "react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const AuthErrorNotifHandler = (errorMessage: string | any) => {
   //Login Handlers
   if (errorMessage.includes("email-not-verified")) {
