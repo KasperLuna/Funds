@@ -157,7 +157,8 @@ export function BankStats() {
                 : bank.balance.toLocaleString(undefined, {
                     style: "currency",
                     currency: "PHP",
-                    maximumFractionDigits: 1,
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 1,
                   })}
             </Text>
           </Group>
@@ -185,7 +186,8 @@ export function BankStats() {
                 : `${totalAmount.toLocaleString(undefined, {
                     style: "currency",
                     currency: "PHP",
-                    maximumFractionDigits: 1,
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 1,
                   })}`}
             </Badge>
           )}

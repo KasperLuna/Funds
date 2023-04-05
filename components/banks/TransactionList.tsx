@@ -180,7 +180,8 @@ const TransactionList = () => {
                             {data.amount.toLocaleString(undefined, {
                               style: "currency",
                               currency: "PHP",
-                              maximumFractionDigits: 1,
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 1,
                             })}
                           </Text>
                         </td>
@@ -265,7 +266,8 @@ const TransactionCard = ({
                 {data.amount.toLocaleString(undefined, {
                   style: "currency",
                   currency: "PHP",
-                  maximumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 1,
                 })}
               </Text>
               <Text size={"xs"}> {data.description}</Text>
