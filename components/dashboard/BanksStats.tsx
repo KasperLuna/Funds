@@ -59,7 +59,8 @@ const BankRingsTotal = ({ banks }: { banks: Bank[] | undefined }) => {
       tooltip: `${bank.name} bal: ${bank.balance.toLocaleString(undefined, {
         style: "currency",
         currency: "PHP",
-        maximumFractionDigits: 1,
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 1,
       })}`,
     };
   });
@@ -75,7 +76,8 @@ const BankRingsTotal = ({ banks }: { banks: Bank[] | undefined }) => {
             {total.toLocaleString(undefined, {
               style: "currency",
               currency: "PHP",
-              maximumFractionDigits: 1,
+              maximumFractionDigits: 2,
+              minimumFractionDigits: 1,
             })}
           </Text>
         }
@@ -122,7 +124,8 @@ const TopLeaderRow = ({
         {`${index + 1}. ${name} ${balance.toLocaleString(undefined, {
           style: "currency",
           currency: "PHP",
-          maximumFractionDigits: 1,
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 1,
         })} (${percentage}%)`}
       </Text>
     </>

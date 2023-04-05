@@ -30,7 +30,7 @@ export default function AmountInput({
           decimalSeparator="."
           withAsterisk
           variant="default"
-          precision={1}
+          precision={2}
           min={0}
           step={50}
           stepHoldDelay={500}
