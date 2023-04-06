@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IconX, IconCheck, IconLock } from "@tabler/icons";
+import { IconX, IconCheck, IconLock } from "@tabler/icons-react";
 import { PasswordInput, Progress, Text, Popover, Box } from "@mantine/core";
 import { UseFormRegister } from "react-hook-form";
 import { AuthFormProps } from "./AuthForm";

@@ -11,7 +11,7 @@ import {
 } from "@mantine/core";
 import router from "next/router";
 import { tabs } from "./Layout";
-import { IconLogout, IconSettings } from "@tabler/icons";
+import { IconLogout, IconSettings } from "@tabler/icons-react";
 import { ColorToggle } from "./ColorToggle";
 import { useAuth } from "../../components/config/AuthContext";
 import { useViewportSize } from "@mantine/hooks";
