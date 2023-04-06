@@ -11,20 +11,20 @@ dependencies:
     specifier: ^11.10.0
     version: 11.10.0
   '@mantine/core':
-    specifier: 5.10.0
-    version: 5.10.0(@emotion/react@11.9.0)(@mantine/hooks@5.10.0)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
+    specifier: 5.10.5
+    version: 5.10.5(@emotion/react@11.9.0)(@mantine/hooks@5.10.5)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
   '@mantine/dates':
-    specifier: 5.10.0
-    version: 5.10.0(@mantine/core@5.10.0)(@mantine/hooks@5.10.0)(dayjs@1.11.7)(react@17.0.2)
+    specifier: 5.10.5
+    version: 5.10.5(@mantine/core@5.10.5)(@mantine/hooks@5.10.5)(dayjs@1.11.7)(react@17.0.2)
   '@mantine/hooks':
-    specifier: 5.10.0
-    version: 5.10.0(react@17.0.2)
+    specifier: 5.10.5
+    version: 5.10.5(react@17.0.2)
   '@mantine/next':
     specifier: ^5.10.5
     version: 5.10.5(@emotion/react@11.9.0)(@emotion/server@11.10.0)(next@12.3.0)(react-dom@17.0.2)(react@17.0.2)
   '@mantine/notifications':
     specifier: ^5.10.5
-    version: 5.10.5(@mantine/core@5.10.0)(@mantine/hooks@5.10.0)(react-dom@17.0.2)(react@17.0.2)
+    version: 5.10.5(@mantine/core@5.10.5)(@mantine/hooks@5.10.5)(react-dom@17.0.2)(react@17.0.2)
   '@tabler/icons':
     specifier: ^1.119.0
     version: 1.119.0(react-dom@17.0.2)(react@17.0.2)
@@ -1914,19 +1914,6 @@ packages:
       '@floating-ui/core': 1.2.4
     dev: false
 
-  /@floating-ui/react-dom-interactions@0.10.3(react-dom@17.0.2)(react@17.0.2):
-    resolution: {integrity: sha512-UEHqdnzyoiWNU5az/tAljr9iXFzN18DcvpMqW+/cXz4FEhDEB1ogLtWldOWCujLerPBnSRocADALafelOReMpw==}
-    deprecated: Package renamed to @floating-ui/react
-    peerDependencies:
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-    dependencies:
-      '@floating-ui/react-dom': 1.3.0(react-dom@17.0.2)(react@17.0.2)
-      aria-hidden: 1.2.3
-      react: 17.0.2
-      react-dom: 17.0.2(react@17.0.2)
-    dev: false
-
   /@floating-ui/react-dom@1.3.0(react-dom@17.0.2)(react@17.0.2):
     resolution: {integrity: sha512-htwHm67Ji5E/pROEAr7f8IKFShuiCKHwUC/UY4vC3I5jiSvGFAYnSYiZO5MlGmads+QqvUkR9ANHEguGrDv72g==}
     peerDependencies:
@@ -1936,6 +1923,19 @@ packages:
       '@floating-ui/dom': 1.2.5
       react: 17.0.2
       react-dom: 17.0.2(react@17.0.2)
+    dev: false
+
+  /@floating-ui/react@0.19.2(react-dom@17.0.2)(react@17.0.2):
+    resolution: {integrity: sha512-JyNk4A0Ezirq8FlXECvRtQOX/iBe5Ize0W/pLkrZjfHW9GUV7Xnq6zm6fyZuQzaHHqEnVizmvlA96e1/CkZv+w==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    dependencies:
+      '@floating-ui/react-dom': 1.3.0(react-dom@17.0.2)(react@17.0.2)
+      aria-hidden: 1.2.3
+      react: 17.0.2
+      react-dom: 17.0.2(react@17.0.2)
+      tabbable: 6.1.1
     dev: false
 
   /@grpc/grpc-js@1.8.12:
@@ -2035,17 +2035,17 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: false
 
-  /@mantine/core@5.10.0(@emotion/react@11.9.0)(@mantine/hooks@5.10.0)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2):
-    resolution: {integrity: sha512-if272RiYPK0nQQdGNwcCSY7bCPJW9455qXlRhnYOr021xh89T8WFVPeDw4uwcxoXsXdKRV5GAi9irSnsUqsjJQ==}
+  /@mantine/core@5.10.5(@emotion/react@11.9.0)(@mantine/hooks@5.10.5)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2):
+    resolution: {integrity: sha512-F4tqHSEVM9D6/iSqHfPda+Xl5XgSEPHAAkT01Zwzj4Jnbd10qGrlqr/SFUop2CIcuKYnmra9XltUahUPXBC2BQ==}
     peerDependencies:
-      '@mantine/hooks': 5.10.0
+      '@mantine/hooks': 5.10.5
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
     dependencies:
-      '@floating-ui/react-dom-interactions': 0.10.3(react-dom@17.0.2)(react@17.0.2)
-      '@mantine/hooks': 5.10.0(react@17.0.2)
-      '@mantine/styles': 5.10.0(@emotion/react@11.9.0)(react-dom@17.0.2)(react@17.0.2)
-      '@mantine/utils': 5.10.0(react@17.0.2)
+      '@floating-ui/react': 0.19.2(react-dom@17.0.2)(react@17.0.2)
+      '@mantine/hooks': 5.10.5(react@17.0.2)
+      '@mantine/styles': 5.10.5(@emotion/react@11.9.0)(react-dom@17.0.2)(react@17.0.2)
+      '@mantine/utils': 5.10.5(react@17.0.2)
       '@radix-ui/react-scroll-area': 1.0.2(react-dom@17.0.2)(react@17.0.2)
       react: 17.0.2
       react-dom: 17.0.2(react@17.0.2)
@@ -2055,23 +2055,23 @@ packages:
       - '@types/react'
     dev: false
 
-  /@mantine/dates@5.10.0(@mantine/core@5.10.0)(@mantine/hooks@5.10.0)(dayjs@1.11.7)(react@17.0.2):
-    resolution: {integrity: sha512-gK+BiXaTY9X1ESjRPNI7CASYx/QseDolNUJBqvXw6YB19QQ/PFCnyoj3xGiJUqiYfzKbFDKfTVSkP5cR6SHljA==}
+  /@mantine/dates@5.10.5(@mantine/core@5.10.5)(@mantine/hooks@5.10.5)(dayjs@1.11.7)(react@17.0.2):
+    resolution: {integrity: sha512-l7lSgDKEV+phTgUAHIkc/22Qgq+WBg0P7JS2WpeZeERX8eyD4BGlsY3ZWqHigYxhBq/Ycd2tHZFmwl2p+694Zw==}
     peerDependencies:
-      '@mantine/core': 5.10.0
-      '@mantine/hooks': 5.10.0
+      '@mantine/core': 5.10.5
+      '@mantine/hooks': 5.10.5
       dayjs: '>=1.0.0'
       react: '>=16.8.0'
     dependencies:
-      '@mantine/core': 5.10.0(@emotion/react@11.9.0)(@mantine/hooks@5.10.0)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
-      '@mantine/hooks': 5.10.0(react@17.0.2)
-      '@mantine/utils': 5.10.0(react@17.0.2)
+      '@mantine/core': 5.10.5(@emotion/react@11.9.0)(@mantine/hooks@5.10.5)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
+      '@mantine/hooks': 5.10.5(react@17.0.2)
+      '@mantine/utils': 5.10.5(react@17.0.2)
       dayjs: 1.11.7
       react: 17.0.2
     dev: false
 
-  /@mantine/hooks@5.10.0(react@17.0.2):
-    resolution: {integrity: sha512-dAefxpvqjFtXNeKse+awkIa4U1XGnMMOqWg1+07Y2Ino2G6EiT8AEnYqQyTXgcPoNaWwG9533Q/DDadmyweqaQ==}
+  /@mantine/hooks@5.10.5(react@17.0.2):
+    resolution: {integrity: sha512-hFQp71QZDfivPzfIUOQZfMKLiOL/Cn2EnzacRlbUr55myteTfzYN8YMt+nzniE/6c4IRopFHEAdbKEtfyQc6kg==}
     peerDependencies:
       react: '>=16.8.0'
     dependencies:
@@ -2095,7 +2095,7 @@ packages:
       - '@emotion/server'
     dev: false
 
-  /@mantine/notifications@5.10.5(@mantine/core@5.10.0)(@mantine/hooks@5.10.0)(react-dom@17.0.2)(react@17.0.2):
+  /@mantine/notifications@5.10.5(@mantine/core@5.10.5)(@mantine/hooks@5.10.5)(react-dom@17.0.2)(react@17.0.2):
     resolution: {integrity: sha512-IzTAXA7Zb9DcI94Mv5O2OinhLmI7fvs/VutDw9uCpp6OHtLuF/XN1d262jrsGhMZT0c4nuUsotSLFZF3GWZwXg==}
     peerDependencies:
       '@mantine/core': 5.10.5
@@ -2103,8 +2103,8 @@ packages:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
     dependencies:
-      '@mantine/core': 5.10.0(@emotion/react@11.9.0)(@mantine/hooks@5.10.0)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
-      '@mantine/hooks': 5.10.0(react@17.0.2)
+      '@mantine/core': 5.10.5(@emotion/react@11.9.0)(@mantine/hooks@5.10.5)(@types/react@18.0.15)(react-dom@17.0.2)(react@17.0.2)
+      '@mantine/hooks': 5.10.5(react@17.0.2)
       '@mantine/utils': 5.10.5(react@17.0.2)
       react: 17.0.2
       react-dom: 17.0.2(react@17.0.2)
@@ -2127,20 +2127,6 @@ packages:
       react-dom: 17.0.2(react@17.0.2)
     dev: false
 
-  /@mantine/styles@5.10.0(@emotion/react@11.9.0)(react-dom@17.0.2)(react@17.0.2):
-    resolution: {integrity: sha512-3JBM5LWJHb4Yk7jymPiSuaBJRoe2CgA7KoyYWgabwBP115GlHPb1rQCcavJsobHV4U+wFfZEEUnVBpaAaXqgmw==}
-    peerDependencies:
-      '@emotion/react': '>=11.9.0'
-      react: '>=16.8.0'
-      react-dom: '>=16.8.0'
-    dependencies:
-      '@emotion/react': 11.9.0(@babel/core@7.0.0)(@types/react@18.0.15)(react@17.0.2)
-      clsx: 1.1.1
-      csstype: 3.0.9
-      react: 17.0.2
-      react-dom: 17.0.2(react@17.0.2)
-    dev: false
-
   /@mantine/styles@5.10.5(@emotion/react@11.9.0)(react-dom@17.0.2)(react@17.0.2):
     resolution: {integrity: sha512-0NXk8c/XGzuTUkZc6KceF2NaTCMEu5mHR4ru0x+ttb9DGnLpHuGWduTHjSfr4hl6eAJgedD0zauO+VAhDzO9zA==}
     peerDependencies:
@@ -2153,14 +2139,6 @@ packages:
       csstype: 3.0.9
       react: 17.0.2
       react-dom: 17.0.2(react@17.0.2)
-    dev: false
-
-  /@mantine/utils@5.10.0(react@17.0.2):
-    resolution: {integrity: sha512-mHnNm0ajIa8qLAIEwv82N6+7YKecynOA3I8vzgBHXS2x4HwGsHITFYGmMh2LNpx5dRL034tObfEFYZXqncyEDw==}
-    peerDependencies:
-      react: '>=16.8.0'
-    dependencies:
-      react: 17.0.2
     dev: false
 
   /@mantine/utils@5.10.5(react@17.0.2):
@@ -5847,6 +5825,10 @@ packages:
   /supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  /tabbable@6.1.1:
+    resolution: {integrity: sha512-4kl5w+nCB44EVRdO0g/UGoOp3vlwgycUVtkk/7DPyeLZUCuNFFKCFG6/t/DgHLrUPHjrZg6s5tNm+56Q2B0xyg==}
+    dev: false
 
   /tapable@2.2.1:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
