@@ -248,7 +248,7 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
           <BankInput
             label="Select bank to transfer to: "
             value={selectedBank}
-            onChange={(e: any) => setSelectedBank(e.currentTarget.value)}
+            onChange={(e) => e && setSelectedBank(e)}
             filter={bank.name}
           />
           {Boolean(selectedBank) && (

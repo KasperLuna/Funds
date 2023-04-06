@@ -25,7 +25,7 @@ function PasswordRequirement({
 }
 
 const requirements = [
-  { re: /[0-9]/, label: "Includes number" },
+  { re: /\d/, label: "Includes number" },
   { re: /[a-z]/, label: "Includes lowercase letter" },
   { re: /[A-Z]/, label: "Includes uppercase letter" },
   { re: /[$&+,:;=?@#|'<>.^*()%!-]/, label: "Includes special symbol" },
@@ -55,9 +55,9 @@ export default function PasswordComponent({
   passwordError: boolean;
 }) {
   const [popoverOpened, setPopoverOpened] = useState(false);
-  const checks = requirements.map((requirement, index) => (
+  const checks = requirements.map((requirement) => (
     <PasswordRequirement
-      key={index}
+      key={requirement.label}
       label={requirement.label}
       meets={requirement.re.test(value)}
     />
@@ -69,7 +69,14 @@ export default function PasswordComponent({
     setStrength(strength);
   }, [setStrength, strength]);
 
-  const color = strength === 100 ? "teal" : strength > 50 ? "yellow" : "red";
+  let color;
+  if (strength == 100) {
+    color = "teal";
+  } else if (strength > 50) {
+    color = "yellow";
+  } else {
+    color = "red";
+  }
 
   return (
     <Popover
