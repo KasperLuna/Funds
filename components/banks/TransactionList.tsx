@@ -20,6 +20,7 @@ import { Category, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useTxLayout } from "../../utils/helpers";
+import IntersectionObserverWrapper from "../config/IntersectionObserverWrapper";
 
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
@@ -94,6 +95,11 @@ const useStyles = createStyles((theme) => ({
     padding: theme.spacing.lg,
     height: "100%",
   },
+  loaderSkeleton: {
+    width: "100%",
+    height: "100px",
+    marginTop: theme.spacing.md,
+  },
 }));
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
@@ -102,7 +108,8 @@ const TransactionList = () => {
   const { query } = useRouter();
   const { user } = useAuth();
   const bank = query["bank"];
-  const { transactions, loading } = useTransactionsQuery(user?.uid, bank);
+  const { transactions, loading, isFinishedLoading, loadMore } =
+    useTransactionsQuery(user?.uid, bank);
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
   const { classes } = useStyles();
@@ -212,6 +219,12 @@ const TransactionList = () => {
                 </tbody>
               </Table>
             )}
+            <IntersectionObserverWrapper onVisible={() => loadMore()}>
+              <Skeleton
+                className={classes.loaderSkeleton}
+                style={{ display: isFinishedLoading ? "none" : "block" }}
+              ></Skeleton>
+            </IntersectionObserverWrapper>
           </>
         ) : (
           <Skeleton visible={loading} radius="md">

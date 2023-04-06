@@ -3,12 +3,15 @@ import {
   collection,
   deleteDoc,
   doc,
+  DocumentSnapshot,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
   QuerySnapshot,
   setDoc,
+  startAfter,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -91,24 +94,29 @@ export const useCategoriesQuery = (id?: string) => {
   return { categories, loading };
 };
 
+const TxPageSize = 25;
+
 export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFinishedLoading, setIsFinishedLoading] = useState(false);
+  const [lastTxn, setLastTxn] = useState<DocumentSnapshot | null>(null);
 
   const bankFilter = bank ? where("bank", "==", bank) : where("bank", "!=", "");
 
   const txRef = collection(db, "users", id || "", "transactions");
   const q = bank
-    ? query(txRef, bankFilter, orderBy("date", "desc"))
-    : query(txRef, orderBy("date", "desc"));
+    ? query(txRef, bankFilter, orderBy("date", "desc"), limit(TxPageSize))
+    : query(txRef, orderBy("date", "desc"), limit(TxPageSize));
   useEffect(() => {
     let isMounted = true;
     const getTxns = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
         const data = snap.docs.map((doc) => doc.data() as FirebaseTxTypes);
         if (isMounted) {
-          setTransactions(data);
+          setTransactions((prev) => (lastTxn ? [...prev, ...data] : [...data]));
           setLoading(false);
+          setLastTxn(snap.docs[snap.docs.length - 1] || null);
         }
       });
       return () => unsubscribe();
@@ -123,7 +131,42 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bank]);
-  return { transactions, loading };
+
+  const loadMore = async () => {
+    if (!lastTxn || loading) return;
+    const moreQ = bank
+      ? query(
+          txRef,
+          bankFilter,
+          orderBy("date", "desc"),
+          startAfter(lastTxn),
+          limit(TxPageSize)
+        )
+      : query(
+          txRef,
+          orderBy("date", "desc"),
+          startAfter(lastTxn),
+          limit(TxPageSize)
+        );
+
+    setLoading(true);
+    const moreSnap = await getDocs(moreQ);
+    if (moreSnap.empty) {
+      setIsFinishedLoading(true);
+      return;
+    }
+    const moreData = moreSnap.docs.map((doc) => doc.data() as FirebaseTxTypes);
+    setTransactions((prev) => [...prev, ...moreData]);
+    setLoading(false);
+    setLastTxn(moreSnap.docs[moreSnap.docs.length - 1] || null);
+  };
+
+  return {
+    transactions,
+    loading,
+    isFinishedLoading,
+    loadMore,
+  };
 };
 
 export const createBank = async (data: Bank & { userId: string }) => {
