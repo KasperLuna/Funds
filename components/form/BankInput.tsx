@@ -9,7 +9,7 @@ import {
   Text,
   Select,
 } from "@mantine/core";
-import { IconPlus } from "@tabler/icons";
+import { IconPlus } from "@tabler/icons-react";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Bank } from "../../utils/db";

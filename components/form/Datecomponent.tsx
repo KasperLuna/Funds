@@ -2,7 +2,7 @@
 import React from "react";
 import { Group, Menu, ActionIcon } from "@mantine/core";
 import { DatePicker } from "@mantine/dates";
-import { IconCalendarEvent, IconCalendarMinus } from "@tabler/icons";
+import { IconCalendarEvent, IconCalendarMinus } from "@tabler/icons-react";
 import { Control, Controller, UseFormSetValue } from "react-hook-form";
 import { AppTxTypes, Transfer } from "../../utils/db";
 

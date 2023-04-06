@@ -11,7 +11,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
-import { IconExternalLink } from "@tabler/icons";
+import { IconExternalLink } from "@tabler/icons-react";
 import Link from "next/link";
 import React from "react";
 import { Bank } from "../../utils/db";
