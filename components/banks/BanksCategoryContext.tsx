@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import { useBanksQuery, useCategoriesQuery } from "../../firebase/queries";
 import { useAuth } from "../../components/config/AuthContext";
 import { Bank, Category } from "../../utils/db";
@@ -24,8 +24,13 @@ export const BanksCategsProvider = ({
   const bankData = useBanksQuery(user?.uid || "");
   const categoryData = useCategoriesQuery(user?.uid || "");
 
+  const memoizedData = useMemo(
+    () => ({ bankData, categoryData }),
+    [bankData, categoryData]
+  );
+
   return (
-    <BanksCategsContext.Provider value={{ bankData, categoryData }}>
+    <BanksCategsContext.Provider value={memoizedData}>
       {children}
     </BanksCategsContext.Provider>
   );

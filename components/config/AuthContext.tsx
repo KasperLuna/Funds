@@ -1,4 +1,10 @@
-import React, { createContext, useEffect, useState, useContext } from "react";
+import React, {
+  createContext,
+  useEffect,
+  useState,
+  useContext,
+  useMemo,
+} from "react";
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -53,8 +59,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return logOut(auth);
   };
 
+  const memoizedData = useMemo(
+    () => ({ user, signIn, signUp, signOut }),
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={memoizedData}>
       {loading ? null : children}
     </AuthContext.Provider>
   );
