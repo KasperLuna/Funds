@@ -1,34 +1,28 @@
-# Funds (formerly fih·nan·chee)
- Finance Tracker WebApp
- 
-Conveniently track your finances with Funds: follow transactions and manage your financial accounts from one location across all your devices. Designed to work as a PWA.
+# Create T3 App
 
+This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
 
- ### Requirements
- 1. [**VSCode**](https://code.visualstudio.com/download) for Development
- 2. [**PNPM**](https://pnpm.io/installation) (package manager)
- 
- ## Getting Started
-To begin development, you need to clone this repository and install dependencies.
+## What's next? How do I make an app with this?
 
-```
-git clone https://github.com/KasperLuna/Funds.git
-cd Funds
-pnpm install
-```
+We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
 
+If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
 
-### Dev Dependencies 
-Installed via VSCode Extensions
- 1. **ESLint**
- 2. **Prettier**
- 3. (Optional) Blockman
+- [Next.js](https://nextjs.org)
+- [NextAuth.js](https://next-auth.js.org)
+- [Prisma](https://prisma.io)
+- [Tailwind CSS](https://tailwindcss.com)
+- [tRPC](https://trpc.io)
 
-## Running the App
-The app's front and backend can be run concurrently (parallel) or individually.
+## Learn More
 
-### Run Locally
-```
-pnpm run dev
-```
-The site will then start on localhost:3000.
+To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+
+- [Documentation](https://create.t3.gg/)
+- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+
+You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+
+## How do I deploy this?
+
+Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
