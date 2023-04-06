@@ -30,7 +30,12 @@ import {
   User,
 } from "firebase/auth";
 import router from "next/router";
-import { IconAt, IconBrandGoogle, IconLock, IconUser } from "@tabler/icons";
+import {
+  IconAt,
+  IconBrandGoogle,
+  IconLock,
+  IconUser,
+} from "@tabler/icons-react";
 import { useAuth } from "../config/AuthContext";
 import Link from "next/link";
 import PasswordComponent from "./PasswordComponent";

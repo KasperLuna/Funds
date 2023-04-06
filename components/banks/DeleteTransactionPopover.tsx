@@ -7,7 +7,7 @@ import {
   Anchor,
   Button,
 } from "@mantine/core";
-import { IconTrash } from "@tabler/icons";
+import { IconTrash } from "@tabler/icons-react";
 import { deleteTransaction } from "../../firebase/queries";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { useAuth } from "../config/AuthContext";

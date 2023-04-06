@@ -19,7 +19,7 @@ import {
   IconArrowRight,
   IconBuildingBank,
   IconChevronDown,
-} from "@tabler/icons";
+} from "@tabler/icons-react";
 import React, { useState } from "react";
 import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";

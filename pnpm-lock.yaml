@@ -26,8 +26,8 @@ dependencies:
     specifier: ^5.10.5
     version: 5.10.5(@mantine/core@5.10.5)(@mantine/hooks@5.10.5)(react-dom@17.0.2)(react@17.0.2)
   '@tabler/icons':
-    specifier: ^1.119.0
-    version: 1.119.0(react-dom@17.0.2)(react@17.0.2)
+    specifier: ^2.0.0
+    version: 2.0.0
   dayjs:
     specifier: ^1.11.7
     version: 1.11.7
@@ -2529,19 +2529,8 @@ packages:
       tslib: 2.5.0
     dev: false
 
-  /@tabler/icons@1.119.0(react-dom@17.0.2)(react@17.0.2):
-    resolution: {integrity: sha512-Fk3Qq4w2SXcTjc/n1cuL5bccPkylrOMo7cYpQIf/yw6zP76LQV9dtLcHQUjFiUnaYuswR645CnURIhlafyAh9g==}
-    peerDependencies:
-      react: ^16.x || 17.x || 18.x
-      react-dom: ^16.x || 17.x || 18.x
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
-    dependencies:
-      react: 17.0.2
-      react-dom: 17.0.2(react@17.0.2)
+  /@tabler/icons@2.0.0:
+    resolution: {integrity: sha512-ye93cVD8baCwJJ7J3GKlUM3FN+qW6lsEz4uaH8bHCwC8un2R4p+ZzyRNc/ksqVgMQJ4PKQ8xbYpv4dnbbRffsA==}
     dev: false
 
   /@types/eslint-scope@3.7.4:

@@ -1,5 +1,5 @@
 import { showNotification } from "@mantine/notifications";
-import { IconCheck, IconX } from "@tabler/icons";
+import { IconCheck, IconX } from "@tabler/icons-react";
 import React from "react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

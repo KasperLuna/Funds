@@ -10,7 +10,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { IconEdit } from "@tabler/icons";
+import { IconEdit } from "@tabler/icons-react";
 import { BankInput } from "../form/BankInput";
 import Datecomponent from "../form/Datecomponent";
 import AmountInput from "../form/AmountInput";

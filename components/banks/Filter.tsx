@@ -1,6 +1,6 @@
 import React from "react";
 import { ActionIcon, Popover } from "@mantine/core";
-import { IconFilter } from "@tabler/icons";
+import { IconFilter } from "@tabler/icons-react";
 
 export const Filter = () => {
   return (

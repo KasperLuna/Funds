@@ -1,5 +1,5 @@
 import React from "react";
-import { IconArrowUp } from "@tabler/icons";
+import { IconArrowUp } from "@tabler/icons-react";
 import { useWindowScroll } from "@mantine/hooks";
 import { Affix, Button, Transition } from "@mantine/core";
 

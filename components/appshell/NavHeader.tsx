@@ -16,7 +16,7 @@ import {
   IconChevronDown,
   IconMoonStars,
   IconSun,
-} from "@tabler/icons";
+} from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "../../components/config/AuthContext";
