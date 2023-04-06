@@ -94,7 +94,7 @@ export const useCategoriesQuery = (id?: string) => {
   return { categories, loading };
 };
 
-const TxPageSize = 25;
+const TxPageSize = 24;
 
 export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
