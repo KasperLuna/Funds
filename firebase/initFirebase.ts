@@ -2,10 +2,10 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import {
   CACHE_SIZE_UNLIMITED,
-  enableIndexedDbPersistence,
   initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
 } from "firebase/firestore";
-import { showErrorNotif } from "../utils/notifs";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -23,28 +23,11 @@ const firebaseConfig = {
 export const firebase = initializeApp(firebaseConfig);
 
 export const db = initializeFirestore(firebase, {
-  cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  localCache: persistentLocalCache({
+    // multi-tab indexedDb Persistence
+    tabManager: persistentMultipleTabManager(),
+    cacheSizeBytes: CACHE_SIZE_UNLIMITED,
+  }),
 });
-
-if (typeof window) {
-  const enableFirestorePersistence = async () => {
-    try {
-      await enableIndexedDbPersistence(db);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: string | any) {
-      if (err.code == "failed-precondition") {
-        showErrorNotif(
-          "Offline persistence can only be enabled in one tab at a time. Close other tabs."
-        );
-      } else if (err.code == "unimplemented") {
-        showErrorNotif("Current browser does not support offline persistence");
-      } else {
-        showErrorNotif(err.message);
-      }
-    }
-  };
-
-  enableFirestorePersistence();
-}
 
 export const auth = getAuth(firebase);
