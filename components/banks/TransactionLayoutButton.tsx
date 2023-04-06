@@ -1,6 +1,6 @@
 import React from "react";
 import { Tooltip, ActionIcon } from "@mantine/core";
-import { IconLayoutGrid, IconTable } from "@tabler/icons";
+import { IconLayoutGrid, IconTable } from "@tabler/icons-react";
 import { useTxLayout } from "../../utils/helpers";
 
 export const TransactionLayoutButton = () => {

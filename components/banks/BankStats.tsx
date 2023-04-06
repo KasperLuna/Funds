@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { IconExternalLink, IconEye, IconEyeOff } from "@tabler/icons";
+import { IconExternalLink, IconEye, IconEyeOff } from "@tabler/icons-react";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useRouter } from "next/router";
 import { usePrivacyMode } from "../../utils/helpers";

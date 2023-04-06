@@ -2,7 +2,11 @@ import React from "react";
 import NavHeader from "./NavHeader";
 import NextNProgress from "nextjs-progressbar";
 import { AppShell, Container, Box, createStyles } from "@mantine/core";
-import { IconBuildingBank, IconCoinBitcoin, IconHome } from "@tabler/icons";
+import {
+  IconBuildingBank,
+  IconCoinBitcoin,
+  IconHome,
+} from "@tabler/icons-react";
 import { NavFooter } from "./NavFooter";
 import { NavBar } from "./NavBar";
 import { useAuth } from "../../components/config/AuthContext";
