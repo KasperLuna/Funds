@@ -6,8 +6,7 @@ export const Logo = () => {
   return (
     <svg
       id="Funds_Logo"
-      width="100%"
-      // stroke={colorScheme == "dark" ? "black" : "white"}
+      width={"80px"}
       fill={colorScheme == "dark" ? "white" : "black"}
       data-name="Funds-Logo"
       xmlns="http://www.w3.org/2000/svg"
