@@ -26,16 +26,25 @@ export const db = initializeFirestore(firebase, {
   cacheSizeBytes: CACHE_SIZE_UNLIMITED,
 });
 
-if (process.browser) {
-  enableIndexedDbPersistence(db).catch((err) => {
-    if (err.code == "failed-precondition") {
-      showErrorNotif(
-        "Offline persistence can only be enabled in one tab at a time. Close other tabs."
-      );
-    } else if (err.code == "unimplemented") {
-      showErrorNotif("Current browser does not support offline persistence");
+if (typeof window) {
+  const enableFirestorePersistence = async () => {
+    try {
+      await enableIndexedDbPersistence(db);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: string | any) {
+      if (err.code == "failed-precondition") {
+        showErrorNotif(
+          "Offline persistence can only be enabled in one tab at a time. Close other tabs."
+        );
+      } else if (err.code == "unimplemented") {
+        showErrorNotif("Current browser does not support offline persistence");
+      } else {
+        showErrorNotif(err.message);
+      }
     }
-  });
+  };
+
+  enableFirestorePersistence();
 }
 
 export const auth = getAuth(firebase);
