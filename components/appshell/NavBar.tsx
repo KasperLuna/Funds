@@ -37,7 +37,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   tab: {
-    paddingBlock: theme.spacing.md * 1.25,
+    paddingBlock: theme.spacing.lg,
     fontWeight: "bold",
     marginBottom: 5,
     justifyContent: "center",

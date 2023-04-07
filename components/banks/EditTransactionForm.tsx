@@ -84,7 +84,9 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
         onClose={onClose}
         centered
         withCloseButton={false}
-        overlayOpacity={0.7}
+        overlayProps={{
+          opacity: 0.7,
+        }}
       >
         <form onSubmit={handleSubmit(onSubmit)}>
           <Datecomponent control={control} setValue={setValue} />

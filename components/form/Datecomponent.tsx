@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { Group, Menu, ActionIcon } from "@mantine/core";
-import { DatePicker } from "@mantine/dates";
+import { DatePickerInput } from "@mantine/dates";
 import { IconCalendarEvent, IconCalendarMinus } from "@tabler/icons-react";
 import { Control, Controller, UseFormSetValue } from "react-hook-form";
 import { AppTxTypes, Transfer } from "../../utils/db";
@@ -21,18 +21,22 @@ export default function Datecomponent(props: DateComponentProps) {
           name="date"
           rules={{ required: true }}
           render={({ field }) => (
-            <DatePicker
+            <DatePickerInput
               {...field}
               placeholder="Date"
               label="Date: "
               sx={{ width: "100%" }}
               radius={0}
               withAsterisk
-              withinPortal
             />
           )}
         />
-        <Menu transition="pop" position="bottom-end">
+        <Menu
+          transitionProps={{
+            transition: "pop",
+          }}
+          position="bottom-end"
+        >
           <Menu.Target>
             <ActionIcon
               variant="default"

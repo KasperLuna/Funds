@@ -61,7 +61,11 @@ export default function Create() {
         >
           Add
         </Button>
-        <Menu transition="pop" position="bottom-end" shadow={"lg"}>
+        <Menu
+          transitionProps={{ transition: "pop" }}
+          position="bottom-end"
+          shadow={"lg"}
+        >
           <Menu.Target>
             <ActionIcon
               variant="filled"
@@ -103,7 +107,9 @@ export default function Create() {
         onClose={() => {
           setIsOpen(false);
         }}
-        overlayOpacity={0.7}
+        overlayProps={{
+          opacity: 0.7,
+        }}
         title={`Add ${tabValue}`}
         centered
       >

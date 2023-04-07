@@ -18,11 +18,25 @@ import React from "react";
 
 const useStyles = createStyles((theme) => ({
   root: {
-    marginTop: theme.spacing.xl * 4,
-    marginBottom: theme.spacing.xl * 4,
+    marginBlock: "7rem",
     display: "flex",
     flexDirection: "column",
     width: "100%",
+
+    [`@media (max-width: ${theme.breakpoints.xl}px)`]: {
+      marginTop: "3rem",
+      marginBottom: "3rem",
+    },
+
+    [`@media (max-width: ${theme.breakpoints.md}px)`]: {
+      marginTop: "2rem",
+      marginBottom: "2rem",
+    },
+
+    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      marginTop: "1rem",
+      marginBottom: "1rem",
+    },
   },
 
   title: {
@@ -39,7 +53,7 @@ const useStyles = createStyles((theme) => ({
 
   text: {
     textAlign: "center",
-    marginBottom: theme.spacing.xl * 2,
+    marginBottom: "3rem",
   },
 
   featureTitleLeft: {
@@ -66,14 +80,14 @@ const useStyles = createStyles((theme) => ({
 
   featureDescriptionLeft: {
     textAlign: "start",
-    marginBottom: theme.spacing.xl * 2,
+    marginBottom: "2.5rem",
     maxWidth: 500,
   },
 
   featureDescriptionRight: {
     alignSelf: "flex-end",
     textAlign: "end",
-    marginBottom: theme.spacing.xl * 2,
+    marginBottom: "2.5rem",
     maxWidth: 500,
   },
 
@@ -106,6 +120,14 @@ const useStyles = createStyles((theme) => ({
     justifyContent: "center",
     alignItems: "center",
   },
+
+  featuresContainer: {
+    display: "flex",
+    flexDirection: "column",
+    maxWidth: "90%",
+    minWidth: "70vw",
+    marginInline: "auto",
+  },
 }));
 
 const FeatureSection = () => {
@@ -118,59 +140,61 @@ const FeatureSection = () => {
           Here are some of the things that make Funds ✨Special✨
         </Text>
 
-        <Group noWrap className={classes.leftFeatureGroup}>
-          <Box className={classes.featureIconBox}>
-            <IconDevices size={65} />
-          </Box>
-          <Stack spacing={2}>
-            <Title className={classes.featureTitleLeft}>Multi-Platform</Title>
-            <Text className={classes.featureDescriptionLeft}>
-              Connect on your browser or on your mobile device, Funds keeps your
-              data synced across all of them.
-            </Text>
-          </Stack>
-        </Group>
-        <Group noWrap className={classes.rightFeatureGroup}>
-          <Stack spacing={2}>
-            <Title className={classes.featureTitleRight}>
-              Progressive. Web. App.
-            </Title>
-            <Text className={classes.featureDescriptionRight}>
-              Using an iPhone? Use the share sheet in Safari and Add this page
-              to your homescreen to get the app experience.
-            </Text>
-          </Stack>
-          <Box className={classes.featureIconBox}>
-            <IconDeviceMobile size={65} />
-          </Box>
-        </Group>
-        <Group noWrap className={classes.leftFeatureGroup}>
-          <Box className={classes.featureIconBox}>
-            <IconLockOpenOff size={65} />
-          </Box>
-          <Stack spacing={2}>
-            <Title className={classes.featureTitleLeft}>Open Source</Title>
-            <Text className={classes.featureDescriptionLeft}>
-              Funds is{" "}
-              <Link href="https://github.com/KasperLuna/Funds" passHref>
-                <Anchor target={"_blank"}>fully open-source</Anchor>
-              </Link>{" "}
-              so you know what&apos;s going on with the site.
-            </Text>
-          </Stack>
-        </Group>
-        <Group noWrap className={classes.rightFeatureGroup}>
-          <Stack spacing={2}>
-            <Title className={classes.featureTitleRight}>Free</Title>
-            <Text className={classes.featureDescriptionRight}>
-              You don&apos;t need to spend a thing! You keep your money while
-              managing it.
-            </Text>
-          </Stack>
-          <Box className={classes.featureIconBox}>
-            <IconCashOff size={65} />
-          </Box>
-        </Group>
+        <div className={classes.featuresContainer}>
+          <Group noWrap className={classes.leftFeatureGroup}>
+            <Box className={classes.featureIconBox}>
+              <IconDevices size={65} />
+            </Box>
+            <Stack spacing={2}>
+              <Title className={classes.featureTitleLeft}>Multi-Platform</Title>
+              <Text className={classes.featureDescriptionLeft}>
+                Connect on your browser or on your mobile device, Funds keeps
+                your data synced across all of them.
+              </Text>
+            </Stack>
+          </Group>
+          <Group noWrap className={classes.rightFeatureGroup}>
+            <Stack spacing={2}>
+              <Title className={classes.featureTitleRight}>
+                Progressive. Web. App.
+              </Title>
+              <Text className={classes.featureDescriptionRight}>
+                Using an iPhone? Use the share sheet in Safari and Add this page
+                to your homescreen to get the app experience.
+              </Text>
+            </Stack>
+            <Box className={classes.featureIconBox}>
+              <IconDeviceMobile size={65} />
+            </Box>
+          </Group>
+          <Group noWrap className={classes.leftFeatureGroup}>
+            <Box className={classes.featureIconBox}>
+              <IconLockOpenOff size={65} />
+            </Box>
+            <Stack spacing={2}>
+              <Title className={classes.featureTitleLeft}>Open Source</Title>
+              <Text className={classes.featureDescriptionLeft}>
+                Funds is{" "}
+                <Link href="https://github.com/KasperLuna/Funds" passHref>
+                  <Anchor target={"_blank"}>fully open-source</Anchor>
+                </Link>{" "}
+                so you know what&apos;s going on with the site.
+              </Text>
+            </Stack>
+          </Group>
+          <Group noWrap className={classes.rightFeatureGroup}>
+            <Stack spacing={2}>
+              <Title className={classes.featureTitleRight}>Free</Title>
+              <Text className={classes.featureDescriptionRight}>
+                You don&apos;t need to spend a thing! You keep your money while
+                managing it.
+              </Text>
+            </Stack>
+            <Box className={classes.featureIconBox}>
+              <IconCashOff size={65} />
+            </Box>
+          </Group>
+        </div>
       </div>
     </>
   );

@@ -123,7 +123,9 @@ export const AddBankButton = ({
       onClose={() => setOpened(false)}
       position={variant == "AddIcon" ? "top-end" : "top-start"}
       withArrow
-      transition="pop-bottom-right"
+      transitionProps={{
+        transition: "pop-top-right",
+      }}
       withinPortal
     >
       <Popover.Target>
