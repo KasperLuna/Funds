@@ -6,7 +6,7 @@ import {
   ColorSchemeProvider,
   MantineProvider,
 } from "@mantine/core";
-import { NotificationsProvider } from "@mantine/notifications";
+import { Notifications } from "@mantine/notifications";
 import { useLocalStorage } from "@mantine/hooks";
 import Layout from "../components/appshell/Layout";
 import { AuthProvider } from "../components/config/AuthContext";
@@ -235,17 +235,16 @@ export default function App(props: AppProps) {
         >
           <AuthProvider>
             <BanksCategsProvider>
-              <NotificationsProvider limit={5}>
-                <Layout>
-                  {noAuth.includes(router.pathname) ? (
+              <Notifications limit={5} />
+              <Layout>
+                {noAuth.includes(router.pathname) ? (
+                  <Component {...pageProps} />
+                ) : (
+                  <ProtectedRoute>
                     <Component {...pageProps} />
-                  ) : (
-                    <ProtectedRoute>
-                      <Component {...pageProps} />
-                    </ProtectedRoute>
-                  )}
-                </Layout>
-              </NotificationsProvider>
+                  </ProtectedRoute>
+                )}
+              </Layout>
             </BanksCategsProvider>
           </AuthProvider>
         </MantineProvider>

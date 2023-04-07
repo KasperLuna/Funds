@@ -83,7 +83,9 @@ export default function PasswordComponent({
       opened={popoverOpened}
       position="bottom"
       width="target"
-      transition="scale-y"
+      transitionProps={{
+        transition: "scale-y",
+      }}
     >
       <Popover.Target>
         <div
