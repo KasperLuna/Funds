@@ -47,7 +47,9 @@ export function DeleteTransactionPopover({
       opened={opened}
       onClose={() => setOpened(false)}
       position="top-end"
-      transition="skew-down"
+      transitionProps={{
+        transition: "skew-down",
+      }}
       withArrow
     >
       <Popover.Target>

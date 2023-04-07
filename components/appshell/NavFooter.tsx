@@ -20,7 +20,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   tab: {
-    paddingInline: theme.spacing.md * 1.25,
+    paddingInline: theme.spacing.lg,
     height: 45,
     fontWeight: "bold",
     justifyContent: "center",
