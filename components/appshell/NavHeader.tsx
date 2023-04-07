@@ -39,13 +39,13 @@ const useStyles = createStyles((theme) => ({
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
       {
         position: "fixed",
-        paddingTop: theme.spacing.lg * 3,
+        paddingTop: "3rem",
       },
 
     "@media screen and (display-mode: standalone) and (orientation: landscape)":
       {
         position: "fixed",
-        paddingTop: theme.spacing.lg * 1.05,
+        paddingTop: theme.spacing.xl,
       },
   },
 
@@ -118,7 +118,7 @@ export default function NavHeader() {
               <Menu
                 width={210}
                 position="bottom-end"
-                transition="pop-top-right"
+                transitionProps={{ transition: "pop-top-right" }}
                 onClose={() => setUserMenuOpened(false)}
                 onOpen={() => setUserMenuOpened(true)}
                 withArrow

@@ -36,11 +36,11 @@ const useStyles = createStyles((theme) => ({
   loadingBox: {
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
       {
-        marginTop: theme.spacing.xl * 4.5,
+        marginTop: "6rem",
       },
     "@media screen and (display-mode: standalone) and (orientation: landscape)":
       {
-        marginTop: theme.spacing.xl * 3,
+        marginTop: "5rem",
       },
   },
   container: {
@@ -61,6 +61,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { classes } = useStyles();
 
   const isMd = useMediaQuery("(min-width: 768px)");
+  const isSm = useMediaQuery("(min-width: 767px)");
 
   const isInApp = !Boolean(noAuth.includes(router.pathname));
 
@@ -77,7 +78,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         className={classes.appShell}
         navbarOffsetBreakpoint="sm"
         asideOffsetBreakpoint="sm"
-        navbar={user && isInApp ? <NavBar /> : <></>}
+        navbar={user && isInApp && isSm ? <NavBar /> : <></>}
         footer={user && isInApp && !isMd ? <NavFooter /> : <></>}
         header={<NavHeader />}
       >

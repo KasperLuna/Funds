@@ -9,7 +9,6 @@ const useStyles = createStyles((theme) => ({
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    padding: 0,
   },
 
   dots: {
@@ -36,23 +35,25 @@ const useStyles = createStyles((theme) => ({
 
   title: {
     textAlign: "center",
-    fontSize: "5.7rem",
+    fontSize: "5rem",
     letterSpacing: -6,
-    textSizeAdjust: "50%",
+    lineHeight: 1.1,
+    textSizeAdjust: "65%",
     fontFamily: "Arial Black, Arial Bold, Gadget, sans-serif",
     fontWeight: 1000,
     flex: "0 1 auto",
-    paddingTop: "10%",
+    paddingTop: "12%",
     marginBottom: "20px",
     color: theme.colorScheme === "dark" ? theme.colors.gray[0] : theme.black,
 
-    [`@media (max-width: ${theme.breakpoints.md}px)`]: {
+    [`@media (max-width: ${theme.breakpoints.md})`]: {
       letterSpacing: -1,
       fontSize: "5.5rem",
-      marginBottom: "10px",
+      marginTop: "15%",
+      marginBottom: "5%",
     },
 
-    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+    [`@media (max-width: ${theme.breakpoints.sm})`]: {
       fontSize: "5rem",
       letterSpacing: -3,
     },
