@@ -216,7 +216,6 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
         />
 
         <TextInput
-          required
           type="text"
           {...register("description")}
           label="Description: "
