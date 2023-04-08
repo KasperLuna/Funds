@@ -29,7 +29,8 @@ const useStyles = createStyles((theme) => ({
     width: "100%",
     position: "sticky",
     top: 0,
-    paddingTop: theme.spacing.md,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     background:
       theme.colorScheme === "dark"
         ? "rgba(0, 0, 0, 0.6)"
@@ -39,13 +40,13 @@ const useStyles = createStyles((theme) => ({
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
       {
         position: "fixed",
-        paddingTop: "3rem",
+        paddingTop: "3.5rem",
+        paddingBottom: theme.spacing.xs,
       },
 
     "@media screen and (display-mode: standalone) and (orientation: landscape)":
       {
         position: "fixed",
-        paddingTop: theme.spacing.xl,
       },
   },
 
@@ -53,26 +54,20 @@ const useStyles = createStyles((theme) => ({
     paddingBottom: 5,
     paddingLeft: 1,
     maxWidth: 90,
-    [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+    [`@media (max-width: ${theme.breakpoints.sm})`]: {
       paddingBottom: 10,
       maxWidth: 80,
     },
   },
 
   user: {
-    marginBottom: 10,
     color: theme.colorScheme === "dark" ? theme.colors.dark[0] : theme.black,
-    padding: `5px 7px`,
     borderRadius: theme.radius.sm,
     transition: "background-color 100ms ease",
 
     "&:hover": {
       backgroundColor:
         theme.colorScheme === "dark" ? theme.colors.dark[8] : theme.white,
-    },
-
-    "@media screen and (display-mode: standalone)": {
-      marginBottom: 5,
     },
 
     [theme.fn.largerThan("sm")]: {
