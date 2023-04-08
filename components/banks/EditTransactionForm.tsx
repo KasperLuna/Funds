@@ -113,7 +113,6 @@ export function EditTransactionForm(props: FirebaseTxTypes) {
           />
 
           <TextInput
-            required
             label="Description"
             placeholder="Description: "
             style={{ minWidth: isMobile ? 220 : 300, marginTop: 5 }}
