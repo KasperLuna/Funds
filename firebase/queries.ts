@@ -4,14 +4,17 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
+  Query,
   query,
   QuerySnapshot,
   setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
+import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import {
   AppTxTypes,
@@ -91,16 +94,33 @@ export const useCategoriesQuery = (id?: string) => {
   return { categories, loading };
 };
 
-export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
+export const useTransactionsQuery = (
+  filterBy?: "latest" | Date | null,
+  id?: string,
+  bank?: string | string[]
+) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
 
   const bankFilter = bank ? where("bank", "==", bank) : where("bank", "!=", "");
-
   const txRef = collection(db, "users", id || "", "transactions");
-  const q = bank
-    ? query(txRef, bankFilter, orderBy("date", "desc"))
-    : query(txRef, orderBy("date", "desc"));
+
+  let q: Query;
+  if (filterBy instanceof Date) {
+    const start = dayjs(filterBy).startOf("month").toDate();
+    const end = dayjs(filterBy).endOf("month").toDate();
+    q = query(
+      txRef,
+      where("date", ">=", start),
+      where("date", "<=", end),
+      orderBy("date", "desc")
+    );
+  } else if (filterBy === "latest") {
+    q = bank
+      ? query(txRef, bankFilter, orderBy("date", "desc"), limit(20))
+      : query(txRef, orderBy("date", "desc"), limit(20));
+  }
+
   useEffect(() => {
     let isMounted = true;
     const getTxns = async () => {
@@ -122,7 +142,7 @@ export const useTransactionsQuery = (id?: string, bank?: string | string[]) => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bank]);
+  }, [bank, filterBy]);
   return { transactions, loading };
 };
 

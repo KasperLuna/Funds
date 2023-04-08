@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActionIcon,
   Box,
   createStyles,
   Group,
   MultiSelect,
   Paper,
   ScrollArea,
+  SegmentedControl,
   SimpleGrid,
   Skeleton,
   Stack,
@@ -20,11 +22,21 @@ import { Category, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useTxLayout } from "../../utils/helpers";
+import { MonthPickerInput } from "@mantine/dates";
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCalendar,
+} from "@tabler/icons-react";
 
 const useStyles = createStyles((theme) => ({
   latestTransactionText: { marginTop: "20px" },
   tableContainer: {
     height: "65vh",
+
+    [`@media (max-width: ${theme.breakpoints.sm})`]: {
+      height: "calc(60vh - 3.5rem)",
+    },
   },
   table: {
     // overflowX: "auto",
@@ -94,15 +106,38 @@ const useStyles = createStyles((theme) => ({
     padding: theme.spacing.lg,
     height: "100%",
   },
+  selectorGroup: {
+    marginBottom: theme.spacing.lg,
+  },
+  controlGroupLabel: {
+    minWidth: "120px",
+  },
+  monthInput: {
+    minWidth: "125px",
+    borderRadius: "0px",
+  },
 }));
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
 const TransactionList = () => {
+  const [txFilter, setTxFilter] = useState("latest");
+  const [monthValue, setMonthValue] = useState<Date | null>(
+    dayjs().startOf("month").toDate()
+  );
+  const filterByValue = txFilter == "latest" ? "latest" : monthValue;
   const { query } = useRouter();
   const { user } = useAuth();
   const bank = query["bank"];
-  const { transactions, loading } = useTransactionsQuery(user?.uid, bank);
+  const { transactions: rawTransactions, loading } = useTransactionsQuery(
+    filterByValue,
+    user?.uid,
+    bank
+  );
+
+  const transactions = rawTransactions?.filter((tx) =>
+    bank ? tx.bank == bank : true
+  );
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
   const { classes } = useStyles();
@@ -115,8 +150,66 @@ const TransactionList = () => {
         size="lg"
         className={classes.latestTransactionText}
       >
-        Latest Transactions
+        Transactions
       </Text>
+      <Group className={classes.selectorGroup}>
+        <SegmentedControl
+          value={txFilter}
+          onChange={setTxFilter}
+          classNames={{ label: classes.controlGroupLabel }}
+          data={[
+            { label: "Latest", value: "latest" },
+            {
+              label: "By Month",
+              value: "monthly",
+            },
+          ]}
+        />
+        {txFilter == "monthly" && (
+          <Group spacing={0}>
+            <ActionIcon
+              variant="default"
+              size={"36px"}
+              style={{
+                borderRight: 0,
+                borderRadius: 0,
+                borderBottomLeftRadius: "4px",
+                borderTopLeftRadius: "4px",
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                setMonthValue(dayjs(monthValue).subtract(1, "month").toDate());
+              }}
+            >
+              <IconArrowLeft />
+            </ActionIcon>
+            <MonthPickerInput
+              icon={<IconCalendar size="1.1rem" stroke={1.5} />}
+              placeholder="Select Month"
+              value={monthValue}
+              onChange={setMonthValue}
+              classNames={{ input: classes.monthInput }}
+              valueFormat="MMM YYYY"
+            />
+            <ActionIcon
+              variant="default"
+              size={"36px"}
+              style={{
+                borderLeft: 0,
+                borderRadius: 0,
+                borderBottomRightRadius: "4px",
+                borderTopRightRadius: "4px",
+              }}
+              onClick={(event) => {
+                event.preventDefault();
+                setMonthValue(dayjs(monthValue).add(1, "month").toDate());
+              }}
+            >
+              <IconArrowRight />
+            </ActionIcon>
+          </Group>
+        )}
+      </Group>
       <ScrollArea
         className={classes.tableContainer}
         type="auto"
@@ -175,6 +268,7 @@ const TransactionList = () => {
                         <td style={{ whiteSpace: "nowrap" }}>
                           {dayjs(data.date?.seconds * 1000).format("MMM D")}
                         </td>
+                        <td>{data.bank}</td>
                         <td>
                           <Text color={data.amount > 0 ? "green" : "red"}>
                             {data.amount.toLocaleString(undefined, {
@@ -185,7 +279,6 @@ const TransactionList = () => {
                             })}
                           </Text>
                         </td>
-                        <td>{data.bank}</td>
                         <td>{data.description}</td>
                         <td style={{ alignItems: "start" }}>
                           <Box className={classes.tableCategory}>
