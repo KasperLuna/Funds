@@ -170,6 +170,33 @@ export const useTransactionsQuery = (
   return { transactions, loading };
 };
 
+export const useGetThisMonthTxns = (id: string) => {
+  const [transactions, setTransactions] = useState<AppTxTypes[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const txRef = collection(db, "users", id, "transactions");
+  const start = dayjs().startOf("month").toDate();
+  const end = dayjs().endOf("month").toDate();
+  const q = query(
+    txRef,
+    where("date", ">=", start),
+    where("date", "<=", end),
+    orderBy("date", "desc")
+  );
+
+  const getTxns = async () => {
+    const snap = await getDocs(q);
+    const data = snap.docs.map((doc) => doc.data() as AppTxTypes);
+    setTransactions(data);
+    setLoading(false);
+  };
+  getTxns().catch(() => {
+    showErrorNotif("Error fetching transactions");
+    setLoading(false);
+  });
+  return { transactions, loading };
+};
+
 export const createBank = async (data: Bank & { userId: string }) => {
   const { userId, ...bank } = data;
   try {
