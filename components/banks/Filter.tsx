@@ -20,7 +20,7 @@ export const Filter = ({
 
   return (
     <Group>
-      <Popover position="right" shadow={"lg"}>
+      <Popover position="right" shadow={"lg"} withArrow arrowSize={15}>
         <Popover.Target>
           <ActionIcon variant={filterValue?.length ? "gradient" : "subtle"}>
             <IconFilter />
@@ -29,12 +29,12 @@ export const Filter = ({
         <Popover.Dropdown>
           <MultiSelect
             label="Filter by Category:"
-            placeholder="Select multiple categories"
+            placeholder="Select categories"
             value={filterValue}
             onChange={(value) => setFilterValue(value)}
             clearable={true}
             data={data}
-            w={300}
+            w={200}
           />
         </Popover.Dropdown>
       </Popover>
