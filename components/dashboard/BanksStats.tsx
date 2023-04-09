@@ -150,11 +150,9 @@ const BanksStats = () => {
             <Stack spacing={0}>
               <Group position="apart" sx={{ paddingLeft: 20 }}>
                 <Title size={"h3"}>Banks</Title>
-                <Link href="/banks" passHref>
-                  <Anchor>
-                    <IconExternalLink />
-                  </Anchor>
-                </Link>
+                <Anchor component={Link} href="/banks">
+                  <IconExternalLink />
+                </Anchor>
               </Group>
 
               <SimpleGrid
@@ -197,9 +195,9 @@ const BanksStats = () => {
           <Paper withBorder radius={"lg"} className={classes.emptyPageCard}>
             <Title size={"h3"}>Banks</Title>
             You don&apos;t seem to have any banks yet. Head over to the{" "}
-            <Link href="/banks" passHref>
-              <Anchor>Banks Tab</Anchor>
-            </Link>{" "}
+            <Anchor component={Link} href="/banks">
+              Banks Tab
+            </Anchor>
             and add a couple along with your transactions to see your stats!
           </Paper>
         )}

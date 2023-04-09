@@ -215,17 +215,16 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
   return (
     <Box className={classes.root}>
       {user ? (
-        <Link href="/home" passHref>
-          <Button
-            variant="filled"
-            color="orange"
-            className={classes.retToDashButton}
-            radius={"xl"}
-            component="a"
-          >
-            Return to Dashboard
-          </Button>
-        </Link>
+        <Button
+          variant="filled"
+          color="orange"
+          className={classes.retToDashButton}
+          radius={"xl"}
+          component={Link}
+          href="/home"
+        >
+          Return to Dashboard
+        </Button>
       ) : (
         <Group
           spacing={7}
