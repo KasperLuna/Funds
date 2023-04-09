@@ -150,6 +150,7 @@ export default function Create() {
         opened={Boolean(dropdownModalForm)}
         onClose={() => setDropdownModalForm(null)}
         title={`Add a ${dropdownModalForm}`}
+        zIndex={10}
       >
         {dropdownModalForm === "Bank" ? (
           <BankForm closeModal={closeDropdownModalForm} />

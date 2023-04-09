@@ -76,6 +76,7 @@ const BankInput = React.forwardRef(
           radius={0}
           withAsterisk
           error={isError}
+          withinPortal={true}
         />
         <AddBankButton />
       </Group>

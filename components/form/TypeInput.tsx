@@ -41,6 +41,7 @@ export const TypeInput = React.forwardRef(
         withAsterisk
         error={isError}
         sx={{ width: "100%" }}
+        withinPortal={true}
       />
     );
   }
