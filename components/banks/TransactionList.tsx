@@ -30,7 +30,7 @@ import {
 } from "@tabler/icons-react";
 
 const useStyles = createStyles((theme) => ({
-  latestTransactionText: { marginTop: "20px" },
+  latestTransactionText: { marginTop: "10px" },
   tableContainer: {
     height: "65vh",
 
@@ -275,7 +275,7 @@ const TransactionList = () => {
                               style: "currency",
                               currency: "PHP",
                               maximumFractionDigits: 2,
-                              minimumFractionDigits: 1,
+                              minimumFractionDigits: 0,
                             })}
                           </Text>
                         </td>
@@ -360,7 +360,7 @@ const TransactionCard = ({
                   style: "currency",
                   currency: "PHP",
                   maximumFractionDigits: 2,
-                  minimumFractionDigits: 1,
+                  minimumFractionDigits: 0,
                 })}
               </Text>
               <Text size={"xs"}> {data.description}</Text>
