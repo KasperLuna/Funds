@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { Anchor, Group } from "@mantine/core";
@@ -10,10 +10,13 @@ import { Filter } from "../../components/banks/Filter";
 import { TransactionLayoutButton } from "../../components/banks/TransactionLayoutButton";
 
 const Home: NextPage = () => {
+  const [categoryFilter, setCategoryFilter] = useState<string[] | undefined>(
+    undefined
+  );
   const pages = [{ title: "Banks", href: "/banks" }].map((page) => (
-    <Link href={page.href} key={page.title} passHref>
-      <Anchor>{page.title}</Anchor>
-    </Link>
+    <Anchor component={Link} href={page.href} key={page.title}>
+      {page.title}
+    </Anchor>
   ));
 
   return (
@@ -26,11 +29,17 @@ const Home: NextPage = () => {
       <Group position="apart">
         <Group>
           <TransactionLayoutButton />
-          <Filter />
+          <Filter
+            filterValue={categoryFilter}
+            setFilterValue={setCategoryFilter}
+          />
         </Group>
         <Create />
       </Group>
-      <TransactionList />
+      <TransactionList
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+      />
     </>
   );
 };

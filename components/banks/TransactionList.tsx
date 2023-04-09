@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActionIcon,
   Box,
@@ -120,7 +120,13 @@ const useStyles = createStyles((theme) => ({
 
 const headers = ["Date", "Bank", "Amount", "Description", "Categories", ""];
 
-const TransactionList = () => {
+const TransactionList = ({
+  categoryFilter,
+  setCategoryFilter,
+}: {
+  categoryFilter?: string[];
+  setCategoryFilter: (value: string[]) => void;
+}) => {
   const [txFilter, setTxFilter] = useState("latest");
   const [monthValue, setMonthValue] = useState<Date | null>(
     dayjs().startOf("month").toDate()
@@ -132,8 +138,14 @@ const TransactionList = () => {
   const { transactions: rawTransactions, loading } = useTransactionsQuery(
     filterByValue,
     user?.uid,
-    bank
+    bank,
+    categoryFilter
   );
+
+  useEffect(() => {
+    if (categoryFilter?.length) setTxFilter("latest");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter]);
 
   const transactions = rawTransactions?.filter((tx) =>
     bank ? tx.bank == bank : true
@@ -155,7 +167,10 @@ const TransactionList = () => {
       <Group className={classes.selectorGroup}>
         <SegmentedControl
           value={txFilter}
-          onChange={setTxFilter}
+          onChange={(value) => {
+            setTxFilter(value);
+            setCategoryFilter([]);
+          }}
           classNames={{ label: classes.controlGroupLabel }}
           data={[
             { label: "Latest", value: "latest" },
@@ -184,7 +199,7 @@ const TransactionList = () => {
               <IconArrowLeft />
             </ActionIcon>
             <MonthPickerInput
-              icon={<IconCalendar size="1.1rem" stroke={1.5} />}
+              icon={<IconCalendar size="20px" stroke={1.5} />}
               placeholder="Select Month"
               value={monthValue}
               onChange={setMonthValue}
