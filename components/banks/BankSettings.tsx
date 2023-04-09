@@ -416,6 +416,7 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
       opened={opened}
       onClose={() => setOpened(false)}
       withinPortal={true}
+      closeOnClickOutside={false}
     >
       <Popover.Target>
         <Button
