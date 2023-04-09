@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -159,7 +158,7 @@ export const createBank = async (data: Bank & { userId: string }) => {
 export const createCategory = async (data: Category & { userId: string }) => {
   const { userId, ...category } = data;
   try {
-    addDoc(collection(db, "users", userId, "categories"), category);
+    setDoc(doc(db, "users", userId, "categories", category.name), category);
   } catch (e) {
     console.error("Error adding document: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");
@@ -418,15 +417,20 @@ export const updateCategory = async ({
     // then update the category for each transaction
     txQuerySnap.forEach((doc) => {
       const tx = doc.data();
-      const newCategories = tx.category?.map((category) =>
-        category === categoryName ? newCategoryName : category
-      );
+      const newCategories = tx.category?.map((category) => {
+        if (category === categoryName) {
+          return newCategoryName;
+        }
+        return category;
+      });
       updateDoc(doc.ref, { category: newCategories });
     });
-    // then update the category
-    updateDoc(doc(db, "users", userId, "categories", categoryName), {
+    // then create the new category
+    setDoc(doc(db, "users", userId, "categories", newCategoryName), {
       name: newCategoryName,
     });
+    // then delete the old category
+    deleteDoc(doc(db, "users", userId, "categories", categoryName));
   } catch (e) {
     console.error("Error updating category: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");

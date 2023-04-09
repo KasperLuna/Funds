@@ -8,71 +8,56 @@ import {
   Popover,
   Select,
   Stack,
-  Tabs,
   Text,
   TextInput,
 } from "@mantine/core";
 import { useBanksCategsContext } from "./BanksCategoryContext";
-import { Bank } from "../../utils/db";
+import { Bank, Category } from "../../utils/db";
 import {
   deleteBank,
+  updateCategory,
   recomputeBankBalance,
   transferBankTransactions,
+  deleteCategory,
 } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
-import { AddBankButton, BankInput } from "../form/BankInput";
+import { BankInput } from "../form/BankInput";
 
 export const BanksPanel = () => {
   const { bankData } = useBanksCategsContext();
-  const { banks } = bankData || {};
+  const [selectedBank, setSelectedBank] = useState<string | null>(null);
+
+  const { banks } = bankData || { banks: [] };
+
+  const bankSelection = banks?.find((bank) => bank.name === selectedBank);
+
+  const clearSelection = () => {
+    setSelectedBank(null);
+  };
+
   return (
     <Stack sx={{ paddingTop: "20px" }}>
-      <Tabs orientation="vertical" defaultValue={banks?.[0]?.name}>
-        <Tabs.List>
-          {banks?.map((bank) => (
-            <Tabs.Tab key={bank.name} value={bank.name}>
-              <Text
-                sx={{
-                  display: "block",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "120px",
-                }}
-              >
-                {bank.name}
-              </Text>
-            </Tabs.Tab>
-          ))}
-          <AddBankButton variant="Settings" />
-        </Tabs.List>
-
-        {banks?.map((bank) => (
-          <Tabs.Panel
-            key={bank.name}
-            value={bank.name}
-            sx={(theme) => ({
-              padding: theme.spacing.md,
-              width: "100%",
-            })}
-          >
-            <Stack spacing={"sm"}>
-              <Text size={"md"} weight="bolder">
-                {bank.name}
-              </Text>
-              <ColorInput label="Primary Color: " />
-              <ColorInput label="Secondary Color: " />
-              <Button>Save</Button>
-              <Divider size={"md"} />
-              <Text>Danger Zone</Text>
-              <RecomputeBalButton bank={bank} />
-              <TransferTransactionsButton bank={bank} />
-              <DeleteBankButton bank={bank} />
-            </Stack>
-          </Tabs.Panel>
-        ))}
-      </Tabs>
+      <BankInput
+        value={selectedBank || ""}
+        onChange={(bank) => {
+          setSelectedBank(bank);
+        }}
+      />
+      {bankSelection && (
+        <Stack spacing={"sm"}>
+          <Divider size={"md"} />
+          <Text>Customize {bankSelection.name}</Text>
+          <ColorInput label="Primary Color: " />
+          <ColorInput label="Secondary Color: " />
+          <Button>Save</Button>
+          <Divider size={"md"} />
+          <Text>Danger Zone</Text>
+          <RecomputeBalButton bank={bankSelection} />
+          <TransferTransactionsButton bank={bankSelection} />
+          <DeleteBankButton bank={bankSelection} onSubmit={clearSelection} />
+        </Stack>
+      )}
     </Stack>
   );
 };
@@ -80,6 +65,15 @@ export const BanksPanel = () => {
 export const CategoriesPanel = () => {
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const categorySelection = categories?.find(
+    (category) => category.name === selectedCategory
+  );
+
+  const clearSelection = () => {
+    setSelectedCategory(null);
+  };
+
   return (
     <Stack
       spacing="md"
@@ -88,22 +82,220 @@ export const CategoriesPanel = () => {
       })}
     >
       <Select
+        placeholder="Select a category to manage:"
+        value={selectedCategory || ""}
+        onChange={(category) => {
+          setSelectedCategory(category);
+        }}
         label="Select a category to manage: "
         data={
-          categories?.map((category, index) => {
+          categories?.map((category) => {
             return {
               label: category.name,
-              value: index.toString(),
+              value: category.name,
             };
           }) || []
         }
         withinPortal={true}
       />
-      <Group position={"center"}>
-        <Button>Delete</Button>
-        <Button>Rename</Button>
-      </Group>
+      {categorySelection && (
+        <Group position={"center"}>
+          <DeleteCategoryButton
+            category={categorySelection}
+            onSubmit={clearSelection}
+          />
+          <RenameCategoryButton
+            category={categorySelection}
+            onSubmit={clearSelection}
+          />
+        </Group>
+      )}
     </Stack>
+  );
+};
+
+const RenameCategoryButton = ({
+  category,
+  onSubmit,
+}: {
+  category: Category;
+  onSubmit: () => void;
+}) => {
+  const { user } = useAuth();
+  const [opened, setOpened] = useState<boolean>(false);
+  const [inputValue, setInputValue] = useState<string>("");
+  const [newNameValue, setNewNameValue] = useState<string>("");
+  const submitValue = `Rename ${category.name}`;
+
+  useEffect(() => {
+    if (inputValue === submitValue) {
+      renameCategory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue]);
+
+  const renameCategory = async () => {
+    if (!category) return;
+    updateCategory({
+      userId: user?.uid || "",
+      categoryName: category.name,
+      newCategoryName: newNameValue,
+    })
+      .then(() => {
+        setInputValue("");
+        showSuccessNotif("Bank Deleted!");
+        setOpened(false);
+        onSubmit();
+      })
+      .catch(() => {
+        showErrorNotif("Failed to delete bank, try again.");
+      });
+  };
+
+  return (
+    <Popover
+      withArrow
+      opened={opened}
+      onClose={() => setOpened(false)}
+      withinPortal
+    >
+      <Popover.Target>
+        <Button onClick={() => setOpened(!opened)}>Rename</Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack spacing={0}>
+          <Text size="lg" weight={800} w={300}>
+            {`Rename ${category.name}?`}
+          </Text>
+          <Text size="xs" w={300}>
+            {`Renaming a category will update all transactions that use it.
+             This cannot be undone. Consider carefully before proceeding.`}
+          </Text>
+          <TextInput
+            label={
+              <Highlight
+                size="xs"
+                highlight={`new category name:`}
+                highlightStyles={(theme) => ({
+                  backgroundImage: theme.colors.orange[0],
+                  fontWeight: 700,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                })}
+              >
+                {`Type in your new category name:`}
+              </Highlight>
+            }
+            value={newNameValue}
+            onChange={(e) => setNewNameValue(e.currentTarget.value)}
+            w={300}
+          />
+          <TextInput
+            label={
+              <Highlight
+                size="xs"
+                highlight={`Rename ${category.name} `}
+                highlightStyles={(theme) => ({
+                  backgroundImage: theme.colors.orange[0],
+                  fontWeight: 700,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                })}
+              >
+                {`Type in "Rename ${category.name}" to confirm this change.`}
+              </Highlight>
+            }
+            value={inputValue}
+            onChange={(e) => setInputValue(e.currentTarget.value)}
+            disabled={inputValue == submitValue}
+            w={300}
+          />
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  );
+};
+
+const DeleteCategoryButton = ({
+  category,
+  onSubmit,
+}: {
+  category: Category;
+  onSubmit: () => void;
+}) => {
+  const { user } = useAuth();
+  const [opened, setOpened] = useState<boolean>(false);
+  const [inputValue, setInputValue] = useState<string>("");
+  const submitValue = `Delete ${category.name}`;
+
+  useEffect(() => {
+    if (inputValue === submitValue) {
+      categoryDelete();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue]);
+
+  const categoryDelete = async () => {
+    deleteCategory({ userId: user?.uid || "", categoryName: category.name })
+      .then(() => {
+        setInputValue("");
+        showSuccessNotif("Bank Deleted!");
+        setOpened(false);
+        onSubmit();
+      })
+      .catch(() => {
+        showErrorNotif("Failed to delete bank, try again.");
+      });
+  };
+  return (
+    <Popover
+      position="top"
+      withArrow
+      opened={opened}
+      onClose={() => setOpened(false)}
+      withinPortal={true}
+    >
+      <Popover.Target>
+        <Button
+          color="red"
+          onClick={() => {
+            setOpened(!opened);
+          }}
+        >
+          Delete
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Stack spacing={0}>
+          <Text size="lg" weight={800} w={300}>
+            {`Delete ${category.name}?`}
+          </Text>
+          <Text size="xs" w={300}>
+            {`Deleting a category means it will be removed from all transactions using it.
+             This cannot be undone. Consider carefully before proceeding.`}
+          </Text>
+          <TextInput
+            label={
+              <Highlight
+                size="xs"
+                highlight={`Delete ${category.name} `}
+                highlightStyles={(theme) => ({
+                  backgroundImage: theme.colors.orange[0],
+                  fontWeight: 700,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                })}
+              >
+                {`Type in "Delete ${category.name}" to proceed.`}
+              </Highlight>
+            }
+            value={inputValue}
+            onChange={(e) => setInputValue(e.currentTarget.value)}
+            disabled={inputValue == submitValue}
+          />
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
   );
 };
 
@@ -137,6 +329,7 @@ export const RecomputeBalButton = ({ bank }: { bank: Bank }) => {
       withArrow
       opened={opened}
       onClose={() => setOpened(false)}
+      withinPortal={true}
     >
       <Popover.Target>
         <Button
@@ -152,10 +345,10 @@ export const RecomputeBalButton = ({ bank }: { bank: Bank }) => {
       </Popover.Target>
       <Popover.Dropdown>
         <Stack spacing={0}>
-          <Text size="lg" weight={800}>
+          <Text size="lg" weight={800} w={300}>
             {`Recompute ${bank.name} Balance?`}
           </Text>
-          <Text size="xs">
+          <Text size="xs" w={300}>
             {`Recomputing a bank balance is often unneccessary,
               but may be required if there is potential desync 
               between the transactions you have and the reflected
@@ -222,6 +415,7 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
       withArrow
       opened={opened}
       onClose={() => setOpened(false)}
+      withinPortal={true}
     >
       <Popover.Target>
         <Button
@@ -237,10 +431,10 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
       </Popover.Target>
       <Popover.Dropdown>
         <Stack spacing={0}>
-          <Text size="lg" weight={800}>
+          <Text size="lg" weight={800} w={300}>
             {`Transfer ${bank.name} Transactions`}
           </Text>
-          <Text size="xs">
+          <Text size="xs" w={300}>
             {`Transferring transactions to another bank will typically
             only be performed when you wish to rename the bank the transactions
             are under, or the transactions can be consolidated to another bank.
@@ -264,6 +458,7 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                   })}
+                  w={300}
                 >
                   {`Type in "Transfer ${bank.name} transactions to ${selectedBank}" to proceed.`}
                 </Highlight>
@@ -279,7 +474,13 @@ export const TransferTransactionsButton = ({ bank }: { bank: Bank }) => {
   );
 };
 
-export const DeleteBankButton = ({ bank }: { bank: Bank }) => {
+export const DeleteBankButton = ({
+  bank,
+  onSubmit,
+}: {
+  bank: Bank;
+  onSubmit: () => void;
+}) => {
   const { user } = useAuth();
   const [opened, setOpened] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState<string>("");
@@ -298,6 +499,7 @@ export const DeleteBankButton = ({ bank }: { bank: Bank }) => {
         setInputValue("");
         showSuccessNotif("Bank Deleted!");
         setOpened(false);
+        onSubmit();
       })
       .catch(() => {
         showErrorNotif("Failed to delete bank, try again.");
@@ -309,6 +511,7 @@ export const DeleteBankButton = ({ bank }: { bank: Bank }) => {
       withArrow
       opened={opened}
       onClose={() => setOpened(false)}
+      withinPortal={true}
     >
       <Popover.Target>
         <Button
@@ -324,12 +527,12 @@ export const DeleteBankButton = ({ bank }: { bank: Bank }) => {
       </Popover.Target>
       <Popover.Dropdown>
         <Stack spacing={0}>
-          <Text size="lg" weight={800}>
+          <Text size="lg" weight={800} w={300}>
             {`Delete ${bank.name}?`}
           </Text>
-          <Text size="xs">
+          <Text size="xs" w={300}>
             {`Deleting a bank means it and all the transactions under
-            it will be removed. This cannot be undone. Think carefully
+            it will be removed. This cannot be undone. Consider carefully
             before proceeding.`}
           </Text>
           <TextInput
