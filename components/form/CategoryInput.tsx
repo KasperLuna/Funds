@@ -58,6 +58,7 @@ const CategoryInput = React.forwardRef(
           maxSelectedValues={3}
           getCreateLabel={(query) => `+ Create category: "${query}"`}
           onCreate={(query) => create(query)}
+          withinPortal={true}
         />
       </Group>
     );

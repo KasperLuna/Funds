@@ -97,6 +97,7 @@ export const CategoriesPanel = () => {
             };
           }) || []
         }
+        withinPortal={true}
       />
       <Group position={"center"}>
         <Button>Delete</Button>
