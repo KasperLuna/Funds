@@ -96,7 +96,8 @@ export const useCategoriesQuery = (id?: string) => {
 export const useTransactionsQuery = (
   filterBy?: "latest" | Date | null,
   id?: string,
-  bank?: string | string[]
+  bank?: string | string[],
+  categoryFilter?: string[]
 ) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,10 +115,19 @@ export const useTransactionsQuery = (
       where("date", "<=", end),
       orderBy("date", "desc")
     );
-  } else if (filterBy === "latest") {
+  } else if (
+    filterBy === "latest" &&
+    (!categoryFilter || categoryFilter.length === 0)
+  ) {
     q = bank
       ? query(txRef, bankFilter, orderBy("date", "desc"), limit(20))
       : query(txRef, orderBy("date", "desc"), limit(20));
+  } else if (filterBy === "latest" && categoryFilter) {
+    q = query(
+      txRef,
+      where("category", "array-contains-any", categoryFilter),
+      orderBy("date", "desc")
+    );
   }
 
   useEffect(() => {
@@ -141,7 +151,7 @@ export const useTransactionsQuery = (
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bank, filterBy]);
+  }, [bank, filterBy, categoryFilter]);
   return { transactions, loading };
 };
 

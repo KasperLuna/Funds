@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import { Anchor, Group } from "@mantine/core";
@@ -11,6 +11,9 @@ import { Filter } from "../../components/banks/Filter";
 import { TransactionLayoutButton } from "../../components/banks/TransactionLayoutButton";
 
 const Home: NextPage = () => {
+  const [categoryFilter, setCategoryFilter] = useState<string[] | undefined>(
+    undefined
+  );
   const router = useRouter();
   const bank = router.query["bank"];
 
@@ -18,9 +21,9 @@ const Home: NextPage = () => {
     { title: "Banks", href: "/banks" },
     { title: bank, href: `/banks/${bank}` },
   ].map((page) => (
-    <Link href={page.href} key={page.href} passHref>
-      <Anchor>{page.title}</Anchor>
-    </Link>
+    <Anchor component={Link} href={page.href} key={page.href}>
+      {page.title}
+    </Anchor>
   ));
 
   return (
@@ -33,11 +36,17 @@ const Home: NextPage = () => {
       <Group position="apart">
         <Group>
           <TransactionLayoutButton />
-          <Filter />
+          <Filter
+            filterValue={categoryFilter}
+            setFilterValue={setCategoryFilter}
+          />
         </Group>
         <Create />
       </Group>
-      <TransactionList />
+      <TransactionList
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+      />
     </>
   );
 };
