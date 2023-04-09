@@ -1,7 +1,7 @@
 import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { Group, SimpleGrid, Title } from "@mantine/core";
+import { Group, Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import BanksStats from "../../components/dashboard/BanksStats";
 
 const Home: NextPage = () => {
@@ -18,11 +18,25 @@ const Home: NextPage = () => {
       <SimpleGrid
         cols={2}
         breakpoints={[
-          { maxWidth: "lg", cols: 2 },
+          { maxWidth: "lg", cols: 1 },
           { maxWidth: "md", cols: 1 },
         ]}
       >
         <BanksStats />
+        <Paper
+          withBorder
+          p="md"
+          radius="md"
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text size={"lg"}> Crypto Stats will go here.</Text>
+          <Text size={"xs"}> Coming soon!</Text>
+        </Paper>
       </SimpleGrid>
     </>
   );
