@@ -109,12 +109,20 @@ export const useTransactionsQuery = (
   if (filterBy instanceof Date) {
     const start = dayjs(filterBy).startOf("month").toDate();
     const end = dayjs(filterBy).endOf("month").toDate();
-    q = query(
-      txRef,
-      where("date", ">=", start),
-      where("date", "<=", end),
-      orderBy("date", "desc")
-    );
+    q = bank
+      ? query(
+          txRef,
+          bankFilter,
+          where("date", ">=", start),
+          where("date", "<=", end),
+          orderBy("date", "desc")
+        )
+      : query(
+          txRef,
+          where("date", ">=", start),
+          where("date", "<=", end),
+          orderBy("date", "desc")
+        );
   } else if (
     filterBy === "latest" &&
     (!categoryFilter || categoryFilter.length === 0)
@@ -123,11 +131,18 @@ export const useTransactionsQuery = (
       ? query(txRef, bankFilter, orderBy("date", "desc"), limit(20))
       : query(txRef, orderBy("date", "desc"), limit(20));
   } else if (filterBy === "latest" && categoryFilter) {
-    q = query(
-      txRef,
-      where("category", "array-contains-any", categoryFilter),
-      orderBy("date", "desc")
-    );
+    q = bank
+      ? query(
+          txRef,
+          bankFilter,
+          where("category", "array-contains-any", categoryFilter),
+          orderBy("date", "desc")
+        )
+      : query(
+          txRef,
+          where("category", "array-contains-any", categoryFilter),
+          orderBy("date", "desc")
+        );
   }
 
   useEffect(() => {
