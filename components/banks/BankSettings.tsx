@@ -143,7 +143,7 @@ const RenameCategoryButton = ({
     })
       .then(() => {
         setInputValue("");
-        showSuccessNotif("Bank Deleted!");
+        showSuccessNotif("Category Renamed!");
         setOpened(false);
         onSubmit();
       })
@@ -239,7 +239,7 @@ const DeleteCategoryButton = ({
     deleteCategory({ userId: user?.uid || "", categoryName: category.name })
       .then(() => {
         setInputValue("");
-        showSuccessNotif("Bank Deleted!");
+        showSuccessNotif("Category Deleted!");
         setOpened(false);
         onSubmit();
       })
