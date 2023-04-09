@@ -51,11 +51,9 @@ const useStyles = createStyles((theme) => ({
   },
 
   logoText: {
-    paddingBottom: 5,
     paddingLeft: 1,
     maxWidth: 90,
     [`@media (max-width: ${theme.breakpoints.sm})`]: {
-      paddingBottom: 10,
       maxWidth: 80,
     },
   },

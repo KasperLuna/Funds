@@ -92,7 +92,7 @@ export const NavBar = () => {
     <>
       <Navbar
         hiddenBreakpoint="sm"
-        height={`calc(${height}px - 68px)`}
+        height={`calc(${height}px - 66px)`}
         width={{ sm: 140, lg: 200 }}
         className={classes.navBar}
       >
