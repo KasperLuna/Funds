@@ -60,7 +60,7 @@ const BankRingsTotal = ({ banks }: { banks: Bank[] | undefined }) => {
         style: "currency",
         currency: "PHP",
         maximumFractionDigits: 2,
-        minimumFractionDigits: 1,
+        minimumFractionDigits: 0,
       })}`,
     };
   });
@@ -77,7 +77,7 @@ const BankRingsTotal = ({ banks }: { banks: Bank[] | undefined }) => {
               style: "currency",
               currency: "PHP",
               maximumFractionDigits: 2,
-              minimumFractionDigits: 1,
+              minimumFractionDigits: 0,
             })}
           </Text>
         }
@@ -125,7 +125,7 @@ const TopLeaderRow = ({
           style: "currency",
           currency: "PHP",
           maximumFractionDigits: 2,
-          minimumFractionDigits: 1,
+          minimumFractionDigits: 0,
         })} (${percentage}%)`}
       </Text>
     </>

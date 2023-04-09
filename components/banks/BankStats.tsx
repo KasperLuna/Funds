@@ -4,6 +4,7 @@ import {
   Anchor,
   Badge,
   Box,
+  Breadcrumbs,
   Button,
   createStyles,
   Grid,
@@ -79,6 +80,7 @@ const useStyles = createStyles((theme) => ({
 
   headerGroup: {
     marginBottom: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
   },
 
   bankBalancesText: {
@@ -95,7 +97,11 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-export function BankStats() {
+export function BankStats({
+  breadcrumbPages,
+}: {
+  breadcrumbPages?: JSX.Element[];
+}) {
   const router = useRouter();
   const bankQuery = router.query["bank"];
   const { bankData } = useBanksCategsContext();
@@ -123,9 +129,10 @@ export function BankStats() {
         md={4}
         lg={2}
         xl={2}
+        p={5}
         key={bank.name || ""}
       >
-        <Paper withBorder p="md" radius="md" className={classes.paper}>
+        <Paper withBorder p="xs" radius="md" className={classes.paper}>
           <Group position="apart" spacing={0} noWrap>
             <Text size="xs" color="dimmed" className={classes.title}>
               {bank.name}
@@ -158,7 +165,7 @@ export function BankStats() {
                     style: "currency",
                     currency: "PHP",
                     maximumFractionDigits: 2,
-                    minimumFractionDigits: 1,
+                    minimumFractionDigits: 0,
                   })}
             </Text>
           </Group>
@@ -174,9 +181,16 @@ export function BankStats() {
         className={classes.headerGroup}
         noWrap
       >
-        <Title weight={"bolder"} size="h2" className={classes.bankBalancesText}>
-          {hasBankInProps ? `${bankQuery} Balance` : "Bank Balances"}
-        </Title>
+        <Stack spacing={10}>
+          <Breadcrumbs separator="→">{breadcrumbPages}</Breadcrumbs>
+          <Title
+            weight={"bolder"}
+            size="h2"
+            className={classes.bankBalancesText}
+          >
+            {hasBankInProps ? `${bankQuery} Balance` : "Balances"}
+          </Title>
+        </Stack>
         <Stack>
           {!hasBankInProps && (
             <Badge className={classes.totalBadge}>
@@ -187,7 +201,7 @@ export function BankStats() {
                     style: "currency",
                     currency: "PHP",
                     maximumFractionDigits: 2,
-                    minimumFractionDigits: 1,
+                    minimumFractionDigits: 0,
                   })}`}
             </Badge>
           )}

@@ -1,7 +1,7 @@
 import React from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { Anchor, Breadcrumbs, Group } from "@mantine/core";
+import { Anchor, Group } from "@mantine/core";
 import Create from "../../components/banks/Create";
 import TransactionList from "../../components/banks/TransactionList";
 import { BankStats } from "../../components/banks/BankStats";
@@ -29,8 +29,7 @@ const Home: NextPage = () => {
         <title>Banks | Funds</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Breadcrumbs separator="→">{pages}</Breadcrumbs>
-      <BankStats />
+      <BankStats breadcrumbPages={pages} />
       <Group position="apart">
         <Group>
           <TransactionLayoutButton />
