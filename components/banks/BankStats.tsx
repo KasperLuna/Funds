@@ -1,7 +1,6 @@
 import React from "react";
 import {
   ActionIcon,
-  Anchor,
   Badge,
   Box,
   Breadcrumbs,
@@ -148,11 +147,15 @@ export function BankStats({
                 >
                   <span>{percentage.toPrecision(2)}%</span>
                 </Text>
-                <Link href={`/banks/${bank.name}`} passHref>
-                  <ActionIcon component={Anchor} size="xs" m={0}>
-                    <IconExternalLink size={20} />
-                  </ActionIcon>
-                </Link>
+
+                <ActionIcon
+                  component={Link}
+                  href={`/banks/${bank.name}`}
+                  size="xs"
+                  m={0}
+                >
+                  <IconExternalLink size={20} />
+                </ActionIcon>
               </Group>
             )}
           </Group>

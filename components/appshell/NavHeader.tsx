@@ -103,11 +103,9 @@ export default function NavHeader() {
     <div className={classes.header}>
       <Container size={"xl"}>
         <Group position={user ? "apart" : "center"}>
-          <Link href="/" passHref>
-            <Box component="a" className={classes.logoText}>
-              <Logo />
-            </Box>
-          </Link>
+          <Box component={Link} href="/" className={classes.logoText}>
+            <Logo />
+          </Box>
           {user ? (
             <>
               <Menu

@@ -175,9 +175,13 @@ const FeatureSection = () => {
               <Title className={classes.featureTitleLeft}>Open Source</Title>
               <Text className={classes.featureDescriptionLeft}>
                 Funds is{" "}
-                <Link href="https://github.com/KasperLuna/Funds" passHref>
-                  <Anchor target={"_blank"}>fully open-source</Anchor>
-                </Link>{" "}
+                <Anchor
+                  component={Link}
+                  href="https://github.com/KasperLuna/Funds"
+                  target={"_blank"}
+                >
+                  fully open-source
+                </Anchor>
                 so you know what&apos;s going on with the site.
               </Text>
             </Stack>
