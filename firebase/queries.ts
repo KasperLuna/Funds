@@ -39,11 +39,10 @@ export const useBanksQuery = (id?: string) => {
     let isMounted = true;
     const getBanks = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
+        if (!isMounted) return;
         const data = snap.docs.map((doc) => doc.data() as Bank);
-        if (isMounted) {
-          setBanks(data);
-          setLoading(false);
-        }
+        setBanks(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
@@ -72,11 +71,10 @@ export const useCategoriesQuery = (id?: string) => {
     let isMounted = true;
     const getCategories = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
+        if (!isMounted) return;
         const data = snap.docs.map((doc) => doc.data() as Category);
-        if (isMounted) {
-          setCategories(data);
-          setLoading(false);
-        }
+        setCategories(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
@@ -149,11 +147,10 @@ export const useTransactionsQuery = (
     let isMounted = true;
     const getTxns = async () => {
       const unsubscribe = onSnapshot(q, (snap) => {
+        if (!isMounted) return;
         const data = snap.docs.map((doc) => doc.data() as FirebaseTxTypes);
-        if (isMounted) {
-          setTransactions(data);
-          setLoading(false);
-        }
+        setTransactions(data);
+        setLoading(false);
       });
       return () => unsubscribe();
     };
