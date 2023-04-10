@@ -18,6 +18,7 @@ import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 import { useGetThisMonthTxns } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import dayjs from "dayjs";
+import { usePrivacyMode } from "../../utils/helpers";
 
 export const colorsArray = [
   "green",
@@ -73,6 +74,7 @@ function BanksStats() {
   const { classes } = useStyles();
   const { bankData } = useBanksCategsContext();
   const { banks } = bankData || {};
+  const { privacyMode } = usePrivacyMode();
 
   const { transactions } = useGetThisMonthTxns(user?.uid || "");
 
@@ -123,7 +125,7 @@ function BanksStats() {
       </Text>
 
       <Group position="apart" align="flex-end" spacing={0}>
-        <Text fw={700}>{stat.count}</Text>
+        <Text fw={700}>{privacyMode ? "₱••••••" : stat.count}</Text>
         <Text c={stat.color} fw={700} size="sm" className={classes.statCount}>
           {stat.part}%
         </Text>
@@ -136,12 +138,14 @@ function BanksStats() {
       <Group position="apart">
         <Group align="flex-end" spacing="xs">
           <Text fz="xl" fw={700}>
-            {currentBanksTotal.toLocaleString(undefined, {
-              style: "currency",
-              currency: "PHP",
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 1,
-            })}
+            {privacyMode
+              ? "₱••••••"
+              : currentBanksTotal.toLocaleString(undefined, {
+                  style: "currency",
+                  currency: "PHP",
+                  maximumFractionDigits: 2,
+                  minimumFractionDigits: 1,
+                })}
           </Text>
           <Text
             c={diff > 0 ? "green" : "red"}
