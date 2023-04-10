@@ -37,6 +37,12 @@ export const colorsArray = [
 ];
 
 const useStyles = createStyles((theme) => ({
+  topGroup: {
+    [`@media (max-width: ${theme.breakpoints.sm})`]: {
+      justifyContent: "center",
+      textAlign: "center",
+    },
+  },
   progressLabel: {
     fontFamily: `Greycliff CF, ${theme.fontFamily}`,
     lineHeight: 1,
@@ -64,6 +70,11 @@ const useStyles = createStyles((theme) => ({
       theme.colorScheme === "dark"
         ? theme.colors.dark[3]
         : theme.colors.gray[4],
+  },
+  percentStack: {
+    [`@media (max-width: ${theme.breakpoints.sm})`]: {
+      alignItems: "center",
+    },
   },
 }));
 
@@ -179,26 +190,28 @@ function BanksStats() {
       );
 
     return (
-      <Paper w={200} p={"sm"} radius={"md"}>
-        <Text
-          c={diff > 0 ? "green" : "red"}
-          className={classes.diff}
-          fz="sm"
-          fw={700}
-        >
-          {txns?.length > 0 && <Text fz="md">{diff}%</Text>}
-          {icon}
-        </Text>
-        <Text c="dimmed" fz="xs">
-          {text}
-        </Text>
+      <Paper w={200} p={"xs"} radius={"md"}>
+        <Stack spacing={0} className={classes.percentStack}>
+          <Text
+            c={diff > 0 ? "green" : "red"}
+            className={classes.diff}
+            fz="sm"
+            fw={700}
+          >
+            {txns?.length > 0 && <Text fz="md">{diff}%</Text>}
+            {icon}
+          </Text>
+          <Text c="dimmed" fz="xs">
+            {text}
+          </Text>
+        </Stack>
       </Paper>
     );
   };
 
   return (
     <Paper withBorder p="md" radius="md">
-      <Group position="apart">
+      <Group position="apart" className={classes.topGroup}>
         <Stack spacing={0}>
           <Text fz="25px" fw={900}>
             {privacyMode
