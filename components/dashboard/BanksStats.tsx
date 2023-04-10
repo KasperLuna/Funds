@@ -159,8 +159,10 @@ function BanksStats() {
       </Text>
 
       <Group position="apart" align="flex-end" spacing={0}>
-        <Text fw={700}>{privacyMode ? "₱••••••" : stat.count}</Text>
-        <Text c={stat.color} fw={700} size="sm" className={classes.statCount}>
+        <Text fw={700} size="sm">
+          {privacyMode ? "₱••••••" : stat.count}
+        </Text>
+        <Text c={stat.color} fw={700} size="xs" className={classes.statCount}>
           {stat.part}%
         </Text>
       </Group>
@@ -260,7 +262,7 @@ function BanksStats() {
         classNames={{ label: classes.progressLabel }}
         mt={10}
       />
-      <SimpleGrid cols={3} breakpoints={[{ maxWidth: "xs", cols: 1 }]} mt="xl">
+      <SimpleGrid cols={3} breakpoints={[{ maxWidth: "xs", cols: 2 }]} mt="xl">
         {descriptions}
       </SimpleGrid>
     </Paper>
