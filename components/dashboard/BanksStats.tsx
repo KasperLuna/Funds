@@ -38,7 +38,9 @@ export const colorsArray = [
 
 const useStyles = createStyles((theme) => ({
   topGroup: {
+    flexWrap: "nowrap",
     [`@media (max-width: ${theme.breakpoints.sm})`]: {
+      flexWrap: "wrap",
       justifyContent: "center",
       textAlign: "center",
     },
@@ -190,7 +192,7 @@ function BanksStats() {
       );
 
     return (
-      <Paper w={200} p={"xs"} radius={"md"}>
+      <Paper p={"xs"} radius={"md"}>
         <Stack spacing={0} className={classes.percentStack}>
           <Text
             c={diff > 0 ? "green" : "red"}
@@ -225,7 +227,7 @@ function BanksStats() {
           </Text>
           <Text size={"xs"}>Total Banks Balance</Text>
         </Stack>
-        <Group>
+        <Group noWrap>
           <Percentages
             diff={weekDiff}
             txns={thisWeekTxns}
