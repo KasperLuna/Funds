@@ -7,18 +7,16 @@ import {
   Text,
   Progress,
   rem,
+  Stack,
 } from "@mantine/core";
-import {
-  IconArrowDownRight,
-  IconArrowUpRight,
-  IconDeviceAnalytics,
-} from "@tabler/icons-react";
+import { IconArrowDownRight, IconArrowUpRight } from "@tabler/icons-react";
 import React from "react";
 import { useBanksCategsContext } from "../banks/BanksCategoryContext";
-import { useGetThisMonthTxns } from "../../firebase/queries";
+import { useGetTimePeriodTxns } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import dayjs from "dayjs";
 import { usePrivacyMode } from "../../utils/helpers";
+import { AppTxTypes } from "../../utils/db";
 
 export const colorsArray = [
   "green",
@@ -76,24 +74,47 @@ function BanksStats() {
   const { banks } = bankData || {};
   const { privacyMode } = usePrivacyMode();
 
-  const { transactions } = useGetThisMonthTxns(user?.uid || "");
+  const { transactions: thisMonthTxns } = useGetTimePeriodTxns(
+    user?.uid || "",
+    dayjs().startOf("month").toDate(),
+    dayjs().endOf("month").toDate()
+  );
+  const { transactions: thisWeekTxns } = useGetTimePeriodTxns(
+    user?.uid || "",
+    dayjs().startOf("week").toDate(),
+    dayjs().endOf("week").toDate()
+  );
 
   const currentBanksTotal =
     banks?.reduce((acc, bank) => {
       return acc + bank.balance;
     }, 0) || 0;
-  const currentMonthTransactions = transactions?.reduce((acc, transaction) => {
+  const currentMonthTransactions = thisMonthTxns?.reduce((acc, transaction) => {
     return acc + transaction.amount;
   }, 0);
-  const prevMonthTotal = currentBanksTotal - currentMonthTransactions;
+  const currentWeekTransactions = thisWeekTxns?.reduce((acc, transaction) => {
+    return acc + transaction.amount;
+  }, 0);
 
-  let diff;
+  const prevMonthTotal = currentBanksTotal - currentMonthTransactions;
+  const prevWeekTotal = currentBanksTotal - currentWeekTransactions;
+
+  let monthDiff;
   if (prevMonthTotal !== 0) {
-    diff = parseInt(
+    monthDiff = parseInt(
       (((currentBanksTotal - prevMonthTotal) / prevMonthTotal) * 100).toFixed(0)
     );
   } else {
-    diff = 100; // set diff to 100% if prevMonthTotal is zero
+    monthDiff = 100;
+  }
+
+  let weekDiff;
+  if (prevWeekTotal !== 0) {
+    weekDiff = parseInt(
+      (((currentBanksTotal - prevWeekTotal) / prevWeekTotal) * 100).toFixed(0)
+    );
+  } else {
+    weekDiff = 100;
   }
 
   const data = banks?.map((bank, index) => ({
@@ -133,11 +154,53 @@ function BanksStats() {
     </Box>
   ));
 
+  const Percentages = ({
+    diff,
+    txns,
+    text,
+  }: {
+    diff: number;
+    txns: AppTxTypes[];
+    text: string;
+  }) => {
+    const icon =
+      txns?.length > 0 && diff > 0 ? (
+        <IconArrowUpRight
+          size="1rem"
+          style={{ marginBottom: rem(4) }}
+          stroke={1.5}
+        />
+      ) : (
+        <IconArrowDownRight
+          size="1rem"
+          style={{ marginBottom: rem(4) }}
+          stroke={1.5}
+        />
+      );
+
+    return (
+      <Paper w={200} p={"sm"} radius={"md"}>
+        <Text
+          c={diff > 0 ? "green" : "red"}
+          className={classes.diff}
+          fz="sm"
+          fw={700}
+        >
+          {txns?.length > 0 && <Text fz="md">{diff}%</Text>}
+          {icon}
+        </Text>
+        <Text c="dimmed" fz="xs">
+          {text}
+        </Text>
+      </Paper>
+    );
+  };
+
   return (
     <Paper withBorder p="md" radius="md">
       <Group position="apart">
-        <Group align="flex-end" spacing="xs">
-          <Text fz="xl" fw={700}>
+        <Stack spacing={0}>
+          <Text fz="25px" fw={900}>
             {privacyMode
               ? "₱••••••"
               : currentBanksTotal.toLocaleString(undefined, {
@@ -147,43 +210,34 @@ function BanksStats() {
                   minimumFractionDigits: 1,
                 })}
           </Text>
-          <Text
-            c={diff > 0 ? "green" : "red"}
-            className={classes.diff}
-            fz="sm"
-            fw={700}
-          >
-            {transactions?.length > 0 && <span>{diff}%</span>}
-            {transactions?.length > 0 &&
-              (diff > 0 ? (
-                <IconArrowUpRight
-                  size="1rem"
-                  style={{ marginBottom: rem(4) }}
-                  stroke={1.5}
-                />
-              ) : (
-                <IconArrowDownRight
-                  size="1rem"
-                  style={{ marginBottom: rem(4) }}
-                  stroke={1.5}
-                />
-              ))}
-          </Text>
+          <Text size={"xs"}>Total Banks Balance</Text>
+        </Stack>
+        <Group>
+          <Percentages
+            diff={weekDiff}
+            txns={thisWeekTxns}
+            text={
+              thisWeekTxns?.length > 0
+                ? `change since end of last week (${dayjs()
+                    .subtract(1, "week")
+                    .endOf("week")
+                    .format("MMMM D")})`
+                : "Add transactions in the banks tab to see your total balance."
+            }
+          />
+          <Percentages
+            diff={monthDiff}
+            txns={thisMonthTxns}
+            text={
+              thisMonthTxns?.length > 0
+                ? `change since end of last month (${dayjs()
+                    .subtract(1, "month")
+                    .format("MMMM")})`
+                : "Add transactions in the banks tab to see your total balance."
+            }
+          />
         </Group>
-        <IconDeviceAnalytics
-          size="1.4rem"
-          className={classes.icon}
-          stroke={1.5}
-        />
       </Group>
-
-      <Text c="dimmed" fz="sm">
-        {transactions?.length > 0
-          ? `Banks total balance compared to last month (${dayjs()
-              .subtract(1, "month")
-              .format("MMMM")})`
-          : "Add transactions in the banks tab to see your total balance."}
-      </Text>
 
       <Progress
         sections={segments}

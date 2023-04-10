@@ -170,13 +170,11 @@ export const useTransactionsQuery = (
   return { transactions, loading };
 };
 
-export const useGetThisMonthTxns = (id: string) => {
+export const useGetTimePeriodTxns = (id: string, start: Date, end: Date) => {
   const [transactions, setTransactions] = useState<AppTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
 
   const txRef = collection(db, "users", id, "transactions");
-  const start = dayjs().startOf("month").toDate();
-  const end = dayjs().endOf("month").toDate();
   const q = query(
     txRef,
     where("date", ">=", start),
