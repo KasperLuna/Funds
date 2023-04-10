@@ -3,6 +3,7 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import { Group, Paper, SimpleGrid, Text, Title } from "@mantine/core";
 import BanksStats from "../../components/dashboard/BanksStats";
+import { PrivacyModeButton } from "../../components/appshell/PrivacyModeButton";
 
 const Home: NextPage = () => {
   return (
@@ -12,8 +13,9 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <Group position="apart" sx={{ paddingBottom: 15 }}>
+      <Group position="apart" sx={{ paddingBottom: 15, alignItems: "center" }}>
         <Title size="h2">Dashboard</Title>
+        <PrivacyModeButton />
       </Group>
       <SimpleGrid
         cols={2}

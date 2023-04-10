@@ -4,7 +4,6 @@ import {
   Badge,
   Box,
   Breadcrumbs,
-  Button,
   createStyles,
   Grid,
   Group,
@@ -15,10 +14,11 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { IconExternalLink, IconEye, IconEyeOff } from "@tabler/icons-react";
+import { IconExternalLink } from "@tabler/icons-react";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { useRouter } from "next/router";
 import { usePrivacyMode } from "../../utils/helpers";
+import { PrivacyModeButton } from "../appshell/PrivacyModeButton";
 
 const useStyles = createStyles((theme) => ({
   root: {
@@ -105,7 +105,7 @@ export function BankStats({
   const bankQuery = router.query["bank"];
   const { bankData } = useBanksCategsContext();
   const { loading, banks } = bankData || {};
-  const { privacyMode, setPrivacyMode } = usePrivacyMode();
+  const { privacyMode } = usePrivacyMode();
 
   const hasBankInProps = bankQuery !== undefined;
   const totalAmount =
@@ -208,17 +208,7 @@ export function BankStats({
                   })}`}
             </Badge>
           )}
-          <Button
-            variant="outline"
-            radius={"xl"}
-            size={"xs"}
-            onClick={() => {
-              setPrivacyMode(!privacyMode);
-            }}
-            leftIcon={privacyMode ? <IconEyeOff /> : <IconEye />}
-          >
-            {privacyMode ? "Show" : "Hide"}
-          </Button>
+          <PrivacyModeButton />
         </Stack>
       </Group>
       <Skeleton visible={loading} className={classes.skeleton} radius="md">
