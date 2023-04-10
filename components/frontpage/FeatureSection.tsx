@@ -181,7 +181,7 @@ const FeatureSection = () => {
                   target={"_blank"}
                 >
                   fully open-source
-                </Anchor>
+                </Anchor>{" "}
                 so you know what&apos;s going on with the site.
               </Text>
             </Stack>
