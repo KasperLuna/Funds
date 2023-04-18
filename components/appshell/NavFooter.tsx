@@ -31,7 +31,7 @@ const useStyles = createStyles((theme) => ({
       backgroundColor:
         theme.colorScheme === "dark"
           ? theme.colors.dark[5]
-          : theme.colors.gray[1],
+          : theme.colors.gray[0],
     },
     "&[data-active]": {
       backgroundColor:
@@ -59,8 +59,8 @@ const useStyles = createStyles((theme) => ({
     justifyContent: "center",
     backgroundColor:
       theme.colorScheme === "dark"
-        ? "rgba(0, 0, 0, 0.55)"
-        : "rgba(200, 200, 200, 0.6)",
+        ? "rgba(0, 0, 0, 0.9)"
+        : theme.colors.gray[2],
     backdropFilter: "blur(10px)",
     paddingInline: theme.spacing.md,
 

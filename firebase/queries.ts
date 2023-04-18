@@ -483,3 +483,68 @@ export const updateCategory = async ({
     showErrorNotif("An Unexpected Error Occurred, try again later.");
   }
 };
+
+export const createCoin = async ({
+  userId,
+  coinName,
+  coinSymbol,
+}: {
+  userId: string;
+  coinName: string;
+  coinSymbol: string;
+}) => {
+  try {
+    setDoc(doc(db, "users", userId, "coins", coinSymbol), {
+      name: coinName,
+      symbol: coinSymbol,
+    });
+  } catch (e) {
+    console.error("Error creating coin: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const deleteCoin = async ({
+  userId,
+  coinSymbol,
+}: {
+  userId: string;
+  coinSymbol: string;
+}) => {
+  try {
+    deleteDoc(doc(db, "users", userId, "coins", coinSymbol));
+  } catch (e) {
+    console.error("Error deleting coin: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const updateCoin = async ({
+  userId,
+  coinSymbol,
+  newCoinName,
+  newCoinSymbol,
+}: {
+  userId: string;
+  coinSymbol: string;
+  newCoinName: string;
+  newCoinSymbol: string;
+}) => {
+  try {
+    // First update the coin in the transactions
+    const txRef = collection(db, "users", userId, "transactions");
+    const txQuery = query(txRef, where("coin", "==", coinSymbol));
+    const txQuerySnap = await getDocs(txQuery);
+    txQuerySnap.forEach((doc) => {
+      updateDoc(doc.ref, { coin: newCoinSymbol });
+    });
+    // Then update the coin in the user's coin list
+    updateDoc(doc(db, "users", userId, "coins", coinSymbol), {
+      name: newCoinName,
+      symbol: newCoinSymbol,
+    });
+  } catch (e) {
+    console.error("Error updating coin: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
