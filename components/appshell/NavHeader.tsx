@@ -34,8 +34,9 @@ const useStyles = createStyles((theme) => ({
     background:
       theme.colorScheme === "dark"
         ? "rgba(0, 0, 0, 0.6)"
-        : "rgba(200, 200, 200, 0.6)",
-    backdropFilter: "blur(10px)",
+        : "rgba(180, 208, 226, 0.1)",
+    borderBottom: "1px solid rgba(0, 0, 0, 0.05)",
+    backdropFilter: "blur(15px)",
 
     "@media screen and (display-mode: standalone) and (orientation: portrait)":
       {

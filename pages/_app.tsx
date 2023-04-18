@@ -231,7 +231,10 @@ export default function App(props: AppProps) {
         <MantineProvider
           withGlobalStyles
           withNormalizeCSS
-          theme={{ colorScheme }}
+          theme={{
+            colorScheme: colorScheme,
+            black: "#333333",
+          }}
         >
           <AuthProvider>
             <BanksCategsProvider>
