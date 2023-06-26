@@ -19,7 +19,7 @@ import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { useBanksCategsContext } from "../banks/BanksCategoryContext";
 
 type BankInputProps = {
-  onChange: (e: string | null) => void;
+  onChange: (e: string) => void;
   value: string;
   groupStyle?: React.CSSProperties;
   inputStyle?: React.CSSProperties;

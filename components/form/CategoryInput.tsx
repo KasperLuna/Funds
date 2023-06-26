@@ -22,7 +22,11 @@ const CategoryInput = React.forwardRef(
     const { categoryData } = useBanksCategsContext();
     const { categories } = categoryData || {};
     const create = (name: string) => {
-      createCategory({ userId: user?.uid || "", name: name || "" });
+      createCategory({
+        userId: user?.uid || "",
+        name: name || "",
+        hideable: false,
+      });
       return name;
     };
 
