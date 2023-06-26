@@ -10,6 +10,7 @@ export type Bank = {
 export type Category = {
   id?: number;
   name: string;
+  hideable: boolean;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";

@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
   Button,
+  Checkbox,
   ColorInput,
   Divider,
+  Flex,
   Group,
   Highlight,
   Popover,
@@ -10,6 +12,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Tooltip,
 } from "@mantine/core";
 import { useBanksCategsContext } from "./BanksCategoryContext";
 import { Bank, Category } from "../../utils/db";
@@ -19,10 +22,12 @@ import {
   recomputeBankBalance,
   transferBankTransactions,
   deleteCategory,
+  updateCategoryHideable,
 } from "../../firebase/queries";
 import { useAuth } from "../config/AuthContext";
 import { showErrorNotif, showSuccessNotif } from "../../utils/notifs";
 import { BankInput } from "../form/BankInput";
+import { IconInfoCircleFilled } from "@tabler/icons-react";
 
 export const BanksPanel = () => {
   const { bankData } = useBanksCategsContext();
@@ -63,16 +68,29 @@ export const BanksPanel = () => {
 };
 
 export const CategoriesPanel = () => {
+  const { user } = useAuth();
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [hideable, setHideable] = useState<boolean>(false);
   const categorySelection = categories?.find(
     (category) => category.name === selectedCategory
   );
 
   const clearSelection = () => {
     setSelectedCategory(null);
+    setHideable(false);
   };
+
+  useEffect(
+    () => {
+      if (categorySelection) {
+        setHideable(categorySelection.hideable || false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [categorySelection]
+  );
 
   return (
     <Stack
@@ -99,16 +117,46 @@ export const CategoriesPanel = () => {
         withinPortal={true}
       />
       {categorySelection && (
-        <Group position={"center"}>
-          <DeleteCategoryButton
-            category={categorySelection}
-            onSubmit={clearSelection}
+        <>
+          <Checkbox
+            checked={hideable}
+            onChange={(e) => {
+              setHideable(e.currentTarget.checked);
+              updateCategoryHideable({
+                userId: user?.uid || "",
+                categoryName: categorySelection.name,
+                hideable: e.currentTarget.checked,
+              });
+            }}
+            label={
+              <Flex
+                sx={{
+                  justifyItems: "center",
+                  alignItems: "center",
+                  gap: "5px",
+                }}
+              >
+                Hideable{" "}
+                <Tooltip
+                  sx={{ fontSize: "10px" }}
+                  label="Hide the contents of transactions when the visibility toggle is off."
+                >
+                  <IconInfoCircleFilled size={15} />
+                </Tooltip>
+              </Flex>
+            }
           />
-          <RenameCategoryButton
-            category={categorySelection}
-            onSubmit={clearSelection}
-          />
-        </Group>
+          <Group position={"center"}>
+            <DeleteCategoryButton
+              category={categorySelection}
+              onSubmit={clearSelection}
+            />
+            <RenameCategoryButton
+              category={categorySelection}
+              onSubmit={clearSelection}
+            />
+          </Group>
+        </>
       )}
     </Stack>
   );

@@ -21,7 +21,7 @@ import { useRouter } from "next/router";
 import { Category, FirebaseTxTypes } from "../../utils/db";
 import { useAuth } from "../config/AuthContext";
 import { useBanksCategsContext } from "./BanksCategoryContext";
-import { useTxLayout } from "../../utils/helpers";
+import { usePrivacyMode, useTxLayout } from "../../utils/helpers";
 import { MonthPickerInput } from "@mantine/dates";
 import {
   IconArrowLeft,
@@ -141,6 +141,7 @@ const TransactionList = ({
     bank,
     categoryFilter
   );
+  const { privacyMode } = usePrivacyMode();
 
   useEffect(() => {
     if (categoryFilter?.length) setTxFilter("latest");
@@ -154,6 +155,13 @@ const TransactionList = ({
   const { categories } = categoryData || {};
   const { classes } = useStyles();
   const { txLayout } = useTxLayout();
+
+  // Create a string array of category names that have hideable set to true
+  const categoriesString = categories
+    ?.filter((categ) => categ.hideable)
+    .map((categ) => categ.name);
+
+  console.log(categoriesString);
 
   return (
     <>
@@ -243,11 +251,15 @@ const TransactionList = ({
                 ]}
               >
                 {transactions?.map((transaction) => {
+                  const isHideable = categoriesString?.some((categ) => {
+                    return transaction.category?.includes(categ);
+                  });
                   return (
                     <div key={transaction.id}>
                       <TransactionCard
                         data={transaction}
                         categories={categories}
+                        hideable={isHideable}
                       />
                     </div>
                   );
@@ -277,24 +289,35 @@ const TransactionList = ({
                       </td>
                     </tr>
                   )}
-                  {transactions?.map((data) => {
+                  {transactions?.map((transaction) => {
+                    const isHideable = categoriesString?.some((categ) => {
+                      return transaction.category?.includes(categ);
+                    });
                     return (
-                      <tr key={data.id}>
+                      <tr key={transaction.id}>
                         <td style={{ whiteSpace: "nowrap" }}>
-                          {dayjs(data.date?.seconds * 1000).format("MMM D")}
+                          {dayjs(transaction.date?.seconds * 1000).format(
+                            "MMM D"
+                          )}
                         </td>
-                        <td>{data.bank}</td>
+                        <td>{transaction.bank}</td>
                         <td>
-                          <Text color={data.amount > 0 ? "green" : "red"}>
-                            {data.amount.toLocaleString(undefined, {
-                              style: "currency",
-                              currency: "PHP",
-                              maximumFractionDigits: 2,
-                              minimumFractionDigits: 0,
-                            })}
-                          </Text>
+                          {privacyMode && isHideable ? (
+                            "₱••••••"
+                          ) : (
+                            <Text
+                              color={transaction.amount > 0 ? "green" : "red"}
+                            >
+                              {transaction.amount.toLocaleString(undefined, {
+                                style: "currency",
+                                currency: "PHP",
+                                maximumFractionDigits: 2,
+                                minimumFractionDigits: 0,
+                              })}
+                            </Text>
+                          )}
                         </td>
-                        <td>{data.description}</td>
+                        <td>{transaction.description}</td>
                         <td style={{ alignItems: "start" }}>
                           <Box className={classes.tableCategory}>
                             <MultiSelect
@@ -305,14 +328,14 @@ const TransactionList = ({
                                 })) || []
                               }
                               size="xs"
-                              value={data.category}
+                              value={transaction.category}
                               readOnly
                               zIndex={1}
                             />
                           </Box>
                         </td>
                         <td>
-                          <EditTransactionForm {...data} />
+                          <EditTransactionForm {...transaction} />
                         </td>
                       </tr>
                     );
@@ -340,11 +363,14 @@ const TransactionList = ({
 const TransactionCard = ({
   data,
   categories,
+  hideable,
 }: {
   data: FirebaseTxTypes;
   categories?: Category[];
+  hideable?: boolean;
 }) => {
   const { classes } = useStyles();
+  const { privacyMode } = usePrivacyMode();
   return (
     <>
       <Paper withBorder className={classes.card}>
@@ -371,12 +397,14 @@ const TransactionCard = ({
                 className={classes.cardPesoValue}
                 color={data.amount > 0 ? "green" : "red"}
               >
-                {data.amount.toLocaleString(undefined, {
-                  style: "currency",
-                  currency: "PHP",
-                  maximumFractionDigits: 2,
-                  minimumFractionDigits: 0,
-                })}
+                {privacyMode && hideable
+                  ? "₱••••••"
+                  : data.amount.toLocaleString(undefined, {
+                      style: "currency",
+                      currency: "PHP",
+                      maximumFractionDigits: 2,
+                      minimumFractionDigits: 0,
+                    })}
               </Text>
               <Text size={"xs"}> {data.description}</Text>
             </Stack>
