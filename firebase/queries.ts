@@ -23,7 +23,7 @@ import {
   Transfer,
 } from "../utils/db";
 import { txPosOrNeg } from "../utils/helpers";
-import { showErrorNotif } from "../utils/notifs";
+import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
 export const useBanksQuery = (id?: string) => {
@@ -478,6 +478,26 @@ export const updateCategory = async ({
     });
     // then delete the old category
     deleteDoc(doc(db, "users", userId, "categories", categoryName));
+  } catch (e) {
+    console.error("Error updating category: ", e);
+    showErrorNotif("An Unexpected Error Occurred, try again later.");
+  }
+};
+
+export const updateCategoryHideable = async ({
+  userId,
+  categoryName,
+  hideable,
+}: {
+  userId: string;
+  categoryName: string;
+  hideable: boolean;
+}) => {
+  try {
+    updateDoc(doc(db, "users", userId, "categories", categoryName), {
+      hideable,
+    });
+    showSuccessNotif("Category updated successfully");
   } catch (e) {
     console.error("Error updating category: ", e);
     showErrorNotif("An Unexpected Error Occurred, try again later.");

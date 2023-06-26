@@ -13,12 +13,14 @@ import {
   Checkbox,
   Tooltip,
   MultiSelect,
+  Flex,
 } from "@mantine/core";
 import {
   IconApps,
   IconArrowRight,
   IconBuildingBank,
   IconChevronDown,
+  IconInfoCircleFilled,
 } from "@tabler/icons-react";
 import React, { useState } from "react";
 import { BankInput } from "../form/BankInput";
@@ -481,6 +483,26 @@ const CategoryForm = ({ closeModal }: { closeModal: () => void }) => {
             placeholder="Category Name"
             {...register("name", { required: true })}
             error={errors.name?.message}
+          />
+          <Checkbox
+            {...register("hideable")}
+            label={
+              <Flex
+                sx={{
+                  justifyItems: "center",
+                  alignItems: "center",
+                  gap: "5px",
+                }}
+              >
+                Hideable{" "}
+                <Tooltip
+                  sx={{ fontSize: "10px" }}
+                  label="Hide the contents of transactions when the visibility toggle is off."
+                >
+                  <IconInfoCircleFilled size={15} />
+                </Tooltip>
+              </Flex>
+            }
           />
           {Boolean(categories?.length) && (
             <MultiSelect
