@@ -16,7 +16,7 @@ const CategoryInput = React.forwardRef(
   (
     { onChange, value, groupStyle, inputStyle, isError }: CategoryInputProps,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ref: React.Ref<HTMLInputElement>
+    ref: React.Ref<HTMLInputElement>,
   ): JSX.Element => {
     const { user } = useAuth();
     const { categoryData } = useBanksCategsContext();
@@ -66,7 +66,7 @@ const CategoryInput = React.forwardRef(
         />
       </Group>
     );
-  }
+  },
 );
 
 export { CategoryInput };

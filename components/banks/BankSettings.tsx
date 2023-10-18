@@ -74,7 +74,7 @@ export const CategoriesPanel = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [hideable, setHideable] = useState<boolean>(false);
   const categorySelection = categories?.find(
-    (category) => category.name === selectedCategory
+    (category) => category.name === selectedCategory,
   );
 
   const clearSelection = () => {
@@ -89,7 +89,7 @@ export const CategoriesPanel = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [categorySelection]
+    [categorySelection],
   );
 
   return (

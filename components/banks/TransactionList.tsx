@@ -129,7 +129,7 @@ const TransactionList = ({
 }) => {
   const [txFilter, setTxFilter] = useState("latest");
   const [monthValue, setMonthValue] = useState<Date | null>(
-    dayjs().startOf("month").toDate()
+    dayjs().startOf("month").toDate(),
   );
   const filterByValue = txFilter == "latest" ? "latest" : monthValue;
   const { query } = useRouter();
@@ -139,7 +139,7 @@ const TransactionList = ({
     filterByValue,
     user?.uid,
     bank,
-    categoryFilter
+    categoryFilter,
   );
   const { privacyMode } = usePrivacyMode();
 
@@ -149,7 +149,7 @@ const TransactionList = ({
   }, [categoryFilter]);
 
   const transactions = rawTransactions?.filter((tx) =>
-    bank ? tx.bank == bank : true
+    bank ? tx.bank == bank : true,
   );
   const { categoryData } = useBanksCategsContext();
   const { categories } = categoryData || {};
@@ -297,7 +297,7 @@ const TransactionList = ({
                       <tr key={transaction.id}>
                         <td style={{ whiteSpace: "nowrap" }}>
                           {dayjs(transaction.date?.seconds * 1000).format(
-                            "MMM D"
+                            "MMM D",
                           )}
                         </td>
                         <td>{transaction.bank}</td>

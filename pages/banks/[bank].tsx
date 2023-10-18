@@ -12,7 +12,7 @@ import { TransactionLayoutButton } from "../../components/banks/TransactionLayou
 
 const Home: NextPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string[] | undefined>(
-    undefined
+    undefined,
   );
   const router = useRouter();
   const bank = router.query["bank"];

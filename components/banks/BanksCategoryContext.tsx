@@ -26,7 +26,7 @@ export const BanksCategsProvider = ({
 
   const memoizedData = useMemo(
     () => ({ bankData, categoryData }),
-    [bankData, categoryData]
+    [bankData, categoryData],
   );
 
   return (
