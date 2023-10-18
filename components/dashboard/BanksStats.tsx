@@ -90,12 +90,12 @@ function BanksStats() {
   const { transactions: thisMonthTxns } = useGetTimePeriodTxns(
     user?.uid || "",
     dayjs().startOf("month").toDate(),
-    dayjs().endOf("month").toDate()
+    dayjs().endOf("month").toDate(),
   );
   const { transactions: thisWeekTxns } = useGetTimePeriodTxns(
     user?.uid || "",
     dayjs().startOf("week").toDate(),
-    dayjs().endOf("week").toDate()
+    dayjs().endOf("week").toDate(),
   );
 
   const currentBanksTotal =
@@ -115,7 +115,9 @@ function BanksStats() {
   let monthDiff;
   if (prevMonthTotal !== 0) {
     monthDiff = parseInt(
-      (((currentBanksTotal - prevMonthTotal) / prevMonthTotal) * 100).toFixed(0)
+      (((currentBanksTotal - prevMonthTotal) / prevMonthTotal) * 100).toFixed(
+        0,
+      ),
     );
   } else {
     monthDiff = 100;
@@ -124,7 +126,7 @@ function BanksStats() {
   let weekDiff;
   if (prevWeekTotal !== 0) {
     weekDiff = parseInt(
-      (((currentBanksTotal - prevWeekTotal) / prevWeekTotal) * 100).toFixed(0)
+      (((currentBanksTotal - prevWeekTotal) / prevWeekTotal) * 100).toFixed(0),
     );
   } else {
     weekDiff = 100;

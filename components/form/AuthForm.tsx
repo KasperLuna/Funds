@@ -159,7 +159,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
           const userCredential = await signInWithEmailAndPassword(
             auth,
             data.email,
-            data.password
+            data.password,
           );
           if (userCredential.user.emailVerified) {
             router.push("/home");
@@ -177,11 +177,11 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
             data.email,
-            data.password
+            data.password,
           );
           await sendEmailVerification(userCredential.user);
           showSuccessNotif(
-            "Account created! check your email for verification."
+            "Account created! check your email for verification.",
           );
           setType("Log in");
         }
@@ -202,7 +202,7 @@ export function AuthForm({ inHeader }: { inHeader?: boolean }) {
   };
 
   const handlePassResetKeypress = (
-    event: React.KeyboardEvent<HTMLInputElement>
+    event: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (event.key) {
       if (event.key == "Enter" && !event.shiftKey) {

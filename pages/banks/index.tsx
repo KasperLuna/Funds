@@ -11,7 +11,7 @@ import { TransactionLayoutButton } from "../../components/banks/TransactionLayou
 
 const Home: NextPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string[] | undefined>(
-    undefined
+    undefined,
   );
   const pages = [{ title: "Banks", href: "/banks" }].map((page) => (
     <Anchor component={Link} href={page.href} key={page.title}>

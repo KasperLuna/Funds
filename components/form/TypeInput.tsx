@@ -24,7 +24,7 @@ export const TypeInput = React.forwardRef(
   (
     { onChange, value, isError }: TypeInputProps,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ref: React.Ref<HTMLSelectElement>
+    ref: React.Ref<HTMLSelectElement>,
   ): JSX.Element => {
     return (
       <Select
@@ -44,5 +44,5 @@ export const TypeInput = React.forwardRef(
         withinPortal={true}
       />
     );
-  }
+  },
 );

@@ -23,9 +23,15 @@ export type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType>({
-  signIn: () => Promise.reject("Not initialized"),
-  signUp: () => Promise.reject("Not initialized"),
-  signOut: () => Promise.reject("Not initialized"),
+  signIn: () => {
+    throw new Error("Not initialized");
+  },
+  signUp: () => {
+    throw new Error("Not initialized");
+  },
+  signOut: () => {
+    throw new Error("Not initialized");
+  },
 } as AuthContextType);
 
 export const useAuth = () => useContext(AuthContext);
@@ -61,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const memoizedData = useMemo(
     () => ({ user, signIn, signUp, signOut }),
-    [user]
+    [user],
   );
 
   return (

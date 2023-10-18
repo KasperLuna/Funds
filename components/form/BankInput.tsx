@@ -40,12 +40,12 @@ const BankInput = React.forwardRef(
       filter,
     }: BankInputProps,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ref: React.Ref<HTMLSelectElement>
+    ref: React.Ref<HTMLSelectElement>,
   ): JSX.Element => {
     const { bankData } = useBanksCategsContext();
     const { banks } = bankData || { banks: [] };
     const filteredBanks = banks?.filter(
-      (bank) => bank.name.toLowerCase() != filter?.toLowerCase()
+      (bank) => bank.name.toLowerCase() != filter?.toLowerCase(),
     );
 
     const placeholderItem = [
@@ -65,7 +65,7 @@ const BankInput = React.forwardRef(
                 value: bank.name,
                 label: bank.name,
                 disabled: false,
-              }))
+              })),
             ) || placeholderItem
           }
           // ref={ref}
@@ -81,7 +81,7 @@ const BankInput = React.forwardRef(
         <AddBankButton />
       </Group>
     );
-  }
+  },
 );
 
 export const AddBankButton = ({

@@ -27,7 +27,7 @@ import { showErrorNotif, showSuccessNotif } from "../utils/notifs";
 import { db } from "./initFirebase";
 
 export const useBanksQuery = (id?: string) => {
-  const hasId = id ? true : false;
+  const hasId = Boolean(id);
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -60,7 +60,7 @@ export const useBanksQuery = (id?: string) => {
 };
 
 export const useCategoriesQuery = (id?: string) => {
-  const hasId = id ? true : false;
+  const hasId = Boolean(id);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +95,7 @@ export const useTransactionsQuery = (
   filterBy?: "latest" | Date | null,
   id?: string,
   bank?: string | string[],
-  categoryFilter?: string[]
+  categoryFilter?: string[],
 ) => {
   const [transactions, setTransactions] = useState<FirebaseTxTypes[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,13 +113,13 @@ export const useTransactionsQuery = (
           bankFilter,
           where("date", ">=", start),
           where("date", "<=", end),
-          orderBy("date", "desc")
+          orderBy("date", "desc"),
         )
       : query(
           txRef,
           where("date", ">=", start),
           where("date", "<=", end),
-          orderBy("date", "desc")
+          orderBy("date", "desc"),
         );
   } else if (
     filterBy === "latest" &&
@@ -134,12 +134,12 @@ export const useTransactionsQuery = (
           txRef,
           bankFilter,
           where("category", "array-contains-any", categoryFilter),
-          orderBy("date", "desc")
+          orderBy("date", "desc"),
         )
       : query(
           txRef,
           where("category", "array-contains-any", categoryFilter),
-          orderBy("date", "desc")
+          orderBy("date", "desc"),
         );
   }
 
@@ -176,7 +176,7 @@ export const useGetTimePeriodTxns = (id: string, start: Date, end: Date) => {
     txRef,
     where("date", ">=", start),
     where("date", "<=", end),
-    orderBy("date", "desc")
+    orderBy("date", "desc"),
   );
 
   const getTxns = async () => {
@@ -213,7 +213,7 @@ export const createCategory = async (data: Category & { userId: string }) => {
 };
 
 export const createTransaction = async (
-  data: AppTxTypes & { userId: string }
+  data: AppTxTypes & { userId: string },
 ) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userId, amount, category, ...txData } = data;
@@ -239,7 +239,7 @@ export const createTransaction = async (
 };
 
 export const updateTransaction = async (
-  data: AppTxTypes & { OrigTx: FirebaseTxTypes } & { userId: string }
+  data: AppTxTypes & { OrigTx: FirebaseTxTypes } & { userId: string },
 ) => {
   const { userId, OrigTx, ...txData } = data;
 
@@ -316,7 +316,7 @@ export const createTransfer = async (data: Transfer & { userId: string }) => {
     userId,
   }).then(() => {
     createTransaction({
-      amount: destinationAmount ? destinationAmount : originAmount,
+      amount: destinationAmount ?? originAmount,
       bank: destinationBank,
       date,
       description,
@@ -328,7 +328,7 @@ export const createTransfer = async (data: Transfer & { userId: string }) => {
 };
 
 export const customizeBank = async (
-  data: Bank & { userId: string; bankName: string }
+  data: Bank & { userId: string; bankName: string },
 ) => {
   const { userId, bankName, ...bank } = data;
   try {
@@ -422,16 +422,16 @@ export const deleteCategory = async ({
     const txRef = collection(db, "users", userId, "transactions");
     const txQuery = query(
       txRef,
-      where("category", "array-contains", categoryName)
+      where("category", "array-contains", categoryName),
     );
     const txQuerySnap = (await getDocs(
-      txQuery
+      txQuery,
     )) as QuerySnapshot<FirebaseTxTypes>;
     // then remove the category from each transaction
     txQuerySnap.forEach((doc) => {
       const tx = doc.data();
       const newCategories = tx.category?.filter(
-        (category) => category !== categoryName
+        (category) => category !== categoryName,
       );
       updateDoc(doc.ref, { category: newCategories });
     });
@@ -456,10 +456,10 @@ export const updateCategory = async ({
     const txRef = collection(db, "users", userId, "transactions");
     const txQuery = query(
       txRef,
-      where("category", "array-contains", categoryName)
+      where("category", "array-contains", categoryName),
     );
     const txQuerySnap = (await getDocs(
-      txQuery
+      txQuery,
     )) as QuerySnapshot<FirebaseTxTypes>;
     // then update the category for each transaction
     txQuerySnap.forEach((doc) => {
