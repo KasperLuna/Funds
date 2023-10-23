@@ -272,7 +272,7 @@ const DifferenceForm = ({ setIsOpen }: CreateProps) => {
     createTransaction({
       userId: user?.uid || "",
       ...data,
-      amount: newBankValue,
+      amount: Math.abs(newBankValue),
       type: txType,
     }).then(() => {
       setIsOpen(false);
