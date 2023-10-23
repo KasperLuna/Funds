@@ -14,6 +14,7 @@ import {
   Tooltip,
   MultiSelect,
   Flex,
+  Text,
 } from "@mantine/core";
 import {
   IconApps,
@@ -123,6 +124,7 @@ export default function Create() {
         >
           <Tabs.List grow>
             <Tabs.Tab value="Transaction">Transaction</Tabs.Tab>
+            <Tabs.Tab value="Difference">Difference</Tabs.Tab>
             <Tooltip
               label="*Transfers are available when more two or more banks have been added."
               position="top"
@@ -139,6 +141,9 @@ export default function Create() {
           </Tabs.List>
           <Tabs.Panel value="Transaction">
             <TransactionForm setIsOpen={setIsOpen} />
+          </Tabs.Panel>
+          <Tabs.Panel value="Difference">
+            <DifferenceForm setIsOpen={setIsOpen} />
           </Tabs.Panel>
           <Tabs.Panel value="Transfer">
             <TransferForm setIsOpen={setIsOpen} />
@@ -217,6 +222,90 @@ const TransactionForm = ({ setIsOpen }: CreateProps) => {
             />
           )}
         />
+
+        <TextInput
+          type="text"
+          {...register("description")}
+          label="Description: "
+          placeholder="Bought groceries"
+        />
+
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <CategoryInput
+              groupStyle={{ width: "100%" }}
+              {...field}
+              isError={Boolean(errors.category)}
+            />
+          )}
+        />
+        <Space />
+        <Button loading={isLoading} type="submit">
+          Submit
+        </Button>
+      </Stack>
+    </form>
+  );
+};
+
+const DifferenceForm = ({ setIsOpen }: CreateProps) => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { bankData } = useBanksCategsContext();
+  const { banks } = bankData || { banks: [] };
+  const { user } = useAuth();
+  const {
+    control,
+    register,
+    setValue,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<AppTxTypes>({ defaultValues: { bank: "" } });
+  const onSubmit = async (data: AppTxTypes) => {
+    setIsLoading(true);
+    const oldBankValue =
+      banks?.find((bank: Bank) => bank.name === data.bank)?.balance || 0;
+    const newBankValue = data.amount - oldBankValue;
+    const txType = newBankValue > 0 ? "income" : "expense";
+    createTransaction({
+      userId: user?.uid || "",
+      ...data,
+      amount: newBankValue,
+      type: txType,
+    }).then(() => {
+      setIsOpen(false);
+      setIsLoading(false);
+      showSuccessNotif("Transaction created successfully");
+      reset();
+    });
+  };
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Stack spacing={"sm"} pt="sm">
+        <Group spacing={"xs"} noWrap>
+          <IconInfoCircleFilled size={20} stroke={2} />
+          <Text size={"xs"}>
+            Enter a bank&apos;s new balance to create a difference transaction.
+          </Text>
+        </Group>
+        <Datecomponent control={control} setValue={setValue} />
+
+        <Controller
+          control={control}
+          name="bank"
+          rules={{ required: true }}
+          render={({ field }) => (
+            <BankInput
+              groupStyle={{ width: "100%" }}
+              {...field}
+              isError={Boolean(errors.bank)}
+            />
+          )}
+        />
+
+        <AmountInput control={control} sx={{ width: "100%" }} />
 
         <TextInput
           type="text"
