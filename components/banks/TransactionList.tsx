@@ -156,12 +156,15 @@ const TransactionList = ({
   const { classes } = useStyles();
   const { txLayout } = useTxLayout();
 
+  const transactionTotal = transactions?.reduce(
+    (acc, tx) => acc + tx.amount,
+    0,
+  );
+
   // Create a string array of category names that have hideable set to true
   const categoriesString = categories
     ?.filter((categ) => categ.hideable)
     .map((categ) => categ.name);
-
-  console.log(categoriesString);
 
   return (
     <>
@@ -356,6 +359,20 @@ const TransactionList = ({
           </Skeleton>
         )}
       </ScrollArea>
+      <Text
+        size={"xs"}
+        italic
+        color={transactionTotal > 0 ? "green" : "red"}
+        sx={{ marginTop: "10px", width: "fit-content", alignSelf: "center" }}
+      >
+        Total for current filters:{" "}
+        {transactionTotal.toLocaleString(undefined, {
+          style: "currency",
+          currency: "PHP",
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 0,
+        })}
+      </Text>
     </>
   );
 };
