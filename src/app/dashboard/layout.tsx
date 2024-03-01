@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
+    <div>
       <aside
         id="desktop-sidebar"
         className="fixed md:block hidden left-0 top-0 z-40 h-screen w-44 xl:w-60 transition-transform bg-black"
@@ -45,7 +45,7 @@ export default function RootLayout({
             <DesktopTabs />
           </div>
           <div className="flex flex-col items-center gap-1">
-            <FundsLogo className="w-16 fill-slate-100 mb-4" />
+            <FundsLogo className="xl:w-16 w-12 fill-slate-100 mb-4" />
             <Button className="flex gap-2 flex-row  bg-black w-full" asChild>
               <Link href="/">
                 <Settings className="w-4 h-8 " />
@@ -64,12 +64,12 @@ export default function RootLayout({
       </aside>
       <div
         id="mobile-header"
-        className="flex flex-row sticky top-0 h-16 px-4 md:hidden bg-black border-b-2 border-slate-700/50"
+        className="md:hidden flex-row sticky flex top-0 h-16 px-4 bg-black border-b-2 border-slate-700/50"
       >
-        <FundsLogo className="w-16 fill-slate-100" />
+        <FundsLogo className="w-16 fill-slate-100 md:hidden" />
       </div>
-      <main className="md:ml-44 xl:ml-60 md:mb-0 mb-16 bg-black md:p-2 md:pl-0">
-        <div className="bg-slate-950 p-5 md:rounded-xl md:h-[calc(100dvh-1rem)] md:pb-0 pb-24 border-slate-800 md:border-2">
+      <main className="md:ml-44 xl:ml-60 md:mb-0 mb-16 bg-black">
+        <div className="flex flex-col w-full my-2 min-h-[calc(100dvh-1.1rem)] bg-slate-950 md:p-5 py-3 px-3 md:border-2 rounded-l-md border-slate-500/20">
           {children}
         </div>
       </main>
@@ -79,6 +79,6 @@ export default function RootLayout({
       >
         <MobileTabs />
       </div>
-    </>
+    </div>
   );
 }
