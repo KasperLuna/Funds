@@ -1,7 +1,7 @@
+"use client";
 import { PreviewButton } from "@/components/PreviewButton";
-import { Button } from "@/components/ui/button";
+import { SignInButton } from "@/components/SignInButton";
 import clsx from "clsx";
-import Link from "next/link";
 
 export default function Home() {
   return (
@@ -25,6 +25,7 @@ export default function Home() {
             </h2>
             <p className="text-gray-400">{`Keep track of all your financial accounts and transactions in one place. – Funds lets you manage your money, your way.`}</p>
             <PreviewButton />
+            <SignInButton />
           </div>
         </div>
       </div>
