@@ -1,10 +1,18 @@
-import { Home } from "lucide-react";
+import { BankSummary } from "@/components/dashboard/BankSummary";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Funds - Dashboard",
+  description: "Funds - A personal finance tracker app.",
+};
 
 export default function Page() {
   return (
-    <main className="flex flex-col h-[calc(100dvh-245px)] items-center p-24 text-slate-200">
-      <Home className="w-28 h-28" />
-      The Dashboard will go here!
-    </main>
+    <div className="text-slate-200">
+      <div>
+        <h1 className="md:text-4xl text-2xl font-semibold">Dashboard</h1>
+        <BankSummary />
+      </div>
+    </div>
   );
 }

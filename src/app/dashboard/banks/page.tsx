@@ -1,25 +1,22 @@
 "use client";
 
-import { StatCard } from "@/components/BankStatCard";
-import { TransactionCard } from "@/components/TransactionCard";
+import { StatCard } from "@/components/dashboard/banks/BankStatCard";
+import { TransactionCard } from "@/components/dashboard/banks/TransactionCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import clsx from "clsx";
 import {
   Calendar,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Edit,
-  Eye,
-  EyeOff,
   Filter,
   Plus,
-  Scale,
   Table,
 } from "lucide-react";
-import { Metadata } from "next";
-import { useState } from "react";
+import React, { useState } from "react";
+import { useTransactionsQuery } from "@/lib/firebase/firestore";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { BanksHeader } from "@/components/banks/BanksHeader";
 
 const TRANSACTION_TEMPLATE = {
   date: "Mar 2",
@@ -36,36 +33,37 @@ const BANK_TEMPLATE = {
 };
 
 export default function Page() {
-  const [isPricesVisible, setIsPricesVisible] = useState(false);
-  const [banksStats, setBanksStats] = useState([BANK_TEMPLATE]);
-  const [transactions, setTransactions] = useState([TRANSACTION_TEMPLATE]);
   const [selectedPeriod, setSelectedPeriod] = useState("latest");
+
+  const { bankData, categoryData } = useBanksCategsContext();
+  const { banks } = bankData || {};
+  const { categories } = categoryData || {};
+  const { transactions } = useTransactionsQuery();
+  const totalAmount =
+    banks?.reduce((acc, bank) => {
+      return acc + bank.balance;
+    }, 0) || 0;
+
+  const hideableCategories = categories
+    ?.filter((categ) => categ.hideable)
+    .map((categ) => categ.name);
 
   return (
     <div>
-      <div className="flex flex-row w-full justify-between items-center pb-3">
-        <div className="flex flex-row gap-2 items-center text-slate-100">
-          <Button
-            onClick={() => setIsPricesVisible(!isPricesVisible)}
-            className={clsx("px-2 border-2 hover:border-slate-600 rounded-lg", {
-              "border-blue-600": isPricesVisible,
-              "border-red-500": !isPricesVisible,
-            })}
-          >
-            {isPricesVisible ? <EyeOff /> : <Eye />}
-          </Button>
-          <h1 className="md:text-4xl text-2xl font-semibold">Balances</h1>
-        </div>
-        <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
-          Total: P 1,000,000
-        </small>
-      </div>
-      <div className="flex flex-row flex-wrap gap-2 pb-3">
-        {banksStats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
+      <BanksHeader />
+      <div
+        id="bank-stats-section"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 pb-3"
+      >
+        {banks?.map((bank) => (
+          <StatCard
+            key={bank.name}
+            {...bank}
+            percentage={`${((bank.balance / totalAmount) * 100).toPrecision(2)}%`}
+          />
         ))}
       </div>
-      <div className="pb-3 sticky md:top-0 gap-2 top-16 bg-slate-950">
+      <div className="pb-3 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950 h-full w-full bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70">
         <p className="text-slate-100 text-lg pb-2">Transactions</p>
         <div className="flex flex-row justify-between">
           <div className="flex flex-row flex-wrap gap-2 md:justify-start justify-between w-full">
@@ -108,29 +106,11 @@ export default function Page() {
           </div>
 
           <div className="flex-row md:flex hidden">
-            <Button
-              className="bg-orange-500 hover:bg-orange-400 rounded-r-none px-7"
-              onClick={() =>
-                setTransactions([...transactions, TRANSACTION_TEMPLATE])
-              }
-            >
+            <Button className="bg-orange-500 hover:bg-orange-400 rounded-r-none px-7">
               Add
             </Button>
-            <Button
-              className="rounded-l-none px-2 border-2 border-l-0 border-slate-800"
-              onClick={() => setBanksStats([...banksStats, BANK_TEMPLATE])}
-            >
+            <Button className="rounded-l-none px-2 border-2 border-l-0 border-slate-800">
               <ChevronDown />
-            </Button>
-          </div>
-          <div className="flex md:hidden fixed bottom-24 right-5">
-            <Button
-              className="px-2 bg-orange-500 rounded-full w-14 h-14 hover:bg-orange-600"
-              onClick={() =>
-                setTransactions([...transactions, TRANSACTION_TEMPLATE])
-              }
-            >
-              <Plus />
             </Button>
           </div>
         </div>
@@ -139,9 +119,24 @@ export default function Page() {
         id="transactions-container"
         className="grid pb-20 md:pb-0 w-full rounded-lg grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[200px] overflow-auto"
       >
-        {transactions.map((transaction, index) => (
-          <TransactionCard key={index} {...transaction} />
-        ))}
+        {transactions.map((transaction) => {
+          const isHideable = transaction.category?.some((categ) =>
+            hideableCategories?.includes(categ)
+          );
+          return (
+            <TransactionCard
+              key={transaction.id}
+              {...transaction}
+              isHideable={isHideable}
+            />
+          );
+        })}
+      </div>
+
+      <div className="flex md:hidden fixed bottom-[95px] right-5">
+        <Button className="px-2 bg-orange-500 rounded-full w-14 h-14 hover:bg-orange-600">
+          <Plus />
+        </Button>
       </div>
     </div>
   );
