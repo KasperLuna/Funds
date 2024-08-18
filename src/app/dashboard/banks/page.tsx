@@ -74,11 +74,17 @@ export default function Page() {
         <div className="flex flex-row justify-between">
           <div className="flex flex-row flex-wrap gap-2 w-full">
             <div className="flex gap-2">
-              <Button className="px-2 border-2 border-slate-800">
+              <Button
+                className="px-2 border-2 border-slate-800"
+                onClick={() => alert("TODO")}
+              >
                 <Table />
               </Button>
 
-              <Button className="px-2  border-2 border-slate-800">
+              <Button
+                className="px-2  border-2 border-slate-800"
+                onClick={() => alert("TODO")}
+              >
                 <Filter />
               </Button>
             </div>
@@ -104,10 +110,16 @@ export default function Page() {
           </div>
 
           <div className="flex-row md:flex hidden">
-            <Button className="bg-orange-500 hover:bg-orange-400 rounded-r-none px-7">
+            <Button
+              className="bg-orange-500 hover:bg-orange-400 rounded-r-none px-7"
+              onClick={() => alert("TODO")}
+            >
               Add
             </Button>
-            <Button className="rounded-l-none px-2 border-2 border-l-0 border-slate-800">
+            <Button
+              className="rounded-l-none px-2 border-2 border-l-0 border-slate-800"
+              onClick={() => alert("TODO")}
+            >
               <ChevronDown />
             </Button>
           </div>
@@ -160,7 +172,10 @@ export default function Page() {
         })}
       </div>
       <div className="flex md:hidden fixed bottom-[95px] right-5">
-        <Button className="px-2 bg-orange-500 rounded-full w-14 h-14 hover:bg-orange-600">
+        <Button
+          className="px-2 bg-orange-500 rounded-full w-14 h-14 hover:bg-orange-600"
+          onClick={() => alert("TODO")}
+        >
           <Plus />
         </Button>
       </div>
