@@ -4,10 +4,15 @@
 // export default nextConfig;
 
 // Importing the PWA configuration function
-import withPWA from "@ducanh2912/next-pwa";
+/** @type {import('next').NextConfig} */
+const prod = process.env.NODE_ENV === "production";
+const withPWA = require("next-pwa")({
+  dest: "public",
+  disable: prod ? false : true,
+});
 
 // Configuring the PWA options
-const pwaConfig = withPWA({
+module.exports = withPWA({
   dest: "public",
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
@@ -18,6 +23,3 @@ const pwaConfig = withPWA({
     disableDevLogs: true,
   },
 });
-
-// Exporting the configured PWA settings
-export default pwaConfig;
