@@ -28,7 +28,7 @@ export const BanksHeader = () => {
         >
           {isPrivacyModeEnabled ? <EyeOff /> : <Eye />}
         </Button>
-        <h1 className="md:text-4xl text-2xl font-semibold">Balances</h1>
+        <h1 className="md:text-3xl text-2xl font-semibold">Balances</h1>
       </div>
       <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
         Total:{" "}

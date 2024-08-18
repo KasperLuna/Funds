@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <div className="text-slate-200">
       <div>
-        <h1 className="md:text-4xl text-2xl font-semibold">Dashboard</h1>
+        <h1 className="md:text-3xl text-2xl font-semibold">Dashboard</h1>
         <BankSummary />
       </div>
     </div>

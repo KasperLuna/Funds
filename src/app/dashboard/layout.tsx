@@ -58,11 +58,13 @@ export default function RootLayout({
                 <FundsLogo className="w-16 fill-slate-100 md:hidden" />
               </Link>
             </div>
-            <main className="md:ml-44 xl:ml-60 md:mb-0 mb-16 bg-black">
-              <div className="flex flex-col w-full min-h-[calc(100dvh-1.1rem)] bg-slate-950 md:p-5 py-3 px-3 md:border-2 rounded-l-md border-slate-500/20">
-                {children}
-              </div>
-            </main>
+            <div className="md:pr-3">
+              <main className="md:ml-44 xl:ml-60 md:mb-0 mb-16 bg-black">
+                <div className="flex flex-col w-full min-h-[calc(100dvh-1.1rem)] bg-slate-950 md:p-5 py-3 px-3 md:border-2 rounded-md mr-10 border-slate-500/20 my-4 ">
+                  {children}
+                </div>
+              </main>
+            </div>
             <div
               id="mobile-footer"
               className="flex md:hidden justify-center fixed bottom-0 pb-4 p-1 border-t-2 border-slate-700/50 bg-black w-full"
