@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { BanksCategsContext } from "../context/BanksCategsContext";
-import { useBanksQuery, useCategoriesQuery } from "../firebase/firestore";
+import { useBanksQuery } from "../hooks/useBanksQuery";
+import { useCategoriesQuery } from "../hooks/useCategoriesQuery";
 
 export function BanksCategsProvider({
   children,

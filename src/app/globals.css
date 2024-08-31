@@ -104,3 +104,9 @@ body {
 
 @layer utilities {
 }
+
+@media screen and (display-mode: standalone) and (orientation: portrait) {
+  body {
+    /* padding-top: 1rem; */
+  }
+}

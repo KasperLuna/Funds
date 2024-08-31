@@ -1,6 +1,12 @@
 import { Timestamp } from "firebase/firestore";
 
 export type Bank = {
+  // default values
+  id: string;
+  created?: Date;
+  updated?: Date;
+  // custom values
+  user: string;
   name: string;
   balance: number;
   primaryColor?: string;
@@ -8,24 +14,41 @@ export type Bank = {
 };
 
 export type Category = {
-  id?: number;
+  // default values
+  id: string;
+  created?: Date;
+  updated?: Date;
+  // custom values
+  user: string;
   name: string;
   hideable: boolean;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
 
-export type BaseTxTypes = {
+export type Transaction = {
+  // default values
   id?: string;
+  created?: Date;
+  updated?: Date;
+  // custom values
+  user: string;
   description: string;
   type: Type;
   amount: number;
   bank: string; // referring to bank account, will query Banks (e.g. BPI, BDO)
-  category?: string[]; // referring to category (e.g. food, transportation, etc)
+  categories: string[]; // referring to category (e.g. food, transportation, etc)
+  date: string; // this is a parseable date string
 };
 
-export type AppTxTypes = BaseTxTypes & { date: Date };
-export type FirebaseTxTypes = BaseTxTypes & { date: Timestamp };
+export type ExpandedTransaction = Transaction & {
+  expand: {
+    bank: Bank;
+    categories: Category[];
+  };
+};
+
+export type FirebaseTxTypes = Omit<Transaction, "date"> & { date: Timestamp };
 
 export type Transfer = {
   description: string;

@@ -24,10 +24,11 @@ export function DatePickerWithOptions({
   const [open, setOpen] = React.useState(false);
 
   const compareDates = (a: Date | undefined, b: Date) => {
+    if (!a) return false;
     return (
-      a?.getDate() === b.getDate() &&
-      a?.getMonth() === b.getMonth() &&
-      a?.getFullYear() === b.getFullYear()
+      a.getDate() === b.getDate() &&
+      a.getMonth() === b.getMonth() &&
+      a.getFullYear() === b.getFullYear()
     );
   };
 
@@ -44,17 +45,17 @@ export function DatePickerWithOptions({
             !date && "text-muted-foreground"
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <CalendarIcon className="mr-1 h-4 w-4" />
           {date ? format(date, "PPP") : <span>Pick a date</span>}
           {isToday && (
-            <span className="ml-2 text-sm text-slate-400">(Today)</span>
+            <span className="ml-2 text-xs text-slate-400">(Today)</span>
           )}
           {isYesterday && (
-            <span className="ml-2 text-sm text-slate-400">(Yesterday)</span>
+            <span className="ml-2 text-xs text-slate-400">(Yesterday)</span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex w-auto flex-col p-1 bg-slate-800 border-2 border-slate-800">
+      <PopoverContent className="flex w-auto flex-col p-1 bg-slate-800 border-2 border-slate-800 z-[2000]">
         <div className="flex flex-row w-full gap-3 px-1">
           <Button
             className={clsx("w-full", {
@@ -85,7 +86,7 @@ export function DatePickerWithOptions({
             classNames={{
               button: "bg-transparent hover:bg-slate-600 hover:text-slate-200",
               cell: "bg-transparent",
-              day_selected: "bg-slate-400",
+              day_selected: "bg-blue-700",
               day_today: "bg-transparent border-2 border-slate-600",
             }}
             className="bg-slate-800 text-slate-100"

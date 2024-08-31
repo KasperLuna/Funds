@@ -1,6 +1,4 @@
-"use client";
-import { PreviewButton } from "@/components/PreviewButton";
-import { SignInButton } from "@/components/SignInButton";
+import { SignupCluster } from "@/components/dashboard/SignUpCluster";
 import clsx from "clsx";
 
 export default function Home() {
@@ -24,8 +22,7 @@ export default function Home() {
               <span className="text-white">{`📚`}</span>
             </h2>
             <p className="text-gray-400">{`Keep track of all your financial accounts and transactions in one place. – Funds lets you manage your money, your way.`}</p>
-            <PreviewButton />
-            <SignInButton />
+            <SignupCluster />
           </div>
         </div>
       </div>

@@ -1,16 +1,15 @@
 "use client";
-
-import { Link, LogOutIcon } from "lucide-react";
+import { LogOutIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { signOut } from "@/lib/firebase/auth";
 import { useRouter } from "next/navigation";
+import { signOut } from "@/lib/auth";
 
 export const SignOutButton = () => {
   const router = useRouter();
   return (
     <Button
       className="flex gap-2 flex-row  bg-black w-full"
-      onClick={() => {
+      onClick={async () => {
         signOut();
         router.push("/");
       }}
