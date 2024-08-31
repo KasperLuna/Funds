@@ -111,7 +111,7 @@ export const TransactionForm = ({
               id="amount"
               type="number"
               step={0.01}
-              className="bg-transparent border-slate-700 focus:border-slate-600 focus:border-0 focus:outline-0 focus:ring-0"
+              className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
               {...register("amount", {
                 valueAsNumber: true,
                 required: true,
@@ -123,7 +123,7 @@ export const TransactionForm = ({
           <Label htmlFor="description">{"Description: "}</Label>
           <Input
             {...register("description")}
-            className="bg-transparent border-slate-700 focus:border-slate-600 focus:border-0 focus:outline-0 focus:ring-0"
+            className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
           />
         </div>
         <div className="flex flex-col gap-1">

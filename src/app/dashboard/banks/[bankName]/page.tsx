@@ -1,23 +1,19 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Filter, Plus, Table } from "lucide-react";
+import { Plus, Table } from "lucide-react";
 import React, { useState } from "react";
 import { BanksHeader } from "@/components/banks/BanksHeader";
 import { AddTransactionDialog } from "@/components/banks/AddTransactionDialog";
 import { AddBankCategDropdown } from "@/components/banks/AddBankCategDropdown";
-import { MonthPicker } from "@/components/MonthPicker";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
+import { TransactionFilter } from "@/components/banks/transactions/TransactionFilter";
 
 export default function Page({
   params: { bankName },
 }: {
   params: { bankName: string };
 }) {
-  const [selectedPeriod, setSelectedPeriod] = useState("latest");
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
-
   return (
     <div>
       <BanksHeader bankName={bankName} />
@@ -33,32 +29,8 @@ export default function Page({
                 <Table />
               </Button>
 
-              <Button
-                className="px-2  border-2 border-slate-800"
-                onClick={() => alert("TODO")}
-              >
-                <Filter />
-              </Button>
+              <TransactionFilter />
             </div>
-
-            <div className="flex flex-row gap-2 ml-auto sm:ml-0">
-              <Tabs
-                role="navigation"
-                value={selectedPeriod}
-                onValueChange={(value) => setSelectedPeriod(value)}
-                className="flex"
-              >
-                <TabsList className="gap-2 bg-slate-800 fill-slate-200">
-                  <TabsTrigger value="latest">Latest</TabsTrigger>
-                  <TabsTrigger value="by_month">By Month</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            {selectedPeriod !== "latest" && (
-              <div className="flex xs:w-full justify-end md:w-fit ml-auto sm:ml-0">
-                <MonthPicker date={selectedMonth} setDate={setSelectedMonth} />
-              </div>
-            )}
           </div>
 
           <div className="flex-row md:flex hidden">

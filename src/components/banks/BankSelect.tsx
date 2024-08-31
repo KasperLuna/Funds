@@ -22,7 +22,7 @@ export const BankSelect = ({
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger
         className={clsx(
-          "bg-transparent border-slate-700 focus:border-slate-600 focus:border-0 focus:outline-0 focus:ring-0",
+          "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0",
           { "text-slate-600": !value }
         )}
       >
