@@ -117,6 +117,13 @@ export function TransactionDialog({
   ) => {
     const parsedData = {
       ...data,
+      // have to do this because multi-select for category doesnt allow object-based values
+      categories:
+        data.categories.map((categ) => {
+          return (
+            categoryData?.categories.find((cat) => cat.name === categ)?.id || ""
+          );
+        }) || [],
       amount: ["expense", "withdrawal"].includes(data.type)
         ? -data.amount
         : data.amount,

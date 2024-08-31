@@ -19,15 +19,10 @@ export const CategoryPicker = ({
 }) => {
   const { categoryData } = useBanksCategsContext();
 
-  const categories =
-    categoryData?.categories
-      .filter((c) => value.includes(c.id))
-      .map((c) => c.name) || [];
-
   return (
     <div className="flex flex-row gap-0 w-full">
       <MultiSelector
-        values={categories}
+        values={value}
         onValuesChange={onChange}
         loop
         className="text-base"
@@ -50,7 +45,7 @@ export const CategoryPicker = ({
             {categoryData?.categories.map((categ) => (
               <MultiSelectorItem
                 key={categ.name}
-                value={categ.id}
+                value={categ.name}
                 className="cursor-pointer"
               >
                 {categ.name}
