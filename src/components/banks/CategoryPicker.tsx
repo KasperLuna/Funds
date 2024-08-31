@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   MultiSelector,
   MultiSelectorTrigger,
@@ -11,26 +10,39 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
 
-export const CategoryPicker = () => {
+export const CategoryPicker = ({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (value: string[]) => void;
+}) => {
   const { categoryData } = useBanksCategsContext();
-  const [value, setValue] = useState<string[]>([]);
+
+  const categories =
+    categoryData?.categories
+      .filter((c) => value.includes(c.id))
+      .map((c) => c.name) || [];
 
   return (
-    <div className="flex flex-row gap-0">
+    <div className="flex flex-row gap-0 w-full">
       <MultiSelector
-        values={value}
-        onValuesChange={setValue}
+        values={categories}
+        onValuesChange={onChange}
         loop
         className="text-base"
-
-        // className="bg-red-800"
       >
-        <MultiSelectorTrigger className="rounded-r-none bg-transparent border-slate-700">
+        <MultiSelectorTrigger className="rounded-r-none bg-transparent border-slate-700 px-2">
           <MultiSelectorInput
             name="categories"
             placeholder={
-              value?.length ? "Add more categories" : "Select categories"
+              !value?.length
+                ? "Select categories"
+                : value?.length < 3
+                  ? "Add more categories"
+                  : undefined
             }
+            className="text-slate-200 min-w-0"
           />
         </MultiSelectorTrigger>
         <MultiSelectorContent>
@@ -38,7 +50,7 @@ export const CategoryPicker = () => {
             {categoryData?.categories.map((categ) => (
               <MultiSelectorItem
                 key={categ.name}
-                value={categ.name}
+                value={categ.id}
                 className="cursor-pointer"
               >
                 {categ.name}
@@ -47,9 +59,11 @@ export const CategoryPicker = () => {
           </MultiSelectorList>
         </MultiSelectorContent>
       </MultiSelector>
-      <Button className="border-slate-700 rounded-l-none border-[1px] border-l-[0px] h-full">
-        <Plus />
-      </Button>
+      <div>
+        <Button className="flex border-slate-700 rounded-l-none border-[1px] border-l-[0px] w-[50px] h-full">
+          <Plus />
+        </Button>
+      </div>
     </div>
   );
 };

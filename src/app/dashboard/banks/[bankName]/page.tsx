@@ -9,16 +9,18 @@ import { AddTransactionDialog } from "@/components/banks/AddTransactionDialog";
 import { AddBankCategDropdown } from "@/components/banks/AddBankCategDropdown";
 import { MonthPicker } from "@/components/MonthPicker";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
-import { BankStatsSection } from "@/components/dashboard/banks/BankStatsSection";
 
-export default function Page() {
+export default function Page({
+  params: { bankName },
+}: {
+  params: { bankName: string };
+}) {
   const [selectedPeriod, setSelectedPeriod] = useState("latest");
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
 
   return (
     <div>
-      <BanksHeader />
-      <BankStatsSection />
+      <BanksHeader bankName={bankName} />
       <p className="text-slate-100 text-lg">Transactions</p>
       <div className="py-2 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950 h-full w-full bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70 z-[1000]">
         <div className="flex flex-row justify-between">
@@ -70,7 +72,7 @@ export default function Page() {
         </div>
       </div>
 
-      <TransactionsContainer />
+      <TransactionsContainer bankName={bankName} />
 
       <div className="flex md:hidden fixed bottom-[95px] z-[2000] right-5">
         <AddTransactionDialog>

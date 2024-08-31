@@ -2,49 +2,68 @@ import { Controller, useForm } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DatePickerWithOptions } from "./DatePickerWithOptions";
-import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-import { CategoryPicker } from "./CategoryPicker";
-import { AppTxTypes, Type } from "@/lib/types";
+import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CategoryPicker } from "@/components/banks/CategoryPicker";
+import { Transaction } from "@/lib/types";
+import { BankSelect } from "@/components/banks/BankSelect";
+import { useAuth } from "@/lib/hooks/useAuth";
 
 export const TransactionForm = ({
   transaction,
+  onSubmit,
 }: {
-  transaction?: AppTxTypes;
+  transaction?: Transaction;
+  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void;
 }) => {
-  console.log(transaction);
-  const { control, register, setValue, handleSubmit } = useForm<{
-    date: Date | undefined;
-    type: Type;
-    amount: number;
-  }>({
+  const { user } = useAuth();
+  const { control, register, handleSubmit } = useForm<
+    Omit<Transaction, "date"> & {
+      date: Date;
+    }
+  >({
     defaultValues: transaction
       ? {
           ...transaction,
+          amount: Math.abs(transaction.amount),
+          categories: transaction.categories || [],
+          date: new Date(transaction.date),
           type: ["expense", "withdrawal"].includes(transaction.type)
             ? "expense"
             : "income",
         }
       : {
+          user: user?.id,
           date: new Date(new Date().setHours(0, 0, 0, 0)),
-          type: "deposit",
-          amount: 1000,
+          categories: [],
+          type: "income",
         },
   });
-
-  const onSubmit = (data: any) => {
-    console.log(data);
-  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col gap-3 pb-3">
-        <div className="flex flex-col gap-1">
-          {/* <Label htmlFor="date">{"Date: "}</Label> */}
+        <div className="flex flex-col gap-1 w-full">
+          <Label htmlFor="date">{"Date: "}</Label>
           <Controller
             name="date"
             control={control}
-            render={({ field }) => <DatePickerWithOptions {...field} />}
+            render={({ field }) => (
+              <DatePickerWithOptions
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </div>
+        <div className="flex flex-col gap-1 w-full">
+          <Label htmlFor="date">{"Bank: "}</Label>
+          <Controller
+            name="bank"
+            control={control}
+            render={({ field }) => (
+              <BankSelect value={field.value} onChange={field.onChange} />
+            )}
           />
         </div>
         <div className="flex flex-row justify-center gap-4">
@@ -84,18 +103,35 @@ export const TransactionForm = ({
             <Input
               id="amount"
               type="number"
+              step={0.01}
               className="bg-transparent border-slate-700 focus:border-slate-600 focus:border-0 focus:outline-0 focus:ring-0"
-              {...register("amount")}
+              {...register("amount", {
+                valueAsNumber: true,
+                required: true,
+              })}
             />
           </div>
         </div>
         <div className="flex flex-col gap-1">
+          <Label htmlFor="description">{"Description: "}</Label>
+          <Input
+            {...register("description")}
+            className="bg-transparent border-slate-700 focus:border-slate-600 focus:border-0 focus:outline-0 focus:ring-0"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
           <Label htmlFor="categories">{"Category: "}</Label>
-          <CategoryPicker />
+          <Controller
+            name="categories"
+            control={control}
+            render={({ field }) => (
+              <CategoryPicker value={field.value} onChange={field.onChange} />
+            )}
+          />
         </div>
         <div></div>
         <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-700">
-          Submit
+          {transaction?.id ? "Update" : "Create"}
         </Button>
       </div>
     </form>
