@@ -29,7 +29,7 @@ export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
     return () => {
       pb.collection("transactions").unsubscribe("*");
     };
-  }, [bankName, fetchNextPage]);
+  }, [bankName, fetchNextPage, refetch]);
 
   return {
     data,

@@ -56,7 +56,7 @@ export const TransactionsContainer = ({ bankName }: { bankName?: string }) => {
       })}
 
       {(isLoading || isFetchingNextPage) &&
-        [...Array(4)].map((_, index) => <TransactionCardLoader />)}
+        [...Array(4)].map((_, index) => <TransactionCardLoader key={index} />)}
       <div className="col-span-full flex items-center justify-center">
         {hasNextPage && (
           <Button
