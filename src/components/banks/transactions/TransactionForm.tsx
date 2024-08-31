@@ -8,6 +8,7 @@ import { CategoryPicker } from "@/components/banks/CategoryPicker";
 import { Transaction } from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 
 export const TransactionForm = ({
   transaction,
@@ -17,6 +18,7 @@ export const TransactionForm = ({
   onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void;
 }) => {
   const { user } = useAuth();
+  const { categoryData } = useBanksCategsContext();
   const { control, register, handleSubmit } = useForm<
     Omit<Transaction, "date"> & {
       date: Date;
@@ -26,7 +28,12 @@ export const TransactionForm = ({
       ? {
           ...transaction,
           amount: Math.abs(transaction.amount),
-          categories: transaction.categories || [],
+          categories:
+            // have to do this because multi-select for category doesnt allow object-based values
+            transaction.categories.map((categ) => {
+              return categoryData?.categories.find((cat) => cat.id === categ)
+                ?.name;
+            }) || [],
           date: new Date(transaction.date),
           type: ["expense", "withdrawal"].includes(transaction.type)
             ? "expense"
