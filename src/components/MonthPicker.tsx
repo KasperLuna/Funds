@@ -18,39 +18,38 @@ export function MonthPicker({
   date,
   setDate,
 }: {
-  date: Date;
-  setDate: React.Dispatch<React.SetStateAction<Date>>;
+  date: Date | undefined;
+  setDate: (date: Date | undefined) => void;
 }) {
   const [isOpen, setIsOpen] = React.useState<boolean>(false);
 
   return (
     <div className="flex flex-row">
       <Button
-        className="rounded-r-none px-1 bg-slate-800"
-        onClick={() =>
-          setDate((date) => {
-            // previous month
-            return addMonths(date, -1);
-          })
-        }
+        className="rounded-r-none px-1 bg-slate-900 hover:bg-slate-700"
+        disabled={!date}
+        onClick={() => {
+          if (!date) return;
+          setDate(addMonths(date, -1));
+        }}
       >
         <ChevronLeft />
       </Button>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover open={isOpen} onOpenChange={setIsOpen} modal>
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
             className={
-              "border-slate-700 border-opacity-50 hover:bg-slate-700 hover:text-slate-200 rounded-none w-[120px] justify-start text-left font-normal bg-slate-800 text-slate-100"
+              "border-slate-700 border-opacity-50 hover:bg-slate-700 hover:text-slate-200 rounded-none w-[145px] justify-start text-left font-normal bg-slate-800 text-slate-100"
             }
           >
             <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            {format(date, "MMM yyyy")}
+            {date ? format(date, "MMM yyyy") : "Select Month"}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-slate-800 border-0 text-slate-100 border-opacity-10">
+        <PopoverContent className="w-auto p-0 bg-slate-800 border-0 text-slate-100 border-opacity-10 ">
           <BaseMonthPicker
-            currentMonth={date}
+            currentMonth={date ?? new Date()}
             onMonthChange={(newMonth) => {
               setDate(newMonth);
               setIsOpen(false);
@@ -59,12 +58,12 @@ export function MonthPicker({
         </PopoverContent>
       </Popover>
       <Button
-        className="rounded-l-none px-1 bg-slate-800"
-        onClick={() =>
-          setDate((date) => {
-            return addMonths(date, 1);
-          })
-        }
+        className="rounded-l-none px-1 bg-slate-900 hover:bg-slate-700"
+        disabled={!date}
+        onClick={() => {
+          if (!date) return;
+          setDate(addMonths(date, 1));
+        }}
       >
         <ChevronRight />
       </Button>

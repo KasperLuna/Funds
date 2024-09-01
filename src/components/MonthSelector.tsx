@@ -4,7 +4,9 @@ import { MonthPicker } from "./MonthPicker";
 
 export const MonthSelector = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("latest");
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(
+    new Date()
+  );
   return (
     <>
       {" "}

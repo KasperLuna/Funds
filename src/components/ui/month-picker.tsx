@@ -3,8 +3,8 @@ import {
   eachMonthOfInterval,
   endOfYear,
   format,
-  isEqual,
   isFuture,
+  isSameMonth,
   parse,
   startOfMonth,
   startOfToday,
@@ -102,10 +102,10 @@ function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
                   name="day"
                   className={cn(
                     "inline-flex h-9 w-16 items-center justify-center rounded-md p-0 text-sm font-normal ring-offset-white transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 aria-selected:opacity-100 dark:ring-offset-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50 dark:focus-visible:ring-slate-800",
-                    isEqual(month, currentMonth) &&
+                    isSameMonth(month, currentMonth) &&
                       "bg-slate-900 text-slate-50 hover:bg-slate-900 hover:text-slate-50 focus:bg-slate-900 focus:text-slate-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-50 dark:hover:text-slate-900 dark:focus:bg-slate-50 dark:focus:text-slate-900",
-                    !isEqual(month, currentMonth) &&
-                      isEqual(month, getStartOfCurrentMonth()) &&
+                    !isSameMonth(month, currentMonth) &&
+                      isSameMonth(month, getStartOfCurrentMonth()) &&
                       "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-50"
                   )}
                   disabled={isFuture(month)}

@@ -16,6 +16,8 @@ export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
       categoryData?.categories.find((categ) => categ.name === category)?.id
   );
 
+  const month = searchParams.get("month");
+
   const {
     data,
     error,
@@ -25,13 +27,14 @@ export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["transactions", `${bankName || "DEFAULT"}`, query, categories],
+    queryKey: ["transactions", bankName, query, categories, month],
     queryFn: ({ pageParam = 1 }) =>
       paginatedFetchTransactions({
         pageParam,
         bankName,
         query,
         categories: categoryIds as string[],
+        month,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {

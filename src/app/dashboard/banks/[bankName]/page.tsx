@@ -18,21 +18,9 @@ export default function Page({
     <div>
       <BanksHeader bankName={bankName} />
       <p className="text-slate-100 text-lg">Transactions</p>
-      <div className="py-2 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950 h-full w-full bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70 z-[1000]">
+      <div className="py-2 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950 h-full w-full bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70 z-10">
         <div className="flex flex-row justify-between">
-          <div className="flex flex-row flex-wrap gap-2 w-full">
-            <div className="flex gap-2">
-              <Button
-                className="px-2 border-2 border-slate-800"
-                onClick={() => alert("TODO")}
-              >
-                <Table />
-              </Button>
-
-              <TransactionFilter />
-            </div>
-          </div>
-
+          <TransactionFilter />
           <div className="flex-row md:flex hidden">
             <AddTransactionDialog>
               <Button className="bg-orange-500 hover:bg-orange-400 rounded-r-none px-7">
@@ -46,7 +34,7 @@ export default function Page({
 
       <TransactionsContainer bankName={bankName} />
 
-      <div className="flex md:hidden fixed bottom-[95px] z-[2000] right-5">
+      <div className="flex md:hidden fixed bottom-[95px] z-50 right-5">
         <AddTransactionDialog>
           <Button className="px-2 bg-orange-500 rounded-full w-14 h-14 hover:bg-orange-600">
             <Plus />

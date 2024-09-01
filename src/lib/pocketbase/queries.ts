@@ -6,11 +6,13 @@ export const paginatedFetchTransactions = async ({
   bankName,
   query,
   categories,
+  month,
 }: {
   pageParam?: number;
   bankName?: string;
   query: string | null;
   categories?: string[] | null;
+  month?: string | null;
 }) => {
   const bank = bankName
     ? await pb.collection("banks").getFirstListItem<Bank>(`name="${bankName}"`)
@@ -18,9 +20,12 @@ export const paginatedFetchTransactions = async ({
 
   let filter: string[] = [];
 
-  //TODO: Tidy This up :)
   if (bankName) {
     filter.push(`bank="${bank?.id}"`);
+  }
+
+  if (month) {
+    filter.push(`date<"${month}"`);
   }
 
   if (categories) {
