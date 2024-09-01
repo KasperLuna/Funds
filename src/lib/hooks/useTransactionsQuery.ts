@@ -3,10 +3,18 @@ import { paginatedFetchTransactions } from "../pocketbase/queries";
 import { pb } from "../pocketbase/pocketbase";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useBanksCategsContext } from "./useBanksCategsContext";
 
 export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
+
+  const { categoryData } = useBanksCategsContext();
+  const categories = searchParams.get("categories")?.split(",");
+  const categoryIds = categories?.map(
+    (category) =>
+      categoryData?.categories.find((categ) => categ.name === category)?.id
+  );
 
   const {
     data,
@@ -17,9 +25,14 @@ export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["transactions", `${bankName || "DEFAULT"}`, query],
+    queryKey: ["transactions", `${bankName || "DEFAULT"}`, query, categories],
     queryFn: ({ pageParam = 1 }) =>
-      paginatedFetchTransactions({ pageParam, bankName, query }),
+      paginatedFetchTransactions({
+        pageParam,
+        bankName,
+        query,
+        categories: categoryIds as string[],
+      }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       return lastPage.page < lastPage.totalPages
