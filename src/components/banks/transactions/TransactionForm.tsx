@@ -76,6 +76,7 @@ export const TransactionForm = ({
     !!newBalance && !!bankBalance ? newBalance - bankBalance : 0;
 
   useEffect(() => {
+    if (transaction) return;
     setValue("newBalance", undefined);
     setValue("amount", undefined as any);
   }, [formType]);

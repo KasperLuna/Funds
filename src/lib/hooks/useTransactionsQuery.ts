@@ -45,7 +45,11 @@ export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
   });
 
   useEffect(() => {
-    pb.collection("transactions").subscribe("*", () => refetch());
+    pb.collection("transactions")
+      .subscribe("*", () => refetch())
+      .catch(() => {
+        alert("Error subscribing to transactions, close the app and try again");
+      });
     return () => {
       pb.collection("transactions").unsubscribe("*");
     };

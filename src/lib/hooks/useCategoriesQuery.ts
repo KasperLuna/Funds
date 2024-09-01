@@ -50,7 +50,11 @@ export const useCategoriesQuery = () => {
     };
 
     // Subscribe to real-time updates
-    pb.collection("categories").subscribe("*", handleRealtimeUpdate);
+    pb.collection("categories")
+      .subscribe("*", handleRealtimeUpdate)
+      .catch(() => {
+        alert("Error subscribing to categories, close the app and try again");
+      });
 
     return () => {
       pb.collection("categories").unsubscribe("*");
