@@ -44,7 +44,11 @@ export const useBanksQuery = () => {
     };
 
     // Subscribe to real-time updates
-    pb.collection("banks").subscribe("*", handleRealtimeUpdate);
+    pb.collection("banks")
+      .subscribe("*", handleRealtimeUpdate)
+      .catch(() => {
+        alert("Error subscribing to banks, close the app and try again");
+      });
 
     return () => {
       pb.collection("banks").unsubscribe("*");
