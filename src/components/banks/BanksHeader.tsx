@@ -8,7 +8,8 @@ export const BanksHeader = ({ bankName }: { bankName?: string }) => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { bankData } = useBanksCategsContext();
   const displayValue = bankName
-    ? bankData?.banks?.find((bank) => bank.name === bankName)?.balance
+    ? bankData?.banks?.find((bank) => bank.name === decodeURI(bankName))
+        ?.balance
     : bankData?.banks?.reduce((acc, bank) => {
         return acc + bank.balance;
       }, 0) || 0;
