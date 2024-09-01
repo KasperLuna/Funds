@@ -3,6 +3,7 @@ import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { PrivacyToggle } from "../PrivacyToggle";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { decode } from "punycode";
+import { parseAmount } from "@/lib/utils";
 
 export const BanksHeader = ({ bankName }: { bankName?: string }) => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
@@ -23,15 +24,7 @@ export const BanksHeader = ({ bankName }: { bankName?: string }) => {
         </h1>
       </div>
       <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
-        Total:{" "}
-        {isPrivacyModeEnabled
-          ? "₱••••••"
-          : displayValue?.toLocaleString(undefined, {
-              style: "currency",
-              currency: "PHP",
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 0,
-            })}
+        Total: {isPrivacyModeEnabled ? "₱••••••" : parseAmount(displayValue)}
       </small>
     </div>
   );

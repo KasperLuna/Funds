@@ -8,8 +8,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { EllipsisVertical, X } from "lucide-react";
-import { Transaction } from "@/lib/types";
+import { ChevronDown, EllipsisVertical, X } from "lucide-react";
+import { FormType, Transaction } from "@/lib/types";
 import { pb } from "@/lib/pocketbase/pocketbase";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +20,14 @@ import {
 import { PopoverArrow } from "@radix-ui/react-popover";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 
 export function TransactionDialog({
   trigger,
@@ -34,6 +42,7 @@ export function TransactionDialog({
 }) {
   const { bankData, categoryData } = useBanksCategsContext();
   const queryClient = useQueryClient();
+  const [formType, setFormType] = useState<string>("Transaction");
 
   const updateBankBalanceOnTransaction = async ({
     action,
@@ -151,7 +160,37 @@ export function TransactionDialog({
       >
         <AlertDialogHeader className="flex flex-row w-full justify-between">
           <AlertDialogTitle className="self-center">
-            {transaction?.id ? "Edit" : "Add"} Transaction
+            {transaction?.id ? "Edit" : "Create"}{" "}
+            {transaction?.id ? (
+              "Transaction"
+            ) : (
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className="bg-slate-800 hover:bg-slate-600 gap-1 hover:text-slate-200 py-[3px] text-base border-slate-600 px-2 h-fit"
+                  >
+                    {formType} <ChevronDown className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-slate-700 text-slate-100 border-0">
+                  <DropdownMenuRadioGroup
+                    value={formType}
+                    onValueChange={setFormType}
+                  >
+                    {["Transaction", "Transfer", "Difference"].map((type) => (
+                      <DropdownMenuRadioItem
+                        key={type}
+                        value={type}
+                        className="hover:bg-slate-600"
+                      >
+                        {type}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </AlertDialogTitle>
           <div className="flex flex-row gap-1">
             {transaction?.id && (
@@ -169,7 +208,7 @@ export function TransactionDialog({
                   <PopoverContent
                     side="bottom"
                     align="center"
-                    className="p-1 w-fit bg-slate-800 border-0 flex flex-col gap-2 z-[2000]"
+                    className="p-1 w-fit bg-slate-800 border-0 flex flex-col gap-2 z-50"
                   >
                     <PopoverArrow className="fill-slate-800" />
                     <Button
@@ -214,7 +253,11 @@ export function TransactionDialog({
             </AlertDialogCancel>
           </div>
         </AlertDialogHeader>
-        <TransactionForm transaction={transaction} onSubmit={onSubmit} />
+        <TransactionForm
+          transaction={transaction}
+          onSubmit={onSubmit}
+          formType={formType as FormType}
+        />
       </AlertDialogContent>
     </AlertDialog>
   );

@@ -1,5 +1,5 @@
 import PocketBase, { AsyncAuthStore } from "pocketbase";
-import { Bank, Category, FirebaseTxTypes, Transaction } from "../types";
+import { Bank, Transaction } from "../types";
 import { getCookie, setCookie } from "../utils";
 
 const store = new AsyncAuthStore({

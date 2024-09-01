@@ -26,3 +26,12 @@ export const getCookie = (name: string): string | null => {
 export const removeCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-99999999;;`;
 };
+
+export const parseAmount = (amount?: number) => {
+  return amount?.toLocaleString(undefined, {
+    style: "currency",
+    currency: "PHP",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  });
+};

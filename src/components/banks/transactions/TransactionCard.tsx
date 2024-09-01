@@ -5,11 +5,12 @@ import clsx from "clsx";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { useState } from "react";
 import { TransactionDialog } from "@/components/banks/transactions/TransactionDialog";
+import { parseAmount } from "@/lib/utils";
 
 export const TransactionCard = (props: ExpandedTransaction) => {
   const { date, amount, description, expand } = props;
 
-  const { bank, categories } = expand;
+  const { bank, categories } = expand || {};
 
   const isHideable = categories?.some((categ) => categ.hideable);
 
@@ -31,7 +32,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
             <div className="flex flex-col text-start">
               <p className="text-nowrap">{dayjs(date).format("MMM D")}</p>
               <Separator orientation="horizontal" />
-              <small>{bank.name}</small>
+              <small>{bank?.name}</small>
             </div>
             <div className="flex flex-col text-right">
               <p
@@ -42,12 +43,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
               >
                 {isHideable && isPrivacyModeEnabled
                   ? "₱••••••"
-                  : amount.toLocaleString(undefined, {
-                      style: "currency",
-                      currency: "PHP",
-                      maximumFractionDigits: 2,
-                      minimumFractionDigits: 0,
-                    })}
+                  : parseAmount(amount)}
               </p>
               <small className="text-balance">
                 {description.length > 50

@@ -55,7 +55,7 @@ export function DatePickerWithOptions({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex w-auto flex-col p-1 bg-slate-800 border-2 border-slate-800 z-[2000]">
+      <PopoverContent className="flex w-auto flex-col p-1 bg-slate-800 border-2 border-slate-800 z-50">
         <div className="flex flex-row w-full gap-3 px-1">
           <Button
             className={clsx("w-full", {

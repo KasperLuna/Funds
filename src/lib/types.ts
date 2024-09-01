@@ -1,5 +1,3 @@
-import { Timestamp } from "firebase/firestore";
-
 export type Bank = {
   // default values
   id: string;
@@ -41,14 +39,14 @@ export type Transaction = {
   date: string; // this is a parseable date string
 };
 
+export type FormType = "Transaction" | "Transfer" | "Difference";
+
 export type ExpandedTransaction = Transaction & {
-  expand: {
+  expand?: {
     bank: Bank;
     categories: Category[];
   };
 };
-
-export type FirebaseTxTypes = Omit<Transaction, "date"> & { date: Timestamp };
 
 export type Transfer = {
   description: string;

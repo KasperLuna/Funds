@@ -1,5 +1,6 @@
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { Bank } from "@/lib/types";
+import { parseAmount } from "@/lib/utils";
 import Link from "next/link";
 
 export const StatCard = ({
@@ -20,16 +21,7 @@ export const StatCard = ({
         <small>{name}</small>
         <small>{percentage}</small>
       </div>
-      <p>
-        {isPrivacyModeEnabled
-          ? "₱••••••"
-          : balance.toLocaleString(undefined, {
-              style: "currency",
-              currency: "PHP",
-              maximumFractionDigits: 2,
-              minimumFractionDigits: 0,
-            })}
-      </p>
+      <p>{isPrivacyModeEnabled ? "₱••••••" : parseAmount(balance)}</p>
     </Link>
   );
 };

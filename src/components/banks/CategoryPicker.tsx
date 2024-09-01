@@ -9,6 +9,7 @@ import {
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Button } from "../ui/button";
 import { Plus } from "lucide-react";
+import clsx from "clsx";
 
 export const CategoryPicker = ({
   value,
@@ -22,24 +23,33 @@ export const CategoryPicker = ({
   const { categoryData } = useBanksCategsContext();
 
   return (
-    <div className="flex flex-row gap-0 w-full">
+    <div className="flex flex-row gap-0 w-full h-full">
       <MultiSelector
         values={value}
         onValuesChange={onChange}
         loop
         className="text-base"
       >
-        <MultiSelectorTrigger className="rounded-r-none bg-transparent border-slate-700 px-2">
+        <MultiSelectorTrigger
+          className={clsx(
+            "bg-transparent flex border-slate-700 rounded-md h-full text-sm text-inherit py-[9px] focus-within:border-slate-500",
+            {
+              "rounded-r-none": hasAddButton,
+              "px-2": value,
+              "px-1": !value,
+            }
+          )}
+        >
           <MultiSelectorInput
             name="categories"
+            className="text-slate-200 min-w-0"
             placeholder={
               !value?.length
                 ? "Select categories"
-                : value?.length < 3
+                : value?.length < 2
                   ? "Add more categories"
                   : undefined
             }
-            className="text-slate-200 min-w-0"
           />
         </MultiSelectorTrigger>
         <MultiSelectorContent>
@@ -58,8 +68,8 @@ export const CategoryPicker = ({
       </MultiSelector>
       {hasAddButton && (
         <div>
-          <Button className="flex border-slate-700 rounded-l-none border-[1px] border-l-[0px] w-[50px] h-full">
-            <Plus />
+          <Button className="flex border-slate-700 rounded-l-none border-[1px] border-l-[0px] w-[50px] h-full py-0">
+            <Plus className="my-auto" />
           </Button>
         </div>
       )}
