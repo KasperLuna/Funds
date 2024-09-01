@@ -1,53 +1,63 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import useDebounce from "@/lib/hooks/useDebounce";
+import { PopoverArrow } from "@radix-ui/react-popover";
 import { Filter, Search } from "lucide-react";
-import { usePathname, useSearchParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { CategoryPicker } from "../CategoryPicker";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
 export const TransactionFilter = () => {
-  const [query, setQuery] = useState<string>("");
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { setQueryParams } = useQueryParams();
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
+  const [query, setQuery] = useState<string>("");
   const debouncedQuery = useDebounce(query, 300);
 
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
   useEffect(() => {
-    if (debouncedQuery)
-      router.push(pathname + "?" + createQueryString("query", debouncedQuery));
-    else router.push(pathname);
+    if (debouncedQuery) setQueryParams({ query: debouncedQuery });
+    else setQueryParams({ query: undefined });
   }, [debouncedQuery]);
 
-  // const { handleSubmit, register } = useForm();
-  // const onSubmit = (data: any) => {
-  //   console.log(data);
-  //   router.push(pathname + "?" + createQueryString("query", data.query));
-  // };
-
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(name, value);
-
-      return params.toString();
-    },
-    [searchParams]
-  );
+  useEffect(() => {
+    if (selectedCategories.length > 0)
+      setQueryParams({ categories: selectedCategories.join(",") });
+    else setQueryParams({ categories: undefined });
+  }, [selectedCategories]);
 
   return (
     <>
-      {" "}
-      <Button
-        className="px-2  border-2 border-slate-800"
-        onClick={() => alert("TODO")}
-      >
-        <Filter />
-      </Button>
-      {/* <form onSubmit={handleSubmit(onSubmit)}> */}
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant={selectedCategories.length > 0 ? "outline" : "default"}
+            className="px-2  border-2 border-slate-800"
+          >
+            <Filter />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          className="p-1 w-fit bg-slate-800 border-0 flex flex-col gap-2 max-w-[300px]"
+        >
+          <PopoverArrow className="fill-slate-800" />
+          <CategoryPicker
+            value={selectedCategories}
+            onChange={setSelectedCategories}
+            hasAddButton={false}
+          />
+        </PopoverContent>
+      </Popover>
       <div className="flex flex-row gap-0 group">
         <Input
-          // {...register("query")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={`Search descriptions...`}
@@ -57,7 +67,6 @@ export const TransactionFilter = () => {
           <Search className="stroke-slate-500 group-focus-within:stroke-slate-300" />
         </Button>
       </div>
-      {/* </form> */}
     </>
   );
 };

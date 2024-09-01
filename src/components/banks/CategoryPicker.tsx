@@ -13,9 +13,11 @@ import { Plus } from "lucide-react";
 export const CategoryPicker = ({
   value,
   onChange,
+  hasAddButton = true,
 }: {
   value: string[];
   onChange: (value: string[]) => void;
+  hasAddButton?: boolean;
 }) => {
   const { categoryData } = useBanksCategsContext();
 
@@ -54,11 +56,13 @@ export const CategoryPicker = ({
           </MultiSelectorList>
         </MultiSelectorContent>
       </MultiSelector>
-      <div>
-        <Button className="flex border-slate-700 rounded-l-none border-[1px] border-l-[0px] w-[50px] h-full">
-          <Plus />
-        </Button>
-      </div>
+      {hasAddButton && (
+        <div>
+          <Button className="flex border-slate-700 rounded-l-none border-[1px] border-l-[0px] w-[50px] h-full">
+            <Plus />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
