@@ -1,12 +1,13 @@
 import { BankSummary } from "@/components/dashboard/BankSummary";
 import { Metadata } from "next";
+import dynamic from "next/dynamic";
 
 export const metadata: Metadata = {
   title: "Funds - Dashboard",
   description: "Funds - A personal finance tracker app.",
 };
 
-export default function Page() {
+function Page() {
   return (
     <div className="text-slate-200">
       <div>
@@ -16,3 +17,7 @@ export default function Page() {
     </div>
   );
 }
+
+export default dynamic(() => Promise.resolve(Page), {
+  ssr: false,
+});

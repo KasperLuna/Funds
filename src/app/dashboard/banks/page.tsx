@@ -8,8 +8,9 @@ import { MixedDialogTrigger } from "@/components/banks/MixedDialog";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
 import { BankStatsSection } from "@/components/dashboard/banks/BankStatsSection";
 import { TransactionFilter } from "@/components/banks/transactions/TransactionFilter";
+import dynamic from "next/dynamic";
 
-export default function Page() {
+function Page() {
   return (
     <div>
       <BanksHeader />
@@ -40,3 +41,7 @@ export default function Page() {
     </div>
   );
 }
+
+export default dynamic(() => Promise.resolve(Page), {
+  ssr: false,
+});
