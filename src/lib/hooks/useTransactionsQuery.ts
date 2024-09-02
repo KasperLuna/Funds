@@ -12,7 +12,7 @@ export const useTransactionsQuery = () => {
   const query = queryParams["query"]; //searchParams.get("query");
 
   const { categoryData } = useBanksCategsContext();
-  const categories = queryParams["categories"]; //searchParams.get("categories")?.split(",");
+  const categories = queryParams["categories"]?.split(","); //searchParams.get("categories")?.split(",");
   const categoryIds = categories?.map(
     (category: string) =>
       categoryData?.categories.find((categ) => categ.name === category)?.id
