@@ -11,7 +11,9 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import clsx from "clsx";
 import { parseAmount } from "@/lib/utils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export const TransactionForm = ({
   transaction,
@@ -30,6 +32,7 @@ export const TransactionForm = ({
     handleSubmit,
     watch,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<
     Omit<Transaction, "date"> & {
@@ -37,10 +40,10 @@ export const TransactionForm = ({
       // used for differences
       newBalance?: number;
       // used for transfers
-      originBank?: string;
-      destinationBank?: string;
-      originDeduction?: number;
-      destinationAddition?: number;
+      originBank: string;
+      destinationBank: string;
+      originDeduction: number;
+      destinationAddition: number;
     }
   >({
     defaultValues: transaction
@@ -75,19 +78,54 @@ export const TransactionForm = ({
   const projectedAmount =
     !!newBalance && !!bankBalance ? newBalance - bankBalance : 0;
 
+  const [isTransferAmountsDifferent, setIsTransferAmountsDifferent] =
+    useState<boolean>(false);
+
   useEffect(() => {
     if (transaction) return;
     setValue("newBalance", undefined);
     setValue("amount", undefined as any);
   }, [formType]);
 
-  if (formType === "Transfer") {
-    return <>Not Yet Implemented :D</>;
-  }
-
   return (
     <form
       onSubmit={handleSubmit((data) => {
+        //#region logic for transfers
+        if (formType === "Transfer") {
+          if (
+            data?.originBank &&
+            data?.destinationBank &&
+            data.originBank === data.destinationBank
+          ) {
+            setError("destinationBank", {
+              message: "Cannot transfer to the same bank",
+            });
+            return;
+          }
+
+          const transaction1 = {
+            ...data,
+            type: "expense" as "expense",
+            amount: Math.abs(data.originDeduction || 0),
+            bank: data.originBank,
+          };
+          const transaction2 = {
+            ...data,
+            type: "income" as "income",
+            amount: isTransferAmountsDifferent
+              ? Math.abs(data.destinationAddition || 0)
+              : Math.abs(data.originDeduction || 0),
+            bank: data.destinationBank,
+          };
+
+          onSubmit(transaction1);
+          onSubmit(transaction2);
+          return;
+        }
+
+        //#endregion
+
+        // Submission handling is messy, TODO: refactor
         const bankBalance = bankData?.banks.find(
           (bank) => bank.id === data.bank
         )?.balance;
@@ -120,20 +158,65 @@ export const TransactionForm = ({
             )}
           />
         </div>
-        <div className="flex flex-col gap-1 w-full">
-          <Label htmlFor="date">{"Bank: "}</Label>
-          <Controller
-            name="bank"
-            control={control}
-            rules={{ required: true }}
-            render={({ field }) => (
-              <BankSelect value={field.value} onChange={field.onChange} />
+        {formType != "Transfer" && (
+          <div className="flex flex-col gap-1 w-full">
+            <Label htmlFor="date">{"Bank: "}</Label>
+            <Controller
+              name="bank"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <BankSelect value={field.value} onChange={field.onChange} />
+              )}
+            />
+            {!!errors.bank && (
+              <p className="text-xs text-red-500">This field is required.</p>
             )}
-          />
-          {!!errors.bank && (
-            <p className="text-xs text-red-500">This field is required.</p>
-          )}
-        </div>
+          </div>
+        )}
+        {/* Transfers are really messy, TODO: Refactor */}
+        {formType === "Transfer" && (
+          <div className="flex flex-row gap-2">
+            <div className="flex flex-col gap-1 w-full">
+              <Label htmlFor="date">{"Origin Bank: "}</Label>
+              <Controller
+                name="originBank"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <BankSelect
+                    value={field.value as string}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {!!errors.originBank && (
+                <p className="text-xs text-red-500">This field is required.</p>
+              )}
+            </div>
+            <ArrowRight className="size-10 mt-4" />
+
+            <div className="w-full gap-1 flex flex-col relative">
+              <Label htmlFor="amount">Destination Bank:</Label>
+              <Controller
+                name="destinationBank"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <BankSelect
+                    value={field.value as string}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              {!!errors.destinationBank && (
+                <p className="text-xs text-red-500">
+                  {errors.destinationBank?.message || "This field is required."}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={clsx("flex flex-row justify-center gap-4")}>
           {formType === "Transaction" && (
@@ -187,28 +270,94 @@ export const TransactionForm = ({
               </p>
             </div>
           )}
-          <div className="w-full gap-1 flex flex-col relative">
-            <Label htmlFor="amount">
-              {formType === "Transaction" ? "Amount: " : "New Balance: "}
-            </Label>
-            <Input
-              id="amount"
-              type="number"
-              step={0.01}
-              className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
-              {...register(
-                formType === "Difference" ? "newBalance" : "amount",
-                {
-                  valueAsNumber: true,
-                  required: true,
-                  min: 0,
-                }
+          {formType != "Transfer" && (
+            <div className="w-full gap-1 flex flex-col relative">
+              <Label htmlFor="amount">
+                {formType === "Transaction" ? "Amount: " : "New Balance: "}
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                step={0.01}
+                className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+                {...register(
+                  formType === "Difference" ? "newBalance" : "amount",
+                  {
+                    valueAsNumber: true,
+                    required: true,
+                    min: 0,
+                  }
+                )}
+              />
+              {!!(errors.amount || errors.newBalance) && (
+                <p className="text-xs text-red-500">This field is required.</p>
               )}
-            />
-            {!!(errors.amount || errors.newBalance) && (
-              <p className="text-xs text-red-500">This field is required.</p>
-            )}
-          </div>
+            </div>
+          )}
+          {/* Transfers are really messy, TODO: Refactor */}
+          {formType === "Transfer" && (
+            <div className="flex flex-col gap-2 w-full">
+              <div className="flex flex-row gap-2 items-center">
+                <div className="w-full gap-1 flex flex-col relative">
+                  <Label htmlFor="amount">
+                    {isTransferAmountsDifferent
+                      ? "Origin Deduction:"
+                      : "Transfer Amount:"}{" "}
+                  </Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step={0.01}
+                    className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+                    {...register("originDeduction", {
+                      valueAsNumber: true,
+                      required: true,
+                      min: 0,
+                    })}
+                  />
+                  {!!errors.originDeduction && (
+                    <p className="text-xs text-red-500">
+                      This field is required.
+                    </p>
+                  )}
+                </div>
+
+                {isTransferAmountsDifferent && (
+                  <>
+                    <ArrowRight className="size-10 mt-4" />
+
+                    <div className="w-full gap-1 flex flex-col relative">
+                      <Label htmlFor="amount">Destination Addition:</Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        step={0.01}
+                        className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+                        {...register("destinationAddition", {
+                          valueAsNumber: true,
+                          required: true,
+                          min: 0,
+                        })}
+                      />
+                      {!!errors.destinationAddition && (
+                        <p className="text-xs text-red-500">
+                          This field is required.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-row items-center gap-2 text-sm">
+                <Switch
+                  checked={isTransferAmountsDifferent}
+                  onCheckedChange={setIsTransferAmountsDifferent}
+                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-slate-700"
+                />
+                Transfer different amounts
+              </div>
+            </div>
+          )}
         </div>
         {formType === "Difference" && (
           <small className="text-slate-400 italic">
