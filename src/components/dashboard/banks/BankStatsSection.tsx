@@ -2,8 +2,10 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { StatCard } from "./BankStatCard";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import { BankStatCardLoader } from "./BankStatCardLoader";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
 export const BankStatsSection = () => {
+  const { queryParams } = useQueryParams();
   const { bankData } = useBanksCategsContext();
   const { banks, loading } = bankData || {};
   const totalAmount =

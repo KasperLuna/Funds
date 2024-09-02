@@ -6,12 +6,10 @@ import { TransactionGroupDisplay } from "./TransactionGroupDisplay";
 import { Button } from "@/components/ui/button";
 import { TransactionCardLoader } from "./TransactionCardLoader";
 
-export const TransactionsContainer = ({ bankName }: { bankName?: string }) => {
+export const TransactionsContainer = () => {
   const [parent] = useAutoAnimate({ duration: 100 });
   const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } =
-    useTransactionsQuery({
-      ...(bankName && { bankName: decodeURI(bankName) }),
-    });
+    useTransactionsQuery();
 
   const groupedTransactions = Object.values(
     data?.pages

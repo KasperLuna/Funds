@@ -24,8 +24,10 @@ export const TransactionFilter = () => {
   const debouncedQuery = useDebounce(query, 300);
   useEffect(() => {
     if (queryParams["query"] === debouncedQuery) return;
-    if (debouncedQuery || queryParams["query"]) {
+    if (debouncedQuery) {
       setQueryParams({ query: debouncedQuery });
+    } else {
+      setQueryParams({ query: undefined });
     }
   }, [debouncedQuery]);
 
