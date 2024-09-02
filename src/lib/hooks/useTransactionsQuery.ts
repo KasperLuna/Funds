@@ -4,19 +4,21 @@ import { pb } from "../pocketbase/pocketbase";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useBanksCategsContext } from "./useBanksCategsContext";
+import { useQueryParams } from "./useQueryParams";
 
-export const useTransactionsQuery = ({ bankName }: { bankName?: string }) => {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("query");
+export const useTransactionsQuery = () => {
+  const { queryParams } = useQueryParams();
+  const bankName = queryParams["bank"]; //searchParams.get("bank");
+  const query = queryParams["query"]; //searchParams.get("query");
 
   const { categoryData } = useBanksCategsContext();
-  const categories = searchParams.get("categories")?.split(",");
+  const categories = queryParams["categories"]; //searchParams.get("categories")?.split(",");
   const categoryIds = categories?.map(
-    (category) =>
+    (category: string) =>
       categoryData?.categories.find((categ) => categ.name === category)?.id
   );
 
-  const month = searchParams.get("month");
+  const month = queryParams["month"]; //searchParams.get("month");
 
   const {
     data,

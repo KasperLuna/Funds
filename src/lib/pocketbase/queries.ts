@@ -9,7 +9,7 @@ export const paginatedFetchTransactions = async ({
   month,
 }: {
   pageParam?: number;
-  bankName?: string;
+  bankName: string | null;
   query: string | null;
   categories?: string[] | null;
   month?: string | null;
