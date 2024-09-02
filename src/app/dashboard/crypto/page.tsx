@@ -1,6 +1,7 @@
 import { Bitcoin } from "lucide-react";
+import dynamic from "next/dynamic";
 
-export default function Page() {
+function Page() {
   return (
     <main className="flex flex-col h-[calc(100dvh-245px)] items-center p-24 text-slate-200">
       <Bitcoin className="w-28 h-28" />
@@ -8,3 +9,7 @@ export default function Page() {
     </main>
   );
 }
+
+export default dynamic(() => Promise.resolve(Page), {
+  ssr: false,
+});
