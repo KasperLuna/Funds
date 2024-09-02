@@ -1,4 +1,4 @@
-import { Bank, ExpandedTransaction } from "../types";
+import { Bank, Category, ExpandedTransaction, Transaction } from "../types";
 import { pb } from "./pocketbase";
 
 export const paginatedFetchTransactions = async ({
@@ -48,4 +48,84 @@ export const paginatedFetchTransactions = async ({
       ...(filter && { filter: filter.join("&&") }),
     });
   return response;
+};
+
+export const addBank = async (bank: Partial<Bank>) => {
+  const id = pb.authStore.model?.id;
+  await pb.collection("banks").create<Bank>(
+    {
+      ...bank,
+      name: bank.name,
+      balance: bank.balance,
+      user: id,
+    },
+    { requestKey: null }
+  );
+};
+
+export const addCategory = async (category: Partial<Category>) => {
+  const id = pb.authStore.model?.id;
+  await pb.collection("categories").create<Category>(
+    {
+      ...category,
+      name: category.name,
+      hideable: category.hideable,
+      user: id,
+    },
+    { requestKey: null }
+  );
+};
+
+export const addTransaction = async (transaction: any) => {
+  const id = pb.authStore.model?.id;
+  await pb.collection("transactions").create<any>(
+    {
+      user: id,
+      amount: transaction.amount,
+      bank: transaction.bank,
+      description: transaction.description,
+      categories: transaction.categories,
+      date: new Date(transaction.date.value._seconds * 1000),
+      type: transaction.type,
+    },
+    {
+      requestKey: null,
+    }
+  );
+};
+
+export const recomputeBalance = async (bank: string) => {
+  const id = pb.authStore.model?.id;
+
+  const bankId = (
+    await pb.collection("banks").getFullList<Bank>({ filter: `name="${bank}"` })
+  )[0].id;
+
+  // query all transactions for this bank
+  const transactions = await pb
+    .collection("transactions")
+    .getFullList<Transaction>({
+      filter: `bank="${bankId}"`,
+      sort: "-date",
+    });
+
+  const balance = transactions
+    .filter((txn) => txn.user === id)
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  // query bank by name
+  const bankData = await pb
+    .collection("banks")
+    .getFullList<Bank>({ filter: `name="${bank}"` });
+
+  // update bank balance
+  pb.collection("banks").update(
+    bankData[0].id!,
+    {
+      balance: transactions
+        .filter((txn) => txn.user === id)
+        .reduce((acc, curr) => acc + curr.amount, 0),
+    },
+    { requestKey: null }
+  );
 };

@@ -1,4 +1,4 @@
-import { TransactionForm } from "./TransactionForm";
+import { TransactionForm } from "./transactions/TransactionForm";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -25,11 +25,32 @@ import {
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { BankForm } from "./BankForm";
+import { CategoryForm } from "../CategoryForm";
 
-export function TransactionDialog({
+export const MixedDialogTrigger = ({
+  children,
+  transaction,
+}: {
+  children: React.ReactNode;
+  transaction?: Transaction;
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  return (
+    <MixedDialog
+      isModalOpen={isModalOpen}
+      setIsModalOpen={setIsModalOpen}
+      trigger={children}
+      transaction={transaction}
+    />
+  );
+};
+
+export const MixedDialog = ({
   trigger,
   isModalOpen,
   setIsModalOpen,
@@ -39,7 +60,7 @@ export function TransactionDialog({
   isModalOpen: boolean;
   setIsModalOpen: (value: boolean) => void;
   transaction?: Transaction;
-}) {
+}) => {
   const { bankData, categoryData } = useBanksCategsContext();
   const queryClient = useQueryClient();
   const [formType, setFormType] = useState<string>("Transaction");
@@ -194,6 +215,16 @@ export function TransactionDialog({
                         {type}
                       </DropdownMenuRadioItem>
                     ))}
+                    <DropdownMenuSeparator className="mx-2" />
+                    {["Bank", "Category"].map((type) => (
+                      <DropdownMenuRadioItem
+                        key={type}
+                        value={type}
+                        className="hover:bg-slate-600"
+                      >
+                        {type}
+                      </DropdownMenuRadioItem>
+                    ))}
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -260,12 +291,18 @@ export function TransactionDialog({
             </AlertDialogCancel>
           </div>
         </AlertDialogHeader>
-        <TransactionForm
-          transaction={transaction}
-          onSubmit={onSubmit}
-          formType={formType as FormType}
-        />
+        {["Transaction", "Transfer", "Difference"].includes(formType) && (
+          <TransactionForm
+            transaction={transaction}
+            onSubmit={onSubmit}
+            formType={formType as FormType}
+          />
+        )}
+        {formType === "Bank" && <BankForm setIsModalOpen={setIsModalOpen} />}
+        {formType === "Category" && (
+          <CategoryForm setIsModalOpen={setIsModalOpen} />
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );
-}
+};
