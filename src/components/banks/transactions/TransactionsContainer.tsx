@@ -19,13 +19,9 @@ export const TransactionsContainer = () => {
           acc: { [key: string]: ExpandedTransaction[] },
           transaction: ExpandedTransaction
         ) => {
-          const date = new Date(transaction.date).toDateString();
-          if (!acc[date]) {
-            acc[date] = [];
-          }
-
+          const date = transaction.date.split(" ")[0];
+          acc[date] = acc[date] || [];
           acc[date].push(transaction);
-
           return acc;
         },
         {}

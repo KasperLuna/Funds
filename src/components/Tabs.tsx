@@ -31,7 +31,7 @@ export const DesktopTabs = () => {
 
   //Effect to handle browser-driven tab switching
   useEffect(() => {
-    setCurrentTab(pathname);
+    if (pathname !== currentTab) setCurrentTab(pathname);
   }, [pathname]);
 
   return (
@@ -66,7 +66,7 @@ export const MobileTabs = () => {
 
   //Effect to handle browser-driven tab switching
   useEffect(() => {
-    setCurrentTab(pathname);
+    if (pathname !== currentTab) setCurrentTab(pathname);
   }, [pathname]);
 
   return (
