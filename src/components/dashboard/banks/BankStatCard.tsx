@@ -24,8 +24,8 @@ export const StatCard = ({
       role="button"
       onClick={() => setQueryParams({ bank: !isSelected ? name : undefined })}
       className={clsx(
-        "flex border-slate-600/25  md:mx-0 border-2 flex-col text-center text-slate-200 bg-slate-900 flex-grow p-2 rounded-md min-w-[155px] hover:bg-slate-700 transition-all",
-        isSelected && "border-slate-100"
+        "flex  md:mx-0 border-2 flex-col text-center text-slate-200 bg-slate-900 flex-grow p-2 rounded-md min-w-[155px] hover:bg-slate-700 transition-all",
+        isSelected ? "border-slate-100" : " border-slate-600/25"
       )}
     >
       <div className="flex flex-row justify-between">
