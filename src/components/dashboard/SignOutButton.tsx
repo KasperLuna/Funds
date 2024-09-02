@@ -3,12 +3,13 @@ import { LogOutIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 
-export const SignOutButton = () => {
+export const SignOutButton = ({ className }: { className?: string }) => {
   const router = useRouter();
   return (
     <Button
-      className="flex gap-2 flex-row  bg-black w-full"
+      className={cn("flex gap-2 flex-row  bg-black w-full", className)}
       onClick={async () => {
         signOut();
         router.push("/");
