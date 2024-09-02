@@ -124,31 +124,38 @@ export function TransactionDialog({
       date: Date;
     }
   ) => {
-    const parsedData = {
-      ...data,
-      // have to do this because multi-select for category doesnt allow object-based values
-      categories:
-        data.categories.map((categ) => {
-          return (
-            categoryData?.categories.find((cat) => cat.name === categ)?.id || ""
-          );
-        }) || [],
-      amount: ["expense", "withdrawal"].includes(data.type)
-        ? -data.amount
-        : data.amount,
-    };
+    try {
+      const parsedData = {
+        ...data,
+        // have to do this because multi-select for category doesnt allow object-based values
+        categories:
+          data.categories.map((categ) => {
+            return (
+              categoryData?.categories.find((cat) => cat.name === categ)?.id ||
+              ""
+            );
+          }) || [],
+        amount: ["expense", "withdrawal"].includes(data.type)
+          ? -data.amount
+          : data.amount,
+      };
 
-    setIsModalOpen(false);
+      setIsModalOpen(false);
 
-    if (transaction?.id) {
-      pb.collection("transactions").update(transaction.id, parsedData);
-    } else {
-      pb.collection("transactions").create(parsedData);
+      if (transaction?.id) {
+        await pb.collection("transactions").update(transaction.id, parsedData);
+      } else {
+        await pb
+          .collection("transactions")
+          .create(parsedData, { requestKey: null });
+      }
+      await updateBankBalanceOnTransaction({
+        action: transaction?.id ? "update" : "create",
+        newTransaction: parsedData,
+      });
+    } catch (error) {
+      alert(error);
     }
-    updateBankBalanceOnTransaction({
-      action: transaction?.id ? "update" : "create",
-      newTransaction: parsedData,
-    });
   };
 
   return (
