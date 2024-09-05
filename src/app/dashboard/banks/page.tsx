@@ -11,8 +11,10 @@ import { TransactionFilter } from "@/components/banks/transactions/TransactionFi
 import dynamic from "next/dynamic";
 
 function Page() {
+  const title = "Funds - Banks";
   return (
     <div>
+      <title>{title}</title>
       <BanksHeader />
       <BankStatsSection />
       <p className="text-slate-100 text-lg">Transactions</p>

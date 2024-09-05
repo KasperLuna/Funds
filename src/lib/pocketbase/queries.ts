@@ -109,10 +109,6 @@ export const recomputeBalance = async (bank: string) => {
       sort: "-date",
     });
 
-  const balance = transactions
-    .filter((txn) => txn.user === id)
-    .reduce((acc, curr) => acc + curr.amount, 0);
-
   // query bank by name
   const bankData = await pb
     .collection("banks")
@@ -129,3 +125,59 @@ export const recomputeBalance = async (bank: string) => {
     { requestKey: null }
   );
 };
+
+export const fetchStats = async () => {
+  const records = await pb.collection("transactions_stats").getFullList({
+    sort: "-year, -month",
+  });
+  return records;
+};
+
+//#region For Importing with JSON Export
+export const addCategories = async (categories: any) => {
+  const id = pb.authStore.model?.id;
+
+  for (const category in categories) {
+    await pb.collection("categories").create<Category>(
+      {
+        name: category,
+        hideable: categories[category as keyof typeof categories]?.hideable,
+        user: id,
+      },
+      { requestKey: null }
+    );
+  }
+};
+
+export const addTransactions = async (
+  banks?: Bank[],
+  categories?: Category[],
+  transactions?: any
+) => {
+  const id = pb.authStore.model?.id;
+  for (const transaction in transactions) {
+    const bank = banks?.find(
+      (bank) => bank.name === transactions[transaction].bank
+    )?.id;
+    const transactionCategories = categories
+      ?.filter((category) =>
+        transactions[transaction].category.includes(category.name)
+      )
+      .map((category) => category.id);
+
+    console.log(bank, transactionCategories);
+    await pb.collection("transactions").create<Transaction>(
+      {
+        user: id,
+        amount: transactions[transaction].amount,
+        bank: bank,
+        description: transactions[transaction].description,
+        categories: transactionCategories,
+        date: new Date(transactions[transaction].date.value._seconds * 1000),
+        type: transactions[transaction].type,
+      },
+      { requestKey: null }
+    );
+  }
+};
+//#endregion
