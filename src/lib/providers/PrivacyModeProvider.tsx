@@ -6,7 +6,7 @@ export function PrivacyModeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [isPrivacyModeEnabled, setIsPrivacyModeEnabled] = useState(false);
+  const [isPrivacyModeEnabled, setIsPrivacyModeEnabled] = useState(true);
   return (
     <PrivacyModeContext.Provider
       value={{

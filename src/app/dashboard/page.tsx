@@ -1,17 +1,20 @@
+"use client";
 import { BankSummary } from "@/components/dashboard/BankSummary";
-import { Metadata } from "next";
+import { PrivacyToggle } from "@/components/PrivacyToggle";
 import dynamic from "next/dynamic";
 
-export const metadata: Metadata = {
-  title: "Funds - Dashboard",
-  description: "Funds - A personal finance tracker app.",
-};
-
 function Page() {
+  const title = "Funds - Dashboard";
   return (
     <div className="text-slate-200">
-      <div>
-        <h1 className="md:text-3xl text-2xl font-semibold">Dashboard</h1>
+      <title>{title}</title>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-row gap-2">
+          {" "}
+          <PrivacyToggle />
+          <h1 className="md:text-3xl text-2xl font-semibold">Dashboard</h1>
+        </div>
+
         <BankSummary />
       </div>
     </div>
