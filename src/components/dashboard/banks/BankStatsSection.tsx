@@ -3,6 +3,7 @@ import { StatCard } from "./BankStatCard";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import { BankStatCardLoader } from "./BankStatCardLoader";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import { trimToTwoDecimals } from "@/lib/utils";
 
 export const BankStatsSection = () => {
   const { queryParams } = useQueryParams();
@@ -23,7 +24,7 @@ export const BankStatsSection = () => {
         <StatCard
           key={bank.id}
           {...bank}
-          percentage={`${((bank.balance / totalAmount) * 100).toPrecision(2)}%`}
+          percentage={`${trimToTwoDecimals((bank.balance / totalAmount) * 100)}%`}
         />
       ))}
     </div>

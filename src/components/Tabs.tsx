@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BitcoinIcon, Home, LandmarkIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const TabTrigger = ({
   value,
@@ -27,12 +28,17 @@ const TabTrigger = ({
 export const DesktopTabs = () => {
   const pathname = usePathname();
 
+  const [currentTab, setCurrentTab] = useState(pathname);
+  useEffect(() => {
+    setCurrentTab(pathname);
+  }, [pathname]);
+
   return (
     <Tabs
       role="navigation"
       defaultValue={pathname}
-      // value={currentTab}
-      // onValueChange={setCurrentTab}
+      value={currentTab}
+      onValueChange={setCurrentTab}
       className="flex justify-end"
     >
       <TabsList className="flex-col h-fit w-full gap-2 bg-transparent fill-slate-200">
@@ -57,12 +63,17 @@ export const DesktopTabs = () => {
 export const MobileTabs = () => {
   const pathname = usePathname();
 
+  const [currentTab, setCurrentTab] = useState(pathname);
+  useEffect(() => {
+    setCurrentTab(pathname);
+  }, [pathname]);
+
   return (
     <Tabs
       role="navigation"
       defaultValue={pathname}
-      // value={currentTab}
-      // onValueChange={setCurrentTab}
+      value={currentTab}
+      onValueChange={setCurrentTab}
       className="flex justify-end"
     >
       <TabsList className="h-fit w-full gap-3 bg-transparent fill-slate-200">

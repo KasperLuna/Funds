@@ -35,3 +35,28 @@ export const parseAmount = (amount?: number) => {
     minimumFractionDigits: 0,
   });
 };
+
+export const trimToTwoDecimals = (num: number): number => {
+  // Convert to string to easily manipulate the number
+  const numStr = num.toString();
+
+  // Check if the number has a decimal part
+  if (!numStr.includes(".")) {
+    return Number(num.toFixed(2));
+  }
+
+  // Split the string at the decimal point
+  const parts = numStr.split(".");
+
+  // Ensure we don't exceed two decimal places
+  const maxFractionDigits = Math.min(parts[1].length, 2);
+
+  // Truncate the fractional part to two digits
+  const truncatedFraction = parts[1].slice(0, maxFractionDigits);
+
+  // Reconstruct the number string
+  const resultStr = `${parts[0]}.${truncatedFraction}`;
+
+  // Convert back to number and return
+  return Number(resultStr);
+};
