@@ -57,3 +57,16 @@ export type Transfer = {
   date: Date;
   category?: string[];
 };
+
+export type Trend = {
+  year: number;
+  month: string;
+  monthly_total: number;
+  overall_user_balance: number;
+};
+
+export type Currency = {
+  code: string;
+  name: string;
+  symbol: string;
+};
