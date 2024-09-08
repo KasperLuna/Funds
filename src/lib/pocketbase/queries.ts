@@ -1,4 +1,10 @@
-import { Bank, Category, ExpandedTransaction, Transaction } from "../types";
+import {
+  Bank,
+  Category,
+  ExpandedTransaction,
+  Transaction,
+  Trend,
+} from "../types";
 import { pb } from "./pocketbase";
 
 export const paginatedFetchTransactions = async ({
@@ -116,7 +122,7 @@ export const recomputeBalance = async (bank: string) => {
 
   // update bank balance
   pb.collection("banks").update(
-    bankData[0].id!,
+    bankData[0].id,
     {
       balance: transactions
         .filter((txn) => txn.user === id)
@@ -126,10 +132,12 @@ export const recomputeBalance = async (bank: string) => {
   );
 };
 
-export const fetchStats = async () => {
-  const records = await pb.collection("transactions_stats").getFullList({
-    sort: "-year, -month",
-  });
+export const fetchBanksTrends = async () => {
+  const records = await pb
+    .collection("transactions_trends")
+    .getFullList<Trend>({
+      sort: "-year, -month",
+    });
   return records;
 };
 

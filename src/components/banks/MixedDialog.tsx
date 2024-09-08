@@ -138,6 +138,7 @@ export const MixedDialog = ({
       );
     } finally {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
     }
   };
   const onSubmit = async (

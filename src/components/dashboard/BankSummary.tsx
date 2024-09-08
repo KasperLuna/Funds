@@ -1,8 +1,9 @@
 "use client";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import clsx from "clsx";
-import { parseAmount } from "@/lib/utils";
+import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import Link from "next/link";
 
 export const BankSummary = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
@@ -14,7 +15,8 @@ export const BankSummary = () => {
     }, 0) || 0;
 
   return (
-    <div className="flex flex-col gap-2 lg:w-[50%] w-full ">
+    <div className="flex flex-col gap-3 w-full ">
+      <h1 className="text-slate-100 text-xl font-semibold">Banks Summary</h1>
       <div className="flex flex-row rounded-md overflow-hidden">
         {banks?.map((bank, index) => {
           return (
@@ -26,27 +28,34 @@ export const BankSummary = () => {
           );
         })}
       </div>
-      <div className="grid xl:grid-cols-3 lg:grid-cols-2 md:grid-cols-3 grid-cols-2 gap-2">
+      <div className="grid xl:grid-cols-3 lg:grid-cols-2 md:grid-cols-3 sm:grid-cols-3 grid-cols-2 gap-2">
         {banks?.map((bank, index) => {
           return (
-            <div
+            <Link
+              href={`/dashboard/banks?bank=${bank.name}`}
               key={bank.name}
-              className={clsx(
-                "flex flex-col gap-1.5 text-slate-100 bg-slate-800 rounded-md p-1 px-2 border-2",
-                `border-${colorsArray[index]}-700`
-              )}
+              className={
+                "flex flex-col gap-1.5 justify-between text-slate-100 bg-slate-800 rounded-md p-1 px-2 border-[7px] hover:bg-slate-600"
+              }
               style={{
                 borderColor: colorsArray[index],
+                borderTop: 0,
+                borderBottom: 0,
+                borderRight: 0,
               }}
             >
-              <p className="font-semibold">{bank.name}</p>
-              <div className="flex flex-row gap-2 w-full justify-between">
-                <p>
+              <p className="font-semibold text-ellipsis line-clamp-2">
+                {bank.name}
+              </p>
+              <div className="flex flex-row gap-2 w-full justify-between items-end flex-wrap">
+                <p className="text-sm">
                   {isPrivacyModeEnabled ? "₱••••••" : parseAmount(bank.balance)}
                 </p>
-                <p>{((bank.balance / totalAmount) * 100).toPrecision(2)}%</p>
+                <p className="text-xs">
+                  {trimToTwoDecimals((bank.balance / totalAmount) * 100)}%
+                </p>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -92,7 +101,7 @@ const ProgressSection = ({
           hidden: percentage < 10,
         })}
       >
-        {percentage.toPrecision(2)}%
+        {trimToTwoDecimals(percentage)}%
       </small>
     </div>
   );
