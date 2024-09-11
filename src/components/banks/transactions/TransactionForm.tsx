@@ -65,7 +65,7 @@ export const TransactionForm = ({
           user: user?.id,
           date: new Date(new Date().setHours(0, 0, 0, 0)),
           categories: [],
-          type: "income",
+          type: "expense",
         },
   });
 
