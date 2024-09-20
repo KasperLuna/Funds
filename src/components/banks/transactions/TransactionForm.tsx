@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
-import { FormType, Transaction } from "@/lib/types";
+import { Bank, FormType, Transaction } from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
@@ -14,6 +14,7 @@ import { parseAmount } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
 export const TransactionForm = ({
   transaction,
@@ -26,6 +27,9 @@ export const TransactionForm = ({
 }) => {
   const { user } = useAuth();
   const { categoryData, bankData, baseCurrency } = useBanksCategsContext();
+  const { queryParams } = useQueryParams();
+  const bankName = queryParams["bank"];
+
   const {
     control,
     register,
@@ -63,6 +67,7 @@ export const TransactionForm = ({
         }
       : {
           user: user?.id,
+          bank: bankData?.banks.find((bank) => bank.name === bankName)?.id,
           date: new Date(new Date().setHours(0, 0, 0, 0)),
           categories: [],
           type: "expense",
