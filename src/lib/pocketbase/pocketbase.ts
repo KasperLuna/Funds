@@ -1,10 +1,12 @@
 import PocketBase, { AsyncAuthStore } from "pocketbase";
-import { getCookie, setCookie } from "../utils";
+import { getLocalStorage, setLocalStorage } from "../utils";
 
 const store = new AsyncAuthStore({
-  save: async (serialized) => setCookie("pb_auth", serialized, 720),
+  save: async (serialized) => setLocalStorage("pb_auth", serialized, 720),
   initial:
-    typeof window !== "undefined" ? getCookie("pb_auth") ?? "" : undefined,
+    typeof window !== "undefined"
+      ? getLocalStorage("pb_auth") ?? ""
+      : undefined,
 });
 
 export const pb = new PocketBase(
