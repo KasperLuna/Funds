@@ -5,6 +5,27 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Set data in localStorage
+export const setLocalStorage = (name: string, value: string, hours: number) => {
+  const expiration = new Date().getTime() + hours * 60 * 60 * 1000;
+  const item = { value, expiration };
+  localStorage.setItem(name, JSON.stringify(item));
+};
+
+// Get data from localStorage
+export const getLocalStorage = (name: string): string | null => {
+  const itemStr = localStorage.getItem(name);
+  if (!itemStr) return null;
+
+  const item = JSON.parse(itemStr);
+  if (new Date().getTime() > item.expiration) {
+    localStorage.removeItem(name); // Remove expired item
+    return null;
+  }
+
+  return item.value;
+};
+
 export const setCookie = (name: string, value: string, hours: number) => {
   const date = new Date();
   date.setTime(date.getTime() + hours * 60 * 60 * 1000);
