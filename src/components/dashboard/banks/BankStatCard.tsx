@@ -1,10 +1,9 @@
-import { Button } from "@/components/ui/button";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Bank } from "@/lib/types";
 import { parseAmount } from "@/lib/utils";
 import clsx from "clsx";
-import Link from "next/link";
 
 export const StatCard = ({
   name,
@@ -13,6 +12,7 @@ export const StatCard = ({
 }: Bank & {
   percentage?: string;
 }) => {
+  const { baseCurrency } = useBanksCategsContext();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { queryParams, setQueryParams } = useQueryParams();
 
@@ -33,7 +33,11 @@ export const StatCard = ({
         <small>{name}</small>
         <small>{percentage}</small>
       </div>
-      <p>{isPrivacyModeEnabled ? "₱••••••" : parseAmount(balance)}</p>
+      <p>
+        {isPrivacyModeEnabled
+          ? `${baseCurrency?.symbol}••••••`
+          : parseAmount(balance, baseCurrency?.code)}
+      </p>
     </div>
   );
 };

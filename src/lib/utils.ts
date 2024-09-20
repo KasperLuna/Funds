@@ -27,10 +27,10 @@ export const removeCookie = (name: string) => {
   document.cookie = `${name}=; Max-Age=-99999999;;`;
 };
 
-export const parseAmount = (amount?: number) => {
+export const parseAmount = (amount?: number, currencyCode?: string) => {
   return amount?.toLocaleString(undefined, {
     style: "currency",
-    currency: "PHP",
+    currency: currencyCode || "USD",
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
   });
@@ -59,4 +59,22 @@ export const trimToTwoDecimals = (num: number): number => {
 
   // Convert back to number and return
   return Number(resultStr);
+};
+
+export const convertFilesToFileList = (files?: File[]) => {
+  if (!files || files.length === 0) {
+    return undefined; // Return null if files is undefined or empty
+  }
+
+  const dataTransfer = new DataTransfer();
+  files.forEach((file) => dataTransfer.items.add(file));
+  return dataTransfer.files;
+};
+
+export const handleFiles = (files?: File[]): File[] | null => {
+  if (!files || files.length === 0) {
+    return null; // Return null if files is undefined or empty
+  }
+
+  return files;
 };

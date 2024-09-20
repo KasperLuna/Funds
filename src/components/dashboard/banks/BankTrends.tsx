@@ -6,11 +6,11 @@ import { isSameMonth } from "date-fns";
 import dayjs from "dayjs";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useMemo } from "react";
-import Chart from "chart.js/auto";
+import React, { useCallback } from "react";
 
 //TODO: MAJORLY clean up this component
 export const BankTrends = () => {
+  const { baseCurrency } = useBanksCategsContext();
   const { trends: baseTrends } = useBanksTrendsQuery();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -45,7 +45,7 @@ export const BankTrends = () => {
 
   const averageChange =
     trends.reduce((acc, trend) => {
-      return acc + trend.percentChange!;
+      return acc + trend.percentChange;
     }, 0) / trends?.length;
 
   const averageIncome =
@@ -68,7 +68,9 @@ export const BankTrends = () => {
           <div className="flex flex-row align-middle gap-2">
             <p>{trimToTwoDecimals(averageChange)}%</p>
             <p>
-              {isPrivacyModeEnabled ? "₱••••••" : parseAmount(averageIncome)}
+              {isPrivacyModeEnabled
+                ? `${baseCurrency?.symbol}••••••`
+                : parseAmount(averageIncome, baseCurrency?.code)}
             </p>
           </div>
         </div>
@@ -115,8 +117,11 @@ export const BankTrends = () => {
                           </p>
                           <p className="text-slate-300">
                             {isPrivacyModeEnabled
-                              ? "₱••••••"
-                              : parseAmount(trend.monthly_total)}
+                              ? `${baseCurrency?.symbol}••••••`
+                              : parseAmount(
+                                  trend.monthly_total,
+                                  baseCurrency?.code
+                                )}
                           </p>
                         </div>
                       </div>
@@ -192,7 +197,6 @@ export const transformData = (data: any[]): any => {
   };
 };
 
-import React from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -205,6 +209,7 @@ import {
   LinearScale,
 } from "chart.js";
 import Link from "next/link";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 
 // Register the components required for the chart
 ChartJS.register(
