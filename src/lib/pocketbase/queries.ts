@@ -4,6 +4,7 @@ import {
   ExpandedTransaction,
   Transaction,
   Trend,
+  User,
 } from "../types";
 import { pb } from "./pocketbase";
 
@@ -139,6 +140,19 @@ export const fetchBanksTrends = async () => {
       sort: "-year, -month",
     });
   return records;
+};
+
+//This query will only ever return an array of one json, the currently logged in user.
+export const userQuery = async () => {
+  const userData = await pb.collection("users").getFullList<User>(undefined, {
+    requestKey: null,
+  });
+  return userData?.[0];
+};
+
+export const updateUser = async (data: FormData) => {
+  const id = pb.authStore.model?.id;
+  await pb.collection("users").update(id, data, { requestKey: null });
 };
 
 //#region For Importing with JSON Export

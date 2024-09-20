@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export const BankSummary = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { bankData } = useBanksCategsContext();
+  const { bankData, baseCurrency } = useBanksCategsContext();
   const { banks } = bankData || {};
   const totalAmount =
     banks?.reduce((acc, bank) => {
@@ -49,7 +49,9 @@ export const BankSummary = () => {
               </p>
               <div className="flex flex-row gap-2 w-full justify-between items-end flex-wrap">
                 <p className="text-sm">
-                  {isPrivacyModeEnabled ? "₱••••••" : parseAmount(bank.balance)}
+                  {isPrivacyModeEnabled
+                    ? `${baseCurrency?.symbol}••••••`
+                    : parseAmount(bank.balance, baseCurrency?.code)}
                 </p>
                 <p className="text-xs">
                   {trimToTwoDecimals((bank.balance / totalAmount) * 100)}%

@@ -25,7 +25,7 @@ export const TransactionForm = ({
   formType?: FormType;
 }) => {
   const { user } = useAuth();
-  const { categoryData, bankData } = useBanksCategsContext();
+  const { categoryData, bankData, baseCurrency } = useBanksCategsContext();
   const {
     control,
     register,
@@ -85,7 +85,7 @@ export const TransactionForm = ({
     if (transaction) return;
     setValue("newBalance", undefined);
     setValue("amount", undefined as any);
-  }, [formType]);
+  }, [formType, setValue, transaction]);
 
   return (
     <form
@@ -255,7 +255,7 @@ export const TransactionForm = ({
           {formType === "Difference" && (
             <div className="w-full flex flex-col gap-1 justify-center">
               <p className="text-xs text-slate-300">
-                Current Balance: {parseAmount(bankBalance)}
+                Current Balance: {parseAmount(bankBalance, baseCurrency?.code)}
               </p>
               <p className="text-xs">
                 Transaction Amount:{" "}
@@ -265,7 +265,7 @@ export const TransactionForm = ({
                     "text-green-500": projectedAmount > 0,
                   })}
                 >
-                  {parseAmount(projectedAmount)}
+                  {parseAmount(projectedAmount, baseCurrency?.code)}
                 </span>
               </p>
             </div>

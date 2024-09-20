@@ -67,7 +67,7 @@ export const SettingsDialog = ({
             ))}
           </TabsList>
           <TabsContent value="account">
-            <AccountSettings />
+            <AccountSettings closeModal={() => setIsModalOpen(false)} />
           </TabsContent>
           <TabsContent value="banks">
             <BankSettings />
