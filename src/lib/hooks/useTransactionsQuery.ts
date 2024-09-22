@@ -48,8 +48,8 @@ export const useTransactionsQuery = () => {
 
   useEffect(() => {
     let retries = 0;
-    const maxRetries = 5;
-    const retryDelay = 2000; // 2 seconds
+    const maxRetries = 3;
+    const retryDelay = 300; // 2 seconds
 
     const subscribeWithRetry = (): void => {
       pb.collection("transactions")
