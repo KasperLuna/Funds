@@ -47,11 +47,27 @@ export const useTransactionsQuery = () => {
   });
 
   useEffect(() => {
-    pb.collection("transactions")
-      .subscribe("*", () => refetch())
-      .catch(() => {
-        alert("Error subscribing to transactions, close the app and try again");
-      });
+    let retries = 0;
+    const maxRetries = 5;
+    const retryDelay = 2000; // 2 seconds
+
+    const subscribeWithRetry = (): void => {
+      pb.collection("transactions")
+        .subscribe("*", () => refetch())
+        .catch(() => {
+          if (retries < maxRetries) {
+            retries += 1;
+            setTimeout(subscribeWithRetry, retryDelay); // Retry after delay
+          } else {
+            alert(
+              "Max retries reached for transaction subscription. Refresh the tab or close the app."
+            );
+          }
+        });
+    };
+
+    subscribeWithRetry();
+
     return () => {
       pb.collection("transactions").unsubscribe("*");
     };
