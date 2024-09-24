@@ -5,8 +5,12 @@ import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
+import { Button } from "../ui/button";
+import { RotateCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const BankSummary = () => {
+  const queryClient = useQueryClient();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { bankData, baseCurrency } = useBanksCategsContext();
   const { banks } = bankData || {};
@@ -33,7 +37,18 @@ export const BankSummary = () => {
 
   return (
     <div className="flex flex-col gap-3 w-full ">
-      <h1 className="text-slate-100 text-xl font-semibold">Banks Summary</h1>
+      <div className="flex flex-row gap-3">
+        <h1 className="text-slate-100 text-xl font-semibold">Banks Summary</h1>{" "}
+        <Button
+          className="rounded-full p-2 h-fit hover:bg-slate-700 group"
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["banks"] });
+          }}
+        >
+          <RotateCw className="size-4 group-hover:rotate-180 transition-all" />
+        </Button>
+      </div>
+
       {banks?.length === 0 ? (
         <p className="text-slate-400">
           No banks added, visit the banks page and add.

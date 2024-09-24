@@ -17,13 +17,16 @@ export const useBanksQuery = () => {
 
   const {
     data: banks = [],
-    isLoading: loading,
+    isLoading,
+    isRefetching,
     refetch,
   } = useQuery<Bank[]>({
     queryKey: ["banks", user?.id],
     queryFn: fetchBanks,
     enabled: !!user,
   });
+
+  const loading = isLoading || isRefetching;
 
   useEffect(() => {
     if (!user) return;
