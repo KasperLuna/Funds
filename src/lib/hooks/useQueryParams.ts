@@ -28,6 +28,7 @@ export function useQueryParams<T extends Record<string, any>>(
 
   useEffect(() => {
     setQueryParamsState(getQueryParams());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const setQueryParams = (newParams: Partial<T>) => {
