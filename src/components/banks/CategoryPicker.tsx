@@ -14,7 +14,7 @@ import clsx from "clsx";
 export const CategoryPicker = ({
   value,
   onChange,
-  hasAddButton = true,
+  hasAddButton = false,
 }: {
   value: string[];
   onChange: (value: string[]) => void;

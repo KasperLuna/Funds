@@ -92,6 +92,9 @@ export const CategoryForm = ({
         For your reference, here are your existing categories:
       </p>
       <div className="flex flex-row flex-wrap gap-1 bg-slate-800 p-2 border-slate-600 border-2 rounded-md">
+        {categoryData?.categories?.length === 0 && (
+          <p className="text-slate-200 text-xs">No categories yet.</p>
+        )}
         {categoryData?.categories?.map((category) => (
           <div
             key={category.name}

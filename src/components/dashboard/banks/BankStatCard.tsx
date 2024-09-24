@@ -35,7 +35,7 @@ export const StatCard = ({
       </div>
       <p>
         {isPrivacyModeEnabled
-          ? `${baseCurrency?.symbol}••••••`
+          ? `${baseCurrency?.symbol ?? "$"}••••••`
           : parseAmount(balance, baseCurrency?.code)}
       </p>
     </div>

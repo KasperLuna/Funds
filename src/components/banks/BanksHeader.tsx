@@ -38,7 +38,7 @@ export const BanksHeader = () => {
       <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
         Total:{" "}
         {isPrivacyModeEnabled
-          ? `${baseCurrency?.symbol}••••••`
+          ? `${baseCurrency?.symbol ?? "$"}••••••`
           : parseAmount(displayValue, baseCurrency?.code)}
       </small>
     </div>

@@ -35,7 +35,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
               })}
             >
               {isHideable && isPrivacyModeEnabled
-                ? `${baseCurrency?.symbol}••••••`
+                ? `${baseCurrency?.symbol ?? "$"}••••••`
                 : parseAmount(amount, baseCurrency?.code)}
             </p>
             <small className="text-balance">
