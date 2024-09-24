@@ -24,16 +24,23 @@ export const CategoryForm = ({
   } = useForm<Category>();
 
   const onSubmit = async (data: Category) => {
-    if (
-      categoryData?.categories?.find((category) => category.name === data.name)
-    ) {
-      setError("name", {
-        message: `Category named ${data.name} already exists`,
-      });
-      return;
+    try {
+      await categoryData?.refetch();
+      if (
+        categoryData?.categories?.find(
+          (category) => category.name === data.name
+        )
+      ) {
+        setError("name", {
+          message: `Category named ${data.name} already exists`,
+        });
+        return;
+      }
+      await addCategory({ name: data.name, hideable: data.hideable });
+      reset();
+    } catch (error) {
+      alert("An error occurred. Try again later.");
     }
-    await addCategory({ name: data.name, hideable: data.hideable });
-    reset();
   };
 
   return (

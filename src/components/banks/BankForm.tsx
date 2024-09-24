@@ -23,12 +23,21 @@ export const BankForm = ({
   } = useForm<Bank>();
 
   const onSubmit = async (data: Bank) => {
-    if (bankData?.banks?.find((bank) => bank.name === data.name)) {
-      setError("name", { message: `Bank named ${data.name} already exists` });
-      return;
+    try {
+      await bankData?.refetch();
+      if (
+        bankData?.banks?.find(
+          (bank) => bank.name.toLowerCase() === data.name.toLowerCase()
+        )
+      ) {
+        setError("name", { message: `Bank named ${data.name} already exists` });
+        return;
+      }
+      await addBank({ name: data.name, balance: 0 });
+      reset();
+    } catch (error) {
+      alert("An error occurred. Try again later.");
     }
-    await addBank({ name: data.name, balance: 0 });
-    reset();
   };
 
   return (

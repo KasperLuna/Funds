@@ -15,7 +15,11 @@ export const useCategoriesQuery = () => {
     return result;
   };
 
-  const { data: categories = [], isLoading: loading } = useQuery<Category[]>({
+  const {
+    data: categories = [],
+    isLoading: loading,
+    refetch,
+  } = useQuery<Category[]>({
     queryKey: ["categories", user?.id],
     queryFn: fetchCategories,
     enabled: !!user,
@@ -61,5 +65,5 @@ export const useCategoriesQuery = () => {
     };
   }, [user, queryClient]);
 
-  return { categories, loading };
+  return { categories, loading, refetch };
 };
