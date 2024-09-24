@@ -5,6 +5,7 @@ import { TransactionCard } from "./TransactionCard";
 import { TransactionGroupDisplay } from "./TransactionGroupDisplay";
 import { Button } from "@/components/ui/button";
 import { TransactionCardLoader } from "./TransactionCardLoader";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const TransactionsContainer = () => {
   const [parent] = useAutoAnimate({ duration: 100 });
@@ -34,25 +35,17 @@ export const TransactionsContainer = () => {
       ) || {}
   );
 
-  if (isRefetching) {
-    return (
-      <div
-        id="transactions-container"
-        className="grid pb-20 md:pb-0 w-full rounded-lg grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[150px] px-[2px] py-1 z-0"
-      >
-        {[...Array(8)].map((_, index) => (
-          <TransactionCardLoader key={index} />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div
       id="transactions-container"
       className="grid pb-20 md:pb-0 w-full rounded-lg grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[150px] px-[2px] py-1 z-0"
       ref={parent}
     >
+      {isRefetching && (
+        <Skeleton className="w-full col-span-full bg-slate-800 p-4 text-center text-slate-400 italic font-semibold">
+          Updating Transactions...
+        </Skeleton>
+      )}
       {!isLoading && groupedTransactions?.length === 0 && (
         <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col  text-center gap-3">
           <h4 className=" text-2xl text-slate-400">No transactions yet!</h4>
