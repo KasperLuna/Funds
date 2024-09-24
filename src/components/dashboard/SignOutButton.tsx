@@ -14,8 +14,8 @@ export const SignOutButton = ({ className }: { className?: string }) => {
       className={cn("flex gap-2 flex-row  bg-black w-full", className)}
       onClick={async () => {
         signOut();
-        queryClient.clear();
         router.push("/");
+        queryClient.clear();
       }}
     >
       <LogOutIcon className="w-4 h-8 " />

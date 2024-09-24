@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"; // For client-side navigation
 import { AuthContext } from "../context/AuthContext";
 import { pb } from "../pocketbase/pocketbase";
 import { AuthModel } from "pocketbase";
+import { LoaderCircle } from "lucide-react";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthModel | null>(null);
@@ -43,7 +44,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider value={memoizedData}>
       {isLoading ? (
-        <div className="text-slate-50 w-full text-center">Loading...</div>
+        <div className="text-slate-50 w-full h-screen align-middle flex justify-center items-center">
+          <LoaderCircle className="animate-spin size-10" />
+        </div>
       ) : (
         children
       )}

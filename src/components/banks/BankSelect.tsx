@@ -29,6 +29,11 @@ export const BankSelect = ({
         <SelectValue placeholder="Select Bank" />
       </SelectTrigger>
       <SelectContent className="max-h-[200px] bg-slate-800 border-slate-700 text-slate-100 z-50 overflow-auto">
+        {bankData?.banks?.length === 0 && (
+          <SelectItem value="0" disabled>
+            No banks yet. Create one to get started!
+          </SelectItem>
+        )}
         {bankData?.banks?.map((bank) => (
           <SelectItem
             key={bank.id}

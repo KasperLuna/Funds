@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, Table } from "lucide-react";
+import { Plus, RotateCw, Table } from "lucide-react";
 import React, { useCallback, useState } from "react";
 import { BanksHeader } from "@/components/banks/BanksHeader";
 import { MixedDialogTrigger } from "@/components/banks/MixedDialog";
@@ -9,15 +9,29 @@ import { TransactionsContainer } from "@/components/banks/transactions/Transacti
 import { BankStatsSection } from "@/components/dashboard/banks/BankStatsSection";
 import { TransactionFilter } from "@/components/banks/transactions/TransactionFilter";
 import dynamic from "next/dynamic";
+import { useTransactionsQuery } from "@/lib/hooks/useTransactionsQuery";
+import { useQueryClient } from "@tanstack/react-query";
 
 function Page() {
   const title = "Funds - Banks";
+  const queryClient = useQueryClient();
   return (
     <div>
       <title>{title}</title>
       <BanksHeader />
       <BankStatsSection />
-      <p className="text-slate-100 text-lg">Transactions</p>
+      <div className="flex flex-row gap-2">
+        <p className="text-slate-100 text-lg">Transactions</p>
+        <Button
+          className="rounded-full p-2 h-fit hover:bg-slate-700 group"
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["transactions"] });
+          }}
+        >
+          <RotateCw className="size-4 group-hover:rotate-180 transition-all" />
+        </Button>
+      </div>
+
       <div className="py-2 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950 h-full w-full bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70 z-10">
         <div className="flex flex-row justify-between">
           <TransactionFilter />

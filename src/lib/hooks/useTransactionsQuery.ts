@@ -2,7 +2,6 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { paginatedFetchTransactions } from "../pocketbase/queries";
 import { pb } from "../pocketbase/pocketbase";
 import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useBanksCategsContext } from "./useBanksCategsContext";
 import { useQueryParams } from "./useQueryParams";
 
@@ -24,6 +23,7 @@ export const useTransactionsQuery = () => {
     data,
     error,
     isLoading,
+    isRefetching,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -77,6 +77,7 @@ export const useTransactionsQuery = () => {
     data,
     error,
     isLoading,
+    isRefetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,

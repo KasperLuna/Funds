@@ -21,9 +21,9 @@ export const AccountSettings = ({ closeModal }: { closeModal: () => void }) => {
     defaultValues: {
       username: data?.username || "",
       currency: data?.currency || {
-        code: "PHP",
-        name: "Philippine Peso",
-        symbol: "₱",
+        code: "USD",
+        name: "United States Dollar",
+        symbol: "$",
       },
     },
   });
@@ -32,7 +32,11 @@ export const AccountSettings = ({ closeModal }: { closeModal: () => void }) => {
     if (data) {
       setValue(
         "currency",
-        data?.currency ?? { code: "PHP", name: "PHP", symbol: "₱" }
+        data?.currency ?? {
+          code: "USD",
+          name: "United States Dollar",
+          symbol: "$",
+        }
       );
       setValue("username", data?.username ?? "");
     }
