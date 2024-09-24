@@ -29,6 +29,7 @@ export const TransactionFilter = () => {
     } else {
       setQueryParams({ query: undefined });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedQuery]);
 
   const [ref] = useAutoAnimate({ duration: 100 });

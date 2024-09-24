@@ -57,8 +57,8 @@ export const TransactionsContainer = () => {
         <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col  text-center gap-3">
           <h4 className=" text-2xl text-slate-400">No transactions yet!</h4>
           <p className="text-slate-500">
-            Click the "Add" button (or plus on mobile) to add banks and
-            transactions to get started.
+            {`Click the "Add" button (or plus on mobile) to add banks and
+            transactions to get started.`}
           </p>
         </div>
       )}
