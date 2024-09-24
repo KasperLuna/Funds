@@ -15,7 +15,11 @@ export const useBanksQuery = () => {
     return result;
   };
 
-  const { data: banks = [], isLoading: loading } = useQuery<Bank[]>({
+  const {
+    data: banks = [],
+    isLoading: loading,
+    refetch,
+  } = useQuery<Bank[]>({
     queryKey: ["banks", user?.id],
     queryFn: fetchBanks,
     enabled: !!user,
@@ -55,5 +59,5 @@ export const useBanksQuery = () => {
     };
   }, [user, queryClient]);
 
-  return { banks, loading };
+  return { banks, loading, refetch };
 };
