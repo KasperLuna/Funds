@@ -30,19 +30,27 @@ export const BankTrends = () => {
   }, [emblaApi]);
 
   //TODO: fix percent changeifier
-  const trends = baseTrends?.map((trend, index) => {
-    const percentChange = baseTrends[index + 1]
-      ? ((trend.overall_user_balance -
-          baseTrends[index + 1].overall_user_balance) /
-          baseTrends[index + 1].overall_user_balance) *
-        100
-      : (trend.monthly_total / trend.overall_user_balance) * 100;
+  const trends = baseTrends
+    ?.map((trend, index) => {
+      const percentChange = baseTrends[index + 1]
+        ? ((trend.overall_user_balance -
+            baseTrends[index + 1].overall_user_balance) /
+            baseTrends[index + 1].overall_user_balance) *
+          100
+        : (trend.monthly_total / trend.overall_user_balance) * 100;
 
-    return {
-      ...trend,
-      percentChange,
-    };
-  });
+      return {
+        ...trend,
+        percentChange,
+      };
+    })
+    .sort((a, b) => {
+      if (a.year > b.year) return -1;
+      if (a.year < b.year) return 1;
+      if (a.month > b.month) return -1;
+      if (a.month < b.month) return 1;
+      return 0;
+    });
 
   const averageChange =
     trends.reduce((acc, trend) => {
