@@ -31,6 +31,13 @@ export const BankTrends = () => {
 
   //TODO: fix percent changeifier
   const trends = baseTrends
+    .sort((a, b) => {
+      if (a.year > b.year) return -1;
+      if (a.year < b.year) return 1;
+      if (a.month > b.month) return -1;
+      if (a.month < b.month) return 1;
+      return 0;
+    })
     ?.map((trend, index) => {
       const percentChange = baseTrends[index + 1]
         ? ((trend.overall_user_balance -
@@ -43,15 +50,7 @@ export const BankTrends = () => {
         ...trend,
         percentChange,
       };
-    })
-    .sort((a, b) => {
-      if (a.year > b.year) return -1;
-      if (a.year < b.year) return 1;
-      if (a.month > b.month) return -1;
-      if (a.month < b.month) return 1;
-      return 0;
     });
-
   const averageChange =
     trends.reduce((acc, trend) => {
       return acc + trend.percentChange;
