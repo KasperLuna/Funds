@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import { Decimal } from "decimal.js";
 
 export const TransactionForm = ({
   transaction,
@@ -111,15 +112,15 @@ export const TransactionForm = ({
           const transaction1 = {
             ...data,
             type: "expense" as const,
-            amount: Math.abs(data.originDeduction || 0),
+            amount: new Decimal(data.originDeduction || 0).abs().toNumber(),
             bank: data.originBank,
           };
           const transaction2 = {
             ...data,
             type: "income" as const,
             amount: isTransferAmountsDifferent
-              ? Math.abs(data.destinationAddition || 0)
-              : Math.abs(data.originDeduction || 0),
+              ? new Decimal(data.destinationAddition || 0).abs().toNumber()
+              : new Decimal(data.originDeduction || 0).abs().toNumber(),
             bank: data.destinationBank,
           };
 
@@ -135,13 +136,13 @@ export const TransactionForm = ({
           (bank) => bank.id === data.bank
         )?.balance;
         const differenceAmount = !!(data?.newBalance && bankBalance)
-          ? data?.newBalance - bankBalance
+          ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
           : 0;
         const submitValue = {
           ...data,
           ...(formType === "Difference" && {
             type: (differenceAmount > 0 ? "income" : "expense") as any,
-            amount: Math.abs(differenceAmount),
+            amount: new Decimal(differenceAmount).abs().toNumber(),
           }),
         };
         onSubmit(submitValue);
