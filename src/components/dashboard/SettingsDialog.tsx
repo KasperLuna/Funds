@@ -18,7 +18,7 @@ export const SettingsDialogTrigger = ({
 }: {
   children: React.ReactNode;
 }) => {
-  const { queryParams, setQueryParams } = useQueryParams();
+  const { queryParams } = useQueryParams();
 
   const isModalOpen = !!queryParams["settings"];
 
@@ -67,7 +67,7 @@ export const SettingsDialog = ({
             ))}
           </TabsList>
           <TabsContent value="account">
-            <AccountSettings closeModal={() => setIsModalOpen(false)} />
+            <AccountSettings />
           </TabsContent>
           <TabsContent value="banks">
             <BankSettings />

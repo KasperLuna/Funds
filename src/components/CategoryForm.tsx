@@ -7,11 +7,7 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Switch } from "./ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
-export const CategoryForm = ({
-  setIsModalOpen,
-}: {
-  setIsModalOpen: (value: boolean) => void;
-}) => {
+export const CategoryForm = () => {
   const { setQueryParams } = useQueryParams();
   const { categoryData } = useBanksCategsContext();
   const {
@@ -108,8 +104,8 @@ export const CategoryForm = ({
         onClick={() => {
           setQueryParams({
             settings: "categories",
+            create: undefined,
           });
-          setIsModalOpen(false);
         }}
         className="border-slate-500 border-2 text-xs h-fit w-fit mx-auto rounded-xl hover:border-slate-300"
       >

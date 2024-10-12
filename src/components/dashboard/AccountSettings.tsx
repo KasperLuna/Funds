@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
-export const AccountSettings = ({ closeModal }: { closeModal: () => void }) => {
+export const AccountSettings = () => {
   const queryClient = useQueryClient();
   const { data } = useUserQuery();
   const {
@@ -49,7 +49,7 @@ export const AccountSettings = ({ closeModal }: { closeModal: () => void }) => {
     // formData.append("avatar", submission.avatar as Blob);
     await updateUser(formData);
     queryClient.invalidateQueries({ queryKey: ["user"] });
-    closeModal();
+    alert("Account settings updated");
   };
 
   // const baseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL;
