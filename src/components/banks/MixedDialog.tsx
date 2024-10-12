@@ -32,6 +32,7 @@ import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { useState } from "react";
+import { Decimal } from "decimal.js";
 
 export const MixedDialogTrigger = ({
   children,
@@ -99,7 +100,9 @@ export const MixedDialog = ({
           throw new Error("Error updating bank balance");
         }
         await pb.collection("banks").update(originalBank?.id, {
-          balance: originalBank.balance - transaction.amount,
+          balance: new Decimal(originalBank.balance)
+            .sub(new Decimal(transaction.amount))
+            .toNumber(),
         });
         return;
       }
@@ -109,7 +112,9 @@ export const MixedDialog = ({
           throw new Error("Error updating bank balance");
         }
         await pb.collection("banks").update(transactionBank?.id, {
-          balance: transactionBank?.balance + newTransaction.amount,
+          balance: new Decimal(transactionBank?.balance)
+            .add(new Decimal(newTransaction.amount))
+            .toNumber(),
         });
         return;
       }
@@ -126,18 +131,24 @@ export const MixedDialog = ({
 
         if (originalBank.id === transactionBank.id) {
           await pb.collection("banks").update(originalBank.id, {
-            balance:
-              originalBank.balance - transaction.amount + newTransaction.amount,
+            balance: new Decimal(originalBank.balance)
+              .sub(new Decimal(transaction.amount))
+              .add(new Decimal(newTransaction.amount))
+              .toNumber(),
           });
           return;
         }
 
         await pb.collection("banks").update(originalBank.id, {
-          balance: originalBank.balance - transaction.amount,
+          balance: new Decimal(originalBank.balance)
+            .sub(new Decimal(transaction.amount))
+            .toNumber(),
         });
 
         await pb.collection("banks").update(transactionBank.id, {
-          balance: transactionBank.balance + newTransaction.amount,
+          balance: new Decimal(transactionBank.balance)
+            .add(new Decimal(newTransaction.amount))
+            .toNumber(),
         });
       }
     } catch (error) {
@@ -170,8 +181,8 @@ export const MixedDialog = ({
             );
           }) || [],
         amount: ["expense", "withdrawal"].includes(data.type)
-          ? -data.amount
-          : data.amount,
+          ? new Decimal(data.amount).negated().toNumber()
+          : new Decimal(data.amount).toNumber(),
       };
 
       setIsModalOpen(false);
