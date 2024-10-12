@@ -54,15 +54,17 @@ export const CategoryPicker = ({
         </MultiSelectorTrigger>
         <MultiSelectorContent>
           <MultiSelectorList className="max-h-[200px] bg-slate-800 border-slate-700 text-slate-100">
-            {categoryData?.categories.map((categ) => (
-              <MultiSelectorItem
-                key={categ.name}
-                value={categ.name}
-                className="cursor-pointer"
-              >
-                {categ.name}
-              </MultiSelectorItem>
-            ))}
+            {categoryData?.categories
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((categ) => (
+                <MultiSelectorItem
+                  key={categ.name}
+                  value={categ.name}
+                  className="cursor-pointer"
+                >
+                  {categ.name}
+                </MultiSelectorItem>
+              ))}
           </MultiSelectorList>
         </MultiSelectorContent>
       </MultiSelector>
