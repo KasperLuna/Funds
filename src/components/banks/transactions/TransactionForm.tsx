@@ -275,6 +275,7 @@ export const TransactionForm = ({
               <Input
                 id="amount"
                 type="number"
+                inputMode="decimal"
                 step={0.01}
                 className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
                 {...register(
@@ -304,6 +305,7 @@ export const TransactionForm = ({
                   <Input
                     id="amount"
                     type="number"
+                    inputMode="decimal"
                     step={0.01}
                     className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
                     {...register("originDeduction", {
@@ -328,6 +330,7 @@ export const TransactionForm = ({
                       <Input
                         id="amount"
                         type="number"
+                        inputMode="decimal"
                         step={0.01}
                         className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
                         {...register("destinationAddition", {
