@@ -37,16 +37,26 @@ export const BankSummary = () => {
 
   return (
     <div className="flex flex-col gap-3 w-full ">
-      <div className="flex flex-row gap-3">
-        <h1 className="text-slate-100 text-xl font-semibold">Banks Summary</h1>{" "}
-        <Button
-          className="rounded-full p-2 h-fit hover:bg-slate-700 group"
-          onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["banks"] });
-          }}
-        >
-          <RotateCw className="size-4 group-hover:rotate-180 transition-all" />
-        </Button>
+      <div className="flex flex-row justify-between">
+        <div className="flex flex-row gap-3">
+          <h1 className="text-slate-100 text-xl font-semibold">
+            Banks Summary
+          </h1>{" "}
+          <Button
+            className="rounded-full p-2 h-fit hover:bg-slate-700 group"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["banks"] });
+            }}
+          >
+            <RotateCw className="size-4 group-hover:rotate-180 transition-all" />
+          </Button>
+        </div>{" "}
+        <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
+          Total:{" "}
+          {isPrivacyModeEnabled
+            ? `${baseCurrency?.symbol ?? "$"}••••••`
+            : parseAmount(totalAmount, baseCurrency?.code)}
+        </small>
       </div>
 
       {banks?.length === 0 ? (
