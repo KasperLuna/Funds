@@ -1,7 +1,7 @@
 {
   "display": "standalone",
   "short_name": "Funds",
-  "start_url": "/home",
+  "start_url": "/dashboard",
   "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
