@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
-import { Bank, FormType, Transaction } from "@/lib/types";
+import { FormType, Transaction } from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
@@ -110,13 +110,13 @@ export const TransactionForm = ({
 
           const transaction1 = {
             ...data,
-            type: "expense" as "expense",
+            type: "expense" as const,
             amount: Math.abs(data.originDeduction || 0),
             bank: data.originBank,
           };
           const transaction2 = {
             ...data,
-            type: "income" as "income",
+            type: "income" as const,
             amount: isTransferAmountsDifferent
               ? Math.abs(data.destinationAddition || 0)
               : Math.abs(data.originDeduction || 0),
@@ -140,9 +140,7 @@ export const TransactionForm = ({
         const submitValue = {
           ...data,
           ...(formType === "Difference" && {
-            type: (differenceAmount > 0 ? "income" : "expense") as
-              | "income"
-              | "expense",
+            type: (differenceAmount > 0 ? "income" : "expense") as any,
             amount: Math.abs(differenceAmount),
           }),
         };
@@ -189,10 +187,7 @@ export const TransactionForm = ({
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <BankSelect
-                    value={field.value as string}
-                    onChange={field.onChange}
-                  />
+                  <BankSelect value={field.value} onChange={field.onChange} />
                 )}
               />
               {!!errors.originBank && (
@@ -208,10 +203,7 @@ export const TransactionForm = ({
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <BankSelect
-                    value={field.value as string}
-                    onChange={field.onChange}
-                  />
+                  <BankSelect value={field.value} onChange={field.onChange} />
                 )}
               />
               {!!errors.destinationBank && (

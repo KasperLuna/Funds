@@ -7,11 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { addBank } from "@/lib/pocketbase/queries";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
-export const BankForm = ({
-  setIsModalOpen,
-}: {
-  setIsModalOpen: (value: boolean) => void;
-}) => {
+export const BankForm = () => {
   const { setQueryParams } = useQueryParams();
   const { bankData } = useBanksCategsContext();
   const {
@@ -88,8 +84,8 @@ export const BankForm = ({
         onClick={() => {
           setQueryParams({
             settings: "banks",
+            create: undefined,
           });
-          setIsModalOpen(false);
         }}
         className="border-slate-500 border-2 text-xs h-fit w-fit mx-auto rounded-xl hover:border-slate-300"
       >

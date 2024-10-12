@@ -101,7 +101,7 @@ export const addTransaction = async (transaction: any) => {
   );
 };
 
-export const recomputeBalance = async (bank: string) => {
+export const recomputeBalanceByName = async (bank: string) => {
   const id = pb.authStore.model?.id;
 
   const bankId = (
@@ -133,6 +133,29 @@ export const recomputeBalance = async (bank: string) => {
   );
 };
 
+export const recomputeBalanceById = async (bankId: string) => {
+  const id = pb.authStore.model?.id;
+
+  // query all transactions for this bank
+  const transactions = await pb
+    .collection("transactions")
+    .getFullList<Transaction>({
+      filter: `bank="${bankId}"`,
+      sort: "-date",
+    });
+
+  // update bank balance
+  pb.collection("banks").update(
+    bankId,
+    {
+      balance: transactions
+        .filter((txn) => txn.user === id)
+        .reduce((acc, curr) => acc + curr.amount, 0),
+    },
+    { requestKey: null }
+  );
+};
+
 export const fetchBanksTrends = async () => {
   const records = await pb
     .collection("transactions_trends")
@@ -140,6 +163,33 @@ export const fetchBanksTrends = async () => {
       sort: "-year, -month",
     });
   return records;
+};
+
+export const renameCategoryById = async (categoryId: string, name: string) => {
+  await pb.collection("categories").update(categoryId, { name });
+};
+
+export const deleteCategoryById = async (categoryId: string) => {
+  // fetch all transactions that have this category
+  const transactions = await pb
+    .collection("transactions")
+    .getFullList<Transaction>({
+      filter: `categories~"${categoryId}"`,
+    });
+
+  // remove the category from each transaction
+  for (const transaction of transactions) {
+    if (!transaction.id) continue;
+    await pb.collection("transactions").update(
+      transaction.id,
+      {
+        categories: transaction.categories.filter((c) => c !== categoryId),
+      },
+      { requestKey: null }
+    );
+  }
+
+  await pb.collection("categories").delete(categoryId);
 };
 
 //This query will only ever return an array of one json, the currently logged in user.

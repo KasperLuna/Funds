@@ -28,9 +28,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import { useState } from "react";
 
 export const MixedDialogTrigger = ({
   children,
@@ -39,11 +40,18 @@ export const MixedDialogTrigger = ({
   children: React.ReactNode;
   transaction?: Transaction;
 }) => {
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const { queryParams, setQueryParams } = useQueryParams();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const isCreateModalOpen = !!queryParams["create"];
+  const setIsCreateModalOpen = (value: boolean) => {
+    setQueryParams({ create: value ? "Transaction" : undefined });
+  };
+
   return (
     <MixedDialog
-      isModalOpen={isModalOpen}
-      setIsModalOpen={setIsModalOpen}
+      isModalOpen={transaction ? isEditModalOpen : isCreateModalOpen}
+      setIsModalOpen={transaction ? setIsEditModalOpen : setIsCreateModalOpen}
       trigger={children}
       transaction={transaction}
     />
@@ -61,9 +69,13 @@ export const MixedDialog = ({
   setIsModalOpen: (value: boolean) => void;
   transaction?: Transaction;
 }) => {
+  const { queryParams, setQueryParams } = useQueryParams();
   const { bankData, categoryData } = useBanksCategsContext();
   const queryClient = useQueryClient();
-  const [formType, setFormType] = useState<string>("Transaction");
+  const formType = queryParams["create"] ?? "Transaction";
+  const setFormType = (value: string) => {
+    setQueryParams({ create: value });
+  };
 
   const updateBankBalanceOnTransaction = async ({
     action,
@@ -299,10 +311,8 @@ export const MixedDialog = ({
             formType={formType as FormType}
           />
         )}
-        {formType === "Bank" && <BankForm setIsModalOpen={setIsModalOpen} />}
-        {formType === "Category" && (
-          <CategoryForm setIsModalOpen={setIsModalOpen} />
-        )}
+        {formType === "Bank" && <BankForm />}
+        {formType === "Category" && <CategoryForm />}
       </AlertDialogContent>
     </AlertDialog>
   );

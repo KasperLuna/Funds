@@ -1,15 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, RotateCw, Table } from "lucide-react";
-import React, { useCallback, useState } from "react";
+import { Plus, RotateCw } from "lucide-react";
+import React from "react";
 import { BanksHeader } from "@/components/banks/BanksHeader";
 import { MixedDialogTrigger } from "@/components/banks/MixedDialog";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
 import { BankStatsSection } from "@/components/dashboard/banks/BankStatsSection";
 import { TransactionFilter } from "@/components/banks/transactions/TransactionFilter";
 import dynamic from "next/dynamic";
-import { useTransactionsQuery } from "@/lib/hooks/useTransactionsQuery";
 import { useQueryClient } from "@tanstack/react-query";
 
 function Page() {
