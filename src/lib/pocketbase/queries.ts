@@ -7,6 +7,7 @@ import {
   User,
 } from "../types";
 import { pb } from "./pocketbase";
+import { Decimal } from "decimal.js";
 
 export const paginatedFetchTransactions = async ({
   pageParam = 1,
@@ -88,7 +89,7 @@ export const addTransaction = async (transaction: any) => {
   await pb.collection("transactions").create<any>(
     {
       user: id,
-      amount: transaction.amount,
+      amount: new Decimal(transaction.amount),
       bank: transaction.bank,
       description: transaction.description,
       categories: transaction.categories,
@@ -122,12 +123,17 @@ export const recomputeBalanceByName = async (bank: string) => {
     .getFullList<Bank>({ filter: `name="${bank}"` });
 
   // update bank balance
+  const correctedBalance = transactions
+    .filter((txn) => txn.user === id)
+    .reduce((acc, curr) => {
+      const sum = acc.add(curr.amount);
+      return sum.modulo(1).abs().lt(1e-12) ? sum.floor() : sum;
+    }, new Decimal(0));
+
   pb.collection("banks").update(
     bankData[0].id,
     {
-      balance: transactions
-        .filter((txn) => txn.user === id)
-        .reduce((acc, curr) => acc + curr.amount, 0),
+      balance: correctedBalance.toNumber(),
     },
     { requestKey: null }
   );
@@ -145,12 +151,17 @@ export const recomputeBalanceById = async (bankId: string) => {
     });
 
   // update bank balance
+  const correctedBalance = transactions
+    .filter((txn) => txn.user === id)
+    .reduce((acc, curr) => {
+      const sum = acc.add(curr.amount);
+      return sum.modulo(1).abs().lt(1e-12) ? sum.floor() : sum;
+    }, new Decimal(0));
+
   pb.collection("banks").update(
     bankId,
     {
-      balance: transactions
-        .filter((txn) => txn.user === id)
-        .reduce((acc, curr) => acc + curr.amount, 0),
+      balance: correctedBalance.toNumber(),
     },
     { requestKey: null }
   );
@@ -227,7 +238,9 @@ export const addBanks = async (banks: any) => {
     await pb.collection("banks").create<Bank>(
       {
         name: bank,
-        balance: banks[bank as keyof typeof banks]?.balance,
+        balance: new Decimal(
+          banks[bank as keyof typeof banks]?.balance
+        ).toNumber(),
         user: id,
       },
       { requestKey: null }
@@ -251,11 +264,10 @@ export const addTransactions = async (
       )
       .map((category) => category.id);
 
-    console.log(bank, transactionCategories);
     await pb.collection("transactions").create<Transaction>(
       {
         user: id,
-        amount: transactions[transaction].amount,
+        amount: new Decimal(transactions[transaction].amount).toNumber(),
         bank: bank,
         description: transactions[transaction].description,
         categories: transactionCategories,
