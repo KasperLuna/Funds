@@ -221,6 +221,20 @@ export const addCategories = async (categories: any) => {
   }
 };
 
+export const addBanks = async (banks: any) => {
+  const id = pb.authStore.model?.id;
+  for (const bank in banks) {
+    await pb.collection("banks").create<Bank>(
+      {
+        name: bank,
+        balance: banks[bank as keyof typeof banks]?.balance,
+        user: id,
+      },
+      { requestKey: null }
+    );
+  }
+};
+
 export const addTransactions = async (
   banks?: Bank[],
   categories?: Category[],
