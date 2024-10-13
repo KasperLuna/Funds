@@ -127,7 +127,7 @@ export const MonthlyBreakdown = () => {
           fontFamily: "inherit",
         },
         y: {
-          formatter: (val) => `${val}`,
+          formatter: (val: number) => `${val}`,
         },
         background: "#1E293B", // Custom dark background, similar to Tailwind's bg-slate-800
         borderColor: "#475569", // Match border with slate-600 or similar
@@ -136,7 +136,7 @@ export const MonthlyBreakdown = () => {
         },
       },
     },
-  };
+  } as any;
 
   return (
     <div className="border rounded-xl border-slate-600/25 p-3 pb-0 mb-3">

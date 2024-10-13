@@ -180,7 +180,7 @@ export const BankTrends = () => {
         fontWeight: 600,
       },
     },
-  };
+  } as ApexCharts.ApexOptions;
 
   const chartSeries = [
     {
