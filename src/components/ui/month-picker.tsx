@@ -1,22 +1,8 @@
-import {
-  add,
-  eachMonthOfInterval,
-  endOfYear,
-  format,
-  isFuture,
-  isSameMonth,
-  parse,
-  startOfMonth,
-  startOfToday,
-} from "date-fns";
+import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./button";
-
-function getStartOfCurrentMonth() {
-  return startOfMonth(startOfToday());
-}
 
 interface MonthPickerProps {
   currentMonth: Date;
@@ -25,23 +11,22 @@ interface MonthPickerProps {
 
 function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
   const [currentYear, setCurrentYear] = React.useState(
-    format(currentMonth, "yyyy")
+    dayjs(currentMonth).format("YYYY")
   );
-  const firstDayCurrentYear = parse(currentYear, "yyyy", new Date());
+  const firstDayCurrentYear = dayjs(currentYear, "YYYY");
 
-  const months = eachMonthOfInterval({
-    start: firstDayCurrentYear,
-    end: endOfYear(firstDayCurrentYear),
-  });
+  const months = Array.from({ length: 12 }, (_, i) =>
+    firstDayCurrentYear.month(i).startOf("month")
+  );
 
   function previousYear() {
-    let firstDayNextYear = add(firstDayCurrentYear, { years: -1 });
-    setCurrentYear(format(firstDayNextYear, "yyyy"));
+    let firstDayNextYear = firstDayCurrentYear.subtract(1, "year");
+    setCurrentYear(firstDayNextYear.format("YYYY"));
   }
 
   function nextYear() {
-    let firstDayNextYear = add(firstDayCurrentYear, { years: 1 });
-    setCurrentYear(format(firstDayNextYear, "yyyy"));
+    let firstDayNextYear = firstDayCurrentYear.add(1, "year");
+    setCurrentYear(firstDayNextYear.format("YYYY"));
   }
 
   return (
@@ -55,7 +40,7 @@ function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
               role="presentation"
               id="month-picker"
             >
-              {format(firstDayCurrentYear, "yyyy")}
+              {firstDayCurrentYear.format("YYYY")}
             </div>
             <div className="flex items-center space-x-1">
               <button
@@ -80,7 +65,9 @@ function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
                   "absolute right-1 disabled:bg-slate-100"
                 )}
                 type="button"
-                disabled={isFuture(add(firstDayCurrentYear, { years: 1 }))}
+                disabled={
+                  dayjs().year() <= firstDayCurrentYear.add(1, "year").year()
+                }
                 onClick={nextYear}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -102,20 +89,20 @@ function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
                   name="day"
                   className={cn(
                     "inline-flex h-9 w-16 items-center justify-center rounded-md p-0 text-sm font-normal ring-offset-white transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 aria-selected:opacity-100 dark:ring-offset-slate-950 dark:hover:bg-slate-800 dark:hover:text-slate-50 dark:focus-visible:ring-slate-800",
-                    isSameMonth(month, currentMonth) &&
+                    dayjs(month).isSame(currentMonth, "month") &&
                       "bg-slate-900 text-slate-50 hover:bg-slate-900 hover:text-slate-50 focus:bg-slate-900 focus:text-slate-50 dark:bg-slate-50 dark:text-slate-900 dark:hover:bg-slate-50 dark:hover:text-slate-900 dark:focus:bg-slate-50 dark:focus:text-slate-900",
-                    !isSameMonth(month, currentMonth) &&
-                      isSameMonth(month, getStartOfCurrentMonth()) &&
+                    !dayjs(month).isSame(currentMonth, "month") &&
+                      dayjs(month).isSame(dayjs().startOf("month"), "month") &&
                       "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-slate-50"
                   )}
-                  disabled={isFuture(month)}
+                  disabled={dayjs(month).isAfter(dayjs())}
                   role="gridcell"
                   tabIndex={-1}
                   type="button"
-                  onClick={() => onMonthChange(month)}
+                  onClick={() => onMonthChange(month.toDate())}
                 >
-                  <time dateTime={format(month, "yyyy-MM-dd")}>
-                    {format(month, "MMM")}
+                  <time dateTime={month.format("YYYY-MM-DD")}>
+                    {month.format("MMM")}
                   </time>
                 </button>
               </div>

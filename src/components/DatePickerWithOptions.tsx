@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { addDays, format } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import clsx from "clsx";
+import dayjs from "dayjs";
 
 export function DatePickerWithOptions({
   value: date,
@@ -33,7 +33,7 @@ export function DatePickerWithOptions({
   };
 
   const isToday = compareDates(date, new Date());
-  const isYesterday = compareDates(date, addDays(new Date(), -1));
+  const isYesterday = compareDates(date, dayjs().subtract(1, "day").toDate());
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -46,7 +46,7 @@ export function DatePickerWithOptions({
           )}
         >
           <CalendarIcon className="mr-1 h-4 w-4" />
-          {date ? format(date, "PPP") : <span>Pick a date</span>}
+          {date ? dayjs(date).format("MMMM D, YYYY") : <span>Pick a date</span>}
           {isToday && (
             <span className="ml-2 text-xs text-slate-400">(Today)</span>
           )}
@@ -62,7 +62,7 @@ export function DatePickerWithOptions({
               "border-2 border-slate-500": isYesterday,
             })}
             onClick={() => {
-              setDate(addDays(new Date(), -1));
+              setDate(dayjs().subtract(1, "day").toDate());
               setOpen(false);
             }}
           >
@@ -73,7 +73,7 @@ export function DatePickerWithOptions({
               "border-2 border-slate-500": isToday,
             })}
             onClick={() => {
-              setDate(new Date());
+              setDate(dayjs().toDate());
               setOpen(false);
             }}
           >

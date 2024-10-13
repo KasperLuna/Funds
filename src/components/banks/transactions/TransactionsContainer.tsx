@@ -6,6 +6,7 @@ import { TransactionGroupDisplay } from "./TransactionGroupDisplay";
 import { Button } from "@/components/ui/button";
 import { TransactionCardLoader } from "./TransactionCardLoader";
 import { Skeleton } from "@/components/ui/skeleton";
+import dayjs from "dayjs";
 
 export const TransactionsContainer = () => {
   const [parent] = useAutoAnimate({ duration: 100 });
@@ -26,7 +27,7 @@ export const TransactionsContainer = () => {
           acc: { [key: string]: ExpandedTransaction[] },
           transaction: ExpandedTransaction
         ) => {
-          const date = transaction.date.split(" ")[0];
+          const date = dayjs(transaction.date).format("YYYY-MM-DD");
           acc[date] = acc[date] || [];
           acc[date].push(transaction);
           return acc;
@@ -60,7 +61,7 @@ export const TransactionsContainer = () => {
         if (transactions.length > 1) {
           return (
             <TransactionGroupDisplay
-              key={new Date(transactions[0].date).toDateString()}
+              key={dayjs(transactions[0].date).toString()}
               transactions={transactions}
             />
           );
