@@ -1,5 +1,6 @@
 "use client";
 import { BankTrends } from "@/components/dashboard/banks/BankTrends";
+import { MonthlyBreakdown } from "@/components/dashboard/banks/MonthlyBreakdown";
 import { BankSummary } from "@/components/dashboard/BankSummary";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
 import dynamic from "next/dynamic";
@@ -17,7 +18,10 @@ function Page() {
 
         <div className="flex flex-col gap-4 lg:flex-row">
           <BankTrends />
-          <BankSummary />
+          <div className="flex w-full flex-col gap-4">
+            <BankSummary />
+            <MonthlyBreakdown />
+          </div>
         </div>
       </div>
     </div>

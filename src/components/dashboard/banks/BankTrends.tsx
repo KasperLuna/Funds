@@ -1,3 +1,4 @@
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useBanksTrendsQuery } from "@/lib/hooks/useBanksTrendsQuery";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
@@ -5,7 +6,11 @@ import clsx from "clsx";
 import dayjs from "dayjs";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import React, { useCallback } from "react";
+import ApexCharts from "react-apexcharts";
+import Decimal from "decimal.js";
+import { Skeleton } from "@/components/ui/skeleton";
 
 //TODO: MAJORLY clean up this component
 export const BankTrends = () => {
@@ -28,7 +33,7 @@ export const BankTrends = () => {
     emblaApi?.scrollNext();
   }, [emblaApi]);
 
-  //TODO: fix percent changeifier
+  // TODO: fix percent changeifier
   const trends = baseTrends
     .sort((a, b) => {
       if (a.year > b.year) return -1;
@@ -38,18 +43,28 @@ export const BankTrends = () => {
       return 0;
     })
     ?.map((trend, index) => {
-      const percentChange = baseTrends[index + 1]
-        ? ((trend.overall_user_balance -
-            baseTrends[index + 1].overall_user_balance) /
-            baseTrends[index + 1].overall_user_balance) *
-          100
-        : (trend.monthly_total / trend.overall_user_balance) * 100;
+      const nextTrend = baseTrends[index + 1];
+      const percentChange = nextTrend
+        ? new Decimal(trend.overall_user_balance)
+            .sub(nextTrend.overall_user_balance)
+            .div(nextTrend.overall_user_balance)
+            .mul(100)
+            .toNumber()
+        : new Decimal(trend.monthly_total)
+            .div(trend.overall_user_balance)
+            .mul(100)
+            .toNumber();
 
       return {
         ...trend,
+        // monthly total to 2 decimal places
+        monthly_total: trimToTwoDecimals(trend.monthly_total),
+        overall_user_balance: trimToTwoDecimals(trend.overall_user_balance),
         percentChange,
       };
-    });
+    })
+    .reverse();
+
   const averageChange =
     trends.reduce((acc, trend) => {
       return acc + trend.percentChange;
@@ -64,7 +79,7 @@ export const BankTrends = () => {
     return (
       <div className="flex flex-col gap-3 w-full ">
         <Skeleton className="h-8 w-[145px] bg-slate-800" />
-        <Skeleton className="h-60 w-full bg-slate-800" />
+        <Skeleton className="h-72 w-full bg-slate-800" />
         <Skeleton className="h-8 w-full bg-slate-800" />
         <div className="flex flex-row gap-4 justify-between">
           <Skeleton className="h-24 w-full bg-slate-800" />
@@ -76,12 +91,114 @@ export const BankTrends = () => {
     );
   }
 
+  // Calculate the minimum value in both datasets
+  const minValue = Math.min(
+    ...trends.map((trend) => trend.monthly_total),
+    ...trends.map((trend) => trend.overall_user_balance)
+  );
+
+  // Chart options with custom y-axis min value
+  const chartOptions = {
+    chart: {
+      id: "bank-trends",
+      type: "line",
+      toolbar: {
+        show: false,
+      },
+    },
+    xaxis: {
+      categories: trends.map(
+        (trend) => dayjs(`${trend.year}-${trend.month}-01`).format("MMM YYYY") // Format to "Aug 2024"
+      ),
+      labels: {
+        style: {
+          colors: trends.map((_, index) => {
+            // Generate colors for each x-axis label to match Tailwind's bg-slate-200
+            return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating shades of slate-200
+          }),
+          fontSize: "12px",
+          fontFamily: "inherit",
+          fontWeight: 600,
+        },
+      },
+    },
+    stroke: {
+      curve: "smooth",
+      // width: 2,
+    },
+    fill: {
+      type: "solid",
+      opacity: [0.35, 1],
+    },
+    markers: {
+      size: 4,
+    },
+    yaxis: {
+      min: minValue * 0.95, // Set the y-axis minimum to 95% of the minimum value
+      labels: {
+        formatter: function (value) {
+          return isPrivacyModeEnabled ? "••••••" : value;
+        },
+        style: {
+          colors: Array.from({ length: 5 }, (_, index) => {
+            // Adjust the length based on your y-axis values
+            return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating shades of slate-200
+          }),
+          fontSize: "12px",
+          fontFamily: "inherit",
+          fontWeight: 600,
+        },
+      },
+    },
+    tooltip: {
+      theme: "dark", // Use the dark theme
+      style: {
+        fontSize: "12px",
+        fontFamily: "inherit",
+      },
+      y: {
+        formatter: function (value) {
+          return isPrivacyModeEnabled ? "••••••" : value;
+        },
+      },
+      background: "#1E293B", // Custom dark background, similar to Tailwind's bg-slate-800
+      borderColor: "#475569", // Match border with slate-600 or similar
+      textStyle: {
+        color: "#F1F5F9", // Light text (similar to slate-200 in Tailwind)
+      },
+    },
+    legend: {
+      show: true,
+      position: "top", // You can set the position as needed
+      labels: {
+        colors: trends.map((_, index) => {
+          // Generate colors for each legend item to match Tailwind's bg-slate-200
+          return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating shades of slate-200
+        }),
+        fontSize: "12px",
+        fontFamily: "inherit",
+        fontWeight: 600,
+      },
+    },
+  };
+
+  const chartSeries = [
+    {
+      name: "Monthly Total",
+      data: trends.map((trend) => trend.monthly_total),
+    },
+    {
+      name: "Overall User Balance",
+      data: trends.map((trend) => trend.overall_user_balance), // Reverse the data here
+    },
+  ];
+
   return (
     <div
       id="bank-trends-section"
-      className="w-full flex-shrink overflow-hidden "
+      className="w-full flex-shrink overflow-hidden"
     >
-      <div className="flex flex-col h-full min-h-full gap-1">
+      <div className="flex flex-col h-full gap-1">
         <h1 className="text-slate-100 text-xl font-semibold">Monthly Trend</h1>
         {trends.length === 0 ? (
           <p className="text-slate-400">
@@ -89,9 +206,13 @@ export const BankTrends = () => {
           </p>
         ) : (
           <>
-            {" "}
             <div className="w-full h-[300px] lg:h-[500px]">
-              <LineChart data={trends} isLabelsHidden={isPrivacyModeEnabled} />
+              <ApexCharts
+                options={chartOptions}
+                series={chartSeries}
+                type="line"
+                height={300}
+              />
             </div>
             <div className="flex flex-row justify-between bg-slate-800 p-2 rounded-sm">
               <p>Avg. Income (for {trends?.length} months)</p>
@@ -107,7 +228,7 @@ export const BankTrends = () => {
             <div className="relative h-full">
               <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
-                  {trends?.reverse().map((trend) => {
+                  {trends?.map((trend) => {
                     const isCurrentMonth =
                       dayjs().month() === parseInt(trend.month) - 1 &&
                       dayjs().year() === trend.year;
@@ -115,12 +236,11 @@ export const BankTrends = () => {
                       <div
                         key={`${trend.year}-${trend.month}`}
                         className={
-                          "flex-shrink-0 h-full min-h-full w-1/2 md:w-1/3 lg:w-1/2 xl:w-1/3 "
+                          "flex-shrink-0 h-full min-h-full w-1/2 md:w-1/3 lg:w-1/2 xl:w-1/3"
                         }
                       >
                         <Link
                           href={`/dashboard/banks?month=${dayjs(
-                            //last day of month
                             new Date(trend.year, parseInt(trend.month), 0)
                           ).format("YYYY-MM-DD")}`}
                           className={clsx(
@@ -183,105 +303,4 @@ export const BankTrends = () => {
       </div>
     </div>
   );
-};
-
-// utils/transformData.ts
-
-// import { ChartDataItem } from '../types';
-
-interface TransformedData {
-  labels: string[];
-  datasets: {
-    label: string;
-    data: number[];
-    borderColor: string;
-    backgroundColor: string;
-    borderWidth: number;
-    fill: boolean;
-  }[];
-}
-
-export const transformData = (data: any[]): any => {
-  const labels = data.map((item) => `${item.month} ${item.year}`);
-  const monthlyTotals = data.map((item) => item.monthly_total);
-  const overallBalances = data.map((item) => item.overall_user_balance);
-
-  return {
-    labels,
-    datasets: [
-      {
-        label: "Monthly Total",
-        data: monthlyTotals,
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderWidth: 1,
-        fill: true,
-      },
-      {
-        label: "Overall User Balance",
-        data: overallBalances,
-        borderColor: "rgba(153, 102, 255, 1)",
-        backgroundColor: "rgba(153, 102, 255, 0.2)",
-        borderWidth: 1,
-        fill: false,
-      },
-    ],
-  };
-};
-
-import { Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-} from "chart.js";
-import Link from "next/link";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { Skeleton } from "@/components/ui/skeleton";
-
-// Register the components required for the chart
-ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale
-);
-
-interface LineChartProps {
-  data: any[];
-  isLabelsHidden?: boolean;
-}
-
-const LineChart: React.FC<LineChartProps> = ({ data, isLabelsHidden }) => {
-  const chartData = transformData(data);
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-      },
-      tooltip: {
-        callbacks: {
-          label: function (tooltipItem: any) {
-            return `${tooltipItem.dataset.label}: ${tooltipItem.raw}`;
-          },
-        },
-      },
-    },
-    ...(isLabelsHidden
-      ? { scales: { y: { display: false } } }
-      : { scales: { y: { display: true } } }),
-  };
-
-  return <Line data={chartData} options={options} />;
 };
