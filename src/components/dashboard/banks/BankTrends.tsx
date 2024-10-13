@@ -8,9 +8,11 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import React, { useCallback } from "react";
-import ApexCharts from "react-apexcharts";
 import Decimal from "decimal.js";
 import { Skeleton } from "@/components/ui/skeleton";
+import dynamic from "next/dynamic";
+
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 //TODO: MAJORLY clean up this component
 export const BankTrends = () => {
@@ -207,7 +209,7 @@ export const BankTrends = () => {
         ) : (
           <>
             <div className="w-full h-[300px] lg:h-[500px]">
-              <ApexCharts
+              <Chart
                 options={chartOptions}
                 series={chartSeries}
                 type="line"
