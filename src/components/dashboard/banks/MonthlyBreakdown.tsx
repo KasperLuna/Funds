@@ -4,8 +4,10 @@ import { getTransactionsOfAMonth } from "@/lib/pocketbase/queries";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import Decimal from "decimal.js";
-import ReactApexChart from "react-apexcharts";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import dynamic from "next/dynamic";
+
+const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export const MonthlyBreakdown = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
@@ -147,7 +149,7 @@ export const MonthlyBreakdown = () => {
         <MonthPicker date={selectedMonth} setDate={setSelectedMonth} />
       </div>
       <div className="mt-4">
-        <ReactApexChart
+        <Chart
           options={chartData.options}
           series={chartData.series}
           type="bar"
