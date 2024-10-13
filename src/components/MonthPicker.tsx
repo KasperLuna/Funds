@@ -1,6 +1,5 @@
 "use client";
 import * as React from "react";
-import { addMonths, format } from "date-fns";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -13,6 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { MonthPicker as BaseMonthPicker } from "@/components/ui/month-picker";
+import dayjs from "dayjs";
 
 export function MonthPicker({
   date,
@@ -30,7 +30,8 @@ export function MonthPicker({
         disabled={!date}
         onClick={() => {
           if (!date) return;
-          setDate(addMonths(date, -1));
+          // setDate(addMonths(date, -1));
+          setDate(dayjs(date).subtract(1, "month").toDate());
         }}
       >
         <ChevronLeft />
@@ -44,7 +45,7 @@ export function MonthPicker({
             }
           >
             <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-            {date ? format(date, "MMM yyyy") : "Select Month"}
+            {date ? dayjs(date).format("MMM YYYY") : "Select Month"}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0 bg-slate-800 border-0 text-slate-100 border-opacity-10 ">
@@ -62,7 +63,7 @@ export function MonthPicker({
         disabled={!date}
         onClick={() => {
           if (!date) return;
-          setDate(addMonths(date, 1));
+          setDate(dayjs(date).add(1, "month").toDate());
         }}
       >
         <ChevronRight />

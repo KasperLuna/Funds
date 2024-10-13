@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { pb } from "./pocketbase";
 import { Decimal } from "decimal.js";
+import dayjs from "dayjs";
 
 export const paginatedFetchTransactions = async ({
   pageParam = 1,
@@ -56,6 +57,30 @@ export const paginatedFetchTransactions = async ({
       ...(filter && { filter: filter.join("&&") }),
     });
   return response;
+};
+
+export const getTransactionsOfAMonth = async (date: string) => {
+  const startOfMonth = dayjs(date)
+    .startOf("month")
+    .subtract(1, "day")
+    .toISOString();
+  const endOfMonth = dayjs(date).endOf("month").add(1, "day").toISOString();
+
+  const response = await pb
+    .collection<Transaction>("transactions")
+    .getFullList<Transaction>({
+      filter: `date>="${startOfMonth}"&&date<="${endOfMonth}"`,
+      sort: "-date",
+    });
+
+  // dates are stored in UTC so we need to filter
+  // for current month
+  const currentMonthTransactions = response.filter(
+    (transaction) =>
+      dayjs(transaction.date).get("month") === dayjs(date).get("month")
+  );
+
+  return currentMonthTransactions;
 };
 
 export const addBank = async (bank: Partial<Bank>) => {

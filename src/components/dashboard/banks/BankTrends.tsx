@@ -2,7 +2,6 @@ import { useBanksTrendsQuery } from "@/lib/hooks/useBanksTrendsQuery";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import clsx from "clsx";
-import { isSameMonth } from "date-fns";
 import dayjs from "dayjs";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -109,10 +108,9 @@ export const BankTrends = () => {
               <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
                   {trends?.reverse().map((trend) => {
-                    const isCurrentMonth = isSameMonth(
-                      new Date(`${trend.year}-${trend.month}-01`),
-                      new Date()
-                    );
+                    const isCurrentMonth =
+                      dayjs().month() === parseInt(trend.month) - 1 &&
+                      dayjs().year() === trend.year;
                     return (
                       <div
                         key={`${trend.year}-${trend.month}`}

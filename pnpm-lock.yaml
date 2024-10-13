@@ -56,9 +56,6 @@ dependencies:
   cmdk:
     specifier: 1.0.0
     version: 1.0.0(@types/react-dom@18.2.19)(@types/react@18.2.61)(react-dom@18.2.0)(react@18.2.0)
-  date-fns:
-    specifier: ^3.6.0
-    version: 3.6.0
   dayjs:
     specifier: ^1.11.10
     version: 1.11.10
