@@ -89,8 +89,7 @@ export const MonthlyBreakdown = () => {
           show: !isPrivacyModeEnabled, // Hide x-axis labels if privacy mode is enabled
           style: {
             colors: sortedKeys.map((_, index) => {
-              // Generate colors for each x-axis label to match Tailwind's bg-slate-200
-              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating shades of slate-200
+              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating colors
             }),
             fontSize: "12px",
             fontFamily: "inherit",
@@ -102,8 +101,7 @@ export const MonthlyBreakdown = () => {
         labels: {
           style: {
             colors: sortedValues.map((_, index) => {
-              // Generate colors for each y-axis label to match Tailwind's bg-slate-200
-              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating shades of slate-200
+              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating colors
             }),
             fontSize: "12px",
             fontFamily: "inherit",
@@ -114,13 +112,27 @@ export const MonthlyBreakdown = () => {
       plotOptions: {
         bar: {
           horizontal: true,
+          dataLabels: {
+            position: "top", // Position data labels
+          },
+          colors: {
+            ranges: [
+              {
+                from: 0,
+                to: Number.MAX_VALUE, // Positive range
+                color: "#3b82f6", // Color for positive values
+              },
+              {
+                from: -Number.MAX_VALUE,
+                to: -1,
+                color: "#EF4444", // Color for negative values
+              },
+            ],
+          },
         },
       },
       dataLabels: {
         enabled: false,
-      },
-      fill: {
-        colors: ["#3b82f6"], // Set your desired color
       },
       tooltip: {
         theme: "dark", // Use the dark theme
@@ -131,10 +143,10 @@ export const MonthlyBreakdown = () => {
         y: {
           formatter: (val: number) => `${val}`,
         },
-        background: "#1E293B", // Custom dark background, similar to Tailwind's bg-slate-800
-        borderColor: "#475569", // Match border with slate-600 or similar
+        background: "#1E293B",
+        borderColor: "#475569",
         textStyle: {
-          color: "#F1F5F9", // Light text (similar to slate-200 in Tailwind)
+          color: "#F1F5F9", // Light text
         },
       },
     },
