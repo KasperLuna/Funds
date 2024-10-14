@@ -1,6 +1,4 @@
 export type User = {
-  name: string;
-  avatar?: File;
   currency?: Currency;
   // System Values (can not be changed)
   email: string;
