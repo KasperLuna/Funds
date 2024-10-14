@@ -5,10 +5,11 @@ import { ScanFace } from "lucide-react";
 import { createAvatar } from "@dicebear/core";
 import { thumbs } from "@dicebear/collection";
 import Image from "next/image";
+import { Skeleton } from "../ui/skeleton";
 
 export const UserCard = () => {
   const { user } = useAuth();
-  const { data } = useUserQuery();
+  const { data, isLoading } = useUserQuery();
   const avatar = createAvatar(thumbs, {
     seed: data?.username,
   });
@@ -23,9 +24,13 @@ export const UserCard = () => {
         className="rounded-md"
       />
       <div className="flex gap-0 flex-col overflow-hidden text-ellipsis">
-        <h3 className="overflow-hidden text-ellipsis whitespace-nowrap">
-          {data?.username}
-        </h3>
+        {isLoading ? (
+          <Skeleton className="h-4 w-16 bg-slate-600" />
+        ) : (
+          <h3 className="overflow-hidden text-ellipsis whitespace-nowrap">
+            {data?.username}
+          </h3>
+        )}
         <small className="overflow-hidden text-ellipsis text-slate-400">
           {user?.email}
         </small>

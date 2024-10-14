@@ -4,9 +4,10 @@ import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { thumbs } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
 import Image from "next/image";
+import { Skeleton } from "../ui/skeleton";
 
 export const DropdownTrigger = () => {
-  const { data } = useUserQuery();
+  const { data, isLoading } = useUserQuery();
   const avatar = createAvatar(thumbs, {
     seed: data?.username,
   });
@@ -21,9 +22,14 @@ export const DropdownTrigger = () => {
           height={30}
           className="rounded-md"
         />
-        <p className="text-slate-100 text-xs overflow-hidden text-ellipsis max-w-28">
-          {data?.username}
-        </p>
+        {isLoading ? (
+          <Skeleton className="h-4 w-16 bg-slate-600" />
+        ) : (
+          <p className="text-slate-100 text-xs overflow-hidden text-ellipsis max-w-28">
+            {data?.username}
+          </p>
+        )}
+
         <ChevronDown className="stroke-slate-200 w-4" />
       </div>
     </PopoverTrigger>
