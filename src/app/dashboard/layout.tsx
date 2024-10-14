@@ -19,6 +19,7 @@ import { BanksCategsProvider } from "@/lib/providers/BanksCategsProvider";
 import { AuthProvider } from "@/lib/providers/AuthProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SettingsDialogTrigger } from "@/components/dashboard/SettingsDialog";
+import { DropdownTrigger } from "@/components/dashboard/DropdownTrigger";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,12 +79,7 @@ export default function RootLayout({
                   <FundsLogo className="w-16 fill-slate-100 md:hidden" />
                 </Link>
                 <Popover modal>
-                  <PopoverTrigger className="bg-slate-800 rounded-lg hover:bg-slate-700">
-                    <div className="flex flex-row items-center gap-0 p-1">
-                      <ScanFaceIcon className="w-6 h-6 stroke-slate-200" />
-                      <ChevronDown className="stroke-slate-200 w-4" />
-                    </div>
-                  </PopoverTrigger>
+                  <DropdownTrigger />
                   <PopoverContent className="bg-slate-900 border-0 p-1 gap-2 w-[200px]">
                     <SettingsDialogTrigger>
                       <Button className="flex gap-2 flex-row  bg-slate-800 w-full">

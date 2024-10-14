@@ -7,10 +7,17 @@ import { Input } from "../ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { thumbs } from "@dicebear/collection";
+import { createAvatar } from "@dicebear/core";
+import Image from "next/image";
 
 export const AccountSettings = () => {
   const queryClient = useQueryClient();
   const { data } = useUserQuery();
+  const avatar = createAvatar(thumbs, {
+    seed: data?.username,
+  });
+
   const {
     control,
     handleSubmit,
@@ -52,40 +59,28 @@ export const AccountSettings = () => {
     alert("Account settings updated");
   };
 
-  // const baseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL;
-  // const collectionId = data?.[0].collectionId;
-  // const userId = data?.[0].id;
-  // const fileName = `${baseUrl}/api/files/${collectionId}/${userId}/${data?.[0].avatar}`;
-
   return (
     <div className="w-full pb-4">
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            {/* <Image src={fileName} alt="" width={250} height={250} />
-            <Controller
-              name="avatar"
-              control={control}
-              render={({ field: { onChange, value } }) => {
-                return (
-                  <Input
-                    id="picture"
-                    type="file"
-                    multiple={false}
-                    onChange={onChange}
-                    className="bg-transparent text-slate-100 w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-slate-100"
-                  />
-                );
-              }}
-            /> */}
-
+        <div className="flex flex-col gap-2 py-2 items-center">
+          <Image
+            src={avatar.toDataUri()}
+            alt="User Profile"
+            width={135}
+            height={135}
+            className="rounded-md"
+          />
+          <p className="text-xs">
+            Your avatar is generated based on your username
+          </p>
+          <div className="flex flex-col gap-1 w-full">
             <p className="text-sm">Username:</p>
             <Input
               {...register("username")}
               className="bg-transparent text-slate-100 w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-slate-100"
             />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 w-full">
             <p className="text-sm">Base Currency:</p>
             <Controller
               name="currency"
