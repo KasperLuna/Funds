@@ -76,9 +76,26 @@ export const AccountSettings = () => {
           <div className="flex flex-col gap-1 w-full">
             <p className="text-sm">Username:</p>
             <Input
-              {...register("username")}
+              {...register("username", {
+                required: "Username is required",
+                // validation
+                minLength: {
+                  value: 3,
+                  message: "Username must be at least 3 characters",
+                },
+                maxLength: {
+                  value: 150,
+                  message: "Username must be less than 150 characters",
+                },
+                pattern: {
+                  value: /^[a-zA-Z0-9]+$/,
+                  message: "Username must only contain letters and numbers",
+                },
+                // validation
+              })}
               className="bg-transparent text-slate-100 w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-slate-100"
             />
+            <p className="text-red-500 text-xs">{errors.username?.message}</p>
           </div>
           <div className="flex flex-col gap-1 w-full">
             <p className="text-sm">Base Currency:</p>
@@ -91,7 +108,10 @@ export const AccountSettings = () => {
             />
             <p className="text-red-500 text-xs">{errors.currency?.message}</p>
           </div>
-          <Button className="w-full bg-orange-500 hover:bg-orange-400">
+          <Button
+            type="submit"
+            className="w-full bg-orange-500 hover:bg-orange-400"
+          >
             Save
           </Button>
         </div>
