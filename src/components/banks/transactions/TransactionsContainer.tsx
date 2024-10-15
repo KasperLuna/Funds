@@ -1,12 +1,13 @@
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTransactionsQuery } from "@/lib/hooks/useTransactionsQuery";
 import { ExpandedTransaction } from "@/lib/types";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TransactionCard } from "./TransactionCard";
 import { TransactionGroupDisplay } from "./TransactionGroupDisplay";
-import { Button } from "@/components/ui/button";
 import { TransactionCardLoader } from "./TransactionCardLoader";
 import { Skeleton } from "@/components/ui/skeleton";
 import dayjs from "dayjs";
+import NextIntersectionObserver from "@/components/ui/next-intersection-observer";
 
 export const TransactionsContainer = () => {
   const [parent] = useAutoAnimate({ duration: 100 });
@@ -19,10 +20,40 @@ export const TransactionsContainer = () => {
     isFetchingNextPage,
   } = useTransactionsQuery();
 
+  const [canFetchNext, setCanFetchNext] = useState(false);
+  const isLocked = useRef(false); // Lock to prevent multiple fetches
+
+  // Enable fetching after 200ms when not loading
+  useEffect(() => {
+    if (!isLoading) {
+      const timer = setTimeout(() => setCanFetchNext(true), 100);
+      return () => clearTimeout(timer);
+    }
+    setCanFetchNext(false);
+  }, [isLoading]);
+
+  // Fetch the next page with lock
+  const handleFetchNextPage = useCallback(() => {
+    if (
+      hasNextPage &&
+      canFetchNext &&
+      !isLoading &&
+      !isFetchingNextPage &&
+      !isLocked.current
+    ) {
+      isLocked.current = true;
+      fetchNextPage().finally(() => {
+        setTimeout(() => {
+          isLocked.current = false; // Release lock after delay
+        }, 100);
+      });
+    }
+  }, [hasNextPage, canFetchNext, isLoading, isFetchingNextPage, fetchNextPage]);
+
   const groupedTransactions = Object.values(
     data?.pages
-      .flatMap((page) => page.items)
-      .reduce(
+      ?.flatMap((page) => page.items)
+      ?.reduce(
         (
           acc: { [key: string]: ExpandedTransaction[] },
           transaction: ExpandedTransaction
@@ -47,9 +78,10 @@ export const TransactionsContainer = () => {
           Updating Transactions...
         </Skeleton>
       )}
+
       {!isLoading && groupedTransactions?.length === 0 && (
-        <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col  text-center gap-3">
-          <h4 className=" text-2xl text-slate-400">No transactions yet!</h4>
+        <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col text-center gap-3">
+          <h4 className="text-2xl text-slate-400">No transactions yet!</h4>
           <p className="text-slate-500">
             {`Click the "Add" button (or plus on mobile) to add banks and
             transactions to get started.`}
@@ -57,33 +89,30 @@ export const TransactionsContainer = () => {
         </div>
       )}
 
-      {groupedTransactions?.map((transactions) => {
-        if (transactions.length > 1) {
-          return (
-            <TransactionGroupDisplay
-              key={dayjs(transactions[0].date).toString()}
-              transactions={transactions}
-            />
-          );
-        }
-
-        return (
+      {groupedTransactions?.map((transactions) =>
+        transactions.length > 1 ? (
+          <TransactionGroupDisplay
+            key={dayjs(transactions[0].date).toString()}
+            transactions={transactions}
+          />
+        ) : (
           <TransactionCard key={transactions[0].id} {...transactions[0]} />
-        );
-      })}
+        )
+      )}
 
-      {(isLoading || isFetchingNextPage) &&
+      <NextIntersectionObserver
+        classes="col-span-full"
+        rootmargin="0px"
+        thresholdValue={[0, 1]}
+      >
+        {(boundary) => {
+          if (boundary === "topIn" || boundary === "bottomIn")
+            handleFetchNextPage();
+          return null;
+        }}
+      </NextIntersectionObserver>
+      {(isLoading || isFetchingNextPage || hasNextPage) &&
         [...Array(4)].map((_, index) => <TransactionCardLoader key={index} />)}
-      <div className="col-span-full flex items-center justify-center">
-        {hasNextPage && (
-          <Button
-            className="w-full border-slate-700 border-2 hover:bg-slate-800"
-            onClick={() => fetchNextPage()}
-          >
-            Load More
-          </Button>
-        )}
-      </div>
     </div>
   );
 };

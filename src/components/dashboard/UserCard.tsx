@@ -1,7 +1,6 @@
 "use client";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
-import { ScanFace } from "lucide-react";
 import { createAvatar } from "@dicebear/core";
 import { thumbs } from "@dicebear/collection";
 import Image from "next/image";
