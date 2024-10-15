@@ -188,7 +188,7 @@ export const MonthlyBreakdown = () => {
   } as any;
 
   return (
-    <div className="border rounded-xl border-slate-600/25 p-3 pb-0 mb-3 flex flex-col">
+    <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col">
       <div className="flex flex-row justify-between items-center">
         <h1 className="text-slate-100 text-xl font-semibold">
           Monthly Breakdown
@@ -229,6 +229,10 @@ export const MonthlyBreakdown = () => {
             type="bar"
             height={350}
           />
+          <p className="text-slate-500 text-xs">
+            Since transactions can have multiple categories, the total of this
+            breakdown may not be equal to the total of the month.
+          </p>
         </div>
       )}
     </div>
