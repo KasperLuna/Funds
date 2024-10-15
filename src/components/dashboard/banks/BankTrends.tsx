@@ -136,7 +136,7 @@ export const BankTrends = () => {
       size: 4,
     },
     yaxis: {
-      min: minValue * 0.95, // Set the y-axis minimum to 95% of the minimum value
+      min: minValue,
       labels: {
         formatter: function (value) {
           return isPrivacyModeEnabled ? "••••••" : value;
@@ -217,9 +217,12 @@ export const BankTrends = () => {
               />
             </div>
             <div className="flex flex-row justify-between bg-slate-800 p-2 rounded-sm">
-              <p>Avg. Income (for {trends?.length} months)</p>
-              <div className="flex flex-row align-middle gap-2">
-                <p>{trimToTwoDecimals(averageChange)}%</p>
+              <p>
+                Avg. Income{" "}
+                <span className="text-xs">(for {trends?.length} months)</span>
+              </p>
+              <div className="flex flex-row align-middle items-center gap-2">
+                <p className="text-sm">{trimToTwoDecimals(averageChange)}%</p>
                 <p>
                   {isPrivacyModeEnabled
                     ? `${baseCurrency?.symbol ?? "$"}••••••`
@@ -259,7 +262,7 @@ export const BankTrends = () => {
                             )}
                           </p>
                           <div className="flex flex-row justify-between text-end items-center flex-wrap">
-                            <p className="text-slate-100">
+                            <p className="text-slate-100 text-sm">
                               {trimToTwoDecimals(trend?.percentChange || 0)}%
                             </p>
                             <div className="flex flex-col">
@@ -267,7 +270,12 @@ export const BankTrends = () => {
                                 Net{" "}
                                 {trend.monthly_total > 0 ? "Income" : "Expense"}
                               </p>
-                              <p className="text-slate-300">
+                              <p
+                                className={clsx("font-semibold", {
+                                  "text-red-400": trend.monthly_total < 0,
+                                  "text-green-400": trend.monthly_total > 0,
+                                })}
+                              >
                                 {isPrivacyModeEnabled
                                   ? `${baseCurrency?.symbol ?? "$"}••••••`
                                   : parseAmount(
