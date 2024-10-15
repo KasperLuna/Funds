@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { userQuery } from "../pocketbase/queries";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
-import { User } from "../types";
 import { pb } from "../pocketbase/pocketbase";
 
 export const useUserQuery = () => {

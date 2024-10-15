@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { AuthModel, RecordAuthResponse, RecordModel } from "pocketbase";
+import { AuthModel } from "pocketbase";
 
 export type AuthContextType = {
   user: AuthModel | null | undefined;
