@@ -6,17 +6,19 @@ import { useState } from "react";
 import Decimal from "decimal.js";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import dynamic from "next/dynamic";
+import { parseAmount } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export const MonthlyBreakdown = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { categoryData } = useBanksCategsContext();
+  const { categoryData, baseCurrency } = useBanksCategsContext();
   const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(
     new Date()
   );
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["transactionsOfMonth", selectedMonth],
     queryFn: () => getTransactionsOfAMonth(selectedMonth?.toISOString() || ""),
   });
@@ -42,6 +44,27 @@ export const MonthlyBreakdown = () => {
       return acc;
     },
     {} as Record<string, Decimal>
+  );
+
+  // get the total of the positive amounts
+  const totalPositive = Object.values(categoryTotals || {}).reduce(
+    (acc, curr) => {
+      if (curr.toNumber() > 0) {
+        return acc.add(curr);
+      }
+      return acc;
+    },
+    new Decimal(0)
+  );
+
+  const totalNegative = Object.values(categoryTotals || {}).reduce(
+    (acc, curr) => {
+      if (curr.toNumber() < 0) {
+        return acc.add(curr);
+      }
+      return acc;
+    },
+    new Decimal(0)
   );
 
   // Rename the categoryTotals keys to their names from categoryData
@@ -79,6 +102,8 @@ export const MonthlyBreakdown = () => {
       chart: {
         type: "bar",
         background: "transparent",
+        // remove padding around
+        margin: 0,
         toolbar: {
           show: false, // Hide hamburger menu
         },
@@ -88,9 +113,7 @@ export const MonthlyBreakdown = () => {
         labels: {
           show: !isPrivacyModeEnabled, // Hide x-axis labels if privacy mode is enabled
           style: {
-            colors: sortedKeys.map((_, index) => {
-              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating colors
-            }),
+            colors: ["#FFFFFF", "#FFFFFF"],
             fontSize: "12px",
             fontFamily: "inherit",
             fontWeight: 600,
@@ -101,7 +124,7 @@ export const MonthlyBreakdown = () => {
         labels: {
           style: {
             colors: sortedValues.map((_, index) => {
-              return index % 2 === 0 ? "#E5E7EB" : "#D1D5DB"; // Alternating colors
+              return index % 2 === 0 ? "#FFFFFF" : "#D3D3D3"; // Alternating colors
             }),
             fontSize: "12px",
             fontFamily: "inherit",
@@ -113,14 +136,14 @@ export const MonthlyBreakdown = () => {
         bar: {
           horizontal: true,
           dataLabels: {
-            position: "top", // Position data labels
+            position: "center", // Position data labels in the center
           },
           colors: {
             ranges: [
               {
                 from: 0,
                 to: Number.MAX_VALUE, // Positive range
-                color: "#3b82f6", // Color for positive values
+                color: "#90EE90", // Color for positive values
               },
               {
                 from: -Number.MAX_VALUE,
@@ -132,7 +155,19 @@ export const MonthlyBreakdown = () => {
         },
       },
       dataLabels: {
-        enabled: false,
+        enabled: !isPrivacyModeEnabled, // Enable data labels
+        position: "center", // Position data labels in the center of the bars
+        style: {
+          // Set color dynamically based on value
+          colors: sortedValues.map((value) =>
+            value > 0 ? "#FFFFFF" : "#D3D3D3"
+          ), // Use colors for positive and negative values
+          fontSize: "12px",
+          fontWeight: 500,
+        },
+        // offsetY: 0, // Adjust the offset of the data labels
+        offsetX: 1000, // Adjust the offset of the data labels
+        formatter: (val: number) => `${val}`, // Format the data label
       },
       tooltip: {
         theme: "dark", // Use the dark theme
@@ -153,21 +188,49 @@ export const MonthlyBreakdown = () => {
   } as any;
 
   return (
-    <div className="border rounded-xl border-slate-600/25 p-3 pb-0 mb-3">
+    <div className="border rounded-xl border-slate-600/25 p-3 pb-0 mb-3 flex flex-col">
       <div className="flex flex-row justify-between items-center">
         <h1 className="text-slate-100 text-xl font-semibold">
           Monthly Breakdown
         </h1>
         <MonthPicker date={selectedMonth} setDate={setSelectedMonth} />
       </div>
-      <div className="mt-4">
-        <Chart
-          options={chartData.options}
-          series={chartData.series}
-          type="bar"
-          height={350}
-        />
+      <div className="flex flex-row justify-center gap-5 px-3 mt-2">
+        <p className="text-red-500">
+          {isPrivacyModeEnabled || isLoading
+            ? `${baseCurrency?.symbol ?? ""}••••••`
+            : parseAmount(totalNegative.toNumber(), baseCurrency?.code)}
+        </p>
+
+        <p className="text-green-500">
+          {isPrivacyModeEnabled || isLoading
+            ? `${baseCurrency?.symbol ?? ""}••••••`
+            : parseAmount(totalPositive.toNumber(), baseCurrency?.code)}
+        </p>
       </div>
+      {isLoading ? (
+        <div className="flex flex-col gap-1 pb-3">
+          {Array.from({ length: 9 }).map((_, index) => {
+            return <Skeleton key={index} className="h-7 w-full bg-slate-800" />;
+          })}
+        </div>
+      ) : !data?.length ? (
+        <div className="flex flex-col justify-center items-center text-center h-64">
+          <span className="text-lg">No Data Yet. </span> <br />
+          <span className="text-sm">
+            Add transactions for the selected month to see breakdown.
+          </span>
+        </div>
+      ) : (
+        <div className="rounded-md mt-[-20px] min-h-64">
+          <Chart
+            options={chartData.options}
+            series={chartData.series}
+            type="bar"
+            height={350}
+          />
+        </div>
+      )}
     </div>
   );
 };
