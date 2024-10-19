@@ -46,8 +46,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider value={memoizedData}>
       {isLoading ? (
         <div className="text-slate-50 w-full h-screen align-middle flex flex-col gap-5 justify-center items-center">
-          <FundsLogo className="fill-white w-20" />
+          <FundsLogo className="fill-white w-20 h-10" />
           <LoaderCircle className="animate-spin size-10" />
+          <div className="h-10" />
         </div>
       ) : (
         children
