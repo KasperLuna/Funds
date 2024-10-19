@@ -256,7 +256,7 @@ export const MonthlyBreakdown = () => {
         </div>
       </div>
       {isLoading ? (
-        <div className="flex flex-col gap-1 pb-3">
+        <div className="flex flex-col gap-3 pb-3">
           {Array.from({ length: 9 }).map((_, index) => {
             return <Skeleton key={index} className="h-7 w-full bg-slate-800" />;
           })}
