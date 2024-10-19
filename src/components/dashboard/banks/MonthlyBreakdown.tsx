@@ -10,19 +10,23 @@ import { parseAmount } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import clsx from "clsx";
 import { useRouter } from "next/navigation";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import dayjs from "dayjs";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export const MonthlyBreakdown = () => {
+  const { queryParams, setQueryParams } = useQueryParams();
   const router = useRouter();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { categoryData, baseCurrency } = useBanksCategsContext();
-  const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(
-    new Date()
-  );
+
+  const selectedMonth = queryParams["monthlyFilter"]
+    ? new Date(queryParams["monthlyFilter"])
+    : new Date();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["transactionsOfMonth", selectedMonth],
+    queryKey: ["transactionsOfMonth", selectedMonth?.toDateString()],
     queryFn: () => getTransactionsOfAMonth(selectedMonth?.toISOString() || ""),
   });
 
@@ -211,7 +215,18 @@ export const MonthlyBreakdown = () => {
         <h1 className="text-slate-100 text-xl font-semibold">
           Monthly Breakdown
         </h1>
-        <MonthPicker date={selectedMonth} setDate={setSelectedMonth} />
+        <MonthPicker
+          date={selectedMonth}
+          setDate={(date) => {
+            if (!date) return;
+            setQueryParams({
+              monthlyFilter: dayjs(
+                //last day of month
+                new Date(date.getFullYear(), date.getMonth() + 1, 0)
+              ).format("YYYY-MM-DD"),
+            });
+          }}
+        />
       </div>
       <div className="flex flex-row items-center  justify-center gap-5 px-3 mt-2  w-fit mx-auto">
         <p className="text-sm font-semibold">Money Flow:</p>
@@ -254,14 +269,16 @@ export const MonthlyBreakdown = () => {
           </span>
         </div>
       ) : (
-        <div className="rounded-md mt-[-20px] min-h-64">
-          <Chart
-            options={chartData.options}
-            series={chartData.series}
-            type="bar"
-            height={350}
-          />
-          <p className="text-slate-500 text-xs">
+        <div className="rounded-md mt-[-20px]">
+          <div className="h-[350px]">
+            <Chart
+              options={chartData.options}
+              series={chartData.series}
+              type="bar"
+              height={350}
+            />
+          </div>
+          <p className="text-slate-500 text-xs self-end">
             *Since transactions can have multiple/no categories, the category
             breakdown may not be equal to money flow.
           </p>
