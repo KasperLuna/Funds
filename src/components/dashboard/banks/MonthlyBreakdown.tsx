@@ -8,10 +8,13 @@ import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import dynamic from "next/dynamic";
 import { parseAmount } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import clsx from "clsx";
+import { useRouter } from "next/navigation";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export const MonthlyBreakdown = () => {
+  const router = useRouter();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { categoryData, baseCurrency } = useBanksCategsContext();
   const [selectedMonth, setSelectedMonth] = useState<Date | undefined>(
@@ -47,25 +50,24 @@ export const MonthlyBreakdown = () => {
   );
 
   // get the total of the positive amounts
-  const totalPositive = Object.values(categoryTotals || {}).reduce(
-    (acc, curr) => {
-      if (curr.toNumber() > 0) {
-        return acc.add(curr);
-      }
-      return acc;
-    },
-    new Decimal(0)
-  );
+  const totalPositive = data?.reduce((acc, curr) => {
+    if (curr.amount > 0) {
+      return acc.add(new Decimal(curr.amount));
+    }
+    return acc;
+  }, new Decimal(0));
 
-  const totalNegative = Object.values(categoryTotals || {}).reduce(
-    (acc, curr) => {
-      if (curr.toNumber() < 0) {
-        return acc.add(curr);
-      }
-      return acc;
-    },
-    new Decimal(0)
-  );
+  // reduce the total of the negative amounts regardless of category
+  const totalNegative = data?.reduce((acc, curr) => {
+    if (curr.amount < 0) {
+      return acc.add(new Decimal(curr.amount));
+    }
+    return acc;
+  }, new Decimal(0));
+
+  const overallBalance = data?.reduce((acc, curr) => {
+    return acc.add(new Decimal(curr.amount));
+  }, new Decimal(0));
 
   // Rename the categoryTotals keys to their names from categoryData
   const categoryTotalsWithNames = Object.entries(categoryTotals || {}).reduce(
@@ -106,6 +108,22 @@ export const MonthlyBreakdown = () => {
         margin: 0,
         toolbar: {
           show: false, // Hide hamburger menu
+        },
+        events: {
+          dataPointSelection: (
+            event: any,
+            chartContext: any,
+            {
+              dataPointIndex,
+              seriesIndex,
+            }: { dataPointIndex: number; seriesIndex: number }
+          ) => {
+            const category: string = sortedKeys[dataPointIndex];
+
+            router.push(
+              `/dashboard/banks?month=${selectedMonth?.toISOString().split("T")[0]}&categories=${category}`
+            );
+          },
         },
       },
       xaxis: {
@@ -188,25 +206,39 @@ export const MonthlyBreakdown = () => {
   } as any;
 
   return (
-    <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col">
+    <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col gap-2">
       <div className="flex flex-row justify-between items-center">
         <h1 className="text-slate-100 text-xl font-semibold">
           Monthly Breakdown
         </h1>
         <MonthPicker date={selectedMonth} setDate={setSelectedMonth} />
       </div>
-      <div className="flex flex-row justify-center gap-5 px-3 mt-2">
-        <p className="text-red-500">
-          {isPrivacyModeEnabled || isLoading
-            ? `${baseCurrency?.symbol ?? ""}••••••`
-            : parseAmount(totalNegative.toNumber(), baseCurrency?.code)}
-        </p>
+      <div className="flex flex-row items-center  justify-center gap-5 px-3 mt-2  w-fit mx-auto">
+        <p className="text-sm font-semibold">Money Flow:</p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <p className="text-green-500">
+            {isPrivacyModeEnabled || isLoading
+              ? `${baseCurrency?.symbol ?? ""}••••••`
+              : parseAmount(totalPositive?.toNumber(), baseCurrency?.code)}
+          </p>
+          <p className="text-red-500">
+            {isPrivacyModeEnabled || isLoading
+              ? `${baseCurrency?.symbol ?? ""}••••••`
+              : parseAmount(totalNegative?.toNumber(), baseCurrency?.code)}
+          </p>
 
-        <p className="text-green-500">
-          {isPrivacyModeEnabled || isLoading
-            ? `${baseCurrency?.symbol ?? ""}••••••`
-            : parseAmount(totalPositive.toNumber(), baseCurrency?.code)}
-        </p>
+          <p
+            className={clsx({
+              "text-green-500": (totalPositive?.toNumber() ?? 0) > 0,
+              "text-red-500": (totalPositive?.toNumber() ?? 0) < 0,
+            })}
+          >
+            <span className="text-slate-200">=</span>{" "}
+            {isPrivacyModeEnabled || isLoading
+              ? `${baseCurrency?.symbol ?? ""}••••••`
+              : parseAmount(overallBalance?.toNumber(), baseCurrency?.code)}
+          </p>
+        </div>
       </div>
       {isLoading ? (
         <div className="flex flex-col gap-1 pb-3">
@@ -230,8 +262,8 @@ export const MonthlyBreakdown = () => {
             height={350}
           />
           <p className="text-slate-500 text-xs">
-            Since transactions can have multiple categories, the total of this
-            breakdown may not be equal to the total of the month.
+            *Since transactions can have multiple/no categories, the category
+            breakdown may not be equal to money flow.
           </p>
         </div>
       )}
