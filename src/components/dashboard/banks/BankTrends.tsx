@@ -93,12 +93,6 @@ export const BankTrends = () => {
     );
   }
 
-  // Calculate the minimum value in both datasets
-  const minValue = Math.min(
-    ...trends.map((trend) => trend.monthly_total),
-    ...trends.map((trend) => trend.overall_user_balance)
-  );
-
   // Chart options with custom y-axis min value
   const chartOptions = {
     chart: {
@@ -136,7 +130,8 @@ export const BankTrends = () => {
       size: 4,
     },
     yaxis: {
-      min: minValue,
+      min: (min) => min,
+      max: (max) => max,
       labels: {
         formatter: function (value) {
           return isPrivacyModeEnabled ? "••••••" : value;
