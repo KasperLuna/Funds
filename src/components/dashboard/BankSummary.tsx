@@ -81,6 +81,7 @@ export const BankSummary = () => {
               return (
                 <Link
                   href={`/dashboard/banks?bank=${bank.name}`}
+                  prefetch={false}
                   key={bank.name}
                   className={
                     "flex flex-col gap-1.5 justify-between text-slate-100 bg-slate-800 rounded-md p-1 px-2 border-[7px] hover:bg-slate-600"
