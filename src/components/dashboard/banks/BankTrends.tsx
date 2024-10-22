@@ -243,6 +243,7 @@ export const BankTrends = () => {
                           href={`/dashboard/banks?month=${dayjs(
                             new Date(trend.year, parseInt(trend.month), 0)
                           ).format("YYYY-MM-DD")}`}
+                          prefetch={false}
                           className={clsx(
                             "flex flex-col mr-2 my-2 transition-all flex-grow h-full p-2 border-2 gap-2 rounded-xl hover:bg-slate-700",
                             {
