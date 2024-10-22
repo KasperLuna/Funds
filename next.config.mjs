@@ -1,5 +1,3 @@
-// next.config.mjs
-
 import withPWA from "next-pwa";
 
 /** @type {import('next').NextConfig} */
@@ -16,10 +14,28 @@ export default withPWA({
   disable: process.env.NODE_ENV === "development", // disable PWA in the development environment
   register: true, // register the PWA service worker
   skipWaiting: true, // skip waiting for service worker activation
-  // runtimeCaching: [
-  //   {
-  //     urlPattern: /.*\/api\/.*/,
-  //     handler: "NetworkOnly",
-  //   },
-  // ],
+  runtimeCaching: [
+    {
+      // Cache everything except requests to pb.kasperluna.com
+      urlPattern: ({ url }) => {
+        return !url.hostname.includes("pb.kasperluna.com");
+      },
+      handler: "CacheFirst",
+      options: {
+        cacheName: "default-cache",
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 30 * 24 * 60 * 60, // Cache for 30 days
+        },
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
+      },
+    },
+    {
+      // Bypass cache for pb.kasperluna.com
+      urlPattern: ({ url }) => url.hostname.includes("pb.kasperluna.com"),
+      handler: "NetworkOnly",
+    },
+  ],
 })(nextConfig);
