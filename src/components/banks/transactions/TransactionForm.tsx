@@ -1,21 +1,210 @@
-import { Controller, useForm } from "react-hook-form";
+import {
+  Controller,
+  useForm,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetError,
+  Control,
+} from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
-import { FormType, Transaction } from "@/lib/types";
+import { FormType, Transaction, Bank } from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import clsx from "clsx";
 import { parseAmount } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Decimal } from "decimal.js";
+
+// Define the form data type
+export type TransactionFormData = Omit<Transaction, "date"> & {
+  date: Date;
+  newBalance?: number;
+  originBank: string;
+  destinationBank: string;
+  originDeduction: number;
+  destinationAddition: number;
+};
+
+interface TransferFieldsProps {
+  control: Control<TransactionFormData>;
+  errors: FieldErrors<TransactionFormData>;
+  register: UseFormRegister<TransactionFormData>;
+  isTransferAmountsDifferent: boolean;
+  setIsTransferAmountsDifferent: (checked: boolean) => void;
+}
+
+const TransferFields = ({
+  control,
+  errors,
+  register,
+  isTransferAmountsDifferent,
+  setIsTransferAmountsDifferent,
+}: TransferFieldsProps) => (
+  <>
+    <div className="flex flex-row gap-2">
+      <div className="flex flex-col gap-1 w-full">
+        <Label htmlFor="date">{"Origin Bank: "}</Label>
+        <Controller
+          name="originBank"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <BankSelect value={field.value} onChange={field.onChange} />
+          )}
+        />
+        {!!errors.originBank && (
+          <p className="text-xs text-red-500">This field is required.</p>
+        )}
+      </div>
+      <ArrowRight className="size-10 mt-4" />
+      <div className="w-full gap-1 flex flex-col relative">
+        <Label htmlFor="amount">Destination Bank:</Label>
+        <Controller
+          name="destinationBank"
+          control={control}
+          rules={{ required: true }}
+          render={({ field }) => (
+            <BankSelect value={field.value} onChange={field.onChange} />
+          )}
+        />
+        {!!errors.destinationBank && (
+          <p className="text-xs text-red-500">
+            {errors.destinationBank?.message || "This field is required."}
+          </p>
+        )}
+      </div>
+    </div>
+    <div className="flex flex-col gap-2 w-full mt-2">
+      <div className="flex flex-row gap-2 items-center">
+        <div className="w-full gap-1 flex flex-col relative">
+          <Label htmlFor="amount">
+            {isTransferAmountsDifferent
+              ? "Origin Deduction:"
+              : "Transfer Amount:"}{" "}
+          </Label>
+          <Input
+            id="amount"
+            type="number"
+            inputMode="decimal"
+            step={0.01}
+            className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+            {...register("originDeduction", {
+              valueAsNumber: true,
+              required: true,
+              min: 0,
+            })}
+          />
+          {!!errors.originDeduction && (
+            <p className="text-xs text-red-500">This field is required.</p>
+          )}
+        </div>
+        {isTransferAmountsDifferent && (
+          <>
+            <ArrowRight className="size-10 mt-4" />
+            <div className="w-full gap-1 flex flex-col relative">
+              <Label htmlFor="amount">Destination Addition:</Label>
+              <Input
+                id="amount"
+                type="number"
+                inputMode="decimal"
+                step={0.01}
+                className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+                {...register("destinationAddition", {
+                  valueAsNumber: true,
+                  required: true,
+                  min: 0,
+                })}
+              />
+              {!!errors.destinationAddition && (
+                <p className="text-xs text-red-500">This field is required.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      <div className="flex flex-row items-center gap-2 text-sm">
+        <Switch
+          checked={isTransferAmountsDifferent}
+          onCheckedChange={setIsTransferAmountsDifferent}
+          className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-slate-700"
+        />
+        Transfer different amounts
+      </div>
+    </div>
+  </>
+);
+
+function handleTransferSubmit(
+  data: TransactionFormData,
+  setError: UseFormSetError<TransactionFormData>,
+  isTransferAmountsDifferent: boolean,
+  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
+) {
+  if (
+    data?.originBank &&
+    data?.destinationBank &&
+    data.originBank === data.destinationBank
+  ) {
+    setError("destinationBank", {
+      message: "Cannot transfer to the same bank",
+    });
+    return;
+  }
+  const transaction1 = {
+    ...data,
+    type: "expense" as const,
+    amount: new Decimal(data.originDeduction || 0).abs().toNumber(),
+    bank: data.originBank,
+  };
+  const transaction2 = {
+    ...data,
+    type: "income" as const,
+    amount: isTransferAmountsDifferent
+      ? new Decimal(data.destinationAddition || 0).abs().toNumber()
+      : new Decimal(data.originDeduction || 0).abs().toNumber(),
+    bank: data.destinationBank,
+  };
+  onSubmit(transaction1);
+  onSubmit(transaction2);
+}
+
+function handleDifferenceSubmit(
+  data: TransactionFormData,
+  bankData: { banks: Bank[] },
+  formType: FormType,
+  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
+) {
+  const bankBalance = bankData?.banks.find(
+    (bank: Bank) => bank.id === data.bank
+  )?.balance;
+  const differenceAmount = !!(data?.newBalance && bankBalance)
+    ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
+    : 0;
+  const submitValue = {
+    ...data,
+    ...(formType === "Difference" && {
+      type: (differenceAmount > 0 ? "income" : "expense") as any,
+      amount: new Decimal(differenceAmount).abs().toNumber(),
+    }),
+  };
+  onSubmit(submitValue);
+}
+
+function handleTransactionSubmit(
+  data: TransactionFormData,
+  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
+) {
+  onSubmit(data);
+}
 
 export const TransactionForm = ({
   transaction,
@@ -39,18 +228,7 @@ export const TransactionForm = ({
     setValue,
     setError,
     formState: { errors },
-  } = useForm<
-    Omit<Transaction, "date"> & {
-      date: Date;
-      // used for differences
-      newBalance?: number;
-      // used for transfers
-      originBank: string;
-      destinationBank: string;
-      originDeduction: number;
-      destinationAddition: number;
-    }
-  >({
+  } = useForm<TransactionFormData>({
     defaultValues: transaction
       ? {
           ...transaction,
@@ -75,14 +253,17 @@ export const TransactionForm = ({
         },
   });
 
+  // Memoize derived values
   const selectedBank = watch("bank");
-  const bankBalance = bankData?.banks.find(
-    (bank) => bank.id === selectedBank
-  )?.balance;
-
+  const bankBalance = useMemo(
+    () => bankData?.banks.find((bank) => bank.id === selectedBank)?.balance,
+    [bankData, selectedBank]
+  );
   const newBalance = watch("newBalance");
-  const projectedAmount =
-    !!newBalance && !!bankBalance ? newBalance - bankBalance : 0;
+  const projectedAmount = useMemo(
+    () => (!!newBalance && !!bankBalance ? newBalance - bankBalance : 0),
+    [newBalance, bankBalance]
+  );
 
   const [isTransferAmountsDifferent, setIsTransferAmountsDifferent] =
     useState<boolean>(false);
@@ -93,61 +274,33 @@ export const TransactionForm = ({
     setValue("amount", undefined as any);
   }, [formType, setValue, transaction]);
 
+  // Submit handler (refactored)
+  const handleFormSubmit = handleSubmit((data) => {
+    if (formType === "Transfer") {
+      handleTransferSubmit(
+        data,
+        setError,
+        isTransferAmountsDifferent,
+        onSubmit
+      );
+      return;
+    }
+    if (formType === "Difference") {
+      if (bankData && bankData.banks) {
+        handleDifferenceSubmit(
+          data,
+          { banks: bankData.banks },
+          formType,
+          onSubmit
+        );
+      }
+      return;
+    }
+    handleTransactionSubmit(data, onSubmit);
+  });
+
   return (
-    <form
-      onSubmit={handleSubmit((data) => {
-        //#region logic for transfers
-        if (formType === "Transfer") {
-          if (
-            data?.originBank &&
-            data?.destinationBank &&
-            data.originBank === data.destinationBank
-          ) {
-            setError("destinationBank", {
-              message: "Cannot transfer to the same bank",
-            });
-            return;
-          }
-
-          const transaction1 = {
-            ...data,
-            type: "expense" as const,
-            amount: new Decimal(data.originDeduction || 0).abs().toNumber(),
-            bank: data.originBank,
-          };
-          const transaction2 = {
-            ...data,
-            type: "income" as const,
-            amount: isTransferAmountsDifferent
-              ? new Decimal(data.destinationAddition || 0).abs().toNumber()
-              : new Decimal(data.originDeduction || 0).abs().toNumber(),
-            bank: data.destinationBank,
-          };
-
-          onSubmit(transaction1);
-          onSubmit(transaction2);
-          return;
-        }
-
-        //#endregion
-
-        // Submission handling is messy, TODO: refactor
-        const bankBalance = bankData?.banks.find(
-          (bank) => bank.id === data.bank
-        )?.balance;
-        const differenceAmount = !!(data?.newBalance && bankBalance)
-          ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
-          : 0;
-        const submitValue = {
-          ...data,
-          ...(formType === "Difference" && {
-            type: (differenceAmount > 0 ? "income" : "expense") as any,
-            amount: new Decimal(differenceAmount).abs().toNumber(),
-          }),
-        };
-        onSubmit(submitValue);
-      })}
-    >
+    <form onSubmit={handleFormSubmit}>
       <div className="flex flex-col gap-3 pb-3">
         <div className="flex flex-col gap-1 w-full">
           <Label htmlFor="date">{"Date: "}</Label>
@@ -178,42 +331,14 @@ export const TransactionForm = ({
             )}
           </div>
         )}
-        {/* Transfers are really messy, TODO: Refactor */}
         {formType === "Transfer" && (
-          <div className="flex flex-row gap-2">
-            <div className="flex flex-col gap-1 w-full">
-              <Label htmlFor="date">{"Origin Bank: "}</Label>
-              <Controller
-                name="originBank"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <BankSelect value={field.value} onChange={field.onChange} />
-                )}
-              />
-              {!!errors.originBank && (
-                <p className="text-xs text-red-500">This field is required.</p>
-              )}
-            </div>
-            <ArrowRight className="size-10 mt-4" />
-
-            <div className="w-full gap-1 flex flex-col relative">
-              <Label htmlFor="amount">Destination Bank:</Label>
-              <Controller
-                name="destinationBank"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <BankSelect value={field.value} onChange={field.onChange} />
-                )}
-              />
-              {!!errors.destinationBank && (
-                <p className="text-xs text-red-500">
-                  {errors.destinationBank?.message || "This field is required."}
-                </p>
-              )}
-            </div>
-          </div>
+          <TransferFields
+            control={control}
+            errors={errors}
+            register={register}
+            isTransferAmountsDifferent={isTransferAmountsDifferent}
+            setIsTransferAmountsDifferent={setIsTransferAmountsDifferent}
+          />
         )}
 
         <div className={clsx("flex flex-row justify-center gap-4")}>
@@ -293,72 +418,7 @@ export const TransactionForm = ({
               )}
             </div>
           )}
-          {/* Transfers are really messy, TODO: Refactor */}
-          {formType === "Transfer" && (
-            <div className="flex flex-col gap-2 w-full">
-              <div className="flex flex-row gap-2 items-center">
-                <div className="w-full gap-1 flex flex-col relative">
-                  <Label htmlFor="amount">
-                    {isTransferAmountsDifferent
-                      ? "Origin Deduction:"
-                      : "Transfer Amount:"}{" "}
-                  </Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    inputMode="decimal"
-                    step={0.01}
-                    className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
-                    {...register("originDeduction", {
-                      valueAsNumber: true,
-                      required: true,
-                      min: 0,
-                    })}
-                  />
-                  {!!errors.originDeduction && (
-                    <p className="text-xs text-red-500">
-                      This field is required.
-                    </p>
-                  )}
-                </div>
-
-                {isTransferAmountsDifferent && (
-                  <>
-                    <ArrowRight className="size-10 mt-4" />
-
-                    <div className="w-full gap-1 flex flex-col relative">
-                      <Label htmlFor="amount">Destination Addition:</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        inputMode="decimal"
-                        step={0.01}
-                        className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
-                        {...register("destinationAddition", {
-                          valueAsNumber: true,
-                          required: true,
-                          min: 0,
-                        })}
-                      />
-                      {!!errors.destinationAddition && (
-                        <p className="text-xs text-red-500">
-                          This field is required.
-                        </p>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="flex flex-row items-center gap-2 text-sm">
-                <Switch
-                  checked={isTransferAmountsDifferent}
-                  onCheckedChange={setIsTransferAmountsDifferent}
-                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-slate-700"
-                />
-                Transfer different amounts
-              </div>
-            </div>
-          )}
+          {formType === "Transfer" && null}
         </div>
         {formType === "Difference" && (
           <small className="text-slate-400 italic">

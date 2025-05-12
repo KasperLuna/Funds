@@ -29,7 +29,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
           </div>
           <div className="flex flex-col text-right">
             <p
-              className={clsx("text-lg font-semibold", {
+              className={clsx("text-lg font-semibold font-mono", {
                 "text-red-400": amount < 0,
                 "text-green-400": amount > 0,
               })}

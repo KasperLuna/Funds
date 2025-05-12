@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
 import { addBank } from "@/lib/pocketbase/queries";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import React, { useMemo } from "react";
 
 export const BankForm = () => {
   const { setQueryParams } = useQueryParams();
@@ -35,6 +36,9 @@ export const BankForm = () => {
       alert("An error occurred. Try again later.");
     }
   };
+
+  // Memoize bank list for performance
+  const banksList = useMemo(() => bankData?.banks || [], [bankData]);
 
   return (
     <div className="flex flex-col gap-2 pb-2">
@@ -68,10 +72,10 @@ export const BankForm = () => {
         For your reference, here are your existing banks:
       </p>
       <div className="flex flex-row flex-wrap gap-1 bg-slate-800 p-2 border-slate-600 border-2 rounded-md">
-        {bankData?.banks?.length === 0 && (
+        {banksList.length === 0 && (
           <p className="text-slate-200 text-xs">No banks yet.</p>
         )}
-        {bankData?.banks?.map((bank) => (
+        {banksList.map((bank) => (
           <div
             key={bank.name}
             className="flex flex-row gap-2 items-center text-slate-200 bg-slate-700 px-2 border-2 border-slate-600 rounded-xl"

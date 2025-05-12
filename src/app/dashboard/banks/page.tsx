@@ -6,7 +6,7 @@ import React from "react";
 import { BanksHeader } from "@/components/banks/BanksHeader";
 import { MixedDialogTrigger } from "@/components/banks/MixedDialog";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
-import { BankStatsSection } from "@/components/dashboard/banks/BankStatsSection";
+import { StatsSection } from "@/components/dashboard/banks/stats";
 import { TransactionFilter } from "@/components/banks/transactions/TransactionFilter";
 import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,7 +18,7 @@ function Page() {
     <div>
       <title>{title}</title>
       <BanksHeader />
-      <BankStatsSection />
+      <StatsSection />
       <div className="flex flex-row gap-2">
         <p className="text-slate-100 text-lg">Transactions</p>
         <Button

@@ -31,7 +31,7 @@ import {
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Decimal } from "decimal.js";
 
 export const MixedDialogTrigger = ({
@@ -43,11 +43,13 @@ export const MixedDialogTrigger = ({
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
   const isCreateModalOpen = !!queryParams["create"];
-  const setIsCreateModalOpen = (value: boolean) => {
-    setQueryParams({ create: value ? "Transaction" : undefined });
-  };
+  const setIsCreateModalOpen = useCallback(
+    (value: boolean) => {
+      setQueryParams({ create: value ? "Transaction" : undefined });
+    },
+    [setQueryParams]
+  );
 
   return (
     <MixedDialog
@@ -74,134 +76,149 @@ export const MixedDialog = ({
   const { bankData, categoryData } = useBanksCategsContext();
   const queryClient = useQueryClient();
   const formType = queryParams["create"] ?? "Transaction";
-  const setFormType = (value: string) => {
-    setQueryParams({ create: value });
-  };
+  const setFormType = useCallback(
+    (value: string) => setQueryParams({ create: value }),
+    [setQueryParams]
+  );
 
-  const updateBankBalanceOnTransaction = async ({
-    action,
-    newTransaction,
-  }: {
-    action: string;
-    newTransaction?: Omit<Transaction, "date"> & {
-      date: Date;
-    };
-  }) => {
-    const originalBank = bankData?.banks.find(
-      (bank) => bank.id === transaction?.bank
-    );
-    const transactionBank = bankData?.banks.find(
-      (bank) => bank.id === newTransaction?.bank
-    );
+  // Memoize bank lookups for performance
+  const originalBank = useMemo(
+    () => bankData?.banks.find((bank) => bank.id === transaction?.bank),
+    [bankData, transaction]
+  );
 
-    try {
-      if (action === "delete") {
-        if (!originalBank?.id || !transaction) {
-          throw new Error("Error updating bank balance");
-        }
-        await pb.collection("banks").update(originalBank?.id, {
-          balance: new Decimal(originalBank.balance)
-            .sub(new Decimal(transaction.amount))
-            .toNumber(),
-        });
-        return;
-      }
-
-      if (action === "create") {
-        if (!transactionBank?.id || !newTransaction) {
-          throw new Error("Error updating bank balance");
-        }
-        await pb.collection("banks").update(transactionBank?.id, {
-          balance: new Decimal(transactionBank?.balance)
-            .add(new Decimal(newTransaction.amount))
-            .toNumber(),
-        });
-        return;
-      }
-
-      if (action === "update") {
-        if (
-          !originalBank?.id ||
-          !transactionBank?.id ||
-          !transaction ||
-          !newTransaction
-        ) {
-          throw new Error("Error updating bank balance");
-        }
-
-        if (originalBank.id === transactionBank.id) {
+  // Helper for updating bank balances
+  const updateBankBalanceOnTransaction = useCallback(
+    async ({
+      action,
+      newTransaction,
+    }: {
+      action: string;
+      newTransaction?: Omit<Transaction, "date"> & { date: Date };
+    }) => {
+      const transactionBank = bankData?.banks.find(
+        (bank) => bank.id === newTransaction?.bank
+      );
+      try {
+        if (action === "delete") {
+          if (!originalBank?.id || !transaction)
+            throw new Error("Error updating bank balance");
           await pb.collection("banks").update(originalBank.id, {
             balance: new Decimal(originalBank.balance)
               .sub(new Decimal(transaction.amount))
+              .toNumber(),
+          });
+          return;
+        }
+        if (action === "create") {
+          if (!transactionBank?.id || !newTransaction)
+            throw new Error("Error updating bank balance");
+          await pb.collection("banks").update(transactionBank.id, {
+            balance: new Decimal(transactionBank.balance)
               .add(new Decimal(newTransaction.amount))
               .toNumber(),
           });
           return;
         }
-
-        await pb.collection("banks").update(originalBank.id, {
-          balance: new Decimal(originalBank.balance)
-            .sub(new Decimal(transaction.amount))
-            .toNumber(),
-        });
-
-        await pb.collection("banks").update(transactionBank.id, {
-          balance: new Decimal(transactionBank.balance)
-            .add(new Decimal(newTransaction.amount))
-            .toNumber(),
-        });
+        if (action === "update") {
+          if (
+            !originalBank?.id ||
+            !transactionBank?.id ||
+            !transaction ||
+            !newTransaction
+          )
+            throw new Error("Error updating bank balance");
+          if (originalBank.id === transactionBank.id) {
+            await pb.collection("banks").update(originalBank.id, {
+              balance: new Decimal(originalBank.balance)
+                .sub(new Decimal(transaction.amount))
+                .add(new Decimal(newTransaction.amount))
+                .toNumber(),
+            });
+            return;
+          }
+          await pb.collection("banks").update(originalBank.id, {
+            balance: new Decimal(originalBank.balance)
+              .sub(new Decimal(transaction.amount))
+              .toNumber(),
+          });
+          await pb.collection("banks").update(transactionBank.id, {
+            balance: new Decimal(transactionBank.balance)
+              .add(new Decimal(newTransaction.amount))
+              .toNumber(),
+          });
+        }
+      } catch (error) {
+        console.error(
+          error,
+          "new transaction",
+          newTransaction,
+          "old transaction",
+          transaction
+        );
+      } finally {
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
       }
-    } catch (error) {
-      console.error(
-        error,
-        "new transaction",
-        newTransaction,
-        "old transaction",
-        transaction
-      );
-    } finally {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
-    }
-  };
-  const onSubmit = async (
-    data: Omit<Transaction, "date"> & {
-      date: Date;
-    }
-  ) => {
-    try {
-      const parsedData = {
-        ...data,
-        // have to do this because multi-select for category doesnt allow object-based values
-        categories:
-          data.categories.map((categ) => {
-            return (
-              categoryData?.categories.find((cat) => cat.name === categ)?.id ||
-              ""
-            );
-          }) || [],
-        amount: ["expense", "withdrawal"].includes(data.type)
-          ? new Decimal(data.amount).negated().toNumber()
-          : new Decimal(data.amount).toNumber(),
-      };
+    },
+    [bankData, originalBank, queryClient, transaction]
+  );
 
-      setIsModalOpen(false);
-
-      if (transaction?.id) {
-        await pb.collection("transactions").update(transaction.id, parsedData);
-      } else {
-        await pb
-          .collection("transactions")
-          .create(parsedData, { requestKey: null });
+  // Memoize onSubmit handler
+  const onSubmit = useCallback(
+    async (data: Omit<Transaction, "date"> & { date: Date }) => {
+      try {
+        const parsedData = {
+          ...data,
+          categories:
+            data.categories.map(
+              (categ) =>
+                categoryData?.categories.find((cat) => cat.name === categ)
+                  ?.id || ""
+            ) || [],
+          amount: ["expense", "withdrawal"].includes(data.type)
+            ? new Decimal(data.amount).negated().toNumber()
+            : new Decimal(data.amount).toNumber(),
+        };
+        setIsModalOpen(false);
+        if (transaction?.id) {
+          await pb
+            .collection("transactions")
+            .update(transaction.id, parsedData);
+        } else {
+          await pb
+            .collection("transactions")
+            .create(parsedData, { requestKey: null });
+        }
+        await updateBankBalanceOnTransaction({
+          action: transaction?.id ? "update" : "create",
+          newTransaction: parsedData,
+        });
+      } catch (error) {
+        alert(error);
       }
-      await updateBankBalanceOnTransaction({
-        action: transaction?.id ? "update" : "create",
-        newTransaction: parsedData,
-      });
-    } catch (error) {
-      alert(error);
-    }
-  };
+    },
+    [categoryData, setIsModalOpen, transaction, updateBankBalanceOnTransaction]
+  );
+
+  // Memoize dialog actions
+  const handleDuplicate = useCallback(() => {
+    if (!transaction) return;
+    setIsModalOpen(false);
+    const { id, ...rest } = transaction;
+    pb.collection("transactions").create(rest);
+    updateBankBalanceOnTransaction({
+      action: "create",
+      newTransaction: { ...rest, date: new Date(rest.date) },
+    });
+  }, [transaction, setIsModalOpen, updateBankBalanceOnTransaction]);
+
+  const handleDelete = useCallback(() => {
+    if (!transaction) return;
+    setIsModalOpen(false);
+    pb.collection("transactions").delete(transaction.id as string);
+    updateBankBalanceOnTransaction({ action: "delete" });
+  }, [transaction, setIsModalOpen, updateBankBalanceOnTransaction]);
 
   return (
     <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -219,7 +236,7 @@ export const MixedDialog = ({
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant={"outline"}
+                    variant="outline"
                     className="bg-slate-800 hover:bg-slate-600 gap-1 hover:text-slate-200 py-[3px] text-base border-slate-600 px-2 h-fit"
                   >
                     {formType} <ChevronDown className="size-4" />
@@ -258,11 +275,7 @@ export const MixedDialog = ({
             {transaction?.id && (
               <AlertDialogAction asChild className="bg-red-700 w-[40px]">
                 <Popover>
-                  <PopoverTrigger
-                    asChild
-                    // not sure why this has to be here, but it works
-                    className="mt-2 sm:mt-0"
-                  >
+                  <PopoverTrigger asChild className="mt-2 sm:mt-0">
                     <Button className="w-[40px] hover:bg-slate-700">
                       <EllipsisVertical className="shrink-0" />
                     </Button>
@@ -275,33 +288,13 @@ export const MixedDialog = ({
                     <PopoverArrow className="fill-slate-800" />
                     <Button
                       className="hover:bg-slate-700 bg-slate-800"
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        const { id, ...rest } = transaction;
-                        pb.collection("transactions").create(rest);
-                        updateBankBalanceOnTransaction({
-                          action: "create",
-                          newTransaction: {
-                            ...rest,
-                            date: new Date(rest.date),
-                          },
-                        });
-                      }}
+                      onClick={handleDuplicate}
                     >
                       Duplicate
                     </Button>
                     <Button
                       className="hover:bg-red-500 bg-red-700"
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        pb.collection("transactions").delete(
-                          transaction?.id as string
-                        );
-
-                        updateBankBalanceOnTransaction({
-                          action: "delete",
-                        });
-                      }}
+                      onClick={handleDelete}
                     >
                       Delete
                     </Button>
@@ -309,7 +302,6 @@ export const MixedDialog = ({
                 </Popover>
               </AlertDialogAction>
             )}
-
             <AlertDialogCancel className="w-fit bg-transparent p-2 border-slate-700 hover:bg-slate-400">
               <X />
             </AlertDialogCancel>
