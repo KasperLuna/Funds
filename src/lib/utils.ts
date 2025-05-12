@@ -49,6 +49,9 @@ export const removeCookie = (name: string) => {
 };
 
 export const parseAmount = (amount?: number, currencyCode?: string) => {
+  if (!amount) {
+    return "0";
+  }
   return amount?.toLocaleString(undefined, {
     style: "currency",
     currency: currencyCode || "USD",

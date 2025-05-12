@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Switch } from "./ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import React, { useMemo } from "react";
 
 export const CategoryForm = () => {
   const { setQueryParams } = useQueryParams();
@@ -38,6 +39,12 @@ export const CategoryForm = () => {
       alert("An error occurred. Try again later.");
     }
   };
+
+  // Memoize category list for performance
+  const categoriesList = useMemo(
+    () => categoryData?.categories || [],
+    [categoryData]
+  );
 
   return (
     <div className="flex flex-col gap-2 pb-2">
@@ -88,10 +95,10 @@ export const CategoryForm = () => {
         For your reference, here are your existing categories:
       </p>
       <div className="flex flex-row flex-wrap gap-1 bg-slate-800 p-2 border-slate-600 border-2 rounded-md">
-        {categoryData?.categories?.length === 0 && (
+        {categoriesList.length === 0 && (
           <p className="text-slate-200 text-xs">No categories yet.</p>
         )}
-        {categoryData?.categories?.map((category) => (
+        {categoriesList.map((category) => (
           <div
             key={category.name}
             className="flex flex-row gap-2 items-center text-slate-200 bg-slate-700 px-2 border-2 border-slate-600 rounded-xl"

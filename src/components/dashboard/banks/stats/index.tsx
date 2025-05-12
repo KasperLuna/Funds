@@ -1,12 +1,9 @@
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { StatCard } from "./BankStatCard";
-import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
-import { BankStatCardLoader } from "./BankStatCardLoader";
-import { useQueryParams } from "@/lib/hooks/useQueryParams";
+import { StatCard } from "./StatCard";
+import { StatCardLoader } from "./StatCardLoader";
 import { trimToTwoDecimals } from "@/lib/utils";
 
-export const BankStatsSection = () => {
-  const { queryParams } = useQueryParams();
+export const StatsSection = () => {
   const { bankData } = useBanksCategsContext();
   const { banks, loading } = bankData || {};
   const totalAmount =
@@ -19,7 +16,7 @@ export const BankStatsSection = () => {
       id="bank-stats-section"
       className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 pb-3"
     >
-      {loading && [...Array(5)].map((_, i) => <BankStatCardLoader key={i} />)}
+      {loading && [...Array(5)].map((_, i) => <StatCardLoader key={i} />)}
       {banks?.map((bank) => (
         <StatCard
           key={bank.id}

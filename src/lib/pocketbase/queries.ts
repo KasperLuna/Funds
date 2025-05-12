@@ -109,7 +109,14 @@ export const addCategory = async (category: Partial<Category>) => {
   );
 };
 
-export const addTransaction = async (transaction: any) => {
+export const addTransaction = async (transaction: {
+  amount: number;
+  bank: string;
+  description: string;
+  categories: string[];
+  date: { value: { _seconds: number } };
+  type: "income" | "expense";
+}) => {
   const id = pb.authStore.model?.id;
   await pb.collection("transactions").create<any>(
     {
@@ -242,7 +249,11 @@ export const updateUser = async (data: FormData) => {
 };
 
 //#region For Importing with JSON Export
-export const addCategories = async (categories: any) => {
+export const addCategories = async (categories: {
+  [key: string]: {
+    hideable: boolean;
+  };
+}) => {
   const id = pb.authStore.model?.id;
 
   for (const category in categories) {
@@ -257,7 +268,11 @@ export const addCategories = async (categories: any) => {
   }
 };
 
-export const addBanks = async (banks: any) => {
+export const addBanks = async (banks: {
+  [key: string]: {
+    balance: number;
+  };
+}) => {
   const id = pb.authStore.model?.id;
   for (const bank in banks) {
     await pb.collection("banks").create<Bank>(
@@ -276,7 +291,16 @@ export const addBanks = async (banks: any) => {
 export const addTransactions = async (
   banks?: Bank[],
   categories?: Category[],
-  transactions?: any
+  transactions?: {
+    [key: string]: {
+      amount: number;
+      bank: string;
+      description: string;
+      category: string[];
+      date: { value: { _seconds: number } };
+      type: "income" | "expense";
+    };
+  }
 ) => {
   const id = pb.authStore.model?.id;
   for (const transaction in transactions) {

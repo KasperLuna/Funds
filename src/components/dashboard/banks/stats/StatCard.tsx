@@ -31,9 +31,9 @@ export const StatCard = ({
       <div className="flex flex-row justify-between">
         {" "}
         <small>{name}</small>
-        <small>{percentage}</small>
+        <small className="text-slate-500">{percentage}</small>
       </div>
-      <p>
+      <p className="font-mono font-semibold">
         {isPrivacyModeEnabled
           ? `${baseCurrency?.symbol ?? "$"}••••••`
           : parseAmount(balance, baseCurrency?.code)}

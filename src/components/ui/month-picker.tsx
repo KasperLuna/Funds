@@ -65,9 +65,9 @@ function MonthPicker({ currentMonth, onMonthChange }: MonthPickerProps) {
                   "absolute right-1 disabled:bg-slate-100"
                 )}
                 type="button"
-                disabled={
-                  dayjs().year() <= firstDayCurrentYear.add(1, "year").year()
-                }
+                // disabled={
+                //   dayjs().year() <= firstDayCurrentYear.add(1, "year").year()
+                // }
                 onClick={nextYear}
               >
                 <ChevronRight className="h-4 w-4" />
