@@ -75,7 +75,6 @@ export const SettingsDialog = ({
           <TabsContent value="categories">
             <CategorySettings />
           </TabsContent>
-          <TabsContent value="password">Change your password here.</TabsContent>
         </Tabs>
       </AlertDialogContent>
     </AlertDialog>

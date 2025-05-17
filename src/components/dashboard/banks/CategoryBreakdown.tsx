@@ -110,13 +110,6 @@ export const CategoryBreakdown: React.FC = () => {
     queryFn: () => getTransactionsOfAMonth(selectedMonth?.toISOString() || ""),
   });
 
-  type Transaction = {
-    categories: string[];
-    amount: number;
-  };
-
-  type Category = { id: string; name: string };
-  type CategoryData = { categories?: Category[] } | undefined;
   type Memoized = {
     categoryTotals: Record<string, Decimal>;
     totalPositive: Decimal | undefined;
@@ -240,6 +233,13 @@ export const CategoryBreakdown: React.FC = () => {
   );
 
   const memoized: Memoized = useMemo(() => {
+    // Helper to check if a category is exempt
+    const isCategoryExempt = (categoryId: string) => {
+      return categoryData?.categories?.some(
+        (c) => c.id === categoryId && (c as any).total_exempt === true
+      );
+    };
+
     // Aggregate by category
     const categoryTotals =
       data?.reduce(
@@ -266,7 +266,11 @@ export const CategoryBreakdown: React.FC = () => {
 
     // get the total of the positive amounts, only for transactions with categories
     const totalPositive = data?.reduce((acc, curr) => {
-      if (curr.amount > 0 && curr.categories.length > 0) {
+      if (
+        curr.amount > 0 &&
+        curr.categories.length > 0 &&
+        !curr.categories.some(isCategoryExempt)
+      ) {
         return acc.add(new Decimal(curr.amount));
       }
       return acc;
@@ -274,7 +278,11 @@ export const CategoryBreakdown: React.FC = () => {
 
     // reduce the total of the negative amounts, only for transactions with categories
     const totalNegative = data?.reduce((acc, curr) => {
-      if (curr.amount < 0 && curr.categories.length > 0) {
+      if (
+        curr.amount < 0 &&
+        curr.categories.length > 0 &&
+        !curr.categories.some(isCategoryExempt)
+      ) {
         return acc.add(new Decimal(curr.amount));
       }
       return acc;
