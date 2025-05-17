@@ -1,5 +1,7 @@
-import { useQueryParams } from "@/lib/hooks/useQueryParams";
-import { deleteCategoryById } from "@/lib/pocketbase/queries";
+import {
+  deleteCategoryById,
+  updateCategoryById,
+} from "@/lib/pocketbase/queries";
 import { InfoIcon, Plus } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "../ui/button";
@@ -8,12 +10,49 @@ import { Separator } from "../ui/separator";
 import { CategorySelect } from "../banks/CategorySelect";
 import { Switch } from "../ui/switch";
 import { useRouter } from "next/navigation";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { Tooltip } from "../ui/tooltip";
+import React, { useMemo, useState } from "react";
 
 export const CategorySettings = () => {
-  // const { queryParams, setQueryParams } = useQueryParams();
   const router = useRouter();
-  const { control, watch } = useForm();
-  const category = watch("category");
+  const { categoryData } = useBanksCategsContext();
+  const { control, watch, setValue } = useForm();
+  const categoryId = watch("category");
+
+  // Find the selected category object
+  const selectedCategory = useMemo(
+    () => categoryData?.categories?.find((c) => c.id === categoryId),
+    [categoryId, categoryData]
+  );
+
+  // State for rename modal
+  const [showRename, setShowRename] = useState(false);
+  const [renameInput, setRenameInput] = useState("");
+  const [renameError, setRenameError] = useState("");
+
+  const handleToggle = async (
+    field: "hideable" | "total_exempt",
+    value: boolean
+  ) => {
+    if (!categoryId) return;
+    await updateCategoryById(categoryId, { [field]: value });
+    categoryData?.refetch?.();
+  };
+
+  const handleRename = async () => {
+    if (!selectedCategory) return;
+    if (renameInput.trim() === "") {
+      setRenameError("Category name cannot be empty.");
+      return;
+    }
+    await updateCategoryById(selectedCategory.id, { name: renameInput.trim() });
+    setShowRename(false);
+    setRenameInput("");
+    setRenameError("");
+    categoryData?.refetch?.();
+  };
+
   return (
     <div className="flex flex-col gap-4 pb-3">
       <div className="flex flex-col gap-1 w-full">
@@ -30,7 +69,6 @@ export const CategorySettings = () => {
           <Button
             className="px-2"
             onClick={() => {
-              // setQueryParams({ create: "Category", settings: undefined });
               router.push("/dashboard/banks?create=Category");
             }}
           >
@@ -41,37 +79,85 @@ export const CategorySettings = () => {
       <Separator />
       <div className="flex flex-col gap-2">
         <div className="flex flex-row items-center gap-2">
-          <Switch
-            disabled={!category}
-            onCheckedChange={() => {
-              alert("Not yet implemented, hehez");
-            }}
-          />
+          <Tooltip content="If enabled, this category can be hidden from breakdowns and reports.">
+            <Switch
+              disabled={!categoryId}
+              checked={!!selectedCategory?.hideable}
+              onCheckedChange={(checked) => handleToggle("hideable", checked)}
+            />
+          </Tooltip>
           <span className="ml-2">Is Hideable?</span>
           <InfoIcon />
         </div>
-
+        <div className="flex flex-row items-center gap-2">
+          <Tooltip content="If enabled, transactions in this category will be excluded from the total at the top of the dashboard.">
+            <Switch
+              disabled={!categoryId}
+              checked={!!selectedCategory?.total_exempt}
+              onCheckedChange={(checked) =>
+                handleToggle("total_exempt", checked)
+              }
+            />
+          </Tooltip>
+          <span className="ml-2">Total Exempt</span>
+          <Tooltip content="Excludes this category from the dashboard total. Useful for savings, investments, or internal transfers.">
+            <InfoIcon />
+          </Tooltip>
+        </div>
         <Button
-          disabled={!category}
+          disabled={!categoryId}
           variant={"outline"}
           className="bg-slate-900 border-slate-500"
-          onClick={() => {
-            alert("Not yet implemented, hehez");
-          }}
+          onClick={() => setShowRename(true)}
         >
           Rename Category
         </Button>
         <Button
-          disabled={!category}
+          disabled={!categoryId}
           variant={"destructive"}
-          // className=" border-red-600"
           onClick={() => {
-            deleteCategoryById(category);
+            deleteCategoryById(categoryId);
           }}
         >
           Delete Category
         </Button>
       </div>
+      {/* Rename Modal */}
+      {showRename && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-slate-800 p-6 rounded-lg shadow-lg flex flex-col gap-3 min-w-[320px]">
+            <h2 className="text-lg font-bold text-slate-100">
+              Rename Category
+            </h2>
+            <p className="text-slate-300 text-sm mb-2">
+              Type the new name for <b>{selectedCategory?.name}</b> below:
+            </p>
+            <input
+              className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-slate-100"
+              value={renameInput}
+              onChange={(e) => setRenameInput(e.target.value)}
+              placeholder="New category name"
+              autoFocus
+            />
+            {renameError && (
+              <span className="text-red-500 text-xs">{renameError}</span>
+            )}
+            <div className="flex gap-2 mt-2">
+              <Button onClick={() => setShowRename(false)}>Cancel</Button>
+              <Button
+                // variant="default"
+                onClick={handleRename}
+                disabled={
+                  renameInput.trim() === "" ||
+                  renameInput.trim() === selectedCategory?.name
+                }
+              >
+                Confirm Rename
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

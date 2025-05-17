@@ -328,3 +328,17 @@ export const addTransactions = async (
   }
 };
 //#endregion
+export const updateCategoryById = async (
+  categoryId: string,
+  updates: Partial<Category>
+) => {
+  await pb.collection("categories").update(categoryId, updates);
+};
+
+export const renameBankById = async (bankId: string, name: string) => {
+  await pb.collection("banks").update(bankId, { name });
+};
+
+export const deleteBankById = async (bankId: string) => {
+  await pb.collection("banks").delete(bankId);
+};

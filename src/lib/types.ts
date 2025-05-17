@@ -34,6 +34,7 @@ export type Category = {
   user: string;
   name: string;
   hideable: boolean;
+  total_exempt?: boolean;
 };
 
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
