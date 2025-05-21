@@ -1,6 +1,5 @@
 "use client";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
-import { PrivacyToggle } from "../PrivacyToggle";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { parseAmount } from "@/lib/utils";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
@@ -21,7 +20,6 @@ export const BanksHeader = () => {
   return (
     <div className="flex flex-row w-full justify-between items-center pb-3">
       <div className="flex flex-row gap-2 items-center text-slate-100">
-        <PrivacyToggle />
         <h1 className="md:text-3xl text-2xl font-semibold">
           {bankName ? decodeURI(bankName) : "Balances"}
         </h1>

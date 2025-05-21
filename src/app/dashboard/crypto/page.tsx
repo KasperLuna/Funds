@@ -1,10 +1,9 @@
-import { Bitcoin } from "lucide-react";
+import { CryptoDashboard } from "@/components/dashboard/CryptoDashboard";
 
 export default function Page() {
   return (
-    <main className="flex flex-col h-[calc(100dvh-245px)] items-center p-24 text-slate-200">
-      <Bitcoin className="w-28 h-28" />
-      Crypto will go here!
+    <main className="flex flex-col items-center text-slate-200 w-full mx-auto">
+      <CryptoDashboard />
     </main>
   );
 }

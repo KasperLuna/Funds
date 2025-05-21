@@ -37,6 +37,16 @@ export type Category = {
   total_exempt?: boolean;
 };
 
+export type Token = {
+  id: string;
+  name: string;
+  symbol: string;
+  coingecko_id: string;
+  total: number;
+  costAvg: number;
+  user: string;
+};
+
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
 
 export type Transaction = {

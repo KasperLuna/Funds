@@ -2,6 +2,7 @@ import {
   Bank,
   Category,
   ExpandedTransaction,
+  Token,
   Transaction,
   Trend,
   User,
@@ -341,4 +342,27 @@ export const renameBankById = async (bankId: string, name: string) => {
 
 export const deleteBankById = async (bankId: string) => {
   await pb.collection("banks").delete(bankId);
+};
+
+// Token-related operations
+export const addToken = async (token: Partial<Token>) => {
+  const id = pb.authStore.model?.id;
+  await pb.collection("tokens").create<Token>(
+    {
+      ...token,
+      user: id,
+    },
+    { requestKey: null }
+  );
+};
+
+export const updateTokenById = async (
+  tokenId: string,
+  updates: Partial<Token>
+) => {
+  await pb.collection("tokens").update(tokenId, updates);
+};
+
+export const deleteTokenById = async (tokenId: string) => {
+  await pb.collection("tokens").delete(tokenId);
 };

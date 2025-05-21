@@ -3,7 +3,11 @@ import clsx from "clsx";
 import { EyeOff, Eye } from "lucide-react";
 import { Button } from "./ui/button";
 
-export const PrivacyToggle = () => {
+interface PrivacyToggleProps {
+  showText?: boolean;
+}
+
+export const PrivacyToggle = ({ showText = false }: PrivacyToggleProps) => {
   const { isPrivacyModeEnabled, togglePrivacyMode } = usePrivacyMode();
   return (
     <Button
@@ -11,11 +15,16 @@ export const PrivacyToggle = () => {
         togglePrivacyMode();
       }}
       className={clsx("px-2 border-2 hover:border-slate-600 rounded-lg", {
-        "border-blue-600": isPrivacyModeEnabled,
-        "border-red-500": !isPrivacyModeEnabled,
+        "border-blue-800": isPrivacyModeEnabled,
+        "border-red-700": !isPrivacyModeEnabled,
       })}
     >
       {isPrivacyModeEnabled ? <EyeOff /> : <Eye />}
+      {showText && (
+        <span className="ml-2">
+          {isPrivacyModeEnabled ? "Privacy On" : "Privacy Off"}
+        </span>
+      )}
     </Button>
   );
 };
