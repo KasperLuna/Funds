@@ -281,13 +281,14 @@ export const MonthlyBreakdown: React.FC = () => {
   const [bankChartType, setBankChartType] = useState<string>("totals");
 
   // --- History breakdown logic ---
-  // Compute transaction counts per day for the selected month
+  // Compute transaction counts and totals per day for the selected month
   const historyMemoized = useMemo(() => {
-    if (!data || !selectedMonth) return { days: [], counts: [] };
+    if (!data || !selectedMonth) return { days: [], counts: [], totals: [] };
     const daysInMonth = dayjs(selectedMonth).daysInMonth();
     // Create an array for each day of the month
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const counts = Array(daysInMonth).fill(0);
+    const totals = Array(daysInMonth).fill(0);
     data.forEach((txn) => {
       const created = dayjs(txn.date);
       if (
@@ -296,10 +297,14 @@ export const MonthlyBreakdown: React.FC = () => {
       ) {
         const day = created.date();
         counts[day - 1] += 1;
+        totals[day - 1] += txn.amount;
       }
     });
-    return { days, counts };
+    return { days, counts, totals };
   }, [data, selectedMonth]);
+
+  // Add state for history sub-tab
+  const [historyChartType, setHistoryChartType] = useState<string>("total");
 
   return (
     <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col gap-2">
@@ -533,112 +538,258 @@ export const MonthlyBreakdown: React.FC = () => {
         </TabsContent>
         <TabsContent value="history">
           {/* History tab: Custom calendar heatmap of transactions per day in the month */}
-          {isLoading ? (
-            <div className="flex flex-col gap-3 pb-3">
-              {[...Array(6)].map((_, i) => (
-                <Skeleton
-                  key={`skel-hist-${String(i)}`}
-                  className="h-7 w-full bg-slate-800"
-                />
-              ))}
-            </div>
-          ) : !data?.length ? (
-            <div className="flex flex-col justify-center items-center text-center h-64">
-              <span className="text-lg">No Data Yet. </span> <br />
-              <span className="text-sm">
-                Add transactions for the selected month to see breakdown.
-              </span>
-            </div>
-          ) : (
-            <div className="rounded-md flex flex-col items-center w-full">
-              {/* Weekday labels */}
-              <div className="flex flex-row w-full justify-center mb-1 gap-1">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                  <div
-                    key={d}
-                    className="flex-1 min-w-0 text-center text-xs text-slate-300 font-semibold"
-                  >
-                    {d}
+          <Tabs
+            value={historyChartType}
+            onValueChange={setHistoryChartType}
+            className="w-full min-h-[350px]"
+          >
+            <TabsList className="bg-transparent fill-slate-200 py-0 mb-2">
+              <TabsTrigger value="total">Total</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            </TabsList>
+            <TabsContent value="transactions" className="py-0">
+              {isLoading ? (
+                <div className="flex flex-col gap-3 pb-3">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton
+                      key={`skel-hist-${String(i)}`}
+                      className="h-7 w-full bg-slate-800"
+                    />
+                  ))}
+                </div>
+              ) : !data?.length ? (
+                <div className="flex flex-col justify-center items-center text-center h-64">
+                  <span className="text-lg">No Data Yet. </span> <br />
+                  <span className="text-sm">
+                    Add transactions for the selected month to see breakdown.
+                  </span>
+                </div>
+              ) : (
+                <div className="rounded-md flex flex-col items-center w-full">
+                  {/* Weekday labels */}
+                  <div className="flex flex-row w-full justify-center mb-1 gap-1">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (d) => (
+                        <div
+                          key={d}
+                          className="flex-1 min-w-0 text-center text-xs text-slate-300 font-semibold"
+                        >
+                          {d}
+                        </div>
+                      )
+                    )}
                   </div>
-                ))}
-              </div>
-              {/* Calendar grid */}
-              <div className="flex flex-col gap-1 w-full">
-                {(() => {
-                  const year = selectedMonth.getFullYear();
-                  const month = selectedMonth.getMonth();
-                  const daysInMonth = dayjs(selectedMonth).daysInMonth();
-                  const firstDayOfWeek = new Date(year, month, 1).getDay();
-                  const weeks: Array<
-                    Array<{ day: number | null; count: number }>
-                  > = [];
-                  let week: Array<{ day: number | null; count: number }> = [];
-                  // Fill initial empty days
-                  for (let i = 0; i < firstDayOfWeek; i++) {
-                    week.push({ day: null, count: 0 });
-                  }
-                  for (let day = 1; day <= daysInMonth; day++) {
-                    const count = historyMemoized.counts[day - 1] || 0;
-                    week.push({ day, count });
-                    if (week.length === 7) {
-                      weeks.push(week);
-                      week = [];
-                    }
-                  }
-                  // Fill trailing empty days
-                  if (week.length > 0) {
-                    while (week.length < 7) week.push({ day: null, count: 0 });
-                    weeks.push(week);
-                  }
-                  return weeks.map((week, i) => (
-                    <div
-                      key={JSON.stringify(week)}
-                      className="flex flex-row gap-1 w-full"
-                    >
-                      {week.map((cell, j) => {
-                        let color = "bg-slate-800";
-                        let textColor = "text-white";
-                        if (cell.day !== null) {
-                          if (cell.count > 0 && cell.count < 2) {
-                            color = "bg-green-400";
-                          } else if (cell.count >= 2 && cell.count < 5) {
-                            color = "bg-yellow-500";
-                          } else if (cell.count >= 5 && cell.count < 8) {
-                            color = "bg-orange-600";
-                          } else if (cell.count >= 8) {
-                            color = "bg-red-700";
-                          }
+                  {/* Calendar grid for transaction counts */}
+                  <div className="flex flex-col gap-1 w-full">
+                    {(() => {
+                      const year = selectedMonth.getFullYear();
+                      const month = selectedMonth.getMonth();
+                      const daysInMonth = dayjs(selectedMonth).daysInMonth();
+                      const firstDayOfWeek = new Date(year, month, 1).getDay();
+                      const weeks: Array<
+                        Array<{ day: number | null; count: number }>
+                      > = [];
+                      let week: Array<{ day: number | null; count: number }> =
+                        [];
+                      // Fill initial empty days
+                      for (let i = 0; i < firstDayOfWeek; i++) {
+                        week.push({ day: null, count: 0 });
+                      }
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const count = historyMemoized.counts[day - 1] || 0;
+                        week.push({ day, count });
+                        if (week.length === 7) {
+                          weeks.push(week);
+                          week = [];
                         }
-                        return (
-                          <div
-                            key={`${cell.day}-${i}-${j}`}
-                            className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 cursor-pointer relative group ${color}`}
-                            title={
-                              cell.day
-                                ? `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${cell.count} transaction${cell.count === 1 ? "" : "s"}`
-                                : ""
+                      }
+                      // Fill trailing empty days
+                      if (week.length > 0) {
+                        while (week.length < 7)
+                          week.push({ day: null, count: 0 });
+                        weeks.push(week);
+                      }
+                      return weeks.map((week, i) => (
+                        <div
+                          key={JSON.stringify(week)}
+                          className="flex flex-row gap-1 w-full"
+                        >
+                          {week.map((cell, j) => {
+                            let color = "bg-slate-800";
+                            let textColor = "text-white";
+                            if (cell.day !== null) {
+                              if (cell.count > 0 && cell.count < 2) {
+                                color = "bg-green-400";
+                              } else if (cell.count >= 2 && cell.count < 5) {
+                                color = "bg-yellow-500";
+                              } else if (cell.count >= 5 && cell.count < 8) {
+                                color = "bg-orange-600";
+                              } else if (cell.count >= 8) {
+                                color = "bg-red-700";
+                              }
                             }
-                          >
-                            <span
-                              className={`text-lg font-mono select-none ${textColor}`}
-                            >
-                              {cell.day ? cell.day : ""}
-                            </span>
-                            {/* Tooltip on hover */}
-                            {cell.day && (
-                              <span className="absolute z-10 left-1/2 -translate-x-1/2 top-10 scale-0 group-hover:scale-100 transition-transform bg-slate-900 text-slate-100 text-xs px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap">
-                                {`${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${cell.count} transaction${cell.count === 1 ? "" : "s"}`}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-          )}
+                            return (
+                              <div
+                                key={`${cell.day}-${i}-${j}`}
+                                className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 cursor-pointer relative group ${color}`}
+                                title={
+                                  cell.day
+                                    ? `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${cell.count} transaction${cell.count === 1 ? "" : "s"}`
+                                    : ""
+                                }
+                              >
+                                <span
+                                  className={`text-lg font-mono select-none ${textColor}`}
+                                >
+                                  {cell.day ? cell.day : ""}
+                                </span>
+                                {/* Tooltip on hover */}
+                                {cell.day && (
+                                  <span className="absolute z-10 left-1/2 -translate-x-1/2 top-10 scale-0 group-hover:scale-100 transition-transform bg-slate-900 text-slate-100 text-xs px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap">
+                                    {`${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${cell.count} transaction${cell.count === 1 ? "" : "s"}`}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="total" className="py-0">
+              {isLoading ? (
+                <div className="flex flex-col gap-3 pb-3">
+                  {[...Array(6)].map((_, i) => (
+                    <Skeleton
+                      key={`skel-hist-total-${String(i)}`}
+                      className="h-7 w-full bg-slate-800"
+                    />
+                  ))}
+                </div>
+              ) : !data?.length ? (
+                <div className="flex flex-col justify-center items-center text-center h-64">
+                  <span className="text-lg">No Data Yet. </span> <br />
+                  <span className="text-sm">
+                    Add transactions for the selected month to see breakdown.
+                  </span>
+                </div>
+              ) : (
+                <div className="rounded-md flex flex-col items-center w-full">
+                  {/* Weekday labels */}
+                  <div className="flex flex-row w-full justify-center mb-1 gap-1">
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                      (d) => (
+                        <div
+                          key={d}
+                          className="flex-1 min-w-0 text-center text-xs text-slate-300 font-semibold"
+                        >
+                          {d}
+                        </div>
+                      )
+                    )}
+                  </div>
+                  {/* Calendar grid for daily totals */}
+                  <div className="flex flex-col gap-1 w-full">
+                    {(() => {
+                      const year = selectedMonth.getFullYear();
+                      const month = selectedMonth.getMonth();
+                      const daysInMonth = dayjs(selectedMonth).daysInMonth();
+                      const firstDayOfWeek = new Date(year, month, 1).getDay();
+                      const weeks: Array<
+                        Array<{ day: number | null; total: number }>
+                      > = [];
+                      let week: Array<{ day: number | null; total: number }> =
+                        [];
+                      // Fill initial empty days
+                      for (let i = 0; i < firstDayOfWeek; i++) {
+                        week.push({ day: null, total: 0 });
+                      }
+                      for (let day = 1; day <= daysInMonth; day++) {
+                        const total = historyMemoized.totals[day - 1] || 0;
+                        week.push({ day, total });
+                        if (week.length === 7) {
+                          weeks.push(week);
+                          week = [];
+                        }
+                      }
+                      // Fill trailing empty days
+                      if (week.length > 0) {
+                        while (week.length < 7)
+                          week.push({ day: null, total: 0 });
+                        weeks.push(week);
+                      }
+                      // Compute monthly max/min for scaling
+                      const maxAbs = Math.max(
+                        1,
+                        ...historyMemoized.totals.map((v) => Math.abs(v))
+                      );
+                      const monthlyTotal =
+                        memoized.overallBalance?.toNumber() || 1;
+                      return weeks.map((week, i) => (
+                        <div
+                          key={JSON.stringify(week)}
+                          className="flex flex-row gap-1 w-full"
+                        >
+                          {week.map((cell, j) => {
+                            let color = "bg-slate-800";
+                            let textColor = "text-white";
+                            if (cell.day !== null) {
+                              const rel = cell.total / monthlyTotal;
+                              if (cell.total > 0) {
+                                color = `bg-green-500`;
+                                if (rel > 0.5) {
+                                  color = `bg-green-600`;
+                                } else if (rel > 0.25) {
+                                  color = `bg-green-700`;
+                                } else if (rel > 0.1) {
+                                  color = `bg-green-800`;
+                                }
+                              } else if (cell.total < 0) {
+                                color = `bg-red-500`;
+                                if (rel < -0.5) {
+                                  color = `bg-red-600`;
+                                } else if (rel < -0.25) {
+                                  color = `bg-red-700`;
+                                } else if (rel < -0.1) {
+                                  color = `bg-red-800`;
+                                }
+                              }
+                            }
+                            return (
+                              <div
+                                key={`${cell.day}-${i}-${j}`}
+                                className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 cursor-pointer relative group ${color}`}
+                                title={
+                                  cell.day
+                                    ? `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${parseAmount(cell.total, baseCurrency?.code)}`
+                                    : ""
+                                }
+                              >
+                                <span
+                                  className={`text-lg font-mono select-none ${textColor}`}
+                                >
+                                  {cell.day ? cell.day : ""}{" "}
+                                </span>
+                                {/* Tooltip on hover */}
+                                {cell.day && (
+                                  <span className="absolute z-10 left-1/2 -translate-x-1/2 top-10 scale-0 group-hover:scale-100 transition-transform bg-slate-900 text-slate-100 text-xs px-2 py-1 rounded shadow-lg pointer-events-none whitespace-nowrap">
+                                    {`${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${parseAmount(cell.total, baseCurrency?.code)}`}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
