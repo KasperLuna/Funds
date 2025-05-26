@@ -36,7 +36,7 @@ export const DesktopTabs = () => {
   return (
     <Tabs
       role="navigation"
-      defaultValue={pathname}
+      defaultValue={pathname ?? undefined}
       value={currentTab}
       onValueChange={setCurrentTab}
       className="flex justify-end"
