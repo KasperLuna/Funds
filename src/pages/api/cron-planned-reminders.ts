@@ -6,7 +6,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import PocketBase from "pocketbase";
 import webpush from "web-push";
 
-const pb = new PocketBase(process.env.PB_URL);
+const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL);
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT!,
