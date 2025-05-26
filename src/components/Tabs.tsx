@@ -37,7 +37,7 @@ export const DesktopTabs = () => {
     <Tabs
       role="navigation"
       defaultValue={pathname ?? undefined}
-      value={currentTab}
+      value={currentTab ?? undefined}
       onValueChange={setCurrentTab}
       className="flex justify-end"
     >
@@ -71,8 +71,8 @@ export const MobileTabs = () => {
   return (
     <Tabs
       role="navigation"
-      defaultValue={pathname}
-      value={currentTab}
+      defaultValue={pathname ?? undefined}
+      value={currentTab ?? undefined}
       onValueChange={setCurrentTab}
       className="flex justify-end"
     >
