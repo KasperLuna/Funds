@@ -30,8 +30,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
+import { PlannedTransactionForm } from "./PlannedTransactionForm";
+import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Decimal } from "decimal.js";
 
 export const MixedDialogTrigger = ({
@@ -80,6 +83,8 @@ export const MixedDialog = ({
     (value: string) => setQueryParams({ create: value }),
     [setQueryParams]
   );
+  const { addPlannedTransaction } = usePlannedTransactions();
+  const { user } = useAuth();
 
   // Memoize bank lookups for performance
   const originalBank = useMemo(
@@ -257,7 +262,7 @@ export const MixedDialog = ({
                       </DropdownMenuRadioItem>
                     ))}
                     <DropdownMenuSeparator className="mx-2" />
-                    {["Bank", "Category"].map((type) => (
+                    {["Bank", "Category", "PlannedTransaction"].map((type) => (
                       <DropdownMenuRadioItem
                         key={type}
                         value={type}
@@ -316,6 +321,19 @@ export const MixedDialog = ({
         )}
         {formType === "Bank" && <BankForm />}
         {formType === "Category" && <CategoryForm />}
+        {formType === "PlannedTransaction" && (
+          <PlannedTransactionForm
+            onSubmit={async (pt) => {
+              if (!user?.id) {
+                alert("You must be logged in to create a planned transaction.");
+                return;
+              }
+              await addPlannedTransaction({ ...pt, user: user.id });
+              setIsModalOpen(false);
+            }}
+            onCancel={() => setIsModalOpen(false)}
+          />
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );
