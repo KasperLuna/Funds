@@ -5,7 +5,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import PocketBase from "pocketbase";
 import webpush from "web-push";
-import { RRule } from "rrule";
 
 const pb = new PocketBase(process.env.PB_URL);
 
@@ -15,17 +14,39 @@ webpush.setVapidDetails(
   process.env.VAPID_PRIVATE_KEY!
 );
 
-// Helper: get next occurrence after now
-function getNextOccurrence(rruleString: string, after: Date): Date | null {
-  try {
-    const rule = RRule.fromString(rruleString);
-    return rule.after(after, true);
-  } catch {
-    return null;
+// Helper: get next occurrence after now (simple recurrence, no rrule)
+// Supported: daily, weekly, monthly, yearly
+function getNextOccurrenceSimple(
+  recurrence: string, // e.g. 'daily', 'weekly', 'monthly', 'yearly'
+  startDate: string, // ISO string
+  after: Date
+): Date | null {
+  let next = new Date(startDate);
+  while (next <= after) {
+    switch (recurrence) {
+      case "daily":
+        next.setDate(next.getDate() + 1);
+        break;
+      case "weekly":
+        next.setDate(next.getDate() + 7);
+        break;
+      case "monthly":
+        next.setMonth(next.getMonth() + 1);
+        break;
+      case "yearly":
+        next.setFullYear(next.getFullYear() + 1);
+        break;
+      default:
+        return null;
+    }
   }
+  return next;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") return res.status(405).end();
   // 1. Get all planned transactions
   const planned = await pb.collection("planned_transactions").getFullList({});
@@ -34,9 +55,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let notified = 0;
 
   for (const tx of planned) {
-    // tx: { user, title, recurrenceRule, ... }
-    if (!tx.recurrenceRule) continue;
-    const next = getNextOccurrence(tx.recurrenceRule, now);
+    // tx: { user, title, recurrence, startDate, ... }
+    if (!tx.recurrence || !tx.startDate) continue;
+    const next = getNextOccurrenceSimple(tx.recurrence, tx.startDate, now);
     if (!next || next > soon) continue;
     // 2. Get user push subscriptions
     const subs = await pb.collection("push_subscriptions").getFullList({
@@ -56,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           })
         );
         notified++;
-      } catch (e) {
+      } catch {
         // Optionally: remove invalid subscriptions
       }
     }
