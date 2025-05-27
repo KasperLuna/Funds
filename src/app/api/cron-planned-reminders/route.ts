@@ -6,11 +6,11 @@ import type { RecurrenceRule } from "@/lib/types";
 
 const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL);
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY!;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:mail@kasperluna.com";
+
+webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 // Helper: get all occurrences between two dates for a recurrence rule
 function getOccurrencesBetween(
