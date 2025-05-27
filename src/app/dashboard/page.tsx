@@ -4,6 +4,7 @@ import { MonthlyBreakdown } from "@/components/dashboard/banks/MonthlyBreakdown"
 import { BankSummary } from "@/components/dashboard/banks/BankSummary";
 import dynamic from "next/dynamic";
 import UpcomingPlannedTransactions from "@/components/dashboard/UpcomingPlannedTransactions";
+import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
 
 function Page() {
   const title = "Funds - Dashboard";
@@ -20,6 +21,7 @@ function Page() {
           </div>
         </div>
       </div>
+      <PlannedTransactionPrefillHandler />
     </div>
   );
 }

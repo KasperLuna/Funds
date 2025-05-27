@@ -245,7 +245,8 @@ export const userQuery = async () => {
 };
 
 export const updateUser = async (data: FormData) => {
-  const id = pb.authStore.model?.id;
+  const id = pb.authStore.record?.id;
+  if (!id) throw new Error("User not authenticated");
   await pb.collection("users").update(id, data, { requestKey: null });
 };
 

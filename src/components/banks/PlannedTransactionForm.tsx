@@ -1,5 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
+import { Controller, useForm } from "react-hook-form";
 import { PlannedTransaction, RecurrenceRule } from "../../lib/types";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { BankSelect } from "@/components/banks/BankSelect";
+import { CategoryPicker } from "@/components/banks/CategoryPicker";
 
 interface PlannedTransactionFormProps {
   plannedTransaction?: PlannedTransaction;
@@ -17,157 +23,140 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const [form, setForm] = useState<PlannedTransaction>(
-    plannedTransaction || {
-      user: "",
-      description: "",
-      type: "expense",
-      amount: 0,
-      bank: "",
-      categories: [],
-      startDate: new Date().toISOString().slice(0, 10),
-      recurrence: defaultRecurrence,
-      reminderMinutesBefore: 60,
-      active: true,
-    }
-  );
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "number" ? Number(value) : value,
-    }));
-  };
-
-  const handleRecurrenceChange = (
-    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
-  ) => {
-    const { name, value, type } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      recurrence: {
-        ...prev.recurrence,
-        [name]: type === "number" ? Number(value) : value,
+  const { control, handleSubmit, register, watch } =
+    useForm<PlannedTransaction>({
+      defaultValues: plannedTransaction || {
+        user: "",
+        description: "",
+        type: "expense",
+        amount: 0,
+        bank: "",
+        categories: [],
+        startDate: new Date().toISOString().slice(0, 10),
+        recurrence: defaultRecurrence,
+        reminderMinutesBefore: 60,
+        active: true,
       },
-    }));
-  };
-
-  const handleCategoriesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({
-      ...prev,
-      categories: e.target.value.split(",").map((c) => c.trim()),
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(form);
-  };
+    });
+  const form = watch();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2">
-      <input
-        name="description"
-        value={form.description}
-        onChange={handleChange}
-        placeholder="Description"
-        className="input"
-        required
-      />
-      <select
-        name="type"
-        value={form.type}
-        onChange={handleChange}
-        className="input"
-      >
-        <option value="income">Income</option>
-        <option value="expense">Expense</option>
-        <option value="deposit">Deposit</option>
-        <option value="withdrawal">Withdrawal</option>
-      </select>
-      <input
-        name="amount"
-        type="number"
-        value={form.amount}
-        onChange={handleChange}
-        placeholder="Amount"
-        className="input"
-        required
-      />
-      <input
-        name="bank"
-        value={form.bank}
-        onChange={handleChange}
-        placeholder="Bank ID"
-        className="input"
-        required
-      />
-      <input
-        name="categories"
-        value={form.categories.join(", ")}
-        onChange={handleCategoriesChange}
-        placeholder="Categories (comma separated)"
-        className="input"
-      />
-      <input
-        name="startDate"
-        type="date"
-        value={form.startDate}
-        onChange={handleChange}
-        className="input"
-        required
-      />
-      <div className="flex gap-2">
-        <label>Recurrence:</label>
-        <select
-          name="frequency"
-          value={form.recurrence.frequency}
-          onChange={handleRecurrenceChange}
-          className="input"
-        >
-          <option value="daily">Daily</option>
-          <option value="weekly">Weekly</option>
-          <option value="monthly">Monthly</option>
-          <option value="yearly">Yearly</option>
-        </select>
-        <input
-          name="interval"
-          type="number"
-          value={form.recurrence.interval || 1}
-          onChange={handleRecurrenceChange}
-          className="input w-16"
-          min={1}
+    <form
+      onSubmit={handleSubmit((data) => onSubmit(data))}
+      className="flex flex-col gap-4"
+    >
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="description">Description</Label>
+        <Input
+          {...register("description", { required: true })}
+          placeholder="Description"
+          className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
         />
       </div>
-      <input
-        name="reminderMinutesBefore"
-        type="number"
-        value={form.reminderMinutesBefore || ""}
-        onChange={handleChange}
-        placeholder="Reminder (minutes before)"
-        className="input"
-        min={0}
-      />
-      <label>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="type">Type</Label>
+        <select
+          {...register("type", { required: true })}
+          className="bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
+        >
+          <option value="income">Income</option>
+          <option value="expense">Expense</option>
+          <option value="deposit">Deposit</option>
+          <option value="withdrawal">Withdrawal</option>
+        </select>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="amount">Amount</Label>
+        <Input
+          {...register("amount", {
+            required: true,
+            valueAsNumber: true,
+            min: 0,
+          })}
+          type="number"
+          placeholder="Amount"
+          className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="bank">Bank</Label>
+        <Controller
+          control={control}
+          name="bank"
+          render={({ field }) => (
+            <BankSelect value={field.value} onChange={field.onChange} />
+          )}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="categories">Categories</Label>
+        <Controller
+          control={control}
+          name="categories"
+          render={({ field }) => (
+            <CategoryPicker value={field.value} onChange={field.onChange} />
+          )}
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="startDate">Start Date</Label>
+        <Input
+          {...register("startDate", { required: true })}
+          type="date"
+          className="bg-slate-900 border-slate-700 text-slate-100"
+        />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label>Recurrence</Label>
+        <div className="flex gap-2 items-center">
+          <select
+            {...register("recurrence.frequency", { required: true })}
+            className="bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
+          >
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <Input
+            {...register("recurrence.interval", {
+              valueAsNumber: true,
+              min: 1,
+            })}
+            type="number"
+            className="w-20 bg-slate-900 border-slate-700 text-slate-100"
+            min={1}
+          />
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="reminderMinutesBefore">Reminder (minutes before)</Label>
+        <Input
+          {...register("reminderMinutesBefore", {
+            valueAsNumber: true,
+            min: 0,
+          })}
+          type="number"
+          className="bg-slate-900 border-slate-700 text-slate-100"
+        />
+      </div>
+      <div className="flex items-center gap-2">
         <input
-          name="active"
+          {...register("active")}
           type="checkbox"
-          checked={form.active}
-          onChange={(e) => setForm((f) => ({ ...f, active: e.target.checked }))}
-        />{" "}
-        Active
-      </label>
-      <div className="flex gap-2">
-        <button type="submit" className="btn">
+          id="active"
+          className="accent-blue-700 bg-slate-900 border-slate-700"
+        />
+        <Label htmlFor="active">Active</Label>
+      </div>
+      <div className="flex gap-2 mt-2">
+        <Button type="submit" variant="default">
           {plannedTransaction ? "Update" : "Create"}
-        </button>
+        </Button>
         {onCancel && (
-          <button type="button" className="btn" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
       </div>
     </form>

@@ -31,23 +31,24 @@ export const PushNotificationProvider = ({
   const { user } = useAuth();
 
   // Helper to get current push subscription from browser
-  const getBrowserSubscription = async (): Promise<PushSubscription | null> => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window))
-      return null;
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) return null;
-    const sub = await reg.pushManager.getSubscription();
-    if (!sub) return null;
-    const json = sub.toJSON();
-    return {
-      user: user?.id ?? "",
-      endpoint: json.endpoint!,
-      keys: {
-        p256dh: json.keys?.p256dh ?? "",
-        auth: json.keys?.auth ?? "",
-      },
-    };
-  };
+  const getBrowserSubscription =
+    React.useCallback(async (): Promise<PushSubscription | null> => {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window))
+        return null;
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return null;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) return null;
+      const json = sub.toJSON();
+      return {
+        user: user?.id ?? "",
+        endpoint: json.endpoint!,
+        keys: {
+          p256dh: json.keys?.p256dh ?? "",
+          auth: json.keys?.auth ?? "",
+        },
+      };
+    }, [user]);
 
   // Check if user is subscribed in backend
   useEffect(() => {
@@ -60,8 +61,9 @@ export const PushNotificationProvider = ({
           return;
         }
         // Check if this subscription exists in backend
-        const records = await pb.collection("push_subscriptions").getFullList({
+        const records = await pb.collection("push_subscriptions")?.getFullList({
           filter: `user="${user.id}" && endpoint="${browserSub.endpoint}"`,
+          requestKey: `check-subscription-${user.id}-${browserSub.endpoint}`,
         });
         setIsSubscribed(records.length > 0);
       } catch (e) {
@@ -69,7 +71,7 @@ export const PushNotificationProvider = ({
         if (process.env.NODE_ENV === "development") console.error(e);
       }
     })();
-  }, [user]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, getBrowserSubscription]); // eslint-disable-next-line react-hooks/exhaustive-deps
   const subscribe = async () => {
     console.debug("[PushNotification] subscribe called");
     if (
@@ -106,12 +108,29 @@ export const PushNotificationProvider = ({
     });
     const json = sub.toJSON();
     console.debug("[PushNotification] Push subscription JSON:", json);
-    // Store in backend
-    await pb.collection("push_subscriptions").create({
-      user: user?.id,
-      endpoint: json.endpoint,
-      keys: json.keys,
+    // Check if this device is already subscribed in PocketBase
+    const existing = await pb.collection("push_subscriptions")?.getFullList({
+      filter: `user='${user?.id}' && endpoint='${json.endpoint}'`,
     });
+    if (existing.length > 0) {
+      // Update the existing subscription for this device
+      await pb.collection("push_subscriptions").update(existing[0].id, {
+        keys: json.keys,
+      });
+      console.debug(
+        "[PushNotification] Updated existing push subscription in backend"
+      );
+    } else {
+      // Store new subscription in backend
+      await pb.collection("push_subscriptions").create({
+        user: user?.id,
+        endpoint: json.endpoint,
+        keys: json.keys,
+      });
+      console.debug(
+        "[PushNotification] Subscription complete and stored in backend"
+      );
+    }
     setIsSubscribed(true);
     console.debug(
       "[PushNotification] Subscription complete and stored in backend"
@@ -126,7 +145,7 @@ export const PushNotificationProvider = ({
     const json = sub.toJSON();
     // Remove from backend
     if (user?.id && json.endpoint) {
-      const records = await pb.collection("push_subscriptions").getFullList({
+      const records = await pb.collection("push_subscriptions")?.getFullList({
         filter: `user="${user.id}" && endpoint="${json.endpoint}"`,
       });
       for (const rec of records) {

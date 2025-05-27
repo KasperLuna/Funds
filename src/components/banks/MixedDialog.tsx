@@ -328,7 +328,17 @@ export const MixedDialog = ({
                 alert("You must be logged in to create a planned transaction.");
                 return;
               }
-              await addPlannedTransaction({ ...pt, user: user.id });
+              const mappedCategories =
+                pt.categories.map(
+                  (categ) =>
+                    categoryData?.categories.find((cat) => cat.name === categ)
+                      ?.id || categ
+                ) || [];
+              await addPlannedTransaction({
+                ...pt,
+                user: user.id,
+                categories: mappedCategories,
+              });
               setIsModalOpen(false);
             }}
             onCancel={() => setIsModalOpen(false)}
