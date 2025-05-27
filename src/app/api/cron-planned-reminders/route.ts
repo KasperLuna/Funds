@@ -1,8 +1,5 @@
-// Vercel Cron Job: Planned Transaction Reminder
-// Endpoint: /api/cron-planned-reminders
-// Schedules: e.g. every hour via Vercel Cron
-
-import { NextApiRequest, NextApiResponse } from "next";
+// GET /api/cron-planned-reminders (App Router)
+import { NextRequest, NextResponse } from "next/server";
 import PocketBase from "pocketbase";
 import webpush from "web-push";
 import type { RecurrenceRule } from "@/lib/types";
@@ -22,49 +19,44 @@ function getOccurrencesBetween(
   from: Date,
   to: Date
 ): Date[] {
+  // ...existing code from old handler...
   const occurrences: Date[] = [];
   let current = new Date(startDate);
   if (rule.endDate && new Date(rule.endDate) < from) return [];
   let count = 0;
   const maxCount = 1000; // safety
   while (current <= to && count < maxCount) {
-    // Only consider occurrences after 'from'
     if (current >= from && current <= to) {
-      // ByDay (for weekly)
       if (rule.frequency === "weekly" && rule.byDay && rule.byDay.length > 0) {
         const weekday = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][
           current.getDay()
         ];
         if (!rule.byDay.includes(weekday)) {
-          // Move to next day
           current.setDate(current.getDate() + 1);
           continue;
         }
       }
-      // ByMonthDay (for monthly)
       if (
         rule.frequency === "monthly" &&
         rule.byMonthDay &&
         rule.byMonthDay.length > 0
       ) {
         if (!rule.byMonthDay.includes(current.getDate())) {
-          // Move to next day
           current.setDate(current.getDate() + 1);
           continue;
         }
       }
       occurrences.push(new Date(current));
     }
-    // Advance to next occurrence
     switch (rule.frequency) {
       case "daily":
         current.setDate(current.getDate() + (rule.interval || 1));
         break;
       case "weekly":
-        current.setDate(current.getDate() + 1); // step by day, filter by byDay
+        current.setDate(current.getDate() + 1);
         break;
       case "monthly":
-        current.setDate(current.getDate() + 1); // step by day, filter by byMonthDay
+        current.setDate(current.getDate() + 1);
         break;
       case "yearly":
         current.setFullYear(current.getFullYear() + (rule.interval || 1));
@@ -78,7 +70,6 @@ function getOccurrencesBetween(
   return occurrences;
 }
 
-// Helper: check if a notification was already sent for a planned transaction occurrence
 async function wasNotified(
   plannedId: string,
   occurrence: Date
@@ -91,17 +82,18 @@ async function wasNotified(
   return !!record;
 }
 
-// Helper: mark a planned transaction occurrence as notified
 async function markNotified(plannedId: string, occurrence: Date) {
   const key = `${plannedId}_${occurrence.toISOString().slice(0, 16)}`;
   await pb.collection("planned_notifications").create({ key });
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") return res.status(405).end();
+export async function GET(req: NextRequest) {
+  // Security: require CRON_SECRET as query param
+  const url = new URL(req.url);
+  const secret = url.searchParams.get("CRON_SECRET");
+  if (secret !== process.env.CRON_SECRET) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   // 1. Get all planned transactions
   const planned = await pb
     .collection("planned_transactions")
@@ -112,7 +104,6 @@ export default async function handler(
 
   for (const tx of planned) {
     if (!tx.recurrence || !tx.startDate) continue;
-    // Find all occurrences between now and soon
     const occurrences = getOccurrencesBetween(
       tx.recurrence,
       tx.startDate,
@@ -120,8 +111,7 @@ export default async function handler(
       soon
     );
     for (const occ of occurrences) {
-      if (await wasNotified(tx.id, occ)) continue; // skip if already notified
-      // 2. Get user push subscriptions
+      if (await wasNotified(tx.id, occ)) continue;
       const subs = await pb.collection("push_subscriptions").getFullList({
         filter: `user='${tx.user}'`,
       });
@@ -135,15 +125,14 @@ export default async function handler(
             JSON.stringify({
               title: "Upcoming Planned Transaction",
               body: `Reminder: ${tx.description} is due soon!`,
-              url: `/dashboard?plannedId=${tx.id}`, // deep link with plannedId
+              url: `/dashboard?plannedId=${tx.id}`,
             })
           );
           notified++;
         } catch (err: any) {
-          // Remove invalid/expired subscriptions
           if (
-            err?.statusCode === 410 || // Gone
-            err?.statusCode === 404 || // Not Found
+            err?.statusCode === 410 ||
+            err?.statusCode === 404 ||
             (typeof err?.body === "string" && err.body.includes("unsubscribed"))
           ) {
             await pb.collection("push_subscriptions").delete(sub.id);
@@ -153,7 +142,5 @@ export default async function handler(
       await markNotified(tx.id, occ);
     }
   }
-  res.json({ notified });
+  return NextResponse.json({ notified });
 }
-
-// To schedule: set up Vercel Cron to POST to /api/cron-planned-reminders
