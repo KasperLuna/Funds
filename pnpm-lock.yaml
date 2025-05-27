@@ -81,8 +81,8 @@ importers:
         specifier: ^5.6.0
         version: 5.6.0(@babel/core@7.25.2)(next@15.2.4(@babel/core@7.25.2)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(webpack@5.94.0)
       pocketbase:
-        specifier: ^0.21.4
-        version: 0.21.4
+        specifier: ^0.26.0
+        version: 0.26.0
       react:
         specifier: ^18.2.0
         version: 18.2.0
@@ -3339,8 +3339,8 @@ packages:
     resolution: {integrity: sha512-HRDzbaKjC+AOWVXxAU/x54COGeIv9eb+6CkDSQoNTt4XyWoIJvuPsXizxu/Fr23EiekbtZwmh1IcIG/l/a10GQ==}
     engines: {node: '>=8'}
 
-  pocketbase@0.21.4:
-    resolution: {integrity: sha512-WJHyaqdAt95JgZ1OCRD099+DST4IIG0M/jMrCckWYDSN/6ocp61qsz7m6h0xI0J2N79ScBljceEC0fFAaQrrAw==}
+  pocketbase@0.26.0:
+    resolution: {integrity: sha512-WBBeOgz4Jnrd7a1KEzSBUJqpTortKKCcp16j5KoF+4tNIyQHsmynj+qRSvS56/RVacVMbAqO8Qkfj3N84fpzEw==}
 
   possible-typed-array-names@1.0.0:
     resolution: {integrity: sha512-d7Uw+eZoloe0EHDIYoe+bQ5WXnGMOpmiZFTuMWCwpjzzkL2nTjcKiAk4hh8TjnGye2TwWOk3UXucZ+3rbmBa8Q==}
@@ -7611,7 +7611,7 @@ snapshots:
     dependencies:
       find-up: 4.1.0
 
-  pocketbase@0.21.4: {}
+  pocketbase@0.26.0: {}
 
   possible-typed-array-names@1.0.0: {}
 
