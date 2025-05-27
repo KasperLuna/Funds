@@ -3,11 +3,12 @@ import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";
 import { Transaction } from "@/lib/types";
 import { MixedDialog } from "../banks/MixedDialog";
+import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 
 export function PlannedTransactionPrefillHandler() {
   const { queryParams, setQueryParams } = useQueryParams();
   const { plannedTransactions } = usePlannedTransactions();
-  const [openDialog, setOpenDialog] = useState(false);
+  const { bankData, categoryData } = useBanksCategsContext();
   const [prefill, setPrefill] = useState<Transaction | undefined>(undefined);
 
   useEffect(() => {
@@ -20,18 +21,25 @@ export function PlannedTransactionPrefillHandler() {
           ...planned,
           date: new Date().toISOString(),
         });
-        setOpenDialog(true);
+        return;
       }
     }
+    setPrefill(undefined);
   }, [queryParams.plannedId, plannedTransactions]);
+
+  if (bankData?.loading || categoryData?.loading) {
+    return null;
+  }
 
   return (
     <MixedDialog
-      isModalOpen={openDialog}
+      isModalOpen={!!prefill}
       setIsModalOpen={(open) => {
-        setOpenDialog(open);
-        if (!open && queryParams.plannedId) {
-          setQueryParams({ plannedId: undefined });
+        if (!open) {
+          setPrefill(undefined);
+          if (queryParams.plannedId) {
+            setQueryParams({ plannedId: undefined });
+          }
         }
       }}
       transaction={prefill}
