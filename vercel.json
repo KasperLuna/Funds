@@ -2,8 +2,7 @@
   "crons": [
     {
       "path": "/api/cron-planned-reminders",
-      "schedule": "0 2 * * *",
-      "method": "POST"
+      "schedule": "0 2 * * *"
     }
   ]
 }

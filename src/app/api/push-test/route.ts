@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { pb } from "@/lib/pocketbase/pocketbase";
 
@@ -10,31 +10,27 @@ const VAPID_SUBJECT =
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
+export async function POST(req: NextRequest) {
   try {
-    // Get the current user (assume auth token in cookies or session)
-    // For test, you can pass userId in the body
-    const { userId, title, body, url } = req.body;
-    if (!userId) return res.status(400).json({ error: "Missing userId" });
+    const body = await req.json();
+    const { userId, title, body: notifBody, url } = body;
+    if (!userId)
+      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
     // Get all push subscriptions for this user
     const subs = await pb.collection("push_subscriptions").getFullList({
       filter: `user="${userId}"`,
     });
     if (!subs.length)
-      return res.status(404).json({ error: "No subscriptions found" });
+      return NextResponse.json(
+        { error: "No subscriptions found" },
+        { status: 404 }
+      );
 
     // Send a test notification to each subscription
     const payload = JSON.stringify({
       title: title || "Test Notification",
-      body: body || "This is a test notification",
+      body: notifBody || "This is a test notification",
       url: url || "/dashboard",
     });
 
@@ -65,8 +61,11 @@ export default async function handler(
       )
     );
 
-    res.status(200).json({ success: true, results });
+    return NextResponse.json({ success: true, results });
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
