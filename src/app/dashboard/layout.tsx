@@ -38,9 +38,9 @@ export default function RootLayout({
   return (
     <div className="max-w-[1920px] mx-auto">
       <QueryClientProvider client={queryClient}>
-        <PlannedTransactionsProvider>
-          <PushNotificationProvider>
-            <AuthProvider>
+        <AuthProvider>
+          <PlannedTransactionsProvider>
+            <PushNotificationProvider>
               <PrivacyModeProvider>
                 <TokensProvider>
                   <BanksCategsProvider>
@@ -115,9 +115,9 @@ export default function RootLayout({
                   </BanksCategsProvider>
                 </TokensProvider>
               </PrivacyModeProvider>
-            </AuthProvider>
-          </PushNotificationProvider>
-        </PlannedTransactionsProvider>
+            </PushNotificationProvider>
+          </PlannedTransactionsProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </div>
   );
