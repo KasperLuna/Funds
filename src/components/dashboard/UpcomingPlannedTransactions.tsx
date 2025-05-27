@@ -56,6 +56,7 @@ const UpcomingPlannedTransactions: React.FC = () => {
         {upcoming?.map((pt) => {
           const transaction: Transaction = {
             ...pt,
+            id: undefined,
             date: new Date().toISOString(),
           };
           return (

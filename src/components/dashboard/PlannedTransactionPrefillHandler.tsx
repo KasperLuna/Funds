@@ -19,6 +19,7 @@ export function PlannedTransactionPrefillHandler() {
       if (planned) {
         setPrefill({
           ...planned,
+          id: undefined, // Clear the ID to create a new transaction
           date: new Date().toISOString(),
         });
         return;
