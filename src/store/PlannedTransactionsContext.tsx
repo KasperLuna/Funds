@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { PlannedTransaction } from '../lib/types';
-import { pb } from '../lib/pocketbase/pocketbase';
-import { useAuth } from '../lib/hooks/useAuth';
+import React, { createContext, useContext, ReactNode } from "react";
+import { PlannedTransaction } from "../lib/types";
+import { pb } from "../lib/pocketbase/pocketbase";
+import { useAuth } from "../lib/hooks/useAuth";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface PlannedTransactionsContextProps {
   plannedTransactions: PlannedTransaction[];
@@ -12,7 +13,9 @@ interface PlannedTransactionsContextProps {
   deletePlannedTransaction: (id: string) => Promise<void>;
 }
 
-const PlannedTransactionsContext = createContext<PlannedTransactionsContextProps | undefined>(undefined);
+const PlannedTransactionsContext = createContext<
+  PlannedTransactionsContextProps | undefined
+>(undefined);
 
 function recordToPlannedTransaction(record: any): PlannedTransaction {
   // Map PocketBase record to PlannedTransaction type
@@ -33,52 +36,95 @@ function recordToPlannedTransaction(record: any): PlannedTransaction {
   };
 }
 
-export const PlannedTransactionsProvider = ({ children }: { children: ReactNode }) => {
-  const [plannedTransactions, setPlannedTransactions] = useState<PlannedTransaction[]>([]);
-  const [loading, setLoading] = useState(false);
+export const PlannedTransactionsProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchPlannedTransactions = async () => {
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      const records = await pb.collection('planned_transactions').getFullList({
+  // Fetch planned transactions
+  const {
+    data: plannedTransactions = [],
+    isLoading: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["plannedTransactions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const records = await pb.collection("planned_transactions")?.getFullList({
         filter: `user="${user.id}"`,
-        sort: 'startDate',
+        sort: "startDate",
       });
-      setPlannedTransactions(records.map(recordToPlannedTransaction));
-    } catch (e) {
-      setPlannedTransactions([]);
-      if (process.env.NODE_ENV === 'development') console.error(e);
-    }
-    setLoading(false);
-  };
+      return records.map(recordToPlannedTransaction);
+    },
+    enabled: !!user?.id,
+  });
 
-  const addPlannedTransaction = async (pt: PlannedTransaction) => {
-    if (!user?.id) return;
-    const record = await pb.collection('planned_transactions').create({ ...pt, user: user.id });
-    setPlannedTransactions((prev) => [...prev, recordToPlannedTransaction(record)]);
-  };
+  // Add planned transaction
+  const addMutation = useMutation({
+    mutationFn: async (pt: PlannedTransaction) => {
+      if (!user?.id) return;
+      const record = await pb
+        .collection("planned_transactions")
+        .create({ ...pt, user: user.id });
+      return recordToPlannedTransaction(record);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["plannedTransactions", user?.id],
+      });
+    },
+  });
 
-  const updatePlannedTransaction = async (pt: PlannedTransaction) => {
-    if (!pt.id) return;
-    const record = await pb.collection('planned_transactions').update(pt.id, pt);
-    setPlannedTransactions((prev) => prev.map((t) => (t.id === pt.id ? recordToPlannedTransaction(record) : t)));
-  };
+  // Update planned transaction
+  const updateMutation = useMutation({
+    mutationFn: async (pt: PlannedTransaction) => {
+      if (!pt.id) return;
+      const record = await pb
+        .collection("planned_transactions")
+        .update(pt.id, pt);
+      return recordToPlannedTransaction(record);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["plannedTransactions", user?.id],
+      });
+    },
+  });
 
-  const deletePlannedTransaction = async (id: string) => {
-    await pb.collection('planned_transactions').delete(id);
-    setPlannedTransactions((prev) => prev.filter((t) => t.id !== id));
-  };
-
-  useEffect(() => {
-    fetchPlannedTransactions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Delete planned transaction
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await pb.collection("planned_transactions").delete(id);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["plannedTransactions", user?.id],
+      });
+    },
+  });
 
   return (
     <PlannedTransactionsContext.Provider
-      value={{ plannedTransactions, loading, fetchPlannedTransactions, addPlannedTransaction, updatePlannedTransaction, deletePlannedTransaction }}
+      value={{
+        plannedTransactions,
+        loading,
+        fetchPlannedTransactions: async () => {
+          await refetch();
+        },
+        addPlannedTransaction: async (pt) => {
+          await addMutation.mutateAsync(pt);
+        },
+        updatePlannedTransaction: async (pt) => {
+          await updateMutation.mutateAsync(pt);
+        },
+        deletePlannedTransaction: async (id) => {
+          await deleteMutation.mutateAsync(id);
+        },
+      }}
     >
       {children}
     </PlannedTransactionsContext.Provider>
@@ -87,6 +133,9 @@ export const PlannedTransactionsProvider = ({ children }: { children: ReactNode 
 
 export const usePlannedTransactions = () => {
   const context = useContext(PlannedTransactionsContext);
-  if (!context) throw new Error('usePlannedTransactions must be used within PlannedTransactionsProvider');
+  if (!context)
+    throw new Error(
+      "usePlannedTransactions must be used within PlannedTransactionsProvider"
+    );
   return context;
 };
