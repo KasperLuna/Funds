@@ -9,6 +9,7 @@ self.addEventListener("push", function (event) {
       data: {
         dateOfArrival: Date.now(),
         primaryKey: "2",
+        url: data.url || undefined, // Pass url from push payload if present
       },
     };
     event.waitUntil(self.registration.showNotification(data.title, options));
@@ -16,7 +17,10 @@ self.addEventListener("push", function (event) {
 });
 
 self.addEventListener("notificationclick", function (event) {
-  console.log("Notification click received.");
   event.notification.close();
-  event.waitUntil(clients.openWindow("/dashboard"));
+  const url =
+    event.notification.data && event.notification.data.url
+      ? event.notification.data.url
+      : "/dashboard";
+  event.waitUntil(clients.openWindow(url));
 });
