@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
   // - the transaction is active
   // - the transaction has a startDate
   // - the transaction is either today or has a recurrence that matches today
-  // - the transaction is not logged yet (lastLoggedAt is null or more than 3 hours ago)
-  // - the transaction has not been notified in the past 3 hours of the startDate
+  // - the transaction is not logged yet (lastLoggedAt is null or not today)
+  // - the transaction has not been notified in the past 3 hours
   for (const tx of planned) {
     if (!tx.active) {
       console.log(
@@ -64,13 +64,37 @@ export async function POST(req: NextRequest) {
     const today = new Date();
     if (isPlannedTransactionToday(tx, today)) {
       console.log(`[CRON] Planned transaction ${tx.id} is for today.`);
+      const startDate = new Date(tx.startDate);
+      if (now < startDate) {
+        console.log(
+          `[CRON] Too early to notify for planned transaction ${tx.id}. Start time is ${startDate.toISOString()}`
+        );
+        continue;
+      }
+      // Check if the transaction has been logged today
+      let lastLoggedAt = tx.lastLoggedAt ? new Date(tx.lastLoggedAt) : null;
+      const isLoggedToday =
+        lastLoggedAt &&
+        lastLoggedAt.getUTCFullYear() === now.getUTCFullYear() &&
+        lastLoggedAt.getUTCMonth() === now.getUTCMonth() &&
+        lastLoggedAt.getUTCDate() === now.getUTCDate();
+      if (isLoggedToday) {
+        console.log(
+          `[CRON] Planned transaction ${tx.id} has already been logged today. Skipping notification.`
+        );
+        continue;
+      }
       // Check if the transaction has been notified in the past 3 hours
-      const now = new Date();
       const lastNotifiedAt = tx.lastNotifiedAt
         ? new Date(tx.lastNotifiedAt)
         : null;
       const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
-      if (!lastNotifiedAt || lastNotifiedAt < threeHoursAgo) {
+      const notifiedToday =
+        lastNotifiedAt &&
+        lastNotifiedAt.getUTCFullYear() === now.getUTCFullYear() &&
+        lastNotifiedAt.getUTCMonth() === now.getUTCMonth() &&
+        lastNotifiedAt.getUTCDate() === now.getUTCDate();
+      if (!notifiedToday || lastNotifiedAt < threeHoursAgo) {
         console.log(`[CRON] Notifying user for planned transaction ${tx.id}.`);
         // Get the user's push subscription
         const subscriptions = await pb
