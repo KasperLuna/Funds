@@ -70,27 +70,10 @@ function getOccurrencesBetween(
   return occurrences;
 }
 
-async function wasNotified(
-  plannedId: string,
-  occurrence: Date
-): Promise<boolean> {
-  const key = `${plannedId}_${occurrence.toISOString().slice(0, 16)}`;
-  const record = await pb
-    .collection("planned_notifications")
-    .getFirstListItem(`key='${key}'`)
-    .catch(() => null);
-  return !!record;
-}
-
-async function markNotified(plannedId: string, occurrence: Date) {
-  const key = `${plannedId}_${occurrence.toISOString().slice(0, 16)}`;
-  await pb.collection("planned_notifications").create({ key });
-}
-
-export async function GET(req: NextRequest) {
-  // Security: require CRON_SECRET as query param
-  const url = new URL(req.url);
-  const secret = url.searchParams.get("CRON_SECRET");
+export async function POST(req: NextRequest) {
+  // Security: require CRON_SECRET in JSON body
+  const body = await req.json();
+  const secret = body.CRON_SECRET;
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -110,37 +93,46 @@ export async function GET(req: NextRequest) {
       now,
       soon
     );
-    for (const occ of occurrences) {
-      if (await wasNotified(tx.id, occ)) continue;
-      const subs = await pb.collection("push_subscriptions").getFullList({
-        filter: `user='${tx.user}'`,
-      });
-      for (const sub of subs) {
-        try {
-          await webpush.sendNotification(
-            {
-              endpoint: sub.endpoint,
-              keys: sub.keys,
-            },
-            JSON.stringify({
-              title: "Upcoming Planned Transaction",
-              body: `Reminder: ${tx.description} is due soon!`,
-              url: `/dashboard?plannedId=${tx.id}`,
-            })
-          );
-          notified++;
-        } catch (err: any) {
-          if (
-            err?.statusCode === 410 ||
-            err?.statusCode === 404 ||
-            (typeof err?.body === "string" && err.body.includes("unsubscribed"))
-          ) {
-            await pb.collection("push_subscriptions").delete(sub.id);
-          }
+    // Only notify for the earliest occurrence in the next hour
+    const nextOccurrence = occurrences.length > 0 ? occurrences[0] : null;
+    if (!nextOccurrence) continue;
+    // Check lastNotifiedAt (should be a datetime field in planned_transactions)
+    const lastNotifiedAt = tx.lastNotifiedAt
+      ? new Date(tx.lastNotifiedAt)
+      : null;
+    if (lastNotifiedAt && lastNotifiedAt >= nextOccurrence) continue;
+    // Send notifications
+    const subs = await pb.collection("push_subscriptions").getFullList({
+      filter: `user='${tx.user}'`,
+    });
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: sub.endpoint,
+            keys: sub.keys,
+          },
+          JSON.stringify({
+            title: "Upcoming Planned Transaction",
+            body: `Reminder: ${tx.description} is due soon!`,
+            url: `/dashboard?plannedId=${tx.id}`,
+          })
+        );
+        notified++;
+      } catch (err: any) {
+        if (
+          err?.statusCode === 410 ||
+          err?.statusCode === 404 ||
+          (typeof err?.body === "string" && err.body.includes("unsubscribed"))
+        ) {
+          await pb.collection("push_subscriptions").delete(sub.id);
         }
       }
-      await markNotified(tx.id, occ);
     }
+    // Update lastNotifiedAt for this planned transaction
+    await pb.collection("planned_transactions").update(tx.id, {
+      lastNotifiedAt: nextOccurrence.toISOString(),
+    });
   }
   return NextResponse.json({ notified });
 }
