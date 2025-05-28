@@ -32,10 +32,11 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
         amount: 0,
         bank: "",
         categories: [],
-        startDate: new Date(), // Use JS Date object
         recurrence: defaultRecurrence,
         active: true,
         timezone: new Date().getTimezoneOffset() / -60, // Convert to hours
+        previousDate: null,
+        invokeDate: new Date(),
       },
     });
 
@@ -45,32 +46,30 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
       className="flex flex-col gap-2 py-2"
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor="startDate">Start Date & Time</Label>
+        <Label htmlFor="invokeDate">Next Occurrence (Invoke Date)</Label>
         <div className="flex flex-row gap-2 items-center">
           <Controller
             control={control}
-            name="startDate"
+            name="invokeDate"
             render={({ field }) => {
-              // field.value is a Date object
               const dateValue = field.value
-                ? field.value.toISOString().slice(0, 10)
-                : "";
+                ? new Date(field.value.getFullYear(), field.value.getMonth(), field.value.getDate())
+                : undefined;
               const timeValue = field.value
-                ? `${field.value
-                    .getHours()
-                    .toString()
-                    .padStart(2, "0")}:${field.value
+                ? `${field.value.getHours().toString().padStart(2, "0")}:${field.value
                     .getMinutes()
                     .toString()
                     .padStart(2, "0")}`
                 : "";
               const handleDateChange = (date: Date | undefined) => {
-                let newDate = date ? new Date(date) : new Date();
-                // preserve time
+                if (!date) return;
+                let newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                 if (field.value && !isNaN(field.value.getTime())) {
                   newDate.setHours(
                     field.value.getHours(),
-                    field.value.getMinutes()
+                    field.value.getMinutes(),
+                    0,
+                    0
                   );
                 }
                 field.onChange(newDate);
@@ -80,7 +79,7 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
               ) => {
                 let [hours, minutes] = e.target.value.split(":").map(Number);
                 let newDate = field.value ? new Date(field.value) : new Date();
-                newDate.setHours(hours || 0, minutes || 0, 0, 0); // set seconds and ms to 0
+                newDate.setHours(hours || 0, minutes || 0, 0, 0);
                 field.onChange(newDate);
               };
               return (
@@ -94,7 +93,7 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
                     value={timeValue}
                     onChange={handleTimeChange}
                     className="w-28 bg-slate-900 border-slate-700 text-slate-100 ml-2"
-                    aria-label="Start time"
+                    aria-label="Invoke time"
                   />
                 </>
               );
