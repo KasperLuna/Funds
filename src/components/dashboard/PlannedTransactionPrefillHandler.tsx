@@ -7,7 +7,8 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 
 export function PlannedTransactionPrefillHandler() {
   const { queryParams, setQueryParams } = useQueryParams();
-  const { plannedTransactions } = usePlannedTransactions();
+  const { plannedTransactions, updatePlannedTransaction } =
+    usePlannedTransactions();
   const { bankData, categoryData } = useBanksCategsContext();
   const [prefill, setPrefill] = useState<Transaction | undefined>(undefined);
 
@@ -44,6 +45,16 @@ export function PlannedTransactionPrefillHandler() {
         }
       }}
       transaction={prefill}
+      onPlannedSubmit={async () => {
+        const planned = plannedTransactions.find(
+          (pt) => pt.id === queryParams.plannedId
+        );
+        if (!planned) return;
+        await updatePlannedTransaction({
+          ...planned,
+          lastLoggedAt: new Date(),
+        });
+      }}
     />
   );
 }

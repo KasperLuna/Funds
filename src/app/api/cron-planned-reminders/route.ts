@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import PocketBase from "pocketbase";
 import webpush from "web-push";
-import type { RecurrenceRule } from "@/lib/types";
+import type { PlannedTransaction } from "@/lib/types";
+import { isPlannedTransactionToday } from "@/lib/utils";
 
 const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL);
 
@@ -12,127 +13,134 @@ const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:mail@kasperluna.com";
 
 webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-// Helper: get all occurrences between two dates for a recurrence rule
-function getOccurrencesBetween(
-  rule: RecurrenceRule,
-  startDate: string,
-  from: Date,
-  to: Date
-): Date[] {
-  // ...existing code from old handler...
-  const occurrences: Date[] = [];
-  let current = new Date(startDate);
-  if (rule.endDate && new Date(rule.endDate) < from) return [];
-  let count = 0;
-  const maxCount = 1000; // safety
-  while (current <= to && count < maxCount) {
-    if (current >= from && current <= to) {
-      if (rule.frequency === "weekly" && rule.byDay && rule.byDay.length > 0) {
-        const weekday = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][
-          current.getDay()
-        ];
-        if (!rule.byDay.includes(weekday)) {
-          current.setDate(current.getDate() + 1);
-          continue;
-        }
-      }
-      if (
-        rule.frequency === "monthly" &&
-        rule.byMonthDay &&
-        rule.byMonthDay.length > 0
-      ) {
-        if (!rule.byMonthDay.includes(current.getDate())) {
-          current.setDate(current.getDate() + 1);
-          continue;
-        }
-      }
-      occurrences.push(new Date(current));
-    }
-    switch (rule.frequency) {
-      case "daily":
-        current.setDate(current.getDate() + (rule.interval || 1));
-        break;
-      case "weekly":
-        current.setDate(current.getDate() + 1);
-        break;
-      case "monthly":
-        current.setDate(current.getDate() + 1);
-        break;
-      case "yearly":
-        current.setFullYear(current.getFullYear() + (rule.interval || 1));
-        break;
-      default:
-        return occurrences;
-    }
-    count++;
-    if (rule.endDate && current > new Date(rule.endDate)) break;
-  }
-  return occurrences;
-}
-
 export async function POST(req: NextRequest) {
-  // Security: require CRON_SECRET in JSON body
   const body = await req.json();
   const secret = body.CRON_SECRET;
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Authenticate as PocketBase admin (superuser)
+  await pb.admins.authWithPassword(
+    process.env.POCKETBASE_ADMIN_EMAIL!,
+    process.env.POCKETBASE_ADMIN_PASSWORD!
+  );
   // 1. Get all planned transactions
-  const planned = await pb
+  const planned: PlannedTransaction[] = await pb
     .collection("planned_transactions")
     .getFullList({ filter: "active=true" });
-  const now = new Date();
-  const soon = new Date(now.getTime() + 60 * 60 * 1000); // next hour
-  let notified = 0;
-
-  for (const tx of planned) {
-    if (!tx.recurrence || !tx.startDate) continue;
-    const occurrences = getOccurrencesBetween(
-      tx.recurrence,
-      tx.startDate,
-      now,
-      soon
+  console.log(`[CRON] Retrieved ${planned.length} planned transactions.`);
+  if (planned.length > 0) {
+    console.log(
+      "[CRON] Planned transaction IDs:",
+      planned.map((tx) => tx.id)
     );
-    // Only notify for the earliest occurrence in the next hour
-    const nextOccurrence = occurrences.length > 0 ? occurrences[0] : null;
-    if (!nextOccurrence) continue;
-    // Check lastNotifiedAt (should be a datetime field in planned_transactions)
-    const lastNotifiedAt = tx.lastNotifiedAt
-      ? new Date(tx.lastNotifiedAt)
-      : null;
-    if (lastNotifiedAt && lastNotifiedAt >= nextOccurrence) continue;
-    // Send notifications
-    const subs = await pb.collection("push_subscriptions").getFullList({
-      filter: `user='${tx.user}'`,
-    });
-    for (const sub of subs) {
-      try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: sub.keys,
-          },
-          JSON.stringify({
-            title: "Upcoming Planned Transaction",
-            body: `Reminder: ${tx.description} is due soon!`,
-            url: `/dashboard?plannedId=${tx.id}`,
-          })
-        );
-        notified++;
-      } catch (err: any) {
-        if (
-          err?.statusCode === 410 ||
-          err?.statusCode === 404 ||
-          (typeof err?.body === "string" && err.body.includes("unsubscribed"))
-        ) {
-          await pb.collection("push_subscriptions").delete(sub.id);
+  }
+  const now = new Date();
+  let notified = 0;
+  console.log("[CRON] now (UTC):", now.toISOString());
+
+  // for each planned transaction, check if it should notify the user
+  // the startDate is stored UTC, so we need to convert it to the user's timezone
+  // the user timezone is stored as timezone and its value is the offset in hours
+  // the notification should be sent if:
+  // - the transaction is active
+  // - the transaction has a startDate
+  // - the transaction is either today or has a recurrence that matches today
+  // - the transaction is not logged yet (lastLoggedAt is null or more than 3 hours ago)
+  // - the transaction has not been notified in the past 3 hours of the startDate
+  for (const tx of planned) {
+    if (!tx.active) {
+      console.log(
+        `[CRON] Planned transaction ${tx.id} is not active, skipping.`
+      );
+      continue;
+    }
+    if (!tx.startDate) {
+      console.log(
+        `[CRON] Planned transaction ${tx.id} has no startDate, skipping.`
+      );
+      continue;
+    }
+    const today = new Date();
+    if (isPlannedTransactionToday(tx, today)) {
+      console.log(`[CRON] Planned transaction ${tx.id} is for today.`);
+      // Check if the transaction has been notified in the past 3 hours
+      const now = new Date();
+      const lastNotifiedAt = tx.lastNotifiedAt
+        ? new Date(tx.lastNotifiedAt)
+        : null;
+      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+      if (!lastNotifiedAt || lastNotifiedAt < threeHoursAgo) {
+        console.log(`[CRON] Notifying user for planned transaction ${tx.id}.`);
+        // Get the user's push subscription
+        const subscriptions = await pb
+          .collection("push_subscriptions")
+          .getFullList({ filter: `user="${tx.user}"` });
+        const payload = JSON.stringify({
+          title: `Log Now: ${tx.description}`,
+          body: `Amount: ${tx.amount}, press to log this transaction.`,
+          url: `/dashboard?plannedId=${tx.id}`,
+        });
+        if (subscriptions.length > 0) {
+          // Send the notification to all subscriptions
+          const sendResults = await Promise.allSettled(
+            subscriptions.map((subscription) => {
+              const pushSubscription = {
+                endpoint: subscription.endpoint,
+                keys: {
+                  p256dh: subscription.keys.p256dh,
+                  auth: subscription.keys.auth,
+                },
+              };
+              return webpush.sendNotification(pushSubscription, payload, {
+                headers: {
+                  TTL: "3600", // 1 hour
+                },
+              });
+            })
+          );
+          // Log results and count successful notifications
+          const successful = sendResults.filter(
+            (r) => r.status === "fulfilled"
+          ).length;
+          if (successful > 0) {
+            console.log(
+              `[CRON] Notification sent for planned transaction ${tx.id} to ${successful} subscriptions.`
+            );
+            notified++;
+            // Update the lastNotifiedAt field
+            if (!tx.id) {
+              console.error(
+                `[CRON] Planned transaction ${tx.id} has no ID, cannot update lastNotifiedAt.`
+              );
+              continue;
+            }
+            await pb.collection("planned_transactions").update(tx.id, {
+              lastNotifiedAt: now.toISOString(),
+            });
+          }
+          // Optionally log or handle rejected notifications
+          sendResults.forEach((result, idx) => {
+            if (result.status === "rejected") {
+              console.error(
+                `[CRON] Failed to send notification for planned transaction ${tx.id} to subscription #${idx}:`,
+                result.reason
+              );
+            }
+          });
+        } else {
+          console.log(
+            `[CRON] No push subscription found for user ${tx.user} for planned transaction ${tx.id}.`
+          );
         }
+      } else {
+        console.log(
+          `[CRON] Planned transaction ${tx.id} has already been notified in the past 3 hours.`
+        );
       }
     }
-    // Update lastNotifiedAt for this planned transaction
-    await pb.collection("planned_transactions").update(tx.id, {
-      lastNotifiedAt: nextOccurrence.toISOString(),
-    });
   }
+
+  console.log(`[CRON] Total notifications sent: ${notified}`);
   return NextResponse.json({ notified });
 }

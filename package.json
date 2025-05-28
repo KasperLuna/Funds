@@ -27,6 +27,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "1.0.0",
+    "date-fns": "^4.1.0",
     "dayjs": "^1.11.10",
     "decimal.js": "^10.4.3",
     "embla-carousel-react": "^8.2.1",

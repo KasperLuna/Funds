@@ -31,7 +31,8 @@ function recordToPlannedTransaction(record: any): PlannedTransaction {
     categories: record.categories,
     startDate: record.startDate,
     recurrence: record.recurrence,
-    reminderMinutesBefore: record.reminderMinutesBefore,
+    timezone: record.timezone,
+    lastLoggedAt: record.lastLoggedAt,
     active: record.active,
   };
 }
@@ -66,9 +67,11 @@ export const PlannedTransactionsProvider = ({
   const addMutation = useMutation({
     mutationFn: async (pt: PlannedTransaction) => {
       if (!user?.id) return;
-      const record = await pb
-        .collection("planned_transactions")
-        .create({ ...pt, user: user.id });
+      const record = await pb.collection("planned_transactions").create({
+        ...pt,
+        user: user.id,
+        startDate: new Date(pt.startDate).toISOString(),
+      });
       return recordToPlannedTransaction(record);
     },
     onSuccess: () => {

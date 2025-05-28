@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
+import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PlannedTransactionFormProps {
   plannedTransaction?: PlannedTransaction;
   onSubmit: (pt: PlannedTransaction) => void;
-  onCancel?: () => void;
 }
 
 const defaultRecurrence: RecurrenceRule = {
@@ -21,7 +22,6 @@ const defaultRecurrence: RecurrenceRule = {
 export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
   plannedTransaction,
   onSubmit,
-  onCancel,
 }) => {
   const { control, handleSubmit, register, watch } =
     useForm<PlannedTransaction>({
@@ -32,51 +32,75 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
         amount: 0,
         bank: "",
         categories: [],
-        startDate: new Date().toISOString().slice(0, 10),
+        startDate: new Date(), // Use JS Date object
         recurrence: defaultRecurrence,
-        reminderMinutesBefore: 60,
         active: true,
+        timezone: new Date().getTimezoneOffset() / -60, // Convert to hours
       },
     });
-  const form = watch();
 
   return (
     <form
       onSubmit={handleSubmit((data) => onSubmit(data))}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-2 py-2"
     >
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="description">Description</Label>
-        <Input
-          {...register("description", { required: true })}
-          placeholder="Description"
-          className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="type">Type</Label>
-        <select
-          {...register("type", { required: true })}
-          className="bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
-        >
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
-          <option value="deposit">Deposit</option>
-          <option value="withdrawal">Withdrawal</option>
-        </select>
-      </div>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          {...register("amount", {
-            required: true,
-            valueAsNumber: true,
-            min: 0,
-          })}
-          type="number"
-          placeholder="Amount"
-          className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
-        />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="startDate">Start Date & Time</Label>
+        <div className="flex flex-row gap-2 items-center">
+          <Controller
+            control={control}
+            name="startDate"
+            render={({ field }) => {
+              // field.value is a Date object
+              const dateValue = field.value
+                ? field.value.toISOString().slice(0, 10)
+                : "";
+              const timeValue = field.value
+                ? `${field.value
+                    .getHours()
+                    .toString()
+                    .padStart(2, "0")}:${field.value
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}`
+                : "";
+              const handleDateChange = (date: Date | undefined) => {
+                let newDate = date ? new Date(date) : new Date();
+                // preserve time
+                if (field.value && !isNaN(field.value.getTime())) {
+                  newDate.setHours(
+                    field.value.getHours(),
+                    field.value.getMinutes()
+                  );
+                }
+                field.onChange(newDate);
+              };
+              const handleTimeChange = (
+                e: React.ChangeEvent<HTMLInputElement>
+              ) => {
+                let [hours, minutes] = e.target.value.split(":").map(Number);
+                let newDate = field.value ? new Date(field.value) : new Date();
+                newDate.setHours(hours || 0, minutes || 0, 0, 0); // set seconds and ms to 0
+                field.onChange(newDate);
+              };
+              return (
+                <>
+                  <DatePickerWithOptions
+                    value={dateValue ? new Date(dateValue) : undefined}
+                    onChange={handleDateChange}
+                  />
+                  <Input
+                    type="time"
+                    value={timeValue}
+                    onChange={handleTimeChange}
+                    className="w-28 bg-slate-900 border-slate-700 text-slate-100 ml-2"
+                    aria-label="Start time"
+                  />
+                </>
+              );
+            }}
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor="bank">Bank</Label>
@@ -88,7 +112,59 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
           )}
         />
       </div>
-      <div className="flex flex-col gap-1">
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="type">Type</Label>
+        <div className="flex flex-row gap-2 items-center">
+          <Controller
+            name="type"
+            control={control}
+            render={({ field }) => (
+              <Tabs
+                value={field.value}
+                onValueChange={field.onChange}
+                className="w-full"
+              >
+                <TabsList className="bg-slate-800 w-full">
+                  <TabsTrigger
+                    className="w-full data-[state=active]:bg-red-800 data-[state=active]:text-slate-200"
+                    value="expense"
+                  >
+                    Deduct (-)
+                  </TabsTrigger>
+                  <TabsTrigger
+                    className="w-full data-[state=active]:bg-green-800 data-[state=active]:text-slate-200"
+                    value="income"
+                  >
+                    Add (+)
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
+          />
+          <div className="w-full">
+            <Input
+              {...register("amount", {
+                required: true,
+                valueAsNumber: true,
+                min: 0,
+              })}
+              type="number"
+              placeholder="Amount"
+              className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="description">Description</Label>
+        <Input
+          {...register("description", { required: true })}
+          placeholder="Description"
+          className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+        />
+      </div>
+      <div className="flex flex-col gap-2">
         <Label htmlFor="categories">Categories</Label>
         <Controller
           control={control}
@@ -98,66 +174,60 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
           )}
         />
       </div>
+
       <div className="flex flex-col gap-1">
-        <Label htmlFor="startDate">Start Date</Label>
-        <Input
-          {...register("startDate", { required: true })}
-          type="date"
-          className="bg-slate-900 border-slate-700 text-slate-100"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <Label>Recurrence</Label>
-        <div className="flex gap-2 items-center">
-          <select
-            {...register("recurrence.frequency", { required: true })}
-            className="bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="yearly">Yearly</option>
-          </select>
+        <label
+          className="text-sm text-slate-300 mb-1"
+          htmlFor="recurrence-interval"
+        >
+          Repeat every:
+        </label>
+        <div className="flex flex-row gap-2 items-center border border-slate-700 rounded-md px-3 py-2 bg-slate-900">
           <Input
+            id="recurrence-interval"
             {...register("recurrence.interval", {
               valueAsNumber: true,
               min: 1,
             })}
             type="number"
-            className="w-20 bg-slate-900 border-slate-700 text-slate-100"
+            className="w-16 bg-slate-800 border-slate-700 text-slate-100 text-center"
             min={1}
+            aria-label="Recurrence interval"
           />
+          <Controller
+            control={control}
+            name="recurrence.frequency"
+            render={({ field }) => (
+              <select
+                {...field}
+                className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
+                aria-label="Recurrence frequency"
+              >
+                <option value="daily">day(s)</option>
+                <option value="weekly">week(s)</option>
+                <option value="monthly">month(s)</option>
+                <option value="yearly">year(s)</option>
+              </select>
+            )}
+          />
+          <div className="flex items-center gap-2 ml-4">
+            <input
+              {...register("active")}
+              type="checkbox"
+              id="active"
+              className="accent-blue-700 bg-slate-900 border-slate-700"
+            />
+            <Label htmlFor="active">Active</Label>
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="reminderMinutesBefore">Reminder (minutes before)</Label>
-        <Input
-          {...register("reminderMinutesBefore", {
-            valueAsNumber: true,
-            min: 0,
-          })}
-          type="number"
-          className="bg-slate-900 border-slate-700 text-slate-100"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          {...register("active")}
-          type="checkbox"
-          id="active"
-          className="accent-blue-700 bg-slate-900 border-slate-700"
-        />
-        <Label htmlFor="active">Active</Label>
+        <span className="text-xs text-slate-500 mt-1">
+          E.g. every 2 weeks for biweekly, every 3 months for quarterly
+        </span>
       </div>
       <div className="flex gap-2 mt-2">
-        <Button type="submit" variant="default">
+        <Button type="submit" variant="secondary" className="w-full">
           {plannedTransaction ? "Update" : "Create"}
         </Button>
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
       </div>
     </form>
   );
