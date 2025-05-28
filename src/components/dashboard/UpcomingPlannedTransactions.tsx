@@ -35,11 +35,11 @@ const UpcomingPlannedTransactions: React.FC = () => {
   if (!upcoming || upcoming.length === 0) return null;
 
   return (
-    <div className="mb-4 p-3 bg-slate-950 rounded-md border border-slate-700">
+    <div className="mb-4 border-b border-slate-700 pb-4">
       <div className="font-bold mb-2 text-lg flex items-center gap-2">
         Upcoming Planned Transactions
       </div>
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {upcoming?.map((pt) => {
           const transaction: Transaction = {
             ...pt,
