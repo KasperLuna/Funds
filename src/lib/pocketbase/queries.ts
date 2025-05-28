@@ -85,7 +85,7 @@ export const getTransactionsOfAMonth = async (date: string) => {
 };
 
 export const addBank = async (bank: Partial<Bank>) => {
-  const id = pb.authStore.model?.id;
+  const id = pb.authStore.record?.id;
   await pb.collection("banks").create<Bank>(
     {
       ...bank,
@@ -98,7 +98,7 @@ export const addBank = async (bank: Partial<Bank>) => {
 };
 
 export const addCategory = async (category: Partial<Category>) => {
-  const id = pb.authStore.model?.id;
+  const id = pb.authStore.record?.id;
   await pb.collection("categories").create<Category>(
     {
       ...category,
@@ -110,70 +110,8 @@ export const addCategory = async (category: Partial<Category>) => {
   );
 };
 
-export const addTransaction = async (transaction: {
-  amount: number;
-  bank: string;
-  description: string;
-  categories: string[];
-  date: { value: { _seconds: number } };
-  type: "income" | "expense";
-}) => {
-  const id = pb.authStore.model?.id;
-  await pb.collection("transactions").create<any>(
-    {
-      user: id,
-      amount: new Decimal(transaction.amount),
-      bank: transaction.bank,
-      description: transaction.description,
-      categories: transaction.categories,
-      date: new Date(transaction.date.value._seconds * 1000),
-      type: transaction.type,
-    },
-    {
-      requestKey: null,
-    }
-  );
-};
-
-export const recomputeBalanceByName = async (bank: string) => {
-  const id = pb.authStore.model?.id;
-
-  const bankId = (
-    await pb.collection("banks").getFullList<Bank>({ filter: `name="${bank}"` })
-  )[0].id;
-
-  // query all transactions for this bank
-  const transactions = await pb
-    .collection("transactions")
-    .getFullList<Transaction>({
-      filter: `bank="${bankId}"`,
-      sort: "-date",
-    });
-
-  // query bank by name
-  const bankData = await pb
-    .collection("banks")
-    .getFullList<Bank>({ filter: `name="${bank}"` });
-
-  // update bank balance
-  const correctedBalance = transactions
-    .filter((txn) => txn.user === id)
-    .reduce((acc, curr) => {
-      const sum = acc.add(curr.amount);
-      return sum.modulo(1).abs().lt(1e-12) ? sum.floor() : sum;
-    }, new Decimal(0));
-
-  pb.collection("banks").update(
-    bankData[0].id,
-    {
-      balance: correctedBalance.toNumber(),
-    },
-    { requestKey: null }
-  );
-};
-
 export const recomputeBalanceById = async (bankId: string) => {
-  const id = pb.authStore.model?.id;
+  const id = pb.authStore.record?.id;
 
   // query all transactions for this bank
   const transactions = await pb
@@ -209,10 +147,6 @@ export const fetchBanksTrends = async () => {
   return records;
 };
 
-export const renameCategoryById = async (categoryId: string, name: string) => {
-  await pb.collection("categories").update(categoryId, { name });
-};
-
 export const deleteCategoryById = async (categoryId: string) => {
   // fetch all transactions that have this category
   const transactions = await pb
@@ -221,17 +155,22 @@ export const deleteCategoryById = async (categoryId: string) => {
       filter: `categories~"${categoryId}"`,
     });
 
-  // remove the category from each transaction
-  for (const transaction of transactions) {
-    if (!transaction.id) continue;
-    await pb.collection("transactions").update(
-      transaction.id,
-      {
-        categories: transaction.categories.filter((c) => c !== categoryId),
-      },
-      { requestKey: null }
-    );
-  }
+  // remove the category from each transaction in parallel
+  await Promise.all(
+    transactions.map((transaction) =>
+      transaction.id
+        ? pb.collection("transactions").update(
+            transaction.id,
+            {
+              categories: transaction.categories.filter(
+                (c) => c !== categoryId
+              ),
+            },
+            { requestKey: null }
+          )
+        : Promise.resolve()
+    )
+  );
 
   await pb.collection("categories").delete(categoryId);
 };
@@ -256,18 +195,19 @@ export const addCategories = async (categories: {
     hideable: boolean;
   };
 }) => {
-  const id = pb.authStore.model?.id;
-
-  for (const category in categories) {
-    await pb.collection("categories").create<Category>(
+  const id = pb.authStore.record?.id;
+  const batch = pb.createBatch();
+  Object.entries(categories).forEach(([category, value]) => {
+    batch.collection("categories").create(
       {
         name: category,
-        hideable: categories[category as keyof typeof categories]?.hideable,
+        hideable: value.hideable,
         user: id,
       },
       { requestKey: null }
     );
-  }
+  });
+  await batch.send();
 };
 
 export const addBanks = async (banks: {
@@ -275,19 +215,19 @@ export const addBanks = async (banks: {
     balance: number;
   };
 }) => {
-  const id = pb.authStore.model?.id;
-  for (const bank in banks) {
-    await pb.collection("banks").create<Bank>(
+  const id = pb.authStore.record?.id;
+  const batch = pb.createBatch();
+  Object.entries(banks).forEach(([bank, value]) => {
+    batch.collection("banks").create(
       {
         name: bank,
-        balance: new Decimal(
-          banks[bank as keyof typeof banks]?.balance
-        ).toNumber(),
+        balance: new Decimal(value.balance).toNumber(),
         user: id,
       },
       { requestKey: null }
     );
-  }
+  });
+  await batch.send();
 };
 
 export const addTransactions = async (
@@ -304,30 +244,28 @@ export const addTransactions = async (
     };
   }
 ) => {
-  const id = pb.authStore.model?.id;
-  for (const transaction in transactions) {
-    const bank = banks?.find(
-      (bank) => bank.name === transactions[transaction].bank
-    )?.id;
+  const id = pb.authStore.record?.id;
+  if (!transactions) return;
+  const batch = pb.createBatch();
+  Object.entries(transactions).forEach(([_, txn]) => {
+    const bank = banks?.find((b) => b.name === txn.bank)?.id;
     const transactionCategories = categories
-      ?.filter((category) =>
-        transactions[transaction].category.includes(category.name)
-      )
+      ?.filter((category) => txn.category.includes(category.name))
       .map((category) => category.id);
-
-    await pb.collection("transactions").create<Transaction>(
+    batch.collection("transactions").create(
       {
         user: id,
-        amount: new Decimal(transactions[transaction].amount).toNumber(),
+        amount: new Decimal(txn.amount).toNumber(),
         bank: bank,
-        description: transactions[transaction].description,
+        description: txn.description,
         categories: transactionCategories,
-        date: new Date(transactions[transaction].date.value._seconds * 1000),
-        type: transactions[transaction].type,
+        date: new Date(txn.date.value._seconds * 1000),
+        type: txn.type,
       },
       { requestKey: null }
     );
-  }
+  });
+  await batch.send();
 };
 //#endregion
 export const updateCategoryById = async (
@@ -347,7 +285,7 @@ export const deleteBankById = async (bankId: string) => {
 
 // Token-related operations
 export const addToken = async (token: Partial<Token>) => {
-  const id = pb.authStore.model?.id;
+  const id = pb.authStore.record?.id;
   await pb.collection("tokens").create<Token>(
     {
       ...token,

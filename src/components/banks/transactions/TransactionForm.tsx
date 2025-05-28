@@ -143,67 +143,57 @@ const TransferFields = ({
   </>
 );
 
-function handleTransferSubmit(
+// Returns an array of transactions for all form types
+function getTransactionBatch(
   data: TransactionFormData,
   setError: UseFormSetError<TransactionFormData>,
   isTransferAmountsDifferent: boolean,
-  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
-) {
-  if (
-    data?.originBank &&
-    data?.destinationBank &&
-    data.originBank === data.destinationBank
-  ) {
-    setError("destinationBank", {
-      message: "Cannot transfer to the same bank",
-    });
-    return;
-  }
-  const transaction1 = {
-    ...data,
-    type: "expense" as const,
-    amount: new Decimal(data.originDeduction || 0).abs().toNumber(),
-    bank: data.originBank,
-  };
-  const transaction2 = {
-    ...data,
-    type: "income" as const,
-    amount: isTransferAmountsDifferent
-      ? new Decimal(data.destinationAddition || 0).abs().toNumber()
-      : new Decimal(data.originDeduction || 0).abs().toNumber(),
-    bank: data.destinationBank,
-  };
-  onSubmit(transaction1);
-  onSubmit(transaction2);
-}
-
-function handleDifferenceSubmit(
-  data: TransactionFormData,
-  bankData: { banks: Bank[] },
   formType: FormType,
-  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
-) {
-  const bankBalance = bankData?.banks.find(
-    (bank: Bank) => bank.id === data.bank
-  )?.balance;
-  const differenceAmount = !!(data?.newBalance && bankBalance)
-    ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
-    : 0;
-  const submitValue = {
-    ...data,
-    ...(formType === "Difference" && {
+  bankData: { banks: Bank[] } | undefined
+): Array<Omit<Transaction, "date"> & { date: Date }> | null {
+  if (formType === "Transfer") {
+    if (
+      data?.originBank &&
+      data?.destinationBank &&
+      data.originBank === data.destinationBank
+    ) {
+      setError("destinationBank", {
+        message: "Cannot transfer to the same bank",
+      });
+      return null;
+    }
+    const transaction1 = {
+      ...data,
+      type: "expense" as const,
+      amount: new Decimal(data.originDeduction || 0).abs().toNumber(),
+      bank: data.originBank,
+    };
+    const transaction2 = {
+      ...data,
+      type: "income" as const,
+      amount: isTransferAmountsDifferent
+        ? new Decimal(data.destinationAddition || 0).abs().toNumber()
+        : new Decimal(data.originDeduction || 0).abs().toNumber(),
+      bank: data.destinationBank,
+    };
+    return [transaction1, transaction2];
+  }
+  if (formType === "Difference" && bankData) {
+    const bankBalance = bankData.banks.find(
+      (bank: Bank) => bank.id === data.bank
+    )?.balance;
+    const differenceAmount = !!(data?.newBalance && bankBalance)
+      ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
+      : 0;
+    const submitValue = {
+      ...data,
       type: (differenceAmount > 0 ? "income" : "expense") as any,
       amount: new Decimal(differenceAmount).abs().toNumber(),
-    }),
-  };
-  onSubmit(submitValue);
-}
-
-function handleTransactionSubmit(
-  data: TransactionFormData,
-  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void
-) {
-  onSubmit(data);
+    };
+    return [submitValue];
+  }
+  // Transaction (default)
+  return [data];
 }
 
 export const TransactionForm = ({
@@ -212,7 +202,8 @@ export const TransactionForm = ({
   formType = "Transaction",
 }: {
   transaction?: Transaction;
-  onSubmit: (data: Omit<Transaction, "date"> & { date: Date }) => void;
+  // onSubmit now always receives an array (batch)
+  onSubmit: (batch: Array<Omit<Transaction, "date"> & { date: Date }>) => void;
   formType?: FormType;
 }) => {
   const { user } = useAuth();
@@ -276,27 +267,16 @@ export const TransactionForm = ({
 
   // Submit handler (refactored)
   const handleFormSubmit = handleSubmit((data) => {
-    if (formType === "Transfer") {
-      handleTransferSubmit(
-        data,
-        setError,
-        isTransferAmountsDifferent,
-        onSubmit
-      );
-      return;
+    const batch = getTransactionBatch(
+      data,
+      setError,
+      isTransferAmountsDifferent,
+      formType,
+      bankData ? { banks: bankData.banks } : undefined
+    );
+    if (batch) {
+      onSubmit(batch);
     }
-    if (formType === "Difference") {
-      if (bankData && bankData.banks) {
-        handleDifferenceSubmit(
-          data,
-          { banks: bankData.banks },
-          formType,
-          onSubmit
-        );
-      }
-      return;
-    }
-    handleTransactionSubmit(data, onSubmit);
   });
 
   return (
