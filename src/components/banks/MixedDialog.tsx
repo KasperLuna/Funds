@@ -40,9 +40,11 @@ import { Decimal } from "decimal.js";
 export const MixedDialogTrigger = ({
   children,
   transaction,
+  onPlannedSubmit,
 }: {
   children: React.ReactNode;
   transaction?: Transaction;
+  onPlannedSubmit?: () => void | Promise<void>;
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -60,6 +62,7 @@ export const MixedDialogTrigger = ({
       setIsModalOpen={transaction ? setIsEditModalOpen : setIsCreateModalOpen}
       trigger={children}
       transaction={transaction}
+      onPlannedSubmit={onPlannedSubmit}
     />
   );
 };
@@ -69,11 +72,13 @@ export const MixedDialog = ({
   isModalOpen,
   setIsModalOpen,
   transaction,
+  onPlannedSubmit,
 }: {
   trigger?: React.ReactNode;
   isModalOpen: boolean;
   setIsModalOpen: (value: boolean) => void;
   transaction?: Transaction;
+  onPlannedSubmit?: () => void | Promise<void>;
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
   const { bankData, categoryData } = useBanksCategsContext();
@@ -163,11 +168,15 @@ export const MixedDialog = ({
         queryClient.invalidateQueries({ queryKey: ["transactions"] });
         queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
         queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
+        if (onPlannedSubmit) {
+          await onPlannedSubmit();
+          queryClient.invalidateQueries({ queryKey: ["plannedTransactions"] });
+        }
       } catch (error) {
         alert(error);
       }
     },
-    [categoryData, setIsModalOpen, bankData, queryClient]
+    [categoryData, setIsModalOpen, bankData, queryClient, onPlannedSubmit]
   );
 
   // Memoize dialog actions
@@ -334,7 +343,7 @@ export const MixedDialog = ({
               });
               setIsModalOpen(false);
             }}
-            onCancel={() => setIsModalOpen(false)}
+            // onCancel={() => setIsModalOpen(false)}
           />
         )}
       </AlertDialogContent>

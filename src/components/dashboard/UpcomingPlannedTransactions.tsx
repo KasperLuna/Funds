@@ -4,52 +4,39 @@ import { usePlannedTransactions } from "../../store/PlannedTransactionsContext";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
 import { Transaction } from "@/lib/types";
+import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { parseAmount, isPlannedTransactionToday } from "@/lib/utils";
 
 const UpcomingPlannedTransactions: React.FC = () => {
-  const { plannedTransactions } = usePlannedTransactions();
-  const { bankData, categoryData } = useBanksCategsContext() || {};
+  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { plannedTransactions, updatePlannedTransaction } =
+    usePlannedTransactions();
+  const { bankData, categoryData, baseCurrency } =
+    useBanksCategsContext() || {};
   const banks = bankData?.banks || [];
   const categories = categoryData?.categories || [];
   const today = new Date();
-  // Show only active and upcoming (startDate >= today)
   const upcoming =
     plannedTransactions?.filter(
-      (pt) => pt?.active && pt?.startDate && new Date(pt.startDate) >= today
+      (pt) =>
+        pt.active &&
+        isPlannedTransactionToday(pt, today) &&
+        (!pt.lastLoggedAt ||
+          // check if lastLoggedAt is the day today
+          new Date(pt.lastLoggedAt).setUTCHours(0, 0, 0, 0) !==
+            today.setUTCHours(0, 0, 0, 0))
     ) || [];
 
   // Helper to map bank id to name
   const getBankName = (id: string) =>
     banks.find((b) => b.id === id)?.name || id || "-";
   // Helper to map category ids to names
-  const getCategoryNames = (ids: any) => {
-    if (!ids || (Array.isArray(ids) && ids.length === 0)) return "-";
-    // If it's a string (single category), convert to array
-    const idArr = Array.isArray(ids) ? ids : [ids];
-    // Some planned transactions may store categories as names or ids, so check both
-    const names = idArr
-      .map((id) => {
-        if (!id) return null;
-        // Try to find by id
-        const byId = categories.find((c) => c.id === id);
-        if (byId) return byId.name;
-        // Fallback: try to find by name (for legacy or mixed data)
-        const byName = categories.find((c) => c.name === id);
-        if (byName) return byName.name;
-        // Fallback: show raw value
-        return id;
-      })
-      .filter(Boolean);
-    return names.length > 0 ? names.join(", ") : "-";
-  };
 
   if (!upcoming || upcoming.length === 0) return null;
 
   return (
-    <div className="mb-4 p-3 bg-slate-900 rounded border border-slate-700">
+    <div className="mb-4 p-3 bg-slate-950 rounded-md border border-slate-700">
       <div className="font-bold mb-2 text-lg flex items-center gap-2">
-        <span role="img" aria-label="calendar">
-          📅
-        </span>{" "}
         Upcoming Planned Transactions
       </div>
       <div className="flex flex-col gap-3">
@@ -59,53 +46,87 @@ const UpcomingPlannedTransactions: React.FC = () => {
             id: undefined,
             date: new Date().toISOString(),
           };
+          // Handler to update lastLoggedAt on planned transaction after submit
           return (
             <MixedDialogTrigger
               key={pt?.id || Math.random()}
               transaction={transaction}
+              onPlannedSubmit={async () => {
+                await updatePlannedTransaction({
+                  ...pt,
+                  lastLoggedAt: new Date(),
+                });
+              }}
             >
-              <div className="border border-slate-700 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between bg-slate-800 hover:bg-slate-700 transition-colors shadow-sm cursor-pointer">
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-100 text-base truncate">
-                    {pt?.description || (
-                      <span className="italic text-slate-400">
-                        (No description)
-                      </span>
-                    )}
+              <div
+                role="button"
+                className="flex flex-col justify-between transition-all flex-grow h-full text-slate-200 p-2 border-2 gap-2 border-slate-700 hover:border-slate-600 rounded-xl hover:bg-slate-800 hover:cursor-pointer overflow-clip"
+              >
+                <div className="flex flex-row w-full items-center justify-between gap-2">
+                  <div className="flex flex-col text-start">
+                    <div className="flex flex-row items-center gap-2">
+                      <p className="text-nowrap">
+                        {pt?.startDate
+                          ? new Date(pt.startDate).toLocaleDateString(
+                              undefined,
+                              {
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )
+                          : "-"}
+                      </p>
+                      {pt?.recurrence?.frequency && (
+                        <span className="px-2 py-1 rounded bg-blue-900 text-blue-300 text-xs font-semibold ml-1">
+                          {pt.recurrence.frequency}
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-[1px] w-8 bg-slate-700 my-1" />
+                    <small>{getBankName(pt?.bank)}</small>
                   </div>
-                  <div className="flex flex-wrap gap-x-6 gap-y-1 mt-1 text-sm text-slate-300">
-                    <span className="font-medium text-green-400">
-                      {pt?.amount ? `Amount: $${pt.amount}` : "Amount: -"}
-                    </span>
-                    <span>Type: {pt?.type ?? "-"}</span>
-                    <span>Bank: {getBankName(pt?.bank)}</span>
-                    <span>Categories: {getCategoryNames(pt?.categories)}</span>
-                    <span>
-                      Start:{" "}
-                      {pt?.startDate
-                        ? new Date(pt.startDate).toLocaleDateString()
-                        : "-"}
-                    </span>
-                    <span>Recurrence: {pt?.recurrence?.frequency ?? "-"}</span>
-                    <span>
-                      Reminder:{" "}
-                      {pt?.reminderMinutesBefore
-                        ? `${pt.reminderMinutesBefore} min before`
-                        : "None"}
-                    </span>
+                  <div className="flex flex-col text-right">
+                    <p
+                      className={
+                        pt.amount < 0
+                          ? "text-lg font-semibold font-mono text-red-400"
+                          : "text-lg font-semibold font-mono text-green-400"
+                      }
+                    >
+                      {isPrivacyModeEnabled
+                        ? `${baseCurrency?.symbol ?? "$"}••••••`
+                        : parseAmount(pt.amount, baseCurrency?.code)}
+                    </p>
+                    <small className="text-balance">
+                      {pt?.description?.length > 50
+                        ? pt.description.slice(0, 50) + "..."
+                        : pt?.description || (
+                            <span className="italic text-slate-400">
+                              (No description)
+                            </span>
+                          )}
+                    </small>
                   </div>
                 </div>
-                <div className="mt-3 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col items-end gap-2">
-                  {pt?.recurrence?.frequency && (
-                    <span className="px-2 py-1 rounded bg-blue-900 text-blue-300 text-xs font-semibold">
-                      {pt.recurrence.frequency}
-                    </span>
-                  )}
-                  {pt?.reminderMinutesBefore && (
-                    <span className="px-2 py-1 rounded bg-yellow-900 text-yellow-300 text-xs font-semibold">
-                      Reminder: {pt.reminderMinutesBefore} min
-                    </span>
-                  )}
+                <div className="flex flex-row flex-wrap w-full bg-slate-900 rounded-md p-1 gap-2 border-2 border-slate-700 min-h-8">
+                  {(Array.isArray(pt.categories)
+                    ? pt.categories
+                    : [pt.categories]
+                  )
+                    .filter(Boolean)
+                    .map((catId) => {
+                      const cat = categories.find(
+                        (c) => c.id === catId || c.name === catId
+                      );
+                      return (
+                        <small
+                          key={catId}
+                          className="bg-slate-600 rounded-full whitespace-nowrap px-2"
+                        >
+                          {cat ? cat.name : catId}
+                        </small>
+                      );
+                    })}
                 </div>
               </div>
             </MixedDialogTrigger>
