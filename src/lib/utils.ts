@@ -177,3 +177,16 @@ export function isPlannedTransactionToday(
     return isToday;
   }
 }
+
+export function getLocalDateFromUTC(
+  date: Date | string | undefined,
+  timezoneOffset?: number
+): Date {
+  if (!date) return new Date(NaN);
+  const utcDate = typeof date === "string" ? new Date(date) : date;
+  if (typeof timezoneOffset === "number") {
+    // Add the offset (in hours) to the UTC date
+    return new Date(utcDate.getTime() + timezoneOffset * 60 * 60 * 1000);
+  }
+  return utcDate;
+}

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import PocketBase from "pocketbase";
 import webpush from "web-push";
 import type { PlannedTransaction } from "@/lib/types";
-import { isPlannedTransactionToday } from "@/lib/utils";
+import { isPlannedTransactionToday, getLocalDateFromUTC } from "@/lib/utils";
 
 const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL);
 
@@ -61,40 +61,49 @@ export async function POST(req: NextRequest) {
       );
       continue;
     }
-    const today = new Date();
-    if (isPlannedTransactionToday(tx, today)) {
+    // Always use the user's local timezone for all date checks
+    const localNow = getLocalDateFromUTC(now, tx.timezone);
+    const localToday = new Date(localNow);
+    localToday.setHours(0, 0, 0, 0);
+    // Use localToday for isPlannedTransactionToday
+    if (isPlannedTransactionToday(tx, localToday)) {
       console.log(`[CRON] Planned transaction ${tx.id} is for today.`);
-      const startDate = new Date(tx.startDate);
-      if (now < startDate) {
+      const localStartDate = getLocalDateFromUTC(tx.startDate, tx.timezone);
+      if (localNow < localStartDate) {
         console.log(
-          `[CRON] Too early to notify for planned transaction ${tx.id}. Start time is ${startDate.toISOString()}`
+          `[CRON] Too early to notify for planned transaction ${tx.id}. Start time is ${localStartDate.toISOString()}`
         );
         continue;
       }
-      // Check if the transaction has been logged today
-      let lastLoggedAt = tx.lastLoggedAt ? new Date(tx.lastLoggedAt) : null;
+      // Check if the transaction has been logged today (in user's local time)
+      let lastLoggedAt = tx.lastLoggedAt
+        ? getLocalDateFromUTC(tx.lastLoggedAt, tx.timezone)
+        : null;
       const isLoggedToday =
         lastLoggedAt &&
-        lastLoggedAt.getUTCFullYear() === now.getUTCFullYear() &&
-        lastLoggedAt.getUTCMonth() === now.getUTCMonth() &&
-        lastLoggedAt.getUTCDate() === now.getUTCDate();
+        lastLoggedAt.getFullYear() === localToday.getFullYear() &&
+        lastLoggedAt.getMonth() === localToday.getMonth() &&
+        lastLoggedAt.getDate() === localToday.getDate();
       if (isLoggedToday) {
         console.log(
           `[CRON] Planned transaction ${tx.id} has already been logged today. Skipping notification.`
         );
         continue;
       }
-      // Check if the transaction has been notified in the past 3 hours
+      // Check if the transaction has been notified in the past 3 hours (in user's local time)
       const lastNotifiedAt = tx.lastNotifiedAt
-        ? new Date(tx.lastNotifiedAt)
+        ? getLocalDateFromUTC(tx.lastNotifiedAt, tx.timezone)
         : null;
-      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+      const threeHoursAgo = new Date(localNow.getTime() - 3 * 60 * 60 * 1000);
       const notifiedToday =
         lastNotifiedAt &&
-        lastNotifiedAt.getUTCFullYear() === now.getUTCFullYear() &&
-        lastNotifiedAt.getUTCMonth() === now.getUTCMonth() &&
-        lastNotifiedAt.getUTCDate() === now.getUTCDate();
-      if (!notifiedToday || lastNotifiedAt < threeHoursAgo) {
+        lastNotifiedAt.getFullYear() === localToday.getFullYear() &&
+        lastNotifiedAt.getMonth() === localToday.getMonth() &&
+        lastNotifiedAt.getDate() === localToday.getDate();
+      if (
+        !notifiedToday ||
+        (lastNotifiedAt && lastNotifiedAt < threeHoursAgo)
+      ) {
         console.log(`[CRON] Notifying user for planned transaction ${tx.id}.`);
         // Get the user's push subscription
         const subscriptions = await pb

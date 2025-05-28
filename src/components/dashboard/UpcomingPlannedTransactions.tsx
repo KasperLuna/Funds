@@ -5,7 +5,11 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
 import { Transaction } from "@/lib/types";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
-import { parseAmount, isPlannedTransactionToday } from "@/lib/utils";
+import {
+  parseAmount,
+  isPlannedTransactionToday,
+  getLocalDateFromUTC,
+} from "@/lib/utils";
 
 const UpcomingPlannedTransactions: React.FC = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
@@ -16,16 +20,28 @@ const UpcomingPlannedTransactions: React.FC = () => {
   const banks = bankData?.banks || [];
   const categories = categoryData?.categories || [];
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const upcoming =
-    plannedTransactions?.filter(
-      (pt) =>
+    plannedTransactions?.filter((pt) => {
+      // Use local date for planned transaction and today
+      const localStartDate = getLocalDateFromUTC(pt.startDate, pt.timezone);
+      const localToday = getLocalDateFromUTC(today, pt.timezone);
+      return (
         pt.active &&
-        isPlannedTransactionToday(pt, today) &&
+        isPlannedTransactionToday(
+          { ...pt, startDate: localStartDate },
+          localToday
+        ) &&
         (!pt.lastLoggedAt ||
-          // check if lastLoggedAt is the day today
-          new Date(pt.lastLoggedAt).setUTCHours(0, 0, 0, 0) !==
-            today.setUTCHours(0, 0, 0, 0))
-    ) || [];
+          // check if lastLoggedAt is the day today in the user's timezone
+          getLocalDateFromUTC(pt.lastLoggedAt, pt.timezone).setUTCHours(
+            0,
+            0,
+            0,
+            0
+          ) !== localToday.setUTCHours(0, 0, 0, 0))
+      );
+    }) || [];
 
   // Helper to map bank id to name
   const getBankName = (id: string) =>
@@ -67,13 +83,13 @@ const UpcomingPlannedTransactions: React.FC = () => {
                     <div className="flex flex-row items-center gap-2">
                       <p className="text-nowrap">
                         {pt?.startDate
-                          ? new Date(pt.startDate).toLocaleDateString(
-                              undefined,
-                              {
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )
+                          ? getLocalDateFromUTC(
+                              pt.startDate,
+                              pt.timezone
+                            ).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })
                           : "-"}
                       </p>
                       {pt?.recurrence?.frequency && (
