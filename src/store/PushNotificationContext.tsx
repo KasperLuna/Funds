@@ -63,7 +63,7 @@ export const PushNotificationProvider = ({
         // Check if this subscription exists in backend
         const records = await pb.collection("push_subscriptions")?.getFullList({
           filter: `user="${user.id}" && endpoint="${browserSub.endpoint}"`,
-          requestKey: `check-subscription-${user.id}-${browserSub.endpoint}`,
+          requestKey: null,
         });
         setIsSubscribed(records.length > 0);
       } catch (e) {
@@ -111,6 +111,7 @@ export const PushNotificationProvider = ({
     // Check if this device is already subscribed in PocketBase
     const existing = await pb.collection("push_subscriptions")?.getFullList({
       filter: `user='${user?.id}' && endpoint='${json.endpoint}'`,
+      requestKey: null,
     });
     if (existing.length > 0) {
       // Update the existing subscription for this device

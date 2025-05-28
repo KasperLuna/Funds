@@ -92,118 +92,82 @@ export const MixedDialog = ({
     [bankData, transaction]
   );
 
-  // Helper for updating bank balances
-  const updateBankBalanceOnTransaction = useCallback(
-    async ({
-      action,
-      newTransaction,
-    }: {
-      action: string;
-      newTransaction?: Omit<Transaction, "date"> & { date: Date };
-    }) => {
-      const transactionBank = bankData?.banks.find(
-        (bank) => bank.id === newTransaction?.bank
-      );
-      try {
-        if (action === "delete") {
-          if (!originalBank?.id || !transaction)
-            throw new Error("Error updating bank balance");
-          await pb.collection("banks").update(originalBank.id, {
-            balance: new Decimal(originalBank.balance)
-              .sub(new Decimal(transaction.amount))
-              .toNumber(),
-          });
-          return;
-        }
-        if (action === "create") {
-          if (!transactionBank?.id || !newTransaction)
-            throw new Error("Error updating bank balance");
-          await pb.collection("banks").update(transactionBank.id, {
-            balance: new Decimal(transactionBank.balance)
-              .add(new Decimal(newTransaction.amount))
-              .toNumber(),
-          });
-          return;
-        }
-        if (action === "update") {
-          if (
-            !originalBank?.id ||
-            !transactionBank?.id ||
-            !transaction ||
-            !newTransaction
-          )
-            throw new Error("Error updating bank balance");
-          if (originalBank.id === transactionBank.id) {
-            await pb.collection("banks").update(originalBank.id, {
-              balance: new Decimal(originalBank.balance)
-                .sub(new Decimal(transaction.amount))
-                .add(new Decimal(newTransaction.amount))
-                .toNumber(),
-            });
-            return;
-          }
-          await pb.collection("banks").update(originalBank.id, {
-            balance: new Decimal(originalBank.balance)
-              .sub(new Decimal(transaction.amount))
-              .toNumber(),
-          });
-          await pb.collection("banks").update(transactionBank.id, {
-            balance: new Decimal(transactionBank.balance)
-              .add(new Decimal(newTransaction.amount))
-              .toNumber(),
-          });
-        }
-      } catch (error) {
-        console.error(
-          error,
-          "new transaction",
-          newTransaction,
-          "old transaction",
-          transaction
-        );
-      } finally {
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
-        queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
-      }
-    },
-    [bankData, originalBank, queryClient, transaction]
-  );
-
   // Memoize onSubmit handler
   const onSubmit = useCallback(
-    async (data: Omit<Transaction, "date"> & { date: Date }) => {
+    async (batch: Array<Omit<Transaction, "date"> & { date: Date }>) => {
       try {
-        const parsedData = {
-          ...data,
-          categories:
-            data.categories.map(
-              (categ) =>
-                categoryData?.categories.find((cat) => cat.name === categ)
-                  ?.id || ""
-            ) || [],
-          amount: ["expense", "withdrawal"].includes(data.type)
-            ? new Decimal(data.amount).negated().toNumber()
-            : new Decimal(data.amount).toNumber(),
-        };
         setIsModalOpen(false);
-        if (transaction?.id) {
-          await pb
-            .collection("transactions")
-            .update(transaction.id, parsedData);
-        } else {
-          await pb
-            .collection("transactions")
-            .create(parsedData, { requestKey: null });
+        const batcher = pb.createBatch();
+        for (const data of batch) {
+          const parsedData = {
+            ...data,
+            categories:
+              data.categories.map(
+                (categ) =>
+                  categoryData?.categories.find((cat) => cat.name === categ)
+                    ?.id || ""
+              ) || [],
+            amount: ["expense", "withdrawal"].includes(data.type)
+              ? new Decimal(data.amount).negated().toNumber()
+              : new Decimal(data.amount).toNumber(),
+          };
+          const transactionBank = bankData?.banks.find(
+            (bank) => bank.id === parsedData.bank
+          );
+          if (!transactionBank?.id || !parsedData)
+            throw new Error("Error updating bank balance");
+          if (data.id) {
+            // Update existing transaction
+            batcher.collection("transactions").update(data.id, parsedData);
+            // Find the original transaction and bank
+            const original = transaction;
+            const originalBank = bankData?.banks.find(
+              (bank) => bank.id === original?.bank
+            );
+            if (!original || !originalBank)
+              throw new Error("Original transaction/bank not found");
+            if (originalBank.id === transactionBank.id) {
+              // Same bank: subtract old amount, add new amount
+              batcher.collection("banks").update(transactionBank.id, {
+                balance: new Decimal(transactionBank.balance)
+                  .sub(new Decimal(original.amount))
+                  .add(new Decimal(parsedData.amount))
+                  .toNumber(),
+              });
+            } else {
+              // Bank changed: subtract from old, add to new
+              batcher.collection("banks").update(originalBank.id, {
+                balance: new Decimal(originalBank.balance)
+                  .sub(new Decimal(original.amount))
+                  .toNumber(),
+              });
+              batcher.collection("banks").update(transactionBank.id, {
+                balance: new Decimal(transactionBank.balance)
+                  .add(new Decimal(parsedData.amount))
+                  .toNumber(),
+              });
+            }
+          } else {
+            // Create new transaction
+            batcher
+              .collection("transactions")
+              .create(parsedData, { requestKey: null });
+            batcher.collection("banks").update(transactionBank.id, {
+              balance: new Decimal(transactionBank.balance)
+                .add(new Decimal(parsedData.amount))
+                .toNumber(),
+            });
+          }
         }
-        await updateBankBalanceOnTransaction({
-          action: transaction?.id ? "update" : "create",
-          newTransaction: parsedData,
-        });
+        await batcher.send();
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
+        queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
       } catch (error) {
         alert(error);
       }
     },
-    [categoryData, setIsModalOpen, transaction, updateBankBalanceOnTransaction]
+    [categoryData, setIsModalOpen, bankData, queryClient]
   );
 
   // Memoize dialog actions
@@ -211,19 +175,48 @@ export const MixedDialog = ({
     if (!transaction) return;
     setIsModalOpen(false);
     const { id, ...rest } = transaction;
-    pb.collection("transactions").create(rest);
-    updateBankBalanceOnTransaction({
-      action: "create",
-      newTransaction: { ...rest, date: new Date(rest.date) },
+    // Inline updateBankBalanceOnTransaction logic for batching
+    const transactionBank = bankData?.banks.find(
+      (bank) => bank.id === rest.bank
+    );
+    const batch = pb.createBatch();
+    if (!transactionBank?.id || !rest)
+      throw new Error("Error updating bank balance");
+    // Add transaction creation to batch
+    batch.collection("transactions").create(rest);
+    // Add bank balance update to batch
+    batch.collection("banks").update(transactionBank.id, {
+      balance: new Decimal(transactionBank.balance)
+        .add(new Decimal(rest.amount))
+        .toNumber(),
     });
-  }, [transaction, setIsModalOpen, updateBankBalanceOnTransaction]);
+    batch.send().then(() => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
+      queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
+    });
+  }, [transaction, setIsModalOpen, bankData, queryClient]);
 
   const handleDelete = useCallback(() => {
     if (!transaction) return;
     setIsModalOpen(false);
-    pb.collection("transactions").delete(transaction.id as string);
-    updateBankBalanceOnTransaction({ action: "delete" });
-  }, [transaction, setIsModalOpen, updateBankBalanceOnTransaction]);
+    const batch = pb.createBatch();
+    // Add transaction deletion to batch
+    batch.collection("transactions").delete(transaction.id as string);
+    // Inline updateBankBalanceOnTransaction logic for batching
+    if (!originalBank?.id || !transaction)
+      throw new Error("Error updating bank balance");
+    batch.collection("banks").update(originalBank.id, {
+      balance: new Decimal(originalBank.balance)
+        .sub(new Decimal(transaction.amount))
+        .toNumber(),
+    });
+    batch.send().then(() => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
+      queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
+    });
+  }, [transaction, setIsModalOpen, originalBank, queryClient]);
 
   return (
     <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
