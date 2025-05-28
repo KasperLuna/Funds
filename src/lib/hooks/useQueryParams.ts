@@ -17,6 +17,7 @@ export function useQueryParams<T extends Record<string, any>>(
   const pathname = usePathname();
 
   const getQueryParams = (): T => {
+    if (!searchParams) return { ...config?.defaultValues } as T;
     const params = Object.fromEntries(searchParams.entries()) as Record<
       string,
       any
@@ -24,7 +25,8 @@ export function useQueryParams<T extends Record<string, any>>(
     return { ...config?.defaultValues, ...params } as T;
   };
 
-  const [queryParams, setQueryParamsState] = useState<T>(getQueryParams);
+  // Try direct initialization without lazy function
+  const [queryParamsState, setQueryParamsState] = useState<T>(getQueryParams());
 
   useEffect(() => {
     setQueryParamsState(getQueryParams());
@@ -32,7 +34,7 @@ export function useQueryParams<T extends Record<string, any>>(
   }, [searchParams]);
 
   const setQueryParams = (newParams: Partial<T>) => {
-    const updatedParams = new URLSearchParams(searchParams);
+    const updatedParams = new URLSearchParams(searchParams || undefined);
     Object.entries(newParams).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         updatedParams.set(key, String(value));
@@ -51,7 +53,7 @@ export function useQueryParams<T extends Record<string, any>>(
   };
 
   return {
-    queryParams,
+    queryParams: queryParamsState,
     setQueryParams,
   };
 }

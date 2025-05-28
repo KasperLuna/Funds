@@ -12,6 +12,7 @@ import { X } from "lucide-react";
 import { AccountSettings } from "./AccountSettings";
 import { BankSettings } from "./banks/BankSettings";
 import { CategorySettings } from "./CategorySettings";
+import PushNotificationSettings from "./settings/PushNotificationSettings";
 
 export const SettingsDialogTrigger = ({
   children,
@@ -60,7 +61,7 @@ export const SettingsDialog = ({
           className="w-full"
         >
           <TabsList className="w-full bg-slate-800 border-slate-600">
-            {["account", "banks", "categories"].map((value) => (
+            {["account", "banks", "categories", "notifications"].map((value) => (
               <TabsTrigger key={value} value={value} className="w-full">
                 {value.charAt(0).toUpperCase() + value.slice(1)}
               </TabsTrigger>
@@ -74,6 +75,9 @@ export const SettingsDialog = ({
           </TabsContent>
           <TabsContent value="categories">
             <CategorySettings />
+          </TabsContent>
+          <TabsContent value="notifications">
+            <PushNotificationSettings />
           </TabsContent>
         </Tabs>
       </AlertDialogContent>

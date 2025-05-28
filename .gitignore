@@ -36,6 +36,6 @@ yarn-error.log*
 next-env.d.ts
 
 #PWA sw files
-/public/sw.*
+# /public/sw.*
 /public/swe-*
 /public/workbox-*
