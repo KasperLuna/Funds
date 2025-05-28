@@ -5,7 +5,7 @@ import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
 import { Transaction } from "@/lib/types";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
-import { parseAmount, isPlannedTransactionToday } from "@/lib/utils";
+import { parseAmount, getLocalDateFromUTC } from "@/lib/utils";
 
 const UpcomingPlannedTransactions: React.FC = () => {
   const { isPrivacyModeEnabled } = usePrivacyMode();
@@ -16,16 +16,16 @@ const UpcomingPlannedTransactions: React.FC = () => {
   const banks = bankData?.banks || [];
   const categories = categoryData?.categories || [];
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const upcoming =
-    plannedTransactions?.filter(
-      (pt) =>
-        pt.active &&
-        isPlannedTransactionToday(pt, today) &&
-        (!pt.lastLoggedAt ||
-          // check if lastLoggedAt is the day today
-          new Date(pt.lastLoggedAt).setUTCHours(0, 0, 0, 0) !==
-            today.setUTCHours(0, 0, 0, 0))
-    ) || [];
+    plannedTransactions?.filter((pt) => {
+      const localInvokeDate = getLocalDateFromUTC(pt.invokeDate, pt.timezone);
+      console.log({ localInvokeDate });
+      const localToday = getLocalDateFromUTC(today, pt.timezone);
+      localToday.setHours(0, 0, 0, 0);
+      localInvokeDate.setHours(0, 0, 0, 0);
+      return pt.active && localInvokeDate.getTime() === localToday.getTime();
+    }) || [];
 
   // Helper to map bank id to name
   const getBankName = (id: string) =>
@@ -52,9 +52,30 @@ const UpcomingPlannedTransactions: React.FC = () => {
               key={pt?.id || Math.random()}
               transaction={transaction}
               onPlannedSubmit={async () => {
+                // On submit, move previousDate to current invokeDate, and calculate new invokeDate
+                const prev = pt.invokeDate;
+                let nextInvoke = new Date(prev);
+                const interval = pt.recurrence.interval || 1;
+                switch (pt.recurrence.frequency) {
+                  case "daily":
+                    nextInvoke.setDate(nextInvoke.getDate() + interval);
+                    break;
+                  case "weekly":
+                    nextInvoke.setDate(nextInvoke.getDate() + 7 * interval);
+                    break;
+                  case "monthly":
+                    nextInvoke.setMonth(nextInvoke.getMonth() + interval);
+                    break;
+                  case "yearly":
+                    nextInvoke.setFullYear(nextInvoke.getFullYear() + interval);
+                    break;
+                  default:
+                    nextInvoke.setMonth(nextInvoke.getMonth() + interval);
+                }
                 await updatePlannedTransaction({
                   ...pt,
-                  lastLoggedAt: new Date(),
+                  previousDate: prev,
+                  invokeDate: nextInvoke,
                 });
               }}
             >
@@ -66,21 +87,16 @@ const UpcomingPlannedTransactions: React.FC = () => {
                   <div className="flex flex-col text-start">
                     <div className="flex flex-row items-center gap-2">
                       <p className="text-nowrap">
-                        {pt?.startDate
-                          ? new Date(pt.startDate).toLocaleDateString(
-                              undefined,
-                              {
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )
+                        {pt?.invokeDate
+                          ? getLocalDateFromUTC(
+                              pt.invokeDate,
+                              pt.timezone
+                            ).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })
                           : "-"}
                       </p>
-                      {pt?.recurrence?.frequency && (
-                        <span className="px-2 py-1 rounded bg-blue-900 text-blue-300 text-xs font-semibold ml-1">
-                          {pt.recurrence.frequency}
-                        </span>
-                      )}
                     </div>
                     <div className="h-[1px] w-8 bg-slate-700 my-1" />
                     <small>{getBankName(pt?.bank)}</small>

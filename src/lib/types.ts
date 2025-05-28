@@ -111,11 +111,11 @@ export type PlannedTransaction = {
   amount: number;
   bank: string;
   categories: string[];
-  startDate: Date; // when the recurrence starts
-  timezone: number; // timezone offset in hours
   recurrence: RecurrenceRule;
+  timezone: number;
+  previousDate: Date | null; // last time it was invoked
+  invokeDate: Date; // next scheduled occurrence
   lastNotifiedAt?: Date; // when the user was last notified about this planned transaction
-  lastLoggedAt?: Date; // when the user last logged this planned transaction
   active: boolean;
 };
 

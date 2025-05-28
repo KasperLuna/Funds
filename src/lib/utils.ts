@@ -1,8 +1,5 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { addDays, addWeeks, addMonths, addYears } from "date-fns";
-
-import type { PlannedTransaction } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -106,74 +103,15 @@ export const handleFiles = (files?: File[]): File[] | null => {
   return files;
 };
 
-/**
- * Returns true if the planned transaction should be considered 'today' (upcoming/notify) in the user's timezone.
- * Handles both recurring and non-recurring planned transactions.
- */
-export function isPlannedTransactionToday(
-  pt: PlannedTransaction,
-  today: Date
-): boolean {
-  if (!pt.startDate) {
-    return false;
+export function getLocalDateFromUTC(
+  date: Date | string | undefined,
+  timezoneOffset?: number
+): Date {
+  if (!date) return new Date(NaN);
+  const utcDate = typeof date === "string" ? new Date(date) : date;
+  if (typeof timezoneOffset === "number") {
+    // Add the offset (in hours) to the UTC date
+    return new Date(utcDate.getTime() + timezoneOffset * 60 * 60 * 1000);
   }
-  const startDate = new Date(pt.startDate);
-  const userStartDate = new Date(startDate.getTime());
-  const userToday = new Date(today.getTime());
-  userToday.setHours(0, 0, 0, 0);
-
-  console.debug("Checking planned transaction:", pt.description);
-  console.debug("User start date:", userStartDate);
-  console.debug("User today:", userToday);
-
-  let occurrenceDate = new Date(userStartDate);
-  occurrenceDate.setHours(0, 0, 0, 0);
-  if (pt.recurrence && pt.recurrence.frequency) {
-    const interval = pt.recurrence.interval || 1;
-    console.debug(
-      "Recurring transaction. Frequency:",
-      pt.recurrence.frequency,
-      "Interval:",
-      interval
-    );
-    while (occurrenceDate <= userToday) {
-      occurrenceDate.setHours(0, 0, 0, 0); // Normalize to midnight
-      console.debug("Occurrence date:", occurrenceDate);
-      if (
-        occurrenceDate.getFullYear() === userToday.getFullYear() &&
-        occurrenceDate.getMonth() === userToday.getMonth() &&
-        occurrenceDate.getDate() === userToday.getDate()
-      ) {
-        console.debug("Transaction occurs today.");
-        return true;
-      }
-      switch (pt.recurrence.frequency) {
-        case "daily":
-          occurrenceDate = addDays(occurrenceDate, interval);
-          break;
-        case "weekly":
-          occurrenceDate = addWeeks(occurrenceDate, interval);
-          break;
-        case "monthly":
-          occurrenceDate = addMonths(occurrenceDate, interval);
-          break;
-        case "yearly":
-          occurrenceDate = addYears(occurrenceDate, interval);
-          break;
-        default:
-          occurrenceDate = addMonths(occurrenceDate, interval);
-      }
-    }
-    console.debug("Transaction does not occur today.");
-    return false;
-  } else {
-    // Not recurring, use original logic
-    userStartDate.setHours(0, 0, 0, 0); // Normalize to midnight
-    const isToday =
-      userStartDate.getFullYear() === userToday.getFullYear() &&
-      userStartDate.getMonth() === userToday.getMonth() &&
-      userStartDate.getDate() === userToday.getDate();
-    console.debug("Non-recurring transaction. Is today:", isToday);
-    return isToday;
-  }
+  return utcDate;
 }

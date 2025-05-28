@@ -18,7 +18,6 @@ const PlannedTransactionsContext = createContext<
 >(undefined);
 
 function recordToPlannedTransaction(record: any): PlannedTransaction {
-  // Map PocketBase record to PlannedTransaction type
   return {
     id: record.id,
     created: record.created ? new Date(record.created) : undefined,
@@ -29,10 +28,13 @@ function recordToPlannedTransaction(record: any): PlannedTransaction {
     amount: record.amount,
     bank: record.bank,
     categories: record.categories,
-    startDate: record.startDate,
     recurrence: record.recurrence,
     timezone: record.timezone,
-    lastLoggedAt: record.lastLoggedAt,
+    previousDate: record.previousDate ? new Date(record.previousDate) : null,
+    invokeDate: new Date(record.invokeDate),
+    lastNotifiedAt: record.lastNotifiedAt
+      ? new Date(record.lastNotifiedAt)
+      : undefined,
     active: record.active,
   };
 }
@@ -56,7 +58,7 @@ export const PlannedTransactionsProvider = ({
       if (!user?.id) return [];
       const records = await pb.collection("planned_transactions")?.getFullList({
         filter: `user="${user.id}"`,
-        sort: "startDate",
+        sort: "invokeDate",
       });
       return records.map(recordToPlannedTransaction);
     },
@@ -70,7 +72,8 @@ export const PlannedTransactionsProvider = ({
       const record = await pb.collection("planned_transactions").create({
         ...pt,
         user: user.id,
-        startDate: new Date(pt.startDate).toISOString(),
+        previousDate: pt.previousDate ? pt.previousDate.toISOString() : null,
+        invokeDate: pt.invokeDate.toISOString(),
       });
       return recordToPlannedTransaction(record);
     },
@@ -85,9 +88,11 @@ export const PlannedTransactionsProvider = ({
   const updateMutation = useMutation({
     mutationFn: async (pt: PlannedTransaction) => {
       if (!pt.id) return;
-      const record = await pb
-        .collection("planned_transactions")
-        .update(pt.id, pt);
+      const record = await pb.collection("planned_transactions").update(pt.id, {
+        ...pt,
+        previousDate: pt.previousDate ? pt.previousDate.toISOString() : null,
+        invokeDate: pt.invokeDate.toISOString(),
+      });
       return recordToPlannedTransaction(record);
     },
     onSuccess: () => {
