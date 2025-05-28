@@ -1,0 +1,24 @@
+# GitHub Actions workflow to run planned transaction reminders every hour
+# This workflow replaces the Vercel CRON job defined in vercel.json
+
+name: Planned Transaction Reminders
+
+on:
+  schedule:
+    - cron: "0 * * * *" # every hour, on the hour (UTC)
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Call planned reminders endpoint (POST)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -f -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"CRON_SECRET":"'"${CRON_SECRET}"'"}' \
+            "${{ secrets.REMINDER_ENDPOINT }}"

@@ -95,3 +95,37 @@ export type Currency = {
   name: string;
   symbol: string;
 };
+
+export type RecurrenceRule = {
+  frequency: "daily" | "weekly" | "monthly" | "yearly";
+  interval?: number; // e.g., every 2 weeks
+};
+
+export type PlannedTransaction = {
+  id?: string;
+  created?: Date;
+  updated?: Date;
+  user: string;
+  description: string;
+  type: Type;
+  amount: number;
+  bank: string;
+  categories: string[];
+  startDate: Date; // when the recurrence starts
+  timezone: number; // timezone offset in hours
+  recurrence: RecurrenceRule;
+  lastNotifiedAt?: Date; // when the user was last notified about this planned transaction
+  lastLoggedAt?: Date; // when the user last logged this planned transaction
+  active: boolean;
+};
+
+export type PushSubscription = {
+  id?: string;
+  user: string;
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  created?: Date;
+};

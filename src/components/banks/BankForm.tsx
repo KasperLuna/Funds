@@ -32,7 +32,7 @@ export const BankForm = () => {
       }
       await addBank({ name: data.name, balance: 0 });
       reset();
-    } catch (error) {
+    } catch {
       alert("An error occurred. Try again later.");
     }
   };
