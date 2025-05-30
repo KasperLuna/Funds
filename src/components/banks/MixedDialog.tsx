@@ -339,6 +339,9 @@ export const MixedDialog = ({
               await addPlannedTransaction({
                 ...pt,
                 user: user.id,
+                amount: ["expense", "withdrawal"].includes(pt.type)
+                  ? new Decimal(pt.amount).negated().toNumber()
+                  : new Decimal(pt.amount).toNumber(),
                 categories: mappedCategories,
               });
               setIsModalOpen(false);
