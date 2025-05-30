@@ -91,7 +91,7 @@ const UpcomingPlannedTransactions: React.FC = () => {
                         })}
                       </p>
                     </div>
-                    <div className="h-[1px] w-8 bg-slate-700 my-1" />
+                    <div className="h-[1px] w-full bg-slate-700 my-1" />
                     <small>{getBankName(pt?.bank)}</small>
                   </div>
                   <div className="flex flex-col text-right">
