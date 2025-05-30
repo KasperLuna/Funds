@@ -85,15 +85,10 @@ const UpcomingPlannedTransactions: React.FC = () => {
                   <div className="flex flex-col text-start">
                     <div className="flex flex-row items-center gap-2">
                       <p className="text-nowrap">
-                        {pt?.invokeDate
-                          ? getLocalDateFromUTC(
-                              pt.invokeDate,
-                              pt.timezone
-                            ).toLocaleDateString(undefined, {
-                              month: "short",
-                              day: "numeric",
-                            })
-                          : "-"}
+                        {pt?.invokeDate.toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </p>
                     </div>
                     <div className="h-[1px] w-8 bg-slate-700 my-1" />
