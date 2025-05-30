@@ -15,16 +15,14 @@ const UpcomingPlannedTransactions: React.FC = () => {
     useBanksCategsContext() || {};
   const banks = bankData?.banks || [];
   const categories = categoryData?.categories || [];
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   const upcoming =
     plannedTransactions?.filter((pt) => {
-      const localInvokeDate = getLocalDateFromUTC(pt.invokeDate, pt.timezone);
-      console.log({ localInvokeDate });
-      const localToday = getLocalDateFromUTC(today, pt.timezone);
-      localToday.setHours(0, 0, 0, 0);
-      localInvokeDate.setHours(0, 0, 0, 0);
-      return pt.active && localInvokeDate.getTime() === localToday.getTime();
+      const localDateTime = new Date();
+      return (
+        pt.active &&
+        pt.invokeDate <= new Date(localDateTime.setHours(23, 59, 59, 999)) &&
+        (!pt.previousDate || new Date(pt.previousDate) < localDateTime)
+      );
     }) || [];
 
   // Helper to map bank id to name
