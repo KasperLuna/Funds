@@ -96,8 +96,8 @@ export async function POST(req: NextRequest) {
           .collection("push_subscriptions")
           .getFullList({ filter: `user="${tx.user}"` });
         const payload = JSON.stringify({
-          title: `Log Now: ${tx.description}`,
-          body: `Amount: ${tx.amount}, press to log this transaction.`,
+          title: `Log Now: ${tx.description} due today!`,
+          body: `Open Funds to log this transaction.`,
           url: `/dashboard?plannedId=${tx.id}`,
         });
         if (subscriptions.length > 0) {
