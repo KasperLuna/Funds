@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";

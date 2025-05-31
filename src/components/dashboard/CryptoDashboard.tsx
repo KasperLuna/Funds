@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, Wallet, Coins } from "lucide-react";
 import Image from "next/image";
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQueries, UseQueryResult } from "@tanstack/react-query";
 import dayjs from "dayjs";
 import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
@@ -245,163 +245,46 @@ export function UserCoins({
   );
 }
 
-//TODO: improve structure of this component
-export function CryptoDashboard() {
-  const [lastFetched, setLastFetched] = useState<Date | null>(null);
-  const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { baseCurrency } = useBanksCategsContext();
-  const { tokenData } = useTokensContext();
-  const coins = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
-  const isTokensLoading = tokenData?.loading;
-  const CURRENCY = baseCurrency?.code || "USD";
-
-  // Map tokens from context to the format needed for the dashboard
-
-  // Unique coin ids for market query
-  const uniqueIds = useMemo(() => {
-    return Array.from(new Set(coins.map((c) => c.coingecko_id)));
-  }, [coins]);
-  const coinsParam = uniqueIds.join(",");
-
-  // Market data query (current prices)
-  const {
-    data: market = [],
-    isLoading,
-    isError,
-    error,
-    isFetching,
-  } = useQuery<CoinGeckoMarketData[], Error>({
-    queryKey: ["coingecko-market", coinsParam, CURRENCY],
-    queryFn: async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20000);
-      try {
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/coins/markets?vs_currency=${CURRENCY.toLowerCase()}&ids=${coinsParam}&order=market_cap_desc&per_page=${uniqueIds.length}&page=1&sparkline=false&price_change_percentage=24h`,
-          { signal: controller.signal }
-        );
-        if (!res.ok) {
-          let msg = "Failed to fetch market data";
-          try {
-            const err = (await res.json()) as CoinGeckoErrorResponse;
-            if (err?.error_code === 429 || err?.status?.error_code === 429) {
-              msg =
-                "CoinGecko API rate limit exceeded. Please try again in a few minutes.";
-            }
-          } catch {}
-          throw new Error(msg);
-        }
-        return (await res.json()) as CoinGeckoMarketData[];
-      } finally {
-        clearTimeout(timeout);
-        setLastFetched(new Date());
-      }
-    },
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    retry: (failureCount: number, error: Error) => {
-      if (error?.message?.includes("rate limit")) return false;
-      return failureCount < 2;
-    },
-  });
-
-  // Compute portfolio value and change directly from market data
-  const { portfolioValue, portfolioChange } = useMemo(() => {
-    let value = 0;
-    let change = 0;
-    if (market && Array.isArray(market) && coins.length > 0) {
-      for (const coin of coins) {
-        const marketCoin = market.find((c) => c.id === coin.coingecko_id);
-        if (marketCoin) {
-          value += coin.total * marketCoin.current_price;
-          change +=
-            ((marketCoin.price_change_percentage_24h || 0) *
-              coin.total *
-              marketCoin.current_price) /
-            100;
-        }
-      }
-    }
-    return {
-      portfolioValue: value,
-      portfolioChange: value ? (change / value) * 100 : 0,
-    };
-  }, [market, coins]);
-
-  // Token price history queries (1 per unique token)
-  const range = selectedRange === "1mo" ? 30 : 365;
-  // Helper to delay requests to avoid rate limits
-  function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  const historyQueries = useQueries({
-    queries: uniqueIds.map((id, idx) => ({
-      queryKey: ["coingecko-market-chart", id, CURRENCY, range],
-      queryFn: async () => {
-        // Stagger requests by 6 seconds per token
-        if (idx > 0) await delay(idx * 6000);
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${CURRENCY.toLowerCase()}&days=${range}`
-        );
-        if (!res.ok) {
-          let msg = "Failed to fetch price history";
-          try {
-            const err = (await res.json()) as CoinGeckoErrorResponse;
-            if (err?.error_code === 429 || err?.status?.error_code === 429) {
-              msg =
-                "CoinGecko API rate limit exceeded. Please try again in a few minutes.";
-            }
-          } catch {}
-          throw new Error(msg);
-        }
-        const data = (await res.json()) as CoinGeckoMarketChartData;
-        return data.prices;
-      },
-      staleTime: 1000 * 60 * 60 * 24, // 24 hours
-      cacheTime: 1000 * 60 * 60 * 24 * 7, // 7 days
-      retry: (failureCount: number, error: Error) => {
-        if (error?.message?.includes("rate limit")) return false;
-        return failureCount < 2;
-      },
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-    })),
-  });
-
-  const loadingHistory = historyQueries.some((q) => q.isLoading);
-  const historyError = historyQueries.find((q) => q.isError)?.error;
-
-  const tokenHistory: Record<string, CoinGeckoPriceDataPoint[]> = {};
-  uniqueIds.forEach((id, idx) => {
-    tokenHistory[id] = historyQueries[idx]?.data || [];
-  });
-
-  // Chart data for selected tokens
+function TokenTrendsChart({
+  coins,
+  market,
+  CURRENCY,
+  selectedRange,
+  setSelectedRange,
+  historyQueries,
+  tokenHistory,
+  historyError,
+}: {
+  coins: Token[];
+  market: CoinGeckoMarketData[];
+  CURRENCY: string;
+  selectedRange: "1mo" | "1yr";
+  setSelectedRange: (range: "1mo" | "1yr") => void;
+  historyQueries: UseQueryResult<CoinGeckoPriceDataPoint[], Error>[];
+  tokenHistory: Record<string, CoinGeckoPriceDataPoint[]>;
+  historyError: Error | undefined;
+}) {
   function getChartData(): {
     series: { name: string; data: (number | null)[] }[];
     categories: string[];
     loadedIds: string[];
     erroredIds: string[];
   } {
-    // Only include tokens whose history is loaded and not errored
-    const loadedIds = uniqueIds.filter(
-      (id, idx) =>
-        Array.isArray(historyQueries[idx]?.data) &&
-        !historyQueries[idx]?.isError
-    );
-    const erroredIds = uniqueIds.filter(
-      (id, idx) => historyQueries[idx]?.isError
-    );
+    const loadedIds = coins
+      .map((coin) => coin.coingecko_id)
+      .filter(
+        (id, idx) =>
+          Array.isArray(historyQueries[idx]?.data) &&
+          !historyQueries[idx]?.isError
+      );
+    const erroredIds = coins
+      .map((coin) => coin.coingecko_id)
+      .filter((id, idx) => historyQueries[idx]?.isError);
     const series = loadedIds.map((id) => {
       const coin = market.find((c) => c.id === id);
-      // Downsample to 1 point per day (CoinGecko returns hourly for 1mo, daily for 1yr)
       const prices = tokenHistory[id] || [];
       let filtered = prices;
       if (selectedRange === "1mo" && prices.length > 0) {
-        // 1mo: one point per day
         const seenDays = new Set();
         filtered = prices.filter((p) => {
           const day = dayjs(p[0]).format("YYYY-MM-DD");
@@ -410,7 +293,6 @@ export function CryptoDashboard() {
           return true;
         });
       } else if (selectedRange === "1yr" && prices.length > 0) {
-        // 1yr: one point per month
         const seenMonths = new Set();
         filtered = prices.filter((p) => {
           const month = dayjs(p[0]).format("YYYY-MM");
@@ -419,7 +301,6 @@ export function CryptoDashboard() {
           return true;
         });
       }
-      // Normalize prices to the first value
       const first = filtered[0]?.[1] || 1;
       const normalized = filtered.map((p) =>
         first ? (p[1] / first) * 100 : null
@@ -429,7 +310,6 @@ export function CryptoDashboard() {
         data: normalized,
       };
     });
-    // Use the timestamps from the first loaded token as x-axis
     const firstId = loadedIds[0];
     let categories = tokenHistory[firstId] || [];
     if (selectedRange === "1mo" && categories.length > 0) {
@@ -455,7 +335,178 @@ export function CryptoDashboard() {
     return { series, categories: catLabels, loadedIds, erroredIds };
   }
 
-  // Show a loading state when tokens are being loaded
+  return (
+    <div className="flex flex-col gap-2 w-full bg-slate-900/50 border border-zinc-800 rounded-lg p-3 sm:p-4 min-w-0">
+      <div className="flex flex-row items-center justify-between mb-2 flex-wrap gap-2">
+        <h3 className="text-lg font-bold text-slate-100">Token Price Trends</h3>
+        <div className="flex gap-2">
+          <button
+            className={`px-3 py-1 rounded ${selectedRange === "1mo" ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-300"}`}
+            onClick={() => setSelectedRange("1mo")}
+            disabled={selectedRange === "1mo"}
+          >
+            1mo
+          </button>
+          <button
+            className={`px-3 py-1 rounded ${selectedRange === "1yr" ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-300"}`}
+            onClick={() => setSelectedRange("1yr")}
+            disabled={selectedRange === "1yr"}
+          >
+            1yr
+          </button>
+        </div>
+      </div>
+      {(historyQueries.some((q) => q.isLoading) ||
+        getChartData().erroredIds.length > 0) && (
+        <div className="flex items-center gap-2 text-xs text-slate-400 mb-2 flex-wrap">
+          {historyQueries.some((q) => q.isLoading) && (
+            <span>Loading data for:</span>
+          )}
+          {coins.map((coin, idx) =>
+            historyQueries[idx]?.isLoading ? (
+              <span
+                key={coin.name}
+                className="px-2 py-1 bg-slate-800 rounded-full animate-pulse"
+              >
+                {coin.name}
+              </span>
+            ) : null
+          )}
+          {getChartData().erroredIds.length > 0 && <span>Errored:</span>}
+          {getChartData().erroredIds.map((id) => (
+            <span
+              key={id}
+              className="px-2 py-1 bg-red-900/70 text-red-300 rounded-full"
+            >
+              {market.find((c) => c.id === id)?.name || id}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex">
+        {getChartData().series.length === 0 ? (
+          <div className="flex items-center justify-center w-full text-slate-400">
+            Loading chart...
+          </div>
+        ) : historyError && getChartData().series.length === 0 ? (
+          <div className="flex items-center justify-center w-full text-red-400">
+            {historyError.message ||
+              "Error loading chart data. If you see a rate limit message, please wait a few minutes before retrying."}
+          </div>
+        ) : (
+          <div className="w-full">
+            <Chart
+              options={{
+                chart: {
+                  id: "token-trends",
+                  background: "transparent",
+                  toolbar: { show: false },
+                },
+                xaxis: {
+                  categories: getChartData().categories,
+                  labels: { style: { colors: "#cbd5e1" } },
+                },
+                yaxis: {
+                  labels: {
+                    style: { colors: "#cbd5e1" },
+                    formatter: (val: number) => val.toFixed(1),
+                  },
+                },
+                stroke: { curve: "smooth" },
+                legend: { labels: { colors: "#cbd5e1" } },
+                tooltip: { theme: "dark" },
+              }}
+              series={getChartData().series}
+              height={300}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function CryptoDashboard() {
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
+  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { baseCurrency } = useBanksCategsContext();
+  const { tokenData, marketData, marketLoading, marketError } =
+    useTokensContext();
+  const coins = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
+  const isTokensLoading = tokenData?.loading;
+  const CURRENCY = baseCurrency?.code || "USD";
+
+  const market = marketData || [];
+
+  const { portfolioValue, portfolioChange } = useMemo(() => {
+    let value = 0;
+    let change = 0;
+    if (market && Array.isArray(market) && coins.length > 0) {
+      for (const coin of coins) {
+        const marketCoin = market.find((c) => c.id === coin.coingecko_id);
+        if (marketCoin) {
+          value += coin.total * marketCoin.current_price;
+          change +=
+            ((marketCoin.price_change_percentage_24h || 0) *
+              coin.total *
+              marketCoin.current_price) /
+            100;
+        }
+      }
+    }
+    return {
+      portfolioValue: value,
+      portfolioChange: value ? (change / value) * 100 : 0,
+    };
+  }, [market, coins]);
+
+  const range = selectedRange === "1mo" ? 30 : 365;
+  function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  const historyQueries = useQueries({
+    queries: coins.map((coin, idx) => ({
+      queryKey: ["coingecko-market-chart", coin.coingecko_id, CURRENCY, range],
+      queryFn: async () => {
+        if (idx > 0) await delay(idx * 6000);
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${coin.coingecko_id}/market_chart?vs_currency=${CURRENCY.toLowerCase()}&days=${range}`
+        );
+        if (!res.ok) {
+          let msg = "Failed to fetch price history";
+          try {
+            const err = (await res.json()) as CoinGeckoErrorResponse;
+            if (err?.error_code === 429 || err?.status?.error_code === 429) {
+              msg =
+                "CoinGecko API rate limit exceeded. Please try again in a few minutes.";
+            }
+          } catch {}
+          throw new Error(msg);
+        }
+        const data = (await res.json()) as CoinGeckoMarketChartData;
+        return data.prices;
+      },
+      staleTime: 1000 * 60 * 60 * 24,
+      cacheTime: 1000 * 60 * 60 * 24 * 7,
+      retry: (failureCount: number, error: Error) => {
+        if (error?.message?.includes("rate limit")) return false;
+        return failureCount < 2;
+      },
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    })),
+  });
+
+  const loadingHistory = historyQueries.some((q) => q.isLoading);
+  const historyError = historyQueries.find((q) => q.isError)?.error;
+
+  const tokenHistory: Record<string, CoinGeckoPriceDataPoint[]> = {};
+  coins.forEach((coin, idx) => {
+    tokenHistory[coin.coingecko_id] = historyQueries[idx]?.data || [];
+  });
+
   if (isTokensLoading) {
     return (
       <div className="flex items-center justify-center w-full h-48">
@@ -464,7 +515,6 @@ export function CryptoDashboard() {
     );
   }
 
-  // Show a message when no tokens are available
   if (
     (!tokenData?.tokens || tokenData.tokens.length === 0) &&
     !isTokensLoading
@@ -484,9 +534,7 @@ export function CryptoDashboard() {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center gap-1 text-xs text-slate-400 select-none z-10">
-        {isFetching ? (
-          <span>Refreshing...</span>
-        ) : lastFetched ? (
+        {lastFetched ? (
           <span>
             Data last fetched:{" "}
             {lastFetched.toLocaleTimeString([], {
@@ -505,14 +553,14 @@ export function CryptoDashboard() {
           currency={CURRENCY}
           privacyMode={isPrivacyModeEnabled}
         />
-        {isLoading ? (
+        {marketLoading ? (
           <div className="flex flex-1 items-center justify-center min-h-[180px]">
             <span className="text-slate-400">Loading market data...</span>
           </div>
-        ) : isError ? (
+        ) : marketError ? (
           <div className="flex flex-1 items-center justify-center min-h-[180px]">
             <span className="text-red-400">
-              {error?.message || "Error loading data"}
+              {marketError?.message || "Error loading data"}
             </span>
           </div>
         ) : (
@@ -523,98 +571,16 @@ export function CryptoDashboard() {
           />
         )}
       </div>
-      {/* Token Trends Chart Section */}
-      <div className="flex flex-col gap-2 w-full bg-slate-900/50 border border-zinc-800 rounded-lg p-3 sm:p-4 min-w-0">
-        <div className="flex flex-row items-center justify-between mb-2 flex-wrap gap-2">
-          <h3 className="text-lg font-bold text-slate-100">
-            Token Price Trends
-          </h3>
-          <div className="flex gap-2">
-            <button
-              className={`px-3 py-1 rounded ${selectedRange === "1mo" ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-300"}`}
-              onClick={() => setSelectedRange("1mo")}
-              disabled={selectedRange === "1mo"}
-            >
-              1mo
-            </button>
-            <button
-              className={`px-3 py-1 rounded ${selectedRange === "1yr" ? "bg-orange-500 text-white" : "bg-slate-800 text-slate-300"}`}
-              onClick={() => setSelectedRange("1yr")}
-              disabled={selectedRange === "1yr"}
-            >
-              1yr
-            </button>
-          </div>
-        </div>
-        {/* Show which coins are still loading or errored */}
-        {(historyQueries.some((q) => q.isLoading) ||
-          getChartData().erroredIds.length > 0) && (
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-2 flex-wrap">
-            {historyQueries.some((q) => q.isLoading) && (
-              <span>Loading data for:</span>
-            )}
-            {uniqueIds.map((id, idx) =>
-              historyQueries[idx]?.isLoading ? (
-                <span
-                  key={id}
-                  className="px-2 py-1 bg-slate-800 rounded-full animate-pulse"
-                >
-                  {market.find((c) => c.id === id)?.name || id}
-                </span>
-              ) : null
-            )}
-            {getChartData().erroredIds.length > 0 && <span>Errored:</span>}
-            {getChartData().erroredIds.map((id) => (
-              <span
-                key={id}
-                className="px-2 py-1 bg-red-900/70 text-red-300 rounded-full"
-              >
-                {market.find((c) => c.id === id)?.name || id}
-              </span>
-            ))}
-          </div>
-        )}
-        {/* Show chart for loaded coins only */}
-        <div className="flex">
-          {getChartData().series.length === 0 ? (
-            <div className="flex items-center justify-center w-full text-slate-400">
-              Loading chart...
-            </div>
-          ) : historyError && getChartData().series.length === 0 ? (
-            <div className="flex items-center justify-center w-full text-red-400">
-              {historyError.message ||
-                "Error loading chart data. If you see a rate limit message, please wait a few minutes before retrying."}
-            </div>
-          ) : (
-            <div className="w-full">
-              <Chart
-                options={{
-                  chart: {
-                    id: "token-trends",
-                    background: "transparent",
-                    toolbar: { show: false },
-                  },
-                  xaxis: {
-                    categories: getChartData().categories,
-                    labels: { style: { colors: "#cbd5e1" } },
-                  },
-                  yaxis: {
-                    labels: {
-                      style: { colors: "#cbd5e1" },
-                      formatter: (val: number) => val.toFixed(1),
-                    },
-                  },
-                  stroke: { curve: "smooth" },
-                  legend: { labels: { colors: "#cbd5e1" } },
-                  tooltip: { theme: "dark" },
-                }}
-                series={getChartData().series}
-                height={300}
-              />
-            </div>
-          )}
-        </div>
-      </div>
+      <TokenTrendsChart
+        coins={coins}
+        market={market}
+        CURRENCY={CURRENCY}
+        selectedRange={selectedRange}
+        setSelectedRange={setSelectedRange}
+        historyQueries={historyQueries}
+        tokenHistory={tokenHistory}
+        historyError={historyError}
+      />
       <UserCoins
         coins={coins}
         market={market}
