@@ -42,8 +42,8 @@ export default function RootLayout({
           <PlannedTransactionsProvider>
             <PushNotificationProvider>
               <PrivacyModeProvider>
-                <TokensProvider>
-                  <BanksCategsProvider>
+                <BanksCategsProvider>
+                  <TokensProvider>
                     <aside
                       id="desktop-sidebar"
                       className="fixed md:block hidden top-0 z-40 h-screen w-44 xl:w-60 transition-transform bg-black"
@@ -112,8 +112,8 @@ export default function RootLayout({
                     >
                       <MobileTabs />
                     </div>
-                  </BanksCategsProvider>
-                </TokensProvider>
+                  </TokensProvider>
+                </BanksCategsProvider>
               </PrivacyModeProvider>
             </PushNotificationProvider>
           </PlannedTransactionsProvider>

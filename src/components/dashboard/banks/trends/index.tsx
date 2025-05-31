@@ -244,7 +244,10 @@ export const BankTrends = () => {
           </p>
         ) : (
           <>
-            <TrendsChart options={chartOptions} series={chartSeries} />
+            <div className="h-[300px] w-full overflow-hidden">
+              <TrendsChart options={chartOptions} series={chartSeries} />
+            </div>
+
             <BankTrendsSummary
               trendsLength={trends.length}
               averageChange={averageChange}
