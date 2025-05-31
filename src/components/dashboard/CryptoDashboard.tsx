@@ -579,7 +579,7 @@ export function CryptoDashboard() {
         setSelectedRange={setSelectedRange}
         historyQueries={historyQueries}
         tokenHistory={tokenHistory}
-        historyError={historyError}
+        historyError={historyError || undefined}
       />
       <UserCoins
         coins={coins}
