@@ -308,13 +308,15 @@ export const MonthlyBreakdown: React.FC = () => {
 
   return (
     <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col gap-2">
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full ">
         <div className="flex flex-row justify-between items-center">
-          <TabsList className="mb-2 bg-transparent fill-slate-200">
+          {/* This item is duplicated below */}
+          <TabsList className="my-2 bg-transparent fill-slate-200 hidden sm:flex">
             <TabsTrigger value="categories">Categories</TabsTrigger>
             <TabsTrigger value="banks">Banks</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
           </TabsList>
+          <div></div>
           <MonthPicker
             date={selectedMonth}
             setDate={(date) => {
@@ -327,7 +329,12 @@ export const MonthlyBreakdown: React.FC = () => {
             }}
           />
         </div>
-
+        {/* This item is duplicated above */}
+        <TabsList className="my-2 bg-transparent fill-slate-200 visible sm:invisible">
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="banks">Banks</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+        </TabsList>
         <TabsContent value="categories">
           {/* Categories tab (existing view) */}
           <div className="flex flex-row items-center justify-center gap-5 px-3 mt-2 w-fit mx-auto">
