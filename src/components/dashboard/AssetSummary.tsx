@@ -134,6 +134,13 @@ export const AssetSummary = () => {
             : parseAmount(total, currency)}
         </span>
         <span className="text-xs text-slate-400 mt-1">{tab} Total</span>
+        {/* Show bank/crypto percentage breakdown on Overall tab */}
+        {tab === "Overall" && overallTotal > 0 && (
+          <span className="text-xs text-slate-400 mt-1">
+            Banks: {trimToTwoDecimals((bankTotal / overallTotal) * 100)}% |
+            Crypto: {trimToTwoDecimals((cryptoTotal / overallTotal) * 100)}%
+          </span>
+        )}
       </div>
       {/* Loading state */}
       {isLoading ? (
