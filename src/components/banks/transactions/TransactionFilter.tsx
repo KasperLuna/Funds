@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import useDebounce from "@/lib/hooks/useDebounce";
-import { Filter, Search, Table } from "lucide-react";
+import { Filter, Search, Table, LayoutGrid } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CategoryPicker } from "../CategoryPicker";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { MonthPicker } from "@/components/MonthPicker";
 import dayjs from "dayjs";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import clsx from "clsx";
 
 export const TransactionFilter = () => {
   const { queryParams, setQueryParams } = useQueryParams();
@@ -16,6 +17,8 @@ export const TransactionFilter = () => {
   const selectedMonth = queryParams["month"]
     ? new Date(queryParams["month"])
     : undefined;
+
+  const viewMode = queryParams["view"] || "cards";
 
   // Search bar
   const [query, setQuery] = useState<string>(() => {
@@ -40,10 +43,18 @@ export const TransactionFilter = () => {
     <div id="layout-filter-group" className="flex flex-row gap-2 flex-wrap">
       <div id="layout-search-group" className="flex flex-row gap-2">
         <Button
-          className="px-2 border-2 border-slate-800"
-          onClick={() => alert("TODO")}
+          className={clsx(
+            "px-2 border-2 border-slate-800",
+            viewMode === "table" && "bg-slate-800"
+          )}
+          onClick={() =>
+            setQueryParams({
+              view: viewMode === "table" ? "cards" : "table",
+            })
+          }
+          aria-label={viewMode === "table" ? "Show as cards" : "Show as table"}
         >
-          <Table />
+          {viewMode === "table" ? <LayoutGrid /> : <Table />}
         </Button>
         <div id="search-group" className="flex flex-row gap-0 group">
           <Input
