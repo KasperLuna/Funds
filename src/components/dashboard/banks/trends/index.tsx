@@ -110,7 +110,6 @@ export const BankTrends = () => {
   if (isBankTrendsLoading) {
     return (
       <div className="flex flex-col gap-3 w-full ">
-        <Skeleton className="h-8 w-[145px] bg-slate-800" />
         <Skeleton className="h-72 w-full bg-slate-800" />
         <Skeleton className="h-8 w-full bg-slate-800" />
         <div className="flex flex-row gap-4 justify-between">
@@ -237,7 +236,6 @@ export const BankTrends = () => {
       className="w-full flex-shrink overflow-hidden"
     >
       <div className="flex flex-col h-full gap-1">
-        <h1 className="text-slate-100 text-xl font-semibold">Monthly Trend</h1>
         {trends.length === 0 ? (
           <p className="text-slate-400">
             No data, visit the banks page and add transactions.
