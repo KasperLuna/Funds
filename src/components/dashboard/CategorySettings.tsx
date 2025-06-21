@@ -31,6 +31,48 @@ export const CategorySettings = () => {
   const [renameInput, setRenameInput] = useState("");
   const [renameError, setRenameError] = useState("");
 
+  //#region: Budget Management, refactor later
+  const [budgetInput, setBudgetInput] = useState<string>("");
+  const [budgetError, setBudgetError] = useState("");
+
+  // Update budgetInput when selectedCategory changes
+  React.useEffect(() => {
+    if (selectedCategory && selectedCategory.monthly_budget != null) {
+      setBudgetInput(selectedCategory.monthly_budget.toString());
+    } else {
+      setBudgetInput("");
+    }
+  }, [selectedCategory]);
+
+  // Debounced update handler using a ref to persist timer
+  const budgetDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
+  const handleBudgetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setBudgetInput(value);
+    if (budgetDebounceRef.current) clearTimeout(budgetDebounceRef.current);
+    const trimmed = value.trim();
+    let numValue: number | undefined = undefined;
+    if (trimmed !== "") {
+      numValue = Number(trimmed);
+      if (isNaN(numValue) || numValue < 0) {
+        setBudgetError("Monthly budget must be a positive number or empty.");
+        return;
+      }
+    }
+    setBudgetError("");
+    budgetDebounceRef.current = setTimeout(() => {
+      if (
+        selectedCategory &&
+        numValue !== selectedCategory.monthly_budget &&
+        (numValue === undefined || !isNaN(numValue))
+      ) {
+        updateCategoryById(selectedCategory.id, { monthly_budget: numValue });
+        categoryData?.refetch?.();
+      }
+    }, 800);
+  };
+  //#endregion
+
   const handleToggle = async (
     field: "hideable" | "total_exempt",
     value: boolean
@@ -103,6 +145,30 @@ export const CategorySettings = () => {
           <Tooltip content="Excludes this category from the dashboard total. Useful for savings, investments, or internal transfers.">
             <InfoIcon />
           </Tooltip>
+        </div>
+        <div className="flex flex-row items-center gap-2">
+          <span className="ml-2">Monthly Budget:</span>
+          <input
+            className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-slate-100 w-28"
+            type="number"
+            step="0.01"
+            min="0"
+            value={budgetInput}
+            disabled={!categoryId}
+            onChange={handleBudgetInputChange}
+            placeholder="e.g. 5000"
+          />
+          <span className="ml-1 text-slate-200">
+            {selectedCategory?.monthly_budget != null &&
+            !isNaN(Number(selectedCategory.monthly_budget)) ? (
+              `₱${selectedCategory.monthly_budget}`
+            ) : (
+              <span className="italic text-slate-400">Not set</span>
+            )}
+          </span>
+          {budgetError && (
+            <span className="text-red-500 text-xs ml-2">{budgetError}</span>
+          )}
         </div>
         <Button
           disabled={!categoryId}

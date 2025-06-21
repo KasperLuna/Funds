@@ -35,6 +35,7 @@ export type Category = {
   name: string;
   hideable: boolean;
   total_exempt?: boolean;
+  monthly_budget?: number;
 };
 
 export type Token = {

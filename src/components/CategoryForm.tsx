@@ -33,9 +33,14 @@ export const CategoryForm = () => {
         });
         return;
       }
-      await addCategory({ name: data.name, hideable: data.hideable });
+      await addCategory({
+        name: data.name,
+        hideable: data.hideable,
+        monthly_budget: data.monthly_budget,
+      });
       reset();
     } catch (error) {
+      console.error("Error adding category:", error);
       alert("An error occurred. Try again later.");
     }
   };
@@ -63,6 +68,23 @@ export const CategoryForm = () => {
             {errors.name && (
               <p className="text-red-400 text-xs">
                 {errors.name.message || "Name is Required"}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <p className="text-sm">Monthly Budget (optional):</p>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="e.g. 5000"
+              {...register("monthly_budget")}
+              className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
+            />
+            {errors.monthly_budget && (
+              <p className="text-red-400 text-xs">
+                {errors.monthly_budget.message}
               </p>
             )}
           </div>
