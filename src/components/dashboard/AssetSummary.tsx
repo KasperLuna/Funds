@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { RotateCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 const colorsArray = [
   "#f59e42",
@@ -33,6 +34,7 @@ const TABS = ["Overall", "Banks", "Crypto"];
 export const AssetSummary = () => {
   const [tab, setTab] = useState("Overall");
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { isPrivacyModeEnabled } = usePrivacyMode();
   const { bankData, baseCurrency } = useBanksCategsContext();
   const { tokenData, marketData } = useTokensContext();
@@ -176,10 +178,14 @@ export const AssetSummary = () => {
           <div className="grid xl:grid-cols-3 lg:grid-cols-2 md:grid-cols-3 sm:grid-cols-3 grid-cols-2 gap-2">
             {items.map((item, idx) => {
               const percent = total > 0 ? (item.value / total) * 100 : 0;
+              const isBank = item.type === "bank";
               return (
                 <div
                   key={item.name}
-                  className="flex flex-col gap-1.5 justify-between text-slate-100 bg-slate-800 rounded-md p-1 px-2 border-[2.5px] hover:bg-slate-700 transition-colors"
+                  className={clsx(
+                    "flex flex-col gap-1.5 justify-between text-slate-100 bg-slate-800 rounded-md p-1 px-2 border-[2.5px] hover:bg-slate-700 transition-colors",
+                    isBank && "cursor-pointer hover:brightness-110"
+                  )}
                   style={{
                     borderLeftColor: colorsArray[idx % colorsArray.length],
                     borderLeftWidth: "4px",
@@ -189,6 +195,11 @@ export const AssetSummary = () => {
                     borderRight: 0,
                     boxShadow: `0 2px 8px 0 ${colorsArray[idx % colorsArray.length]}22`,
                   }}
+                  onClick={
+                    isBank
+                      ? () => router.push(`/dashboard/banks?bank=${encodeURIComponent(item.name)}`)
+                      : undefined
+                  }
                 >
                   <p className="font-semibold text-ellipsis line-clamp-2">
                     {item.name}
