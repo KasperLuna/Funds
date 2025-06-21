@@ -72,7 +72,7 @@ export const MonthlyBreakdown: React.FC = () => {
       );
     };
 
-    // Aggregate by category
+    // Aggregate by category (proportional split)
     const categoryTotals =
       data?.reduce(
         (acc, curr) => {
@@ -84,11 +84,14 @@ export const MonthlyBreakdown: React.FC = () => {
               new Decimal(curr.amount).toNumber()
             );
           } else {
+            const splitAmount = new Decimal(curr.amount).div(
+              curr.categories.length
+            );
             curr.categories.forEach((categ) => {
               if (!acc[categ]) {
                 acc[categ] = new Decimal(0);
               }
-              acc[categ] = acc[categ].add(new Decimal(curr.amount));
+              acc[categ] = acc[categ].add(splitAmount);
             });
           }
           return acc;
@@ -436,8 +439,9 @@ export const MonthlyBreakdown: React.FC = () => {
                 />
               </div>
               <p className="text-slate-500 text-xs self-end">
-                *Since transactions can have multiple/no categories, the
-                category breakdown may not be equal to money flow.
+                *Since transactions can have multiple/no categories, the amount
+                for each category is a proportional split of the transaction
+                amount.
               </p>
               {/* Volatile categories info */}
               <VolatileCategoryInfo
