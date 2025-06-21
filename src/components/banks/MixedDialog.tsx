@@ -309,6 +309,19 @@ export const MixedDialog = ({
                 </Popover>
               </AlertDialogAction>
             )}
+            {/* Waive button for planned transactions */}
+            {onPlannedSubmit && (
+              <Button
+                className="w-fit bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-2 ml-1"
+                onClick={async () => {
+                  setIsModalOpen(false);
+                  await onPlannedSubmit();
+                }}
+                type="button"
+              >
+                Waive
+              </Button>
+            )}
             <AlertDialogCancel className="w-fit bg-transparent p-2 border-slate-700 hover:bg-slate-400">
               <X />
             </AlertDialogCancel>
