@@ -51,7 +51,7 @@ export function CurrencySelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="bg-transparent text-slate-100 w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-slate-100"
+          className="bg-transparent text-white w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-white"
         >
           {value
             ? `(${selectedCurrency?.code}) ${selectedCurrency?.name}`
@@ -75,8 +75,11 @@ export function CurrencySelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
-        <Command className="bg-slate-800 text-slate-100">
-          <CommandInput placeholder="Search Currencies..." />
+        <Command className="bg-slate-800 text-white">
+          <CommandInput
+            placeholder="Search Currencies..."
+            className="text-white"
+          />
           <CommandList>
             <CommandEmpty>No currency found.</CommandEmpty>
             <CommandGroup>
@@ -84,7 +87,7 @@ export function CurrencySelector({
                 <CommandItem
                   key={currency.code}
                   value={`${currency.code} ${currency.name}`}
-                  className="text-slate-100"
+                  className="text-white hover:bg-slate-700"
                   onSelect={(currentValue) => {
                     setValue(currentValue === value ? "" : currentValue);
                     setOpen(false);
