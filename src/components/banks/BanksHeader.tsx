@@ -18,7 +18,7 @@ export const BanksHeader = () => {
       }, 0) || 0;
 
   return (
-    <div className="flex flex-row w-full justify-between items-center pb-3">
+    <div className="flex flex-row w-full justify-between items-center pb-1">
       <div className="flex flex-row gap-2 items-center text-slate-100">
         <h1 className="md:text-3xl text-2xl font-semibold">
           {bankName ? decodeURI(bankName) : "Balances"}
@@ -26,7 +26,7 @@ export const BanksHeader = () => {
         {bankName && (
           <Button
             onClick={() => setQueryParams({ bank: undefined })}
-            className="rounded-full p-1  w-5 h-5"
+            className="rounded-full p-1 w-5 h-5"
             variant={"secondary"}
           >
             <X className="w-5 h-5 stroke-2" />

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { memo } from "react";
 import { usePlannedTransactions } from "../../store/PlannedTransactionsContext";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
@@ -8,102 +8,125 @@ import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import { parseAmount } from "@/lib/utils";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import UpcomingPlannedTransactionCard from "./UpcomingPlannedTransactionCard";
+import { Calendar, Clock } from "lucide-react";
 
-const UpcomingPlannedTransactions: React.FC = () => {
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { plannedTransactions, updatePlannedTransaction, loading } =
-    usePlannedTransactions();
-  const { bankData, categoryData, baseCurrency } =
-    useBanksCategsContext() || {};
-  const categories = categoryData?.categories || [];
+const UpcomingPlannedTransactions = memo(
+  function UpcomingPlannedTransactions() {
+    const { isPrivacyModeEnabled } = usePrivacyMode();
+    const { plannedTransactions, updatePlannedTransaction, loading } =
+      usePlannedTransactions();
+    const { bankData, categoryData, baseCurrency } =
+      useBanksCategsContext() || {};
+    const categories = categoryData?.categories || [];
 
-  const upcoming =
-    plannedTransactions?.filter((pt) => {
-      const localDateTime = new Date();
+    const upcoming =
+      plannedTransactions?.filter((pt) => {
+        const localDateTime = new Date();
+        return (
+          pt.active &&
+          pt.invokeDate <= new Date(localDateTime.setHours(23, 59, 59, 999)) &&
+          (!pt.previousDate || new Date(pt.previousDate) < localDateTime)
+        );
+      }) || [];
+
+    // Loading state
+    if (loading || bankData?.loading || categoryData?.loading) {
       return (
-        pt.active &&
-        pt.invokeDate <= new Date(localDateTime.setHours(23, 59, 59, 999)) &&
-        (!pt.previousDate || new Date(pt.previousDate) < localDateTime)
+        <div className="relative mb-3 border-b border-slate-700/50 pb-3">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none" />
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-600/20 to-transparent -translate-x-full animate-shimmer pointer-events-none" />
+                <TransactionCardLoader />
+              </div>
+            ))}
+          </div>
+        </div>
       );
-    }) || [];
+    }
 
-  // Loading state
-  if (loading || bankData?.loading || categoryData?.loading) {
+    if (!upcoming || upcoming.length === 0) return null;
+
     return (
-      <div className="mb-4 border-b border-slate-700 pb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, index) => (
-            <TransactionCardLoader key={index} />
-          ))}
+      <div className="relative mb-3 border-b border-slate-700/50 pb-3">
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-2 p-1">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              <span className="font-bold text-base text-slate-100">
+                Upcoming Planned Transactions
+              </span>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+                <Clock className="w-3 h-3 text-emerald-400" />
+                <span className="text-xs text-emerald-300 font-medium">
+                  {upcoming.length}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+            {upcoming?.map((pt) => {
+              const transaction: Transaction = {
+                ...pt,
+                id: undefined,
+                date: new Date().toISOString(),
+              };
+              return (
+                <div key={pt?.id || Math.random()} className="relative group">
+                  <MixedDialogTrigger
+                    transaction={transaction}
+                    onPlannedSubmit={async () => {
+                      // On submit, move previousDate to current invokeDate, and calculate new invokeDate
+                      const prev = pt.invokeDate;
+                      let nextInvoke = new Date(prev);
+                      const interval = pt.recurrence.interval || 1;
+                      switch (pt.recurrence.frequency) {
+                        case "daily":
+                          nextInvoke.setDate(nextInvoke.getDate() + interval);
+                          break;
+                        case "weekly":
+                          nextInvoke.setDate(
+                            nextInvoke.getDate() + 7 * interval
+                          );
+                          break;
+                        case "monthly":
+                          nextInvoke.setMonth(nextInvoke.getMonth() + interval);
+                          break;
+                        case "yearly":
+                          nextInvoke.setFullYear(
+                            nextInvoke.getFullYear() + interval
+                          );
+                          break;
+                        default:
+                          nextInvoke.setMonth(nextInvoke.getMonth() + interval);
+                      }
+                      await updatePlannedTransaction({
+                        ...pt,
+                        previousDate: prev,
+                        invokeDate: nextInvoke,
+                      });
+                    }}
+                  >
+                    <div className="relative">
+                      <UpcomingPlannedTransactionCard
+                        pt={pt}
+                        categories={categories}
+                        baseCurrency={baseCurrency}
+                        isPrivacyModeEnabled={isPrivacyModeEnabled}
+                        parseAmount={parseAmount}
+                      />
+                    </div>
+                  </MixedDialogTrigger>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
   }
-
-  if (!upcoming || upcoming.length === 0) return null;
-
-  return (
-    <div className="mb-4 border-b border-slate-700 pb-4">
-      <div className="font-bold mb-2 text-lg flex items-center gap-2">
-        Upcoming Planned Transactions
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {upcoming?.map((pt) => {
-          const transaction: Transaction = {
-            ...pt,
-            id: undefined,
-            date: new Date().toISOString(),
-          };
-          return (
-            <div key={pt?.id || Math.random()} className="relative group">
-              <MixedDialogTrigger
-                transaction={transaction}
-                onPlannedSubmit={async () => {
-                  // On submit, move previousDate to current invokeDate, and calculate new invokeDate
-                  const prev = pt.invokeDate;
-                  let nextInvoke = new Date(prev);
-                  const interval = pt.recurrence.interval || 1;
-                  switch (pt.recurrence.frequency) {
-                    case "daily":
-                      nextInvoke.setDate(nextInvoke.getDate() + interval);
-                      break;
-                    case "weekly":
-                      nextInvoke.setDate(nextInvoke.getDate() + 7 * interval);
-                      break;
-                    case "monthly":
-                      nextInvoke.setMonth(nextInvoke.getMonth() + interval);
-                      break;
-                    case "yearly":
-                      nextInvoke.setFullYear(
-                        nextInvoke.getFullYear() + interval
-                      );
-                      break;
-                    default:
-                      nextInvoke.setMonth(nextInvoke.getMonth() + interval);
-                  }
-                  await updatePlannedTransaction({
-                    ...pt,
-                    previousDate: prev,
-                    invokeDate: nextInvoke,
-                  });
-                }}
-              >
-                <div className="relative">
-                  <UpcomingPlannedTransactionCard
-                    pt={pt}
-                    categories={categories}
-                    baseCurrency={baseCurrency}
-                    isPrivacyModeEnabled={isPrivacyModeEnabled}
-                    parseAmount={parseAmount}
-                  />
-                </div>
-              </MixedDialogTrigger>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+);
 
 export default UpcomingPlannedTransactions;

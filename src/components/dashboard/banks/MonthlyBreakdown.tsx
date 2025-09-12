@@ -664,7 +664,7 @@ export const MonthlyBreakdown: React.FC = () => {
                               return (
                                 <div
                                   key={`${cell.day}-${i}-${j}`}
-                                  className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 cursor-pointer relative group ${color}`}
+                                  className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 relative group ${color}`}
                                   title={
                                     cell.day !== null
                                       ? `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${cell.count} transaction${cell.count === 1 ? "" : "s"}`
@@ -798,7 +798,7 @@ export const MonthlyBreakdown: React.FC = () => {
                               return (
                                 <div
                                   key={`${cell.day}-${i}-${j}`}
-                                  className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 cursor-pointer relative group ${color}`}
+                                  className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 relative group ${color}`}
                                   title={
                                     cell.day !== null
                                       ? `${year}-${String(month + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}: ${parseAmount(cell.total, baseCurrency?.code)}`

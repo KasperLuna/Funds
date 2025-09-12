@@ -8,18 +8,29 @@ import { BudgetsSummary } from "@/components/dashboard/BudgetsSummary";
 export default function Page() {
   const title = "Funds - Dashboard";
   return (
-    <div className="text-slate-200">
+    <div className="text-slate-200 min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <title>{title}</title>
-      <div className="flex flex-col gap-4 h-fit">
+      <div className="flex flex-col gap-3 h-fit p-2">
         <UpcomingPlannedTransactions />
-        <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
           <AssetSummary />
           {/* Right-hand section: Budgets/Bank Monthly tabs */}
-          <div className="w-full">
-            <Tabs defaultValue="budgets" className="w-full">
-              <TabsList className="mb-2 w-fit bg-transparent fill-slate-200">
-                <TabsTrigger value="budgets">Budgets</TabsTrigger>
-                <TabsTrigger value="bankmonthly">Bank Monthly</TabsTrigger>
+          <div className="relative w-full">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none" />
+            <Tabs defaultValue="budgets" className="relative z-10 w-full">
+              <TabsList className="mb-2 w-fit bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 p-1">
+                <TabsTrigger
+                  value="budgets"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-slate-900 transition-all duration-300"
+                >
+                  Budgets
+                </TabsTrigger>
+                <TabsTrigger
+                  value="bankmonthly"
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-slate-900 transition-all duration-300"
+                >
+                  Bank Monthly
+                </TabsTrigger>
               </TabsList>
               <TabsContent value="budgets">
                 <BudgetsSummary />

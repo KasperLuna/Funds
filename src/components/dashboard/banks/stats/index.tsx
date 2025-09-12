@@ -54,7 +54,7 @@ export const StatsSection = () => {
       <div
         id="bank-stats-section"
         ref={containerRef}
-        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 pb-3"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 pb-1"
       >
         {loading &&
           [...Array(5)].map((_, i) => <StatCardLoader key={`loader-${i}`} />)}
@@ -73,10 +73,10 @@ export const StatsSection = () => {
           >
             <Button
               variant="ghost"
-              className="w-full flex items-center justify-center mt-1 text-muted-foreground text-xs py-1 h-fit"
+              className="w-full flex items-center justify-center mt-0.5 text-muted-foreground text-xs py-1 h-fit"
               onClick={() => setExpanded(false)}
             >
-              <ChevronUp className="mr-2" size="15px" /> Show less
+              <ChevronUp className="mr-1 size-3" /> Show less
             </Button>
           </div>
         )}
@@ -85,10 +85,10 @@ export const StatsSection = () => {
       {!expanded && shouldCollapse && (
         <Button
           variant="ghost"
-          className="w-full flex items-center justify-center mt-1 text-muted-foreground text-xs py-1 h-fit"
+          className="w-full flex items-center justify-center mt-0.5 text-muted-foreground text-xs py-1 h-fit"
           onClick={() => setExpanded(true)}
         >
-          <ChevronDown className="mr-2" size="15px" /> Show all
+          <ChevronDown className="mr-1 size-3" /> Show all
         </Button>
       )}
     </>
