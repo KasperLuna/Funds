@@ -39,8 +39,8 @@ export const BankSelect = ({
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger
             className={clsx(
-              "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500",
-              { "text-slate-600": !value }
+              "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500 text-white",
+              { "text-slate-600": !value, "text-white": value }
             )}
           >
             <SelectValue placeholder="Select Bank" />
@@ -69,8 +69,8 @@ export const BankSelect = ({
               role="combobox"
               aria-expanded={isOpen}
               className={clsx(
-                "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit",
-                { "text-slate-600": !value }
+                "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit text-white",
+                { "text-slate-600": !value, "text-white": value }
               )}
             >
               {selectedBankName}
@@ -83,28 +83,43 @@ export const BankSelect = ({
                 No banks yet. Create one to get started!
               </div>
             ) : (
-              <div className="grid grid-cols-2 p-1 gap-1 max-h-[50vh] overflow-auto">
-                {bankData?.banks?.map((bank) => (
-                  <Button
-                    key={bank.id}
-                    variant={bank.id === value ? "secondary" : "ghost"}
-                    className={clsx(
-                      "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm",
-                      bank.id === value ? "bg-slate-700" : "hover:bg-slate-700"
-                    )}
-                    onClick={() => {
-                      onChange(bank.id);
-                      setIsOpen(false);
-                    }}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <span className="truncate max-w-[80%]">{bank.name}</span>
-                      {bank.id === value && (
-                        <Check className="h-4 w-4 ml-2 flex-shrink-0" />
+              <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden">
+                <div className="grid grid-cols-2 p-1 gap-1">
+                  {bankData?.banks?.map((bank) => (
+                    <button
+                      key={bank.id}
+                      className={clsx(
+                        "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm text-white rounded-md border-0 bg-transparent cursor-pointer",
+                        bank.id === value
+                          ? "bg-slate-700"
+                          : "hover:bg-slate-700 active:bg-slate-600"
                       )}
-                    </div>
-                  </Button>
-                ))}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Bank clicked:', bank.name); // Debug log
+                        onChange(bank.id);
+                        setIsOpen(false);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Bank touched:', bank.name); // Debug log
+                        onChange(bank.id);
+                        setIsOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="truncate max-w-[80%]">
+                          {bank.name}
+                        </span>
+                        {bank.id === value && (
+                          <Check className="h-4 w-4 ml-2 flex-shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </PopoverContent>
