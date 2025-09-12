@@ -28,7 +28,8 @@ export const CategorySelect = ({
 
   // Find the selected category name for display
   const selectedCategoryName =
-    categoryData?.categories?.find((category) => category.id === value)?.name || "Select Category";
+    categoryData?.categories?.find((category) => category.id === value)?.name ||
+    "Select Category";
 
   // Using both Select (for desktop) and Popover (for mobile)
   // We'll show/hide based on screen size using CSS media queries
@@ -97,20 +98,22 @@ export const CategorySelect = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Category clicked:', category.name); // Debug log
+                        console.log("Category clicked:", category.name); // Debug log
                         onChange(category.id);
                         setIsOpen(false);
                       }}
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Category touched:', category.name); // Debug log
+                        console.log("Category touched:", category.name); // Debug log
                         onChange(category.id);
                         setIsOpen(false);
                       }}
                     >
                       <div className="flex items-center justify-between w-full">
-                        <span className="truncate max-w-[80%]">{category.name}</span>
+                        <span className="truncate max-w-[80%]">
+                          {category.name}
+                        </span>
                         {category.id === value && (
                           <Check className="h-4 w-4 ml-2 flex-shrink-0" />
                         )}

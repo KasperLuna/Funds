@@ -97,14 +97,14 @@ export const BankSelect = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Bank clicked:', bank.name); // Debug log
+                        console.log("Bank clicked:", bank.name); // Debug log
                         onChange(bank.id);
                         setIsOpen(false);
                       }}
                       onTouchEnd={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Bank touched:', bank.name); // Debug log
+                        console.log("Bank touched:", bank.name); // Debug log
                         onChange(bank.id);
                         setIsOpen(false);
                       }}
