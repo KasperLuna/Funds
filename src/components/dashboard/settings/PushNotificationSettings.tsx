@@ -177,7 +177,7 @@ const PushNotificationSettings: React.FC = () => {
                   </p>
                   <ol className="text-sm text-blue-200 space-y-1 list-decimal list-inside">
                     <li>Tap the Share button in Safari</li>
-                    <li>Select "Add to Home Screen"</li>
+                    <li>Select &ldquo;Add to Home Screen&rdquo;</li>
                     <li>Open the app from your home screen</li>
                     <li>
                       Return to this settings page to enable notifications
@@ -285,9 +285,9 @@ const PushNotificationSettings: React.FC = () => {
                       </p>
                       <ol className="text-sm text-red-200 mt-2 space-y-1 list-decimal list-inside">
                         <li>
-                          Click the lock icon in your browser's address bar
+                          Click the lock icon in your browser&apos;s address bar
                         </li>
-                        <li>Change notification permissions to "Allow"</li>
+                        <li>Change notification permissions to &ldquo;Allow&rdquo;</li>
                         <li>Refresh the page and try again</li>
                       </ol>
                     </div>
