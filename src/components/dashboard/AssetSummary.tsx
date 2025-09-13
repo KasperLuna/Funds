@@ -355,13 +355,13 @@ const ProgressSection = memo(function ProgressSection({
         {trimToTwoDecimals(percentage)}%
       </small>
       {/* Tooltip for small sections */}
-      {percentage < 10 && (
+      {/* {percentage < 10 && (
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10">
           <span className="bg-slate-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap border border-slate-700">
             {trimToTwoDecimals(percentage)}%
           </span>
         </div>
-      )}
+      )} */}
     </div>
   );
 });
