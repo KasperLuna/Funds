@@ -287,7 +287,9 @@ const PushNotificationSettings: React.FC = () => {
                         <li>
                           Click the lock icon in your browser&apos;s address bar
                         </li>
-                        <li>Change notification permissions to &ldquo;Allow&rdquo;</li>
+                        <li>
+                          Change notification permissions to &ldquo;Allow&rdquo;
+                        </li>
                         <li>Refresh the page and try again</li>
                       </ol>
                     </div>

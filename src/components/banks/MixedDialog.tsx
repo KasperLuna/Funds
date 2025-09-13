@@ -176,7 +176,14 @@ export const MixedDialog = ({
         alert(error);
       }
     },
-    [categoryData, setIsModalOpen, bankData, queryClient, onPlannedSubmit, transaction]
+    [
+      categoryData,
+      setIsModalOpen,
+      bankData,
+      queryClient,
+      onPlannedSubmit,
+      transaction,
+    ]
   );
 
   // Memoize dialog actions

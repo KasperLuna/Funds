@@ -208,7 +208,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                   title="View in Banks breakdown"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                  <div className="relative flex justify-between items-center mb-1 text-xs">
+                  <div className="relative flex justify-between items-center mb-1 text-xs w-full">
                     <span className="font-medium text-slate-100 text-sm flex items-center gap-2 truncate">
                       <Target className="w-3 h-3 text-emerald-400 flex-shrink-0" />
                       <span className="truncate">{row.name}</span>
@@ -240,7 +240,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       </span>
                     </span>
                   </div>
-                  <div className="relative h-4 bg-slate-700/80 rounded-full overflow-hidden shadow-inner">
+                  <div className="relative h-4 bg-slate-700/80 rounded-full overflow-hidden shadow-inner bg-red-500 w-full">
                     <div
                       className={`absolute left-0 top-0 h-full ${barColor} shadow-lg ${glowColor} transition-all duration-500 ease-out`}
                       style={{ width: `${percent}%` }}
@@ -255,12 +255,12 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       {`${Math.round((row.spent / Math.abs(row.budget || 1)) * 100)}%`}
                     </div>
                   </div>
-                  <div className="relative flex justify-between mt-1 text-xs">
+                  <div className="relative flex justify-between mt-1 text-xs w-full">
                     <span className="text-slate-400 flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" />
                       Spent
                     </span>
-                    <span className="text-slate-300 font-mono truncate max-w-[120px]">
+                    <span className="text-slate-300 font-mono truncate max-w-[220px]">
                       {isPrivacyModeEnabled
                         ? `${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`
                         : `${parseAmount(row.spent, baseCurrency?.code)} / ${parseAmount(Math.abs(row.budget ?? 0), baseCurrency?.code)}`}
