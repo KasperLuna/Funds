@@ -31,11 +31,11 @@ import {
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
 import { PlannedTransactionForm } from "./PlannedTransactionForm";
-import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useCallback, useMemo, useState } from "react";
 import { Decimal } from "decimal.js";
+import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
 
 export const MixedDialogTrigger = ({
   children,

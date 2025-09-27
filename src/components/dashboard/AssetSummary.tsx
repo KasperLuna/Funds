@@ -2,7 +2,7 @@
 import { useState, memo, useMemo, useCallback } from "react";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -55,7 +55,7 @@ export const AssetSummary = memo(function AssetSummary() {
   const [tab, setTab] = useState("Overall");
   const queryClient = useQueryClient();
   const router = useRouter();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { isPrivate } = usePrivacy();
   const { bankData, baseCurrency, categoryData } = useBanksCategsContext();
   const { tokenData, marketData } = useTokensContext();
 
@@ -189,7 +189,7 @@ export const AssetSummary = memo(function AssetSummary() {
         {/* Total display */}
         <div className="flex flex-col gap-2 mb-3">
           <span className="text-3xl font-mono font-bold bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-            {isPrivacyModeEnabled
+            {isPrivate
               ? `${currencySymbol}••••••`
               : parseAmount(total, currency)}
           </span>
@@ -311,7 +311,7 @@ export const AssetSummary = memo(function AssetSummary() {
 
                       <div className="flex flex-col gap-1">
                         <p className="text-base font-mono font-bold text-slate-100 group-hover:text-white transition-colors truncate">
-                          {isPrivacyModeEnabled
+                          {isPrivate
                             ? `${currencySymbol}••••••`
                             : parseAmount(item.value, currency)}
                         </p>

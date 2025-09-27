@@ -1,14 +1,13 @@
-import { Separator } from "../../ui/separator";
 import { ExpandedTransaction } from "@/lib/types";
 import dayjs from "dayjs";
 import clsx from "clsx";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { MixedDialogTrigger } from "../MixedDialog";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 
 export const TransactionCard = (props: ExpandedTransaction) => {
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { isPrivate } = usePrivacy();
   const { baseCurrency } = useBanksCategsContext();
   const { date, amount, description, expand } = props;
   const { bank, categories } = expand || {};
@@ -37,7 +36,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
                 "text-emerald-400": amount > 0,
               })}
             >
-              {isHideable && isPrivacyModeEnabled
+              {isHideable && isPrivate
                 ? `${baseCurrency?.symbol ?? "$"}••••••`
                 : parseAmount(amount, baseCurrency?.code)}
             </p>

@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
-import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";
 import { Transaction } from "@/lib/types";
 import { MixedDialog } from "../banks/MixedDialog";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
 
 export function PlannedTransactionPrefillHandler() {
   const { queryParams, setQueryParams } = useQueryParams();

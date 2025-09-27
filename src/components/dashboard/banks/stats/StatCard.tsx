@@ -1,5 +1,5 @@
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Bank } from "@/lib/types";
 import { parseAmount } from "@/lib/utils";
@@ -15,13 +15,13 @@ export const StatCard = memo(function StatCard({
   percentage?: string;
 }) {
   const { baseCurrency } = useBanksCategsContext();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { isPrivate } = usePrivacy();
   const { queryParams, setQueryParams } = useQueryParams();
 
   const isSelected = queryParams["bank"] === name;
 
   // Format and determine responsive sizing for balance
-  const formattedBalance = isPrivacyModeEnabled
+  const formattedBalance = isPrivate
     ? `${baseCurrency?.symbol ?? "$"}••••••`
     : parseAmount(balance, baseCurrency?.code);
 

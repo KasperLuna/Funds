@@ -1,10 +1,10 @@
 import { createContext } from "react";
 
 export type PrivacyModeContextType = {
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   togglePrivacyMode: () => void;
 };
 export const PrivacyModeContext = createContext<PrivacyModeContextType>({
-  isPrivacyModeEnabled: false,
+  isPrivate: false,
   togglePrivacyMode: () => {},
 });
