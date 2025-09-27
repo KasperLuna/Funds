@@ -105,7 +105,7 @@ export function ConfirmationDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isConfirming || loading}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="border-slate-600 text-slate-300 bg-slate-600 hover:bg-slate-700 hover:text-slate-200"
           >
             {cancelText}
           </Button>
