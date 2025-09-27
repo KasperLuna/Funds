@@ -4,7 +4,7 @@ import { TrendingUp, Wallet, Coins } from "lucide-react";
 import Image from "next/image";
 import { useQueries, UseQueryResult } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { Token } from "@/lib/types";
 import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
@@ -794,7 +794,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
 export function CryptoDashboard() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { isPrivate } = usePrivacy();
   const { baseCurrency } = useBanksCategsContext();
   const { tokenData, marketData, marketLoading, marketError } =
     useTokensContext();
@@ -988,7 +988,7 @@ export function CryptoDashboard() {
           totalValue={portfolioValue}
           change24h={portfolioChange}
           currency={CURRENCY}
-          privacyMode={isPrivacyModeEnabled}
+          privacyMode={isPrivate}
         />
         {loadingStates.marketLoading ? (
           <div className="flex flex-1 items-center justify-center min-h-[180px]">
@@ -1004,7 +1004,7 @@ export function CryptoDashboard() {
           <MarketOverview
             coins={market}
             currency={CURRENCY}
-            privacyMode={isPrivacyModeEnabled}
+            privacyMode={isPrivate}
           />
         )}
       </div>
@@ -1022,7 +1022,7 @@ export function CryptoDashboard() {
         coins={coins}
         market={market}
         currency={CURRENCY}
-        privacyMode={isPrivacyModeEnabled}
+        privacyMode={isPrivate}
       />
     </div>
   );

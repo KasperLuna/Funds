@@ -1,29 +1,27 @@
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
 import clsx from "clsx";
 import { EyeOff, Eye } from "lucide-react";
 import { Button } from "./ui/button";
+import { usePrivacy } from "@/hooks/usePrivacy";
 
 interface PrivacyToggleProps {
   showText?: boolean;
 }
 
 export const PrivacyToggle = ({ showText = false }: PrivacyToggleProps) => {
-  const { isPrivacyModeEnabled, togglePrivacyMode } = usePrivacyMode();
+  const { isPrivate, togglePrivacy } = usePrivacy();
   return (
     <Button
       onClick={() => {
-        togglePrivacyMode();
+        togglePrivacy();
       }}
       className={clsx("px-2 border-2 hover:border-slate-600 rounded-lg", {
-        "border-blue-800": isPrivacyModeEnabled,
-        "border-red-700": !isPrivacyModeEnabled,
+        "border-blue-800": isPrivate,
+        "border-red-700": !isPrivate,
       })}
     >
-      {isPrivacyModeEnabled ? <EyeOff /> : <Eye />}
+      {isPrivate ? <EyeOff /> : <Eye />}
       {showText && (
-        <span className="ml-2">
-          {isPrivacyModeEnabled ? "Privacy On" : "Privacy Off"}
-        </span>
+        <span className="ml-2">{isPrivate ? "Privacy On" : "Privacy Off"}</span>
       )}
     </Button>
   );
