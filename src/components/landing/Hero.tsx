@@ -8,7 +8,7 @@ export const Hero = () => (
         <div className="flex flex-col justify-center space-y-4">
           <div className="space-y-2">
             <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-              You get the bread, we'll balance the books.
+              You get the bread, we&apos;ll balance the books.
             </h1>
             <p className="max-w-[600px] text-zinc-400 md:text-xl">
               Track your spending with ease. No complicated features, just
