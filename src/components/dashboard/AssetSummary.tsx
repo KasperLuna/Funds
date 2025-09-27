@@ -10,6 +10,7 @@ import clsx from "clsx";
 import { RotateCw, PieChart, Wallet, Coins } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const colorsArray = [
   "#f59e42",
@@ -55,7 +56,7 @@ export const AssetSummary = memo(function AssetSummary() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { bankData, baseCurrency } = useBanksCategsContext();
+  const { bankData, baseCurrency, categoryData } = useBanksCategsContext();
   const { tokenData, marketData } = useTokensContext();
 
   // Memoize data extraction
@@ -137,6 +138,10 @@ export const AssetSummary = memo(function AssetSummary() {
       : tab === "Banks"
         ? bankTotal
         : cryptoTotal;
+
+  // Check for empty categories
+  const hasNoCategories =
+    !categoryData?.categories || categoryData.categories.length === 0;
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-900/90 via-slate-800/85 to-slate-900/90 backdrop-blur-sm p-3 shadow-lg hover:shadow-xl transition-all duration-300 group w-full">
@@ -228,11 +233,18 @@ export const AssetSummary = memo(function AssetSummary() {
               <PieChart className="w-6 h-6 text-slate-400" />
             </div>
             <p className="text-slate-400 text-base font-medium">
-              No assets found
+              No banks found
             </p>
-            <p className="text-slate-500 text-sm">
-              Add some accounts or tokens to get started
+            <p className="text-slate-500 text-sm mb-2">
+              You need at least one bank to start tracking your finances.
             </p>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <Link
+              href="/dashboard?settings=banks"
+              className="inline-block px-4 py-2 mt-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition"
+            >
+              Go to Settings to Add Banks
+            </Link>
           </div>
         ) : (
           <div className="space-y-3">
