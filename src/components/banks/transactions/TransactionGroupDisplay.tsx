@@ -3,10 +3,10 @@ import dayjs from "dayjs";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TransactionCard } from "@/components/banks/transactions/TransactionCard";
 import Decimal from "decimal.js";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { parseAmount } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import clsx from "clsx";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const TransactionGroupDisplay = ({
   transactions,
@@ -14,7 +14,7 @@ export const TransactionGroupDisplay = ({
   transactions: ExpandedTransaction[];
 }) => {
   const [parent] = useAutoAnimate({ duration: 100 });
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { isPrivate } = usePrivacy();
 
   const total = transactions.reduce((acc, transaction) => {

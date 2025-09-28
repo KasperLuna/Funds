@@ -3,7 +3,6 @@ import {
   updateCategoryById,
 } from "@/lib/pocketbase/queries";
 import {
-  InfoIcon,
   Plus,
   FolderOpen,
   Edit3,
@@ -19,8 +18,6 @@ import { Separator } from "../ui/separator";
 import { CategorySelect } from "../banks/CategorySelect";
 import { Switch } from "../ui/switch";
 import { useRouter } from "next/navigation";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { Tooltip } from "../ui/tooltip";
 import React, { useMemo, useState } from "react";
 import { useToast } from "../ui/toast";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
@@ -34,10 +31,11 @@ import {
 } from "../ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const CategorySettings = () => {
   const router = useRouter();
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const { addToast } = useToast();
   const { control, watch } = useForm();
   const categoryId = watch("category");

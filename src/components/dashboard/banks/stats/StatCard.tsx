@@ -1,4 +1,3 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Bank } from "@/lib/types";
@@ -6,6 +5,7 @@ import { parseAmount } from "@/lib/utils";
 import clsx from "clsx";
 import { memo } from "react";
 import { Wallet } from "lucide-react";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const StatCard = memo(function StatCard({
   name,
@@ -14,7 +14,7 @@ export const StatCard = memo(function StatCard({
 }: Bank & {
   percentage?: string;
 }) {
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { isPrivate } = usePrivacy();
   const { queryParams, setQueryParams } = useQueryParams();
 

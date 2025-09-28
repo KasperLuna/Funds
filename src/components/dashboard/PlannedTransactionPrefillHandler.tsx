@@ -3,14 +3,16 @@ import { useEffect, useState } from "react";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Transaction } from "@/lib/types";
 import { MixedDialog } from "../banks/MixedDialog";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export function PlannedTransactionPrefillHandler() {
   const { queryParams, setQueryParams } = useQueryParams();
   const { plannedTransactions, updatePlannedTransaction } =
     usePlannedTransactions();
-  const { bankData, categoryData } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const categoryData = useCategoriesQuery();
   const [prefill, setPrefill] = useState<Transaction | undefined>(undefined);
 
   useEffect(() => {

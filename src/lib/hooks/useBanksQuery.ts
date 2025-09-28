@@ -4,6 +4,9 @@ import { Bank } from "../types";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 
+// Module-level variable to ensure subscription is only set up once
+let isSubscribedToBanks = false;
+
 export const useBanksQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -29,7 +32,7 @@ export const useBanksQuery = () => {
   const loading = isLoading || isRefetching;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isSubscribedToBanks) return;
 
     const handleRealtimeUpdate = (data: { action: string; record: Bank }) => {
       queryClient.setQueryData<Bank[]>(["banks", user.id], (prevBanks) => {
@@ -50,15 +53,19 @@ export const useBanksQuery = () => {
       });
     };
 
-    // Subscribe to real-time updates
     pb.collection("banks")
       .subscribe("*", handleRealtimeUpdate)
+      .then(() => {
+        isSubscribedToBanks = true;
+      })
       .catch(() => {
         alert("Error subscribing to banks, close the app and try again");
       });
 
+    // Only unsubscribe if the app is unmounted (not on every hook unmount)
+    // Optionally, you can add a window unload event to clean up
     return () => {
-      pb.collection("banks").unsubscribe("*");
+      // No-op: do not unsubscribe on every hook unmount
     };
   }, [user, queryClient]);
 

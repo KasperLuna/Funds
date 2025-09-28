@@ -4,6 +4,9 @@ import { Category } from "../types";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 
+// Module-level variable to ensure subscription is only set up once
+let isSubscribedToCategories = false;
+
 export const useCategoriesQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -26,7 +29,7 @@ export const useCategoriesQuery = () => {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isSubscribedToCategories) return;
 
     const handleRealtimeUpdate = (data: {
       action: string;
@@ -53,15 +56,19 @@ export const useCategoriesQuery = () => {
       );
     };
 
-    // Subscribe to real-time updates
     pb.collection("categories")
       .subscribe("*", handleRealtimeUpdate)
+      .then(() => {
+        isSubscribedToCategories = true;
+      })
       .catch(() => {
         alert("Error subscribing to categories, close the app and try again");
       });
 
+    // Only unsubscribe if the app is unmounted (not on every hook unmount)
+    // Optionally, you can add a window unload event to clean up
     return () => {
-      pb.collection("categories").unsubscribe("*");
+      // No-op: do not unsubscribe on every hook unmount
     };
   }, [user, queryClient]);
 

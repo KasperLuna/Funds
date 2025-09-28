@@ -1,6 +1,5 @@
 "use client";
 import React, { memo } from "react";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
 import { Transaction } from "@/lib/types";
 import { usePrivacy } from "@/hooks/usePrivacy";
@@ -9,14 +8,18 @@ import { TransactionCardLoader } from "@/components/banks/transactions/Transacti
 import UpcomingPlannedTransactionCard from "./UpcomingPlannedTransactionCard";
 import { Calendar, Clock } from "lucide-react";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 const UpcomingPlannedTransactions = memo(
   function UpcomingPlannedTransactions() {
     const { isPrivate } = usePrivacy();
     const { plannedTransactions, updatePlannedTransaction, loading } =
       usePlannedTransactions();
-    const { bankData, categoryData, baseCurrency } =
-      useBanksCategsContext() || {};
+    const bankData = useBanksQuery();
+    const categoryData = useCategoriesQuery();
+    const { baseCurrency } = useUserQuery();
     const categories = categoryData?.categories || [];
 
     const upcoming =

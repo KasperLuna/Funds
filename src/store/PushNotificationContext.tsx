@@ -146,11 +146,12 @@ export const PushNotificationProvider = ({
     const json = sub.toJSON();
     // Remove from backend
     if (user?.id && json.endpoint) {
-      const records = await pb.collection("push_subscriptions")?.getFullList({
+      const collection = pb.collection("push_subscriptions");
+      const records = await collection.getFullList({
         filter: `user="${user.id}" && endpoint="${json.endpoint}"`,
       });
       for (const rec of records) {
-        await pb.collection("push_subscriptions").delete(rec.id);
+        await collection.delete(rec.id);
       }
     }
     await sub.unsubscribe();

@@ -2,7 +2,6 @@ import { BankSelect } from "@/components/banks/BankSelect";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import {
   recomputeBalanceById,
   deleteBankById,
@@ -37,10 +36,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 
 export const BankSettings = () => {
   const router = useRouter();
-  const { bankData, baseCurrency } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
   const { addToast } = useToast();
   const { control, watch } = useForm();
   const bank = watch("bank");

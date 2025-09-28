@@ -1,5 +1,4 @@
 import { MonthPicker } from "@/components/MonthPicker";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { getTransactionsOfAMonth } from "@/lib/pocketbase/queries";
 import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
@@ -20,6 +19,9 @@ import {
 } from "./chartOptions";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Bank } from "@/lib/types";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -30,7 +32,9 @@ export const MonthlyBreakdown: React.FC = () => {
   const { queryParams, setQueryParams } = useQueryParams();
   const router = useRouter();
   const { isPrivate } = usePrivacy();
-  const { categoryData, bankData, baseCurrency } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const selectedMonth = queryParams["monthlyFilter"]
