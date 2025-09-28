@@ -1,30 +1,8 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  ReactNode,
-} from "react";
-import { pb } from "../lib/pocketbase/pocketbase";
-import { useAuth } from "../lib/hooks/useAuth";
-import { PushSubscription } from "../lib/types";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { pb } from "@/lib/pocketbase/pocketbase";
+import React, { useState, useEffect } from "react";
 
-interface PushNotificationContextProps {
-  permission: NotificationPermission;
-  isSubscribed: boolean;
-  subscribe: () => Promise<void>;
-  unsubscribe: () => Promise<void>;
-}
-
-const PushNotificationContext = createContext<
-  PushNotificationContextProps | undefined
->(undefined);
-
-export const PushNotificationProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const usePushNotification = () => {
   const [permission, setPermission] =
     useState<NotificationPermission>("default");
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -32,7 +10,7 @@ export const PushNotificationProvider = ({
 
   // Helper to get current push subscription from browser
   const getBrowserSubscription =
-    React.useCallback(async (): Promise<PushSubscription | null> => {
+    React.useCallback(async (): Promise<PushSubscriptionJSON | null> => {
       if (!("serviceWorker" in navigator) || !("PushManager" in window))
         return null;
       const reg = await navigator.serviceWorker.getRegistration();
@@ -40,14 +18,15 @@ export const PushNotificationProvider = ({
       const sub = await reg.pushManager.getSubscription();
       if (!sub) return null;
       const json = sub.toJSON();
-      return {
-        user: user?.id ?? "",
-        endpoint: json.endpoint!,
-        keys: {
-          p256dh: json.keys?.p256dh ?? "",
-          auth: json.keys?.auth ?? "",
-        },
-      };
+      // return {
+      //   user: user?.id ?? "",
+      //   endpoint: json.endpoint!,
+      //   keys: {
+      //     p256dh: json.keys?.p256dh ?? "",
+      //     auth: json.keys?.auth ?? "",
+      //   },
+      // };
+      return json;
     }, [user]);
 
   // Check if user is subscribed in backend
@@ -158,22 +137,5 @@ export const PushNotificationProvider = ({
     setIsSubscribed(false);
   };
 
-  return (
-    <PushNotificationContext.Provider
-      value={{ permission, isSubscribed, subscribe, unsubscribe }}
-    >
-      {children}
-    </PushNotificationContext.Provider>
-  );
+  return { permission, isSubscribed, subscribe, unsubscribe };
 };
-
-export const usePushNotification = () => {
-  const context = useContext(PushNotificationContext);
-  if (!context)
-    throw new Error(
-      "usePushNotification must be used within PushNotificationProvider"
-    );
-  return context;
-};
-
-// If you want to avoid the exhaustive-deps warning, you can define getBrowserSubscription with useCallback if needed.

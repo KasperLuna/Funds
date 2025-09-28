@@ -1,17 +1,17 @@
 "use client";
 
 import * as React from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -67,19 +67,19 @@ export function ConfirmationDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-slate-900 text-white border-slate-700 max-w-md">
-        <DialogHeader>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="bg-slate-900 text-white border-slate-700 max-w-md">
+        <AlertDialogHeader>
           <div className="flex items-center space-x-2">
             {variant === "destructive" && (
               <AlertTriangle className="w-5 h-5 text-red-400" />
             )}
-            <DialogTitle className="text-lg">{title}</DialogTitle>
+            <AlertDialogTitle className="text-lg">{title}</AlertDialogTitle>
           </div>
-          <DialogDescription className="text-slate-300">
+          <AlertDialogDescription className="text-slate-300">
             {description}
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
         {confirmationPhrase && (
           <div className="space-y-2">
@@ -100,7 +100,7 @@ export function ConfirmationDialog({
           </div>
         )}
 
-        <DialogFooter className="space-x-2">
+        <AlertDialogFooter className="space-x-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -119,8 +119,8 @@ export function ConfirmationDialog({
           >
             {isConfirming || loading ? "Please wait..." : confirmText}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
