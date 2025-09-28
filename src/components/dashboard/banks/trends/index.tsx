@@ -1,4 +1,3 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useBanksTrendsQuery } from "@/lib/hooks/useBanksTrendsQuery";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
@@ -9,6 +8,7 @@ import Decimal from "decimal.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendsChart } from "./TrendsChart";
 import { TrendsCarousel } from "./TrendsCarousel";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 // Subcomponent: Average Summary
 type BankTrendsSummaryProps = {
@@ -47,7 +47,7 @@ const BankTrendsSummary = ({
 );
 
 export const BankTrends = () => {
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { trends: baseTrends, loading: isBankTrendsLoading } =
     useBanksTrendsQuery();
   const { isPrivate } = usePrivacy();

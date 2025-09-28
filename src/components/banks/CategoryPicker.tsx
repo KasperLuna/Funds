@@ -6,7 +6,6 @@ import {
   MultiSelectorList,
   MultiSelectorItem,
 } from "../ui/multi-select";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Button } from "../ui/button";
 import { Plus, Check, ChevronDown, X } from "lucide-react";
 import { useState } from "react";
@@ -17,6 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const CategoryPicker = ({
   value,
@@ -27,7 +27,7 @@ export const CategoryPicker = ({
   onChange: (value: string[]) => void;
   hasAddButton?: boolean;
 }) => {
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const [isOpen, setIsOpen] = useState(false);
 
   const sortedCategories =

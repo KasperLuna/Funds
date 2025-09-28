@@ -4,11 +4,11 @@ import clsx from "clsx";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { MixedDialogTrigger } from "../MixedDialog";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const TransactionCard = (props: ExpandedTransaction) => {
   const { isPrivate } = usePrivacy();
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { date, amount, description, expand } = props;
   const { bank, categories } = expand || {};
   const isHideable = categories?.some((categ) => categ.hideable);

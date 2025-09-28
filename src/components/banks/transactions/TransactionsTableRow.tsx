@@ -4,15 +4,15 @@ import { MixedDialogTrigger } from "../MixedDialog";
 import dayjs from "dayjs";
 import clsx from "clsx";
 import { usePrivacy } from "@/hooks/usePrivacy";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { parseAmount } from "@/lib/utils";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const TransactionsTableRow: React.FC<{
   transaction: ExpandedTransaction;
   odd?: boolean;
 }> = ({ transaction, odd }) => {
   const { isPrivate } = usePrivacy();
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { date, amount, description, expand } = transaction;
   const { bank, categories } = expand || {};
   const isHideable = categories?.some((categ) => categ.hideable);

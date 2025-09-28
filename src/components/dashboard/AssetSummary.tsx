@@ -1,6 +1,5 @@
 "use client";
 import { useState, memo, useMemo, useCallback } from "react";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
@@ -11,6 +10,9 @@ import { RotateCw, PieChart, Wallet, Coins } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 const colorsArray = [
   "#f59e42",
@@ -56,7 +58,9 @@ export const AssetSummary = memo(function AssetSummary() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isPrivate } = usePrivacy();
-  const { bankData, baseCurrency, categoryData } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const categoryData = useCategoriesQuery();
+  const { baseCurrency } = useUserQuery();
   const { tokenData, marketData } = useTokensContext();
 
   // Memoize data extraction

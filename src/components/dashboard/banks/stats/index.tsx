@@ -1,4 +1,3 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { StatCard } from "./StatCard";
 import { StatCardLoader } from "./StatCardLoader";
 import { trimToTwoDecimals } from "@/lib/utils";
@@ -6,10 +5,10 @@ import { useState, useRef, useEffect } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import autoAnimate from "@formkit/auto-animate";
 import { Button } from "@/components/ui/button";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 
 export const StatsSection = () => {
-  const { bankData } = useBanksCategsContext();
-  const { banks, loading } = bankData || {};
+  const { banks, loading } = useBanksQuery();
   const totalAmount =
     banks?.reduce((acc, bank) => {
       return acc + bank.balance;

@@ -1,16 +1,18 @@
 "use client";
 import { usePrivacy } from "@/hooks/usePrivacy";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { parseAmount } from "@/lib/utils";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const BanksHeader = () => {
   const { queryParams, setQueryParams } = useQueryParams();
   const bankName = queryParams["bank"];
   const { isPrivate } = usePrivacy();
-  const { bankData, baseCurrency } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
   const displayValue = bankName
     ? bankData?.banks?.find((bank) => bank.name === bankName)?.balance
     : bankData?.banks?.reduce((acc, bank) => {

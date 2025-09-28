@@ -18,7 +18,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PopoverArrow } from "@radix-ui/react-popover";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
@@ -36,6 +35,8 @@ import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useCallback, useMemo, useState } from "react";
 import { Decimal } from "decimal.js";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const MixedDialogTrigger = ({
   children,
@@ -81,7 +82,8 @@ export const MixedDialog = ({
   onPlannedSubmit?: () => void | Promise<void>;
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
-  const { bankData, categoryData } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const categoryData = useCategoriesQuery();
   const queryClient = useQueryClient();
   const formType = queryParams["create"] ?? "Transaction";
   const setFormType = useCallback(

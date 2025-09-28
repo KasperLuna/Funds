@@ -1,6 +1,5 @@
 "use client";
 
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { getTransactionsOfAMonth } from "@/lib/pocketbase/queries";
@@ -18,11 +17,14 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const BudgetsSummary = memo(function BudgetsSummary() {
   const { queryParams, setQueryParams } = useQueryParams();
   const { isPrivate } = usePrivacy();
-  const { categoryData, baseCurrency } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
+  const { baseCurrency } = useUserQuery();
   const router = useRouter();
 
   const selectedMonth = queryParams["monthlyFilter"]

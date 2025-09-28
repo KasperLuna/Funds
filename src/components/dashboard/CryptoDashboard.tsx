@@ -7,13 +7,13 @@ import dayjs from "dayjs";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { Token } from "@/lib/types";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import dynamic from "next/dynamic";
 import {
   CoinGeckoMarketData,
   CoinGeckoMarketChartData,
   CoinGeckoPriceDataPoint,
 } from "@/lib/types/coingecko";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 // Error response type for CoinGecko API
 interface CoinGeckoErrorResponse {
@@ -795,7 +795,7 @@ export function CryptoDashboard() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
   const { isPrivate } = usePrivacy();
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { tokenData, marketData, marketLoading, marketError } =
     useTokensContext();
 

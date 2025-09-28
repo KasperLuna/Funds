@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { useBanksCategsContext } from "../hooks/useBanksCategsContext";
 import { CoinGeckoMarketData } from "../types/coingecko";
 import { useMemo } from "react";
 import { TokensContext } from "../context/TokensContext";
 import { useTokensQuery } from "../hooks/useTokensQuery";
+import { useUserQuery } from "../hooks/useUserQuery";
 
 export function TokensProvider({ children }: { children: React.ReactNode }) {
   const tokenData = useTokensQuery();
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const coins = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
   const CURRENCY = baseCurrency?.code || "USD";
   const uniqueIds = useMemo(
