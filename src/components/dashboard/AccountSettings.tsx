@@ -12,7 +12,7 @@ import { createAvatar } from "@dicebear/core";
 import Image from "next/image";
 import { useToast } from "../ui/toast";
 import { LoadingSpinner } from "../ui/loading";
-import { Save, User as UserIcon, Globe, Upload, RefreshCw } from "lucide-react";
+import { Save, User as UserIcon, Globe, RefreshCw } from "lucide-react";
 import {
   Card,
   CardContent,

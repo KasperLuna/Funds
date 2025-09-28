@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
 interface UseQueryParamsConfig<T> {

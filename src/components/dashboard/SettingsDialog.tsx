@@ -1,18 +1,19 @@
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog";
-import { Settings, User, Building2, FolderOpen, Bell } from "lucide-react";
+import { Settings, User, Building2, FolderOpen, Bell, X } from "lucide-react";
 import { AccountSettings } from "./AccountSettings";
 import { BankSettings } from "./banks/BankSettings";
 import { CategorySettings } from "./CategorySettings";
 import PushNotificationSettings from "./settings/PushNotificationSettings";
 import { ToastProvider } from "../ui/toast";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/alert-dialog";
 
 export const SettingsDialogTrigger = ({
   children,
@@ -75,20 +76,23 @@ export const SettingsDialog = ({
   ];
 
   return (
-    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent
+    <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
+      <AlertDialogContent
         className="bg-slate-900 text-white border-slate-700 max-w-2xl w-full h-[85vh] flex flex-col p-0"
         aria-describedby={undefined}
       >
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-3 border-b border-slate-700">
+        <AlertDialogHeader className="flex flex-row items-center justify-between space-y-0 p-4 pb-3 border-b border-slate-700">
           <div className="flex items-center space-x-2">
             <Settings className="w-5 h-5 text-orange-500" />
-            <DialogTitle className="text-lg font-semibold">
+            <AlertDialogTitle className="text-lg font-semibold">
               Settings
-            </DialogTitle>
+            </AlertDialogTitle>
           </div>
-        </DialogHeader>
+          <AlertDialogCancel className="w-fit bg-transparent p-2 border-slate-700 hover:bg-slate-400">
+            <X />
+          </AlertDialogCancel>
+        </AlertDialogHeader>
 
         <div className="flex-1 overflow-hidden">
           <Tabs
@@ -102,7 +106,7 @@ export const SettingsDialog = ({
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="flex-1 flex items-center space-x-2 text-slate-300 data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+                    className="flex-1 flex items-center space-x-2 text-slate-300 data-[state=active]:bg-slate-100 data-[state=active]:text-slate-800"
                   >
                     <Icon className="w-4 h-4" />
                     <span className="hidden sm:inline">{label}</span>
@@ -120,7 +124,7 @@ export const SettingsDialog = ({
             </div>
           </Tabs>
         </div>
-      </DialogContent>
-    </Dialog>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
