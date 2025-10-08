@@ -18,15 +18,8 @@ export const usePushNotification = () => {
       const sub = await reg.pushManager.getSubscription();
       if (!sub) return null;
       const json = sub.toJSON();
-      // return {
-      //   user: user?.id ?? "",
-      //   endpoint: json.endpoint!,
-      //   keys: {
-      //     p256dh: json.keys?.p256dh ?? "",
-      //     auth: json.keys?.auth ?? "",
-      //   },
-      // };
       return json;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
   // Check if user is subscribed in backend
