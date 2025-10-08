@@ -80,7 +80,7 @@ export function Onboarding() {
             </Badge>
           </div>
           <p className="text-slate-400 text-sm">
-            Let's get you started with a few quick steps to set up your
+            Let&apos;s get you started with a few quick steps to set up your
             financial tracking.
           </p>
         </CardHeader>
