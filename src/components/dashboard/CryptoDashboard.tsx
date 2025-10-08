@@ -958,11 +958,11 @@ export function CryptoDashboard() {
   ) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-48 gap-3">
-        <span className="text-slate-400">
-          No tokens found in your portfolio.
+        <span className="text-slate-400 text-lg font-semibold">
+          🚧 Crypto Portfolio Coming Soon
         </span>
         <span className="text-slate-500 text-sm">
-          Visit the tokens page to add crypto tokens to your portfolio.
+          This feature is under development. Stay tuned for updates!
         </span>
       </div>
     );

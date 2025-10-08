@@ -4,8 +4,9 @@ import { Category } from "../types";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 
-// Module-level variable to ensure subscription is only set up once
+// Module-level variables to ensure subscription is only set up once
 let isSubscribedToCategories = false;
+let subscriptionPromise: Promise<void> | null = null;
 
 export const useCategoriesQuery = () => {
   const { user } = useAuth();
@@ -29,7 +30,7 @@ export const useCategoriesQuery = () => {
   });
 
   useEffect(() => {
-    if (!user || isSubscribedToCategories) return;
+    if (!user || isSubscribedToCategories || subscriptionPromise) return;
 
     const handleRealtimeUpdate = (data: {
       action: string;
@@ -56,12 +57,16 @@ export const useCategoriesQuery = () => {
       );
     };
 
-    pb.collection("categories")
+    // Set subscription promise immediately to prevent multiple subscriptions
+    subscriptionPromise = pb
+      .collection("categories")
       .subscribe("*", handleRealtimeUpdate)
       .then(() => {
         isSubscribedToCategories = true;
+        subscriptionPromise = null;
       })
       .catch(() => {
+        subscriptionPromise = null;
         alert("Error subscribing to categories, close the app and try again");
       });
 
