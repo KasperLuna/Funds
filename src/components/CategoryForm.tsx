@@ -3,14 +3,14 @@ import { Category } from "@/lib/types";
 import { addCategory } from "@/lib/pocketbase/queries";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Switch } from "./ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useMemo } from "react";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const CategoryForm = () => {
   const { setQueryParams } = useQueryParams();
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const {
     control,
     register,
@@ -22,7 +22,7 @@ export const CategoryForm = () => {
 
   const onSubmit = async (data: Category) => {
     try {
-      await categoryData?.refetch();
+      // Check if category already exists
       if (
         categoryData?.categories?.find(
           (category) => category.name === data.name

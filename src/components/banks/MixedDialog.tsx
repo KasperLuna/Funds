@@ -18,7 +18,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PopoverArrow } from "@radix-ui/react-popover";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
@@ -31,20 +30,25 @@ import {
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
 import { PlannedTransactionForm } from "./PlannedTransactionForm";
-import { usePlannedTransactions } from "@/store/PlannedTransactionsContext";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useCallback, useMemo, useState } from "react";
 import { Decimal } from "decimal.js";
+import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import useMediaQuery from "@/lib/hooks/useMediaQuery";
 
 export const MixedDialogTrigger = ({
   children,
   transaction,
   onPlannedSubmit,
+  isMobile = false,
 }: {
   children: React.ReactNode;
   transaction?: Transaction;
   onPlannedSubmit?: () => void | Promise<void>;
+  isMobile?: boolean;
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,7 +60,15 @@ export const MixedDialogTrigger = ({
     [setQueryParams]
   );
 
-  return (
+  // Use media query to determine if we're on mobile
+  const isActuallyMobile = useMediaQuery("(max-width: 768px)");
+
+  // Only render the dialog if:
+  // 1. This is for a transaction (editing existing)
+  // 2. This is for creating new AND the isMobile prop matches the actual screen size
+  const shouldRenderDialog = transaction || isMobile === isActuallyMobile;
+
+  return shouldRenderDialog ? (
     <MixedDialog
       isModalOpen={transaction ? isEditModalOpen : isCreateModalOpen}
       setIsModalOpen={transaction ? setIsEditModalOpen : setIsCreateModalOpen}
@@ -64,6 +76,8 @@ export const MixedDialogTrigger = ({
       transaction={transaction}
       onPlannedSubmit={onPlannedSubmit}
     />
+  ) : (
+    <>{children}</>
   );
 };
 
@@ -81,7 +95,8 @@ export const MixedDialog = ({
   onPlannedSubmit?: () => void | Promise<void>;
 }) => {
   const { queryParams, setQueryParams } = useQueryParams();
-  const { bankData, categoryData } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const categoryData = useCategoriesQuery();
   const queryClient = useQueryClient();
   const formType = queryParams["create"] ?? "Transaction";
   const setFormType = useCallback(
@@ -319,7 +334,7 @@ export const MixedDialog = ({
             {/* Waive button for planned transactions */}
             {onPlannedSubmit && (
               <Button
-                className="w-fit bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-2 ml-1"
+                className="w-fit bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-2 ml-1 mt-2 sm:mt-0"
                 onClick={async () => {
                   setIsModalOpen(false);
                   await onPlannedSubmit();

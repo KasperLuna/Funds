@@ -1,22 +1,25 @@
 "use client";
 import React, { memo } from "react";
-import { usePlannedTransactions } from "../../store/PlannedTransactionsContext";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
 import { Transaction } from "@/lib/types";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import UpcomingPlannedTransactionCard from "./UpcomingPlannedTransactionCard";
 import { Calendar, Clock } from "lucide-react";
+import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 const UpcomingPlannedTransactions = memo(
   function UpcomingPlannedTransactions() {
-    const { isPrivacyModeEnabled } = usePrivacyMode();
+    const { isPrivate } = usePrivacy();
     const { plannedTransactions, updatePlannedTransaction, loading } =
       usePlannedTransactions();
-    const { bankData, categoryData, baseCurrency } =
-      useBanksCategsContext() || {};
+    const bankData = useBanksQuery();
+    const categoryData = useCategoriesQuery();
+    const { baseCurrency } = useUserQuery();
     const categories = categoryData?.categories || [];
 
     const upcoming =
@@ -114,7 +117,7 @@ const UpcomingPlannedTransactions = memo(
                         pt={pt}
                         categories={categories}
                         baseCurrency={baseCurrency}
-                        isPrivacyModeEnabled={isPrivacyModeEnabled}
+                        isPrivate={isPrivate}
                         parseAmount={parseAmount}
                       />
                     </div>

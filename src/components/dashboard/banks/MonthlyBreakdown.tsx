@@ -1,9 +1,8 @@
 import { MonthPicker } from "@/components/MonthPicker";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { getTransactionsOfAMonth } from "@/lib/pocketbase/queries";
 import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import dynamic from "next/dynamic";
 import { parseAmount } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +19,9 @@ import {
 } from "./chartOptions";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Bank } from "@/lib/types";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -29,8 +31,10 @@ const VOLATILITY_RATIO = 3;
 export const MonthlyBreakdown: React.FC = () => {
   const { queryParams, setQueryParams } = useQueryParams();
   const router = useRouter();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { categoryData, bankData, baseCurrency } = useBanksCategsContext();
+  const { isPrivate } = usePrivacy();
+  const categoryData = useCategoriesQuery();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const selectedMonth = queryParams["monthlyFilter"]
@@ -197,7 +201,7 @@ export const MonthlyBreakdown: React.FC = () => {
         ...getCategoryChartOptions({
           sortedKeys,
           sortedValues,
-          isPrivacyModeEnabled,
+          isPrivate,
           handleBarClick: (dataPointIndex: number) => {
             const category: string = sortedKeys[dataPointIndex];
             router.push(
@@ -221,13 +225,7 @@ export const MonthlyBreakdown: React.FC = () => {
       sortedValues,
       chartData,
     };
-  }, [
-    data,
-    isPrivacyModeEnabled,
-    categoryData?.categories,
-    router,
-    selectedMonth,
-  ]);
+  }, [data, isPrivate, categoryData?.categories, router, selectedMonth]);
 
   // --- Banks breakdown logic ---
   // Compute totals and transaction counts per bank
@@ -344,7 +342,7 @@ export const MonthlyBreakdown: React.FC = () => {
             <p className="text-sm font-semibold">Total:</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <p className="text-green-500">
-                {isPrivacyModeEnabled || isLoading
+                {isPrivate || isLoading
                   ? `${baseCurrency?.symbol ?? ""}••••••`
                   : parseAmount(
                       memoized.totalPositive?.toNumber(),
@@ -352,7 +350,7 @@ export const MonthlyBreakdown: React.FC = () => {
                     )}
               </p>
               <p className="text-red-500">
-                {isPrivacyModeEnabled || isLoading
+                {isPrivate || isLoading
                   ? `${baseCurrency?.symbol ?? ""}••••••`
                   : parseAmount(
                       memoized.totalNegative?.toNumber(),
@@ -367,7 +365,7 @@ export const MonthlyBreakdown: React.FC = () => {
                 })}
               >
                 <span className="text-slate-200">=</span>{" "}
-                {isPrivacyModeEnabled || isLoading
+                {isPrivate || isLoading
                   ? `${baseCurrency?.symbol ?? ""}••••••`
                   : parseAmount(
                       memoized.overallBalance?.toNumber(),
@@ -382,20 +380,14 @@ export const MonthlyBreakdown: React.FC = () => {
             <span
               className={clsx("text-xs font-mono", {
                 "text-green-400":
-                  !isPrivacyModeEnabled &&
-                  !isLoading &&
-                  memoized.uncategorizedTotal.gt(0),
+                  !isPrivate && !isLoading && memoized.uncategorizedTotal.gt(0),
                 "text-red-400":
-                  !isPrivacyModeEnabled &&
-                  !isLoading &&
-                  memoized.uncategorizedTotal.lt(0),
+                  !isPrivate && !isLoading && memoized.uncategorizedTotal.lt(0),
                 "text-slate-300":
-                  isPrivacyModeEnabled ||
-                  isLoading ||
-                  memoized.uncategorizedTotal.eq(0),
+                  isPrivate || isLoading || memoized.uncategorizedTotal.eq(0),
               })}
             >
-              {isPrivacyModeEnabled || isLoading
+              {isPrivate || isLoading
                 ? `${baseCurrency?.symbol ?? ""}••••••`
                 : parseAmount(
                     memoized.uncategorizedTotal.toNumber(),
@@ -501,7 +493,7 @@ export const MonthlyBreakdown: React.FC = () => {
                     options={getBanksChartOptions({
                       sortedBanks: banksMemoized.sortedBanks,
                       sortedTotals: banksMemoized.sortedTotals,
-                      isPrivacyModeEnabled,
+                      isPrivate,
                       sortedBankNames: banksMemoized.sortedBankNames,
                     })}
                     series={[
@@ -538,7 +530,7 @@ export const MonthlyBreakdown: React.FC = () => {
                     options={getBanksCountChartOptions({
                       sortedBanks: banksMemoized.sortedBanks,
                       sortedCounts: banksMemoized.sortedCounts,
-                      isPrivacyModeEnabled,
+                      isPrivate,
                       sortedBankNames: banksMemoized.sortedBankNames,
                     })}
                     series={[

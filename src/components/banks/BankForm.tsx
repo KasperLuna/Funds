@@ -1,4 +1,3 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { Input } from "../ui/input";
 import { useForm } from "react-hook-form";
 import { Bank } from "@/lib/types";
@@ -7,10 +6,11 @@ import { ArrowRight } from "lucide-react";
 import { addBank } from "@/lib/pocketbase/queries";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useMemo } from "react";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 
 export const BankForm = () => {
   const { setQueryParams } = useQueryParams();
-  const { bankData } = useBanksCategsContext();
+  const bankData = useBanksQuery();
   const {
     register,
     handleSubmit,
@@ -21,7 +21,7 @@ export const BankForm = () => {
 
   const onSubmit = async (data: Bank) => {
     try {
-      await bankData?.refetch();
+      // Check if bank already exists
       if (
         bankData?.banks?.find(
           (bank) => bank.name.toLowerCase() === data.name.toLowerCase()

@@ -1,7 +1,6 @@
 "use client";
 
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { getTransactionsOfAMonth } from "@/lib/pocketbase/queries";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +9,7 @@ import { parseAmount } from "@/lib/utils";
 import { MonthPicker } from "../MonthPicker";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import {
   PieChart,
   Target,
@@ -18,11 +17,14 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const BudgetsSummary = memo(function BudgetsSummary() {
   const { queryParams, setQueryParams } = useQueryParams();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { categoryData, baseCurrency } = useBanksCategsContext();
+  const { isPrivate } = usePrivacy();
+  const categoryData = useCategoriesQuery();
+  const { baseCurrency } = useUserQuery();
   const router = useRouter();
 
   const selectedMonth = queryParams["monthlyFilter"]
@@ -126,7 +128,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
               </span>
             </div>
             <span className="text-xs text-slate-300 font-mono">
-              {isPrivacyModeEnabled
+              {isPrivate
                 ? `${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`
                 : `${parseAmount(totalSpent, baseCurrency?.code)} / ${parseAmount(totalBudget, baseCurrency?.code)}`}
             </span>
@@ -231,7 +233,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                         <CheckCircle className="w-3 h-3" />
                       )}
                       <span className="truncate">
-                        {isPrivacyModeEnabled
+                        {isPrivate
                           ? "••••"
                           : `${parseAmount(Math.abs(row.remaining ?? 0), baseCurrency?.code)}`}
                         {row.remaining != null && row.remaining > 0
@@ -261,7 +263,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       Spent
                     </span>
                     <span className="text-slate-300 font-mono truncate max-w-[220px]">
-                      {isPrivacyModeEnabled
+                      {isPrivate
                         ? `${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`
                         : `${parseAmount(row.spent, baseCurrency?.code)} / ${parseAmount(Math.abs(row.budget ?? 0), baseCurrency?.code)}`}
                     </span>
@@ -322,7 +324,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                           <TrendingUp className="w-3 h-3" />
                         ) : null}
                         <span className="truncate max-w-[80px]">
-                          {isPrivacyModeEnabled
+                          {isPrivate
                             ? `${baseCurrency?.symbol}•••••`
                             : parseAmount(amount, baseCurrency?.code)}
                         </span>

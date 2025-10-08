@@ -1,16 +1,18 @@
 "use client";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Button } from "../ui/button";
 import { X } from "lucide-react";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const BanksHeader = () => {
   const { queryParams, setQueryParams } = useQueryParams();
   const bankName = queryParams["bank"];
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { bankData, baseCurrency } = useBanksCategsContext();
+  const { isPrivate } = usePrivacy();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
   const displayValue = bankName
     ? bankData?.banks?.find((bank) => bank.name === bankName)?.balance
     : bankData?.banks?.reduce((acc, bank) => {
@@ -35,7 +37,7 @@ export const BanksHeader = () => {
       </div>
       <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
         Total:{" "}
-        {isPrivacyModeEnabled
+        {isPrivate
           ? `${baseCurrency?.symbol ?? "$"}••••••`
           : parseAmount(displayValue, baseCurrency?.code)}
       </small>

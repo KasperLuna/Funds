@@ -2,15 +2,15 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { paginatedFetchTransactions } from "../pocketbase/queries";
 import { pb } from "../pocketbase/pocketbase";
 import { useEffect } from "react";
-import { useBanksCategsContext } from "./useBanksCategsContext";
 import { useQueryParams } from "./useQueryParams";
+import { useCategoriesQuery } from "./useCategoriesQuery";
 
 export const useTransactionsQuery = () => {
   const { queryParams } = useQueryParams();
   const bankName = queryParams["bank"]; //searchParams.get("bank");
   const query = queryParams["query"]; //searchParams.get("query");
 
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const categories = queryParams["categories"]?.split(","); //searchParams.get("categories")?.split(",");
   const categoryIds = categories?.map(
     (category: string) =>

@@ -1,21 +1,7 @@
-import React, { createContext, useContext, ReactNode } from "react";
-import { PlannedTransaction } from "../lib/types";
-import { pb } from "../lib/pocketbase/pocketbase";
-import { useAuth } from "../lib/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface PlannedTransactionsContextProps {
-  plannedTransactions: PlannedTransaction[];
-  loading: boolean;
-  fetchPlannedTransactions: () => Promise<void>;
-  addPlannedTransaction: (pt: PlannedTransaction) => Promise<void>;
-  updatePlannedTransaction: (pt: PlannedTransaction) => Promise<void>;
-  deletePlannedTransaction: (id: string) => Promise<void>;
-}
-
-const PlannedTransactionsContext = createContext<
-  PlannedTransactionsContextProps | undefined
->(undefined);
+import { useAuth } from "@/lib/hooks/useAuth";
+import { pb } from "@/lib/pocketbase/pocketbase";
+import { PlannedTransaction } from "@/lib/types";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 
 function recordToPlannedTransaction(record: any): PlannedTransaction {
   return {
@@ -39,11 +25,7 @@ function recordToPlannedTransaction(record: any): PlannedTransaction {
   };
 }
 
-export const PlannedTransactionsProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const usePlannedTransactions = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -115,35 +97,20 @@ export const PlannedTransactionsProvider = ({
     },
   });
 
-  return (
-    <PlannedTransactionsContext.Provider
-      value={{
-        plannedTransactions,
-        loading,
-        fetchPlannedTransactions: async () => {
-          await refetch();
-        },
-        addPlannedTransaction: async (pt) => {
-          await addMutation.mutateAsync(pt);
-        },
-        updatePlannedTransaction: async (pt) => {
-          await updateMutation.mutateAsync(pt);
-        },
-        deletePlannedTransaction: async (id) => {
-          await deleteMutation.mutateAsync(id);
-        },
-      }}
-    >
-      {children}
-    </PlannedTransactionsContext.Provider>
-  );
-};
-
-export const usePlannedTransactions = () => {
-  const context = useContext(PlannedTransactionsContext);
-  if (!context)
-    throw new Error(
-      "usePlannedTransactions must be used within PlannedTransactionsProvider"
-    );
-  return context;
+  return {
+    plannedTransactions,
+    loading,
+    fetchPlannedTransactions: async () => {
+      await refetch();
+    },
+    addPlannedTransaction: async (pt: PlannedTransaction) => {
+      await addMutation.mutateAsync(pt);
+    },
+    updatePlannedTransaction: async (pt: PlannedTransaction) => {
+      await updateMutation.mutateAsync(pt);
+    },
+    deletePlannedTransaction: async (id: string) => {
+      await deleteMutation.mutateAsync(id);
+    },
+  };
 };

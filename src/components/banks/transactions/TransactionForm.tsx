@@ -15,7 +15,6 @@ import { CategoryPicker } from "@/components/banks/CategoryPicker";
 import { FormType, Transaction, Bank } from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import clsx from "clsx";
 import { parseAmount } from "@/lib/utils";
 import { useEffect, useState, useMemo } from "react";
@@ -23,6 +22,9 @@ import { ArrowRight } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Decimal } from "decimal.js";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 // Define the form data type
 export type TransactionFormData = Omit<Transaction, "date"> & {
@@ -207,7 +209,9 @@ export const TransactionForm = ({
   formType?: FormType;
 }) => {
   const { user } = useAuth();
-  const { categoryData, bankData, baseCurrency } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const categoryData = useCategoriesQuery();
+  const { baseCurrency } = useUserQuery();
   const { queryParams } = useQueryParams();
   const bankName = queryParams["bank"];
 

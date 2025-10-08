@@ -7,7 +7,7 @@ import Link from "next/link";
 export const TrendCard = ({
   trend,
   isCurrentMonth,
-  isPrivacyModeEnabled,
+  isPrivate,
   baseCurrency,
   parseAmount,
   trimToTwoDecimals,
@@ -20,7 +20,7 @@ export const TrendCard = ({
     month: string;
   };
   isCurrentMonth: boolean;
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   baseCurrency?: { symbol?: string; code?: string } | null;
   parseAmount: (amount: number, currencyCode?: string) => string;
   trimToTwoDecimals: (value: number) => number | string;
@@ -61,7 +61,7 @@ export const TrendCard = ({
               "text-green-400": trend.monthly_total > 0,
             })}
           >
-            {isPrivacyModeEnabled
+            {isPrivate
               ? `${baseCurrency?.symbol ?? "$"}••••••`
               : parseAmount(trend.monthly_total, baseCurrency?.code)}
           </p>
@@ -75,7 +75,7 @@ export const TrendCard = ({
 export const TrendsCarousel = ({
   trends,
   emblaRef,
-  isPrivacyModeEnabled,
+  isPrivate,
   baseCurrency,
   parseAmount,
   trimToTwoDecimals,
@@ -90,7 +90,7 @@ export const TrendsCarousel = ({
     month: string;
   }[];
   emblaRef: React.RefObject<HTMLDivElement>;
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   baseCurrency?: { symbol?: string; code?: string } | null;
   parseAmount: (amount: number, currencyCode?: string) => string;
   trimToTwoDecimals: (value: number) => number | string;
@@ -109,7 +109,7 @@ export const TrendsCarousel = ({
               key={`${trend.year}-${trend.month}`}
               trend={trend}
               isCurrentMonth={isCurrentMonth}
-              isPrivacyModeEnabled={isPrivacyModeEnabled}
+              isPrivate={isPrivate}
               baseCurrency={baseCurrency}
               parseAmount={parseAmount}
               trimToTwoDecimals={trimToTwoDecimals}

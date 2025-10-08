@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import clsx from "clsx";
 import {
   Select,
@@ -15,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const CategorySelect = ({
   value,
@@ -23,7 +23,7 @@ export const CategorySelect = ({
   value: string;
   onChange: (value: string) => void;
 }) => {
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const [isOpen, setIsOpen] = useState(false);
 
   // Find the selected category name for display

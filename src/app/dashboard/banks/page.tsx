@@ -43,7 +43,7 @@ function Page() {
             <div className="flex flex-row justify-between px-3">
               <TransactionFilter />
               <div className="flex-row md:flex hidden">
-                <MixedDialogTrigger>
+                <MixedDialogTrigger isMobile={false}>
                   <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 px-6 py-2 shadow-lg hover:shadow-emerald-500/25 transition-all duration-300">
                     Add
                   </Button>
@@ -57,7 +57,7 @@ function Page() {
       </div>
 
       <div className="flex md:hidden fixed bottom-[95px] z-50 right-5">
-        <MixedDialogTrigger>
+        <MixedDialogTrigger isMobile={true}>
           <Button className="px-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-full w-14 h-14 shadow-lg hover:shadow-emerald-500/30 hover:scale-110 transition-all duration-300">
             <Plus className="text-white" />
           </Button>

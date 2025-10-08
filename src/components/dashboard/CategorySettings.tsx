@@ -3,7 +3,6 @@ import {
   updateCategoryById,
 } from "@/lib/pocketbase/queries";
 import {
-  InfoIcon,
   Plus,
   FolderOpen,
   Edit3,
@@ -19,11 +18,15 @@ import { Separator } from "../ui/separator";
 import { CategorySelect } from "../banks/CategorySelect";
 import { Switch } from "../ui/switch";
 import { useRouter } from "next/navigation";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { Tooltip } from "../ui/tooltip";
 import React, { useMemo, useState } from "react";
 import { useToast } from "../ui/toast";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 import { LoadingSpinner } from "../ui/loading";
 import {
   Card,
@@ -32,12 +35,12 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
+import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 
 export const CategorySettings = () => {
   const router = useRouter();
-  const { categoryData } = useBanksCategsContext();
+  const categoryData = useCategoriesQuery();
   const { addToast } = useToast();
   const { control, watch } = useForm();
   const categoryId = watch("category");
@@ -111,7 +114,7 @@ export const CategorySettings = () => {
               ? `Monthly budget set to ${numValue}`
               : "Monthly budget removed",
           });
-        } catch (error) {
+        } catch {
           addToast({
             type: "error",
             title: "Budget update failed",
@@ -139,7 +142,7 @@ export const CategorySettings = () => {
         title: "Setting updated",
         description: `${field === "hideable" ? "Hideable" : "Total exempt"} setting has been ${value ? "enabled" : "disabled"}.`,
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Update failed",
@@ -165,7 +168,7 @@ export const CategorySettings = () => {
         title: "Category renamed",
         description: `Category has been renamed to "${newCategoryName.trim()}".`,
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Rename failed",
@@ -189,7 +192,7 @@ export const CategorySettings = () => {
         title: "Category deleted",
         description: "Category and all associated data have been removed.",
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Deletion failed",
@@ -375,14 +378,14 @@ export const CategorySettings = () => {
       </Card>
 
       {/* Rename Dialog */}
-      <Dialog open={showRename} onOpenChange={setShowRename}>
-        <DialogContent className="bg-slate-900 text-white border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
+      <AlertDialog open={showRename} onOpenChange={setShowRename}>
+        <AlertDialogContent className="bg-slate-900 text-white border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
               <Edit3 className="w-5 h-5" />
               <span>Rename Category</span>
-            </DialogTitle>
-          </DialogHeader>
+            </AlertDialogTitle>
+          </AlertDialogHeader>
           <div className="space-y-4">
             <p className="text-slate-300">
               Enter a new name for{" "}
@@ -424,8 +427,8 @@ export const CategorySettings = () => {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <ConfirmationDialog

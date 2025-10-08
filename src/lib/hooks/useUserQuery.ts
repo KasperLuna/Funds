@@ -4,6 +4,9 @@ import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 import { pb } from "../pocketbase/pocketbase";
 
+// Module-level variable to ensure subscription is only set up once
+let isSubscribedToUser = false;
+
 export const useUserQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -15,25 +18,27 @@ export const useUserQuery = () => {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isSubscribedToUser) return;
 
-    const handleRealtimeUpdate = () =>
-      // data: { action: string; record: User }
-      {
-        queryClient.invalidateQueries({ queryKey: ["user"] });
-      };
+    const handleRealtimeUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    };
 
-    // Subscribe to real-time updates
     pb.collection("users")
       .subscribe("*", handleRealtimeUpdate)
+      .then(() => {
+        isSubscribedToUser = true;
+      })
       .catch(() => {
         alert("Error subscribing to users, close the app and try again");
       });
 
+    // Only unsubscribe if the app is unmounted (not on every hook unmount)
+    // Optionally, you can add a window unload event to clean up
     return () => {
-      pb.collection("users").unsubscribe("*");
+      // No-op: do not unsubscribe on every hook unmount
     };
   }, [user, queryClient]);
 
-  return { data, isLoading };
+  return { data, isLoading, baseCurrency: data?.currency };
 };

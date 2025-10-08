@@ -1,11 +1,11 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Bank } from "@/lib/types";
 import { parseAmount } from "@/lib/utils";
 import clsx from "clsx";
 import { memo } from "react";
 import { Wallet } from "lucide-react";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const StatCard = memo(function StatCard({
   name,
@@ -14,14 +14,14 @@ export const StatCard = memo(function StatCard({
 }: Bank & {
   percentage?: string;
 }) {
-  const { baseCurrency } = useBanksCategsContext();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { baseCurrency } = useUserQuery();
+  const { isPrivate } = usePrivacy();
   const { queryParams, setQueryParams } = useQueryParams();
 
   const isSelected = queryParams["bank"] === name;
 
   // Format and determine responsive sizing for balance
-  const formattedBalance = isPrivacyModeEnabled
+  const formattedBalance = isPrivate
     ? `${baseCurrency?.symbol ?? "$"}••••••`
     : parseAmount(balance, baseCurrency?.code);
 

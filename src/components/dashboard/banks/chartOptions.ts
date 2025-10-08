@@ -3,12 +3,12 @@ import { ApexOptions } from "apexcharts";
 export const getCategoryChartOptions = ({
   sortedKeys,
   sortedValues,
-  isPrivacyModeEnabled,
+  isPrivate,
   handleBarClick,
 }: {
   sortedKeys: string[];
   sortedValues: number[];
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   handleBarClick: (dataPointIndex: number) => void;
 }): ApexOptions => ({
   chart: {
@@ -26,7 +26,7 @@ export const getCategoryChartOptions = ({
   xaxis: {
     categories: sortedKeys,
     labels: {
-      show: !isPrivacyModeEnabled,
+      show: !isPrivate,
       style: {
         colors: ["#FFFFFF", "#FFFFFF"],
         fontSize: "12px",
@@ -68,7 +68,7 @@ export const getCategoryChartOptions = ({
     },
   },
   dataLabels: {
-    enabled: !isPrivacyModeEnabled,
+    enabled: !isPrivate,
     style: {
       colors: sortedValues.map((value: number) =>
         value > 0 ? "#FFFFFF" : "#D3D3D3"
@@ -93,12 +93,12 @@ export const getCategoryChartOptions = ({
 export const getBanksChartOptions = ({
   sortedBanks,
   sortedTotals,
-  isPrivacyModeEnabled,
+  isPrivate,
   sortedBankNames,
 }: {
   sortedBanks: string[];
   sortedTotals: number[];
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   sortedBankNames: string[];
 }): ApexOptions => ({
   chart: {
@@ -109,7 +109,7 @@ export const getBanksChartOptions = ({
   xaxis: {
     categories: sortedBankNames,
     labels: {
-      show: !isPrivacyModeEnabled,
+      show: !isPrivate,
       style: {
         colors: ["#FFFFFF", "#FFFFFF"],
         fontSize: "12px",
@@ -151,7 +151,7 @@ export const getBanksChartOptions = ({
     },
   },
   dataLabels: {
-    enabled: !isPrivacyModeEnabled,
+    enabled: !isPrivate,
     style: {
       colors: sortedTotals.map((value: number) =>
         value > 0 ? "#FFFFFF" : "#D3D3D3"
@@ -176,12 +176,12 @@ export const getBanksChartOptions = ({
 export const getBanksCountChartOptions = ({
   sortedBanks,
   sortedCounts,
-  isPrivacyModeEnabled,
+  isPrivate,
   sortedBankNames,
 }: {
   sortedBanks: string[];
   sortedCounts: number[];
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   sortedBankNames: string[];
 }): ApexOptions => ({
   chart: {
@@ -192,7 +192,7 @@ export const getBanksCountChartOptions = ({
   xaxis: {
     categories: sortedBankNames,
     labels: {
-      show: !isPrivacyModeEnabled,
+      show: !isPrivate,
       style: {
         colors: ["#FFFFFF", "#FFFFFF"],
         fontSize: "12px",
@@ -231,7 +231,7 @@ export const getBanksCountChartOptions = ({
     },
   },
   dataLabels: {
-    enabled: !isPrivacyModeEnabled,
+    enabled: !isPrivate,
     style: {
       colors: sortedCounts.map(() => "#FFFFFF"),
       fontSize: "10px",
