@@ -4,6 +4,7 @@ import UpcomingPlannedTransactions from "@/components/dashboard/UpcomingPlannedT
 import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { BudgetsSummary } from "@/components/dashboard/BudgetsSummary";
+import { Onboarding } from "@/components/dashboard/Onboarding";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,6 +16,7 @@ export default function Page() {
       <title>{title}</title>
       <div className="flex flex-col gap-3 h-fit p-2">
         <UpcomingPlannedTransactions />
+        <Onboarding />
         <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
           <AssetSummary />
           {/* Right-hand section: Budgets/Bank Monthly tabs */}

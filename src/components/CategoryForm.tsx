@@ -22,7 +22,7 @@ export const CategoryForm = () => {
 
   const onSubmit = async (data: Category) => {
     try {
-      await categoryData?.refetch();
+      // Check if category already exists
       if (
         categoryData?.categories?.find(
           (category) => category.name === data.name

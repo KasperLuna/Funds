@@ -12,7 +12,7 @@ import { createAvatar } from "@dicebear/core";
 import Image from "next/image";
 import { useToast } from "../ui/toast";
 import { LoadingSpinner } from "../ui/loading";
-import { Save, User as UserIcon, Globe, RefreshCw } from "lucide-react";
+import { Save, User as UserIcon, Globe } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -94,19 +94,6 @@ export const AccountSettings = () => {
     }
   };
 
-  const regenerateAvatar = () => {
-    setIsRegeneratingAvatar(true);
-    // Simulate regeneration with a small delay for UX
-    setTimeout(() => {
-      setIsRegeneratingAvatar(false);
-      addToast({
-        type: "info",
-        title: "Avatar updated",
-        description: "Your avatar has been refreshed based on your username.",
-      });
-    }, 500);
-  };
-
   if (userLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -150,19 +137,6 @@ export const AccountSettings = () => {
                 <p className="text-xs text-slate-400">
                   Your avatar is generated based on your username
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={regenerateAvatar}
-                  disabled={isRegeneratingAvatar}
-                  className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs px-2 py-1"
-                >
-                  <RefreshCw
-                    className={`w-3 h-3 mr-1 ${isRegeneratingAvatar ? "animate-spin" : ""}`}
-                  />
-                  Refresh
-                </Button>
               </div>
             </div>
 

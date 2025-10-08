@@ -21,7 +21,7 @@ export const BankForm = () => {
 
   const onSubmit = async (data: Bank) => {
     try {
-      await bankData?.refetch();
+      // Check if bank already exists
       if (
         bankData?.banks?.find(
           (bank) => bank.name.toLowerCase() === data.name.toLowerCase()
