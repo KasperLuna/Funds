@@ -1,6 +1,5 @@
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import { useBanksTrendsQuery } from "@/lib/hooks/useBanksTrendsQuery";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import dayjs from "dayjs";
 import useEmblaCarousel from "embla-carousel-react";
@@ -9,13 +8,14 @@ import Decimal from "decimal.js";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendsChart } from "./TrendsChart";
 import { TrendsCarousel } from "./TrendsCarousel";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 // Subcomponent: Average Summary
 type BankTrendsSummaryProps = {
   trendsLength: number;
   averageChange: number;
   averageIncome: number;
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   baseCurrency?: { symbol?: string; code?: string } | null;
   parseAmount: (amount: number, currencyCode?: string) => string;
   trimToTwoDecimals: (value: number) => number | string;
@@ -25,7 +25,7 @@ const BankTrendsSummary = ({
   trendsLength,
   averageChange,
   averageIncome,
-  isPrivacyModeEnabled,
+  isPrivate,
   baseCurrency,
   parseAmount,
   trimToTwoDecimals,
@@ -38,7 +38,7 @@ const BankTrendsSummary = ({
     <div className="flex flex-row align-middle items-center gap-2">
       <p className="text-sm">{trimToTwoDecimals(averageChange)}%</p>
       <p>
-        {isPrivacyModeEnabled
+        {isPrivate
           ? `${baseCurrency?.symbol ?? "$"}••••••`
           : parseAmount(averageIncome, baseCurrency?.code)}
       </p>
@@ -47,10 +47,10 @@ const BankTrendsSummary = ({
 );
 
 export const BankTrends = () => {
-  const { baseCurrency } = useBanksCategsContext();
+  const { baseCurrency } = useUserQuery();
   const { trends: baseTrends, loading: isBankTrendsLoading } =
     useBanksTrendsQuery();
-  const { isPrivacyModeEnabled } = usePrivacyMode();
+  const { isPrivate } = usePrivacy();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     skipSnaps: true,
     startIndex: baseTrends?.length ? baseTrends.length - 1 : 0,
@@ -161,7 +161,7 @@ export const BankTrends = () => {
       max: (max) => max,
       labels: {
         formatter: function (value) {
-          return isPrivacyModeEnabled ? "••••••" : value;
+          return isPrivate ? "••••••" : value;
         },
         style: {
           colors: Array.from({ length: 5 }, (_, index) => {
@@ -196,7 +196,7 @@ export const BankTrends = () => {
       },
       y: {
         formatter: function (value) {
-          return isPrivacyModeEnabled ? "••••••" : value;
+          return isPrivate ? "••••••" : value;
         },
       },
       background: "#1E293B",
@@ -250,7 +250,7 @@ export const BankTrends = () => {
               trendsLength={trends.length}
               averageChange={averageChange}
               averageIncome={averageIncome}
-              isPrivacyModeEnabled={isPrivacyModeEnabled}
+              isPrivate={isPrivate}
               baseCurrency={baseCurrency}
               parseAmount={parseAmount}
               trimToTwoDecimals={trimToTwoDecimals}
@@ -258,7 +258,7 @@ export const BankTrends = () => {
             <TrendsCarousel
               trends={trends}
               emblaRef={emblaRef as unknown as React.RefObject<HTMLDivElement>}
-              isPrivacyModeEnabled={isPrivacyModeEnabled}
+              isPrivate={isPrivate}
               baseCurrency={baseCurrency}
               parseAmount={parseAmount}
               trimToTwoDecimals={trimToTwoDecimals}

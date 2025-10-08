@@ -105,8 +105,8 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0(chart.js@4.4.4)(react@18.2.0)
       react-day-picker:
-        specifier: 9.9.0
-        version: 9.9.0(react@18.2.0)
+        specifier: 9.11.0
+        version: 9.11.0(react@18.2.0)
       react-dom:
         specifier: ^18.2.0
         version: 18.2.0(react@18.2.0)
@@ -119,6 +119,9 @@ importers:
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
+      zustand:
+        specifier: ^5.0.8
+        version: 5.0.8(@types/react@18.2.61)(react@18.2.0)
     devDependencies:
       '@babel/runtime':
         specifier: ^7.27.3
@@ -2662,8 +2665,8 @@ packages:
       chart.js: ^4.1.1
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
 
-  react-day-picker@9.9.0:
-    resolution: {integrity: sha512-NtkJbuX6cl/VaGNb3sVVhmMA6LSMnL5G3xNL+61IyoZj0mUZFWTg4hmj7PHjIQ8MXN9dHWhUHFoJWG6y60DKSg==}
+  react-day-picker@9.11.0:
+    resolution: {integrity: sha512-L4FYOaPrr3+AEROeP6IG2mCORZZfxJDkJI2df8mv1jyPrNYeccgmFPZDaHyAuPCBCddQFozkxbikj2NhMEYfDQ==}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=16.8.0'
@@ -3149,6 +3152,24 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zustand@5.0.8:
+    resolution: {integrity: sha512-gyPKpIaxY9XcO2vSMrLbiER7QMAMGOQZVRdJ6Zi782jkbzZygq5GI9nG8g+sMgitRtndwaBSl7uiqC49o1SSiw==}
+    engines: {node: '>=12.20.0'}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      immer: '>=9.0.6'
+      react: '>=18.0.0'
+      use-sync-external-store: '>=1.2.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+      immer:
+        optional: true
+      react:
+        optional: true
+      use-sync-external-store:
+        optional: true
 
 snapshots:
 
@@ -5725,7 +5746,7 @@ snapshots:
       chart.js: 4.4.4
       react: 18.2.0
 
-  react-day-picker@9.9.0(react@18.2.0):
+  react-day-picker@9.11.0(react@18.2.0):
     dependencies:
       '@date-fns/tz': 1.4.1
       date-fns: 4.1.0
@@ -6340,3 +6361,8 @@ snapshots:
   yaml@2.8.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zustand@5.0.8(@types/react@18.2.61)(react@18.2.0):
+    optionalDependencies:
+      '@types/react': 18.2.61
+      react: 18.2.0

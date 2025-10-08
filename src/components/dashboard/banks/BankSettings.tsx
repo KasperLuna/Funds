@@ -2,7 +2,6 @@ import { BankSelect } from "@/components/banks/BankSelect";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import {
   recomputeBalanceById,
   deleteBankById,
@@ -22,6 +21,12 @@ import { Controller, useForm } from "react-hook-form";
 import React, { useState } from "react";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/ui/loading";
 import {
   Card,
@@ -30,17 +35,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 
 export const BankSettings = () => {
   const router = useRouter();
-  const { bankData, baseCurrency } = useBanksCategsContext();
+  const bankData = useBanksQuery();
+  const { baseCurrency } = useUserQuery();
   const { addToast } = useToast();
   const { control, watch } = useForm();
   const bank = watch("bank");
@@ -72,7 +74,7 @@ export const BankSettings = () => {
         title: "Balance recomputed",
         description: "Bank balance has been recalculated successfully.",
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Recomputation failed",
@@ -96,7 +98,7 @@ export const BankSettings = () => {
         title: "Bank renamed",
         description: `Bank has been renamed to "${newBankName.trim()}".`,
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Rename failed",
@@ -120,7 +122,7 @@ export const BankSettings = () => {
         title: "Bank deleted",
         description: "Bank and all associated data have been removed.",
       });
-    } catch (error) {
+    } catch {
       addToast({
         type: "error",
         title: "Deletion failed",
@@ -239,14 +241,14 @@ export const BankSettings = () => {
       </Card>
 
       {/* Rename Dialog */}
-      <Dialog open={showRename} onOpenChange={setShowRename}>
-        <DialogContent className="bg-slate-900 text-white border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
+      <AlertDialog open={showRename} onOpenChange={setShowRename}>
+        <AlertDialogContent className="bg-slate-900 text-white border-slate-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
               <Edit3 className="w-5 h-5" />
               <span>Rename Bank</span>
-            </DialogTitle>
-          </DialogHeader>
+            </AlertDialogTitle>
+          </AlertDialogHeader>
           <div className="space-y-4">
             <p className="text-slate-300">
               Enter a new name for{" "}
@@ -288,8 +290,8 @@ export const BankSettings = () => {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <ConfirmationDialog

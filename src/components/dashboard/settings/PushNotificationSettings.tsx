@@ -1,4 +1,3 @@
-import { usePushNotification } from "@/store/PushNotificationContext";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -19,6 +18,7 @@ import {
   CheckCircle,
   Info,
 } from "lucide-react";
+import { usePushNotification } from "@/hooks/usePushNotification";
 
 const PushNotificationSettings: React.FC = () => {
   const { permission, isSubscribed, subscribe, unsubscribe } =

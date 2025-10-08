@@ -1,111 +1,142 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
+import clsx from "clsx";
+import { Check, ChevronDown } from "lucide-react";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import untypedCurrencies from "@/components/dashboard/settings/currencies.json";
 import { Currency } from "@/lib/types";
 
 const currencies = untypedCurrencies as Currency[];
-
-export function CurrencySelector({
-  value: _value,
-  onChange: _onChange,
-}: {
+type CurrencySelectorProps = {
   value?: Currency;
   onChange: (value?: Currency) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(_value?.code);
-  const parsedValue = value?.split("(")?.[0].split(" ")?.[0];
-  const selectedCurrency = currencies.find((c) => c.code === parsedValue);
+};
+
+export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
+  const [selected, setSelected] = useState<string>(value?.code || "");
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    setValue(_value?.code);
-  }, [_value?.code]);
+    setSelected(value?.code || "");
+  }, [value?.code]);
 
-  useEffect(() => {
-    _onChange(selectedCurrency);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  const selectedCurrency = currencies.find((c) => c.code === selected);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="bg-transparent text-white w-full focus-visible:ring-offset-0 border-slate-700 transition-none focus-visible:ring-0 justify-between hover:bg-slate-700 hover:text-white"
+    <div className="relative w-full">
+      {/* Desktop Select */}
+      <div className="hidden sm:block w-full">
+        <Select
+          value={selected}
+          onValueChange={(code) => {
+            setSelected(code);
+            const found = currencies.find((c) => c.code === code);
+            onChange(found);
+          }}
         >
-          {value
-            ? `(${selectedCurrency?.code}) ${selectedCurrency?.name}`
-            : "Select Currency..."}
-          <div className="flex flex-row items-center">
-            {!!value && (
-              <div
-                tabIndex={0}
-                role="button"
-                className="flex h-4 w-4 p-0 hover:bg-slate-500 items-center rounded-full"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setValue("");
-                }}
-              >
-                <X />
+          <SelectTrigger
+            className={clsx(
+              "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500 text-white w-full",
+              { "text-slate-600": !selected, "text-white": selected }
+            )}
+          >
+            <SelectValue placeholder="Select Currency" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[200px] bg-slate-800 border-slate-700 text-slate-100 z-50 overflow-auto">
+            {currencies.length === 0 && (
+              <SelectItem value="" disabled>
+                No currencies found.
+              </SelectItem>
+            )}
+            {currencies.map((currency) => (
+              <SelectItem key={currency.code} value={currency.code}>
+                {`(${currency.code}) ${currency.name}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Mobile Popover grid */}
+      <div className="block sm:hidden w-full">
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={isOpen}
+              className={clsx(
+                "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit text-white",
+                { "text-slate-600": !selected, "text-white": selected }
+              )}
+            >
+              {selectedCurrency
+                ? `(${selectedCurrency.code}) ${selectedCurrency.name}`
+                : "Select Currency"}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[94vw] max-w-screen-sm p-0 bg-slate-800 border-slate-700 text-slate-100">
+            {currencies.length === 0 ? (
+              <div className="px-3 py-2 text-center text-sm text-slate-400">
+                No currencies found.
+              </div>
+            ) : (
+              <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden">
+                <div className="grid grid-cols-2 p-1 gap-1">
+                  {currencies.map((currency) => (
+                    <button
+                      key={currency.code}
+                      className={clsx(
+                        "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm text-white rounded-md border-0 bg-transparent cursor-pointer",
+                        currency.code === selected
+                          ? "bg-slate-700"
+                          : "hover:bg-slate-700 active:bg-slate-600"
+                      )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onChange(currency);
+                        setSelected(currency.code);
+                        setIsOpen(false);
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onChange(currency);
+                        setSelected(currency.code);
+                        setIsOpen(false);
+                      }}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="truncate max-w-[80%]">
+                          {`(${currency.code}) ${currency.name}`}
+                        </span>
+                        {currency.code === selected && (
+                          <Check className="h-4 w-4 ml-2 flex-shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </div>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command className="bg-slate-800 text-white">
-          <CommandInput
-            placeholder="Search Currencies..."
-            className="text-white"
-          />
-          <CommandList>
-            <CommandEmpty>No currency found.</CommandEmpty>
-            <CommandGroup>
-              {currencies.map((currency) => (
-                <CommandItem
-                  key={currency.code}
-                  value={`${currency.code} ${currency.name}`}
-                  className="text-white hover:bg-slate-700"
-                  onSelect={(currentValue) => {
-                    setValue(currentValue === value ? "" : currentValue);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === currency.code ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {`(${currency.code}) ${currency.name}`}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
   );
 }

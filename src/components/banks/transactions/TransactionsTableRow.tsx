@@ -3,16 +3,16 @@ import { ExpandedTransaction } from "@/lib/types";
 import { MixedDialogTrigger } from "../MixedDialog";
 import dayjs from "dayjs";
 import clsx from "clsx";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 export const TransactionsTableRow: React.FC<{
   transaction: ExpandedTransaction;
   odd?: boolean;
 }> = ({ transaction, odd }) => {
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { baseCurrency } = useBanksCategsContext();
+  const { isPrivate } = usePrivacy();
+  const { baseCurrency } = useUserQuery();
   const { date, amount, description, expand } = transaction;
   const { bank, categories } = expand || {};
   const isHideable = categories?.some((categ) => categ.hideable);
@@ -35,7 +35,7 @@ export const TransactionsTableRow: React.FC<{
             amount < 0 ? "text-red-400" : "text-green-400"
           )}
         >
-          {isHideable && isPrivacyModeEnabled
+          {isHideable && isPrivate
             ? `${baseCurrency?.symbol ?? "$"}••••••`
             : parseAmount(amount, baseCurrency?.code)}
         </td>

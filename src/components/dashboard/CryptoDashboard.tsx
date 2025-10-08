@@ -4,16 +4,16 @@ import { TrendingUp, Wallet, Coins } from "lucide-react";
 import Image from "next/image";
 import { useQueries, UseQueryResult } from "@tanstack/react-query";
 import dayjs from "dayjs";
-import { usePrivacyMode } from "@/lib/hooks/usePrivacyMode";
+import { usePrivacy } from "@/hooks/usePrivacy";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { Token } from "@/lib/types";
-import { useBanksCategsContext } from "@/lib/hooks/useBanksCategsContext";
 import dynamic from "next/dynamic";
 import {
   CoinGeckoMarketData,
   CoinGeckoMarketChartData,
   CoinGeckoPriceDataPoint,
 } from "@/lib/types/coingecko";
+import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 // Error response type for CoinGecko API
 interface CoinGeckoErrorResponse {
@@ -794,8 +794,8 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
 export function CryptoDashboard() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
-  const { isPrivacyModeEnabled } = usePrivacyMode();
-  const { baseCurrency } = useBanksCategsContext();
+  const { isPrivate } = usePrivacy();
+  const { baseCurrency } = useUserQuery();
   const { tokenData, marketData, marketLoading, marketError } =
     useTokensContext();
 
@@ -958,11 +958,11 @@ export function CryptoDashboard() {
   ) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-48 gap-3">
-        <span className="text-slate-400">
-          No tokens found in your portfolio.
+        <span className="text-slate-400 text-lg font-semibold">
+          🚧 Crypto Portfolio Coming Soon
         </span>
         <span className="text-slate-500 text-sm">
-          Visit the tokens page to add crypto tokens to your portfolio.
+          This feature is under development. Stay tuned for updates!
         </span>
       </div>
     );
@@ -988,7 +988,7 @@ export function CryptoDashboard() {
           totalValue={portfolioValue}
           change24h={portfolioChange}
           currency={CURRENCY}
-          privacyMode={isPrivacyModeEnabled}
+          privacyMode={isPrivate}
         />
         {loadingStates.marketLoading ? (
           <div className="flex flex-1 items-center justify-center min-h-[180px]">
@@ -1004,7 +1004,7 @@ export function CryptoDashboard() {
           <MarketOverview
             coins={market}
             currency={CURRENCY}
-            privacyMode={isPrivacyModeEnabled}
+            privacyMode={isPrivate}
           />
         )}
       </div>
@@ -1022,7 +1022,7 @@ export function CryptoDashboard() {
         coins={coins}
         market={market}
         currency={CURRENCY}
-        privacyMode={isPrivacyModeEnabled}
+        privacyMode={isPrivate}
       />
     </div>
   );

@@ -5,13 +5,13 @@ interface UpcomingPlannedTransactionCardProps {
   pt: PlannedTransaction;
   categories: Category[];
   baseCurrency: Currency | undefined;
-  isPrivacyModeEnabled: boolean;
+  isPrivate: boolean;
   parseAmount: (amount: number, code?: string) => string;
 }
 
 const UpcomingPlannedTransactionCard: React.FC<
   UpcomingPlannedTransactionCardProps
-> = ({ pt, categories, baseCurrency, isPrivacyModeEnabled, parseAmount }) => {
+> = ({ pt, categories, baseCurrency, isPrivate, parseAmount }) => {
   return (
     <div
       role="button"
@@ -43,7 +43,7 @@ const UpcomingPlannedTransactionCard: React.FC<
                   : "text-lg font-semibold font-mono text-emerald-400 truncate"
               }
             >
-              {isPrivacyModeEnabled
+              {isPrivate
                 ? `${baseCurrency?.symbol ?? "$"}••••••`
                 : parseAmount(pt.amount, baseCurrency?.code)}
             </p>
