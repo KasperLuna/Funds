@@ -280,6 +280,22 @@ export const renameBankById = async (bankId: string, name: string) => {
 };
 
 export const deleteBankById = async (bankId: string) => {
+  // First, delete all transactions associated with this bank
+  const transactions = await pb.collection("transactions").getFullList({
+    filter: `bank="${bankId}"`,
+    fields: "id",
+  });
+
+  // Delete all transactions concurrently if there are any
+  if (transactions.length > 0) {
+    await Promise.all(
+      transactions.map((transaction) =>
+        pb.collection("transactions").delete(transaction.id)
+      )
+    );
+  }
+
+  // Then delete the bank itself
   await pb.collection("banks").delete(bankId);
 };
 
