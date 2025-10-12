@@ -25,9 +25,13 @@ const UpcomingPlannedTransactions = memo(
     const upcoming =
       plannedTransactions?.filter((pt) => {
         const localDateTime = new Date();
+        const twoDaysFromNow = new Date(localDateTime);
+        twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+        twoDaysFromNow.setHours(23, 59, 59, 999);
+
         return (
           pt.active &&
-          pt.invokeDate <= new Date(localDateTime.setHours(23, 59, 59, 999)) &&
+          pt.invokeDate <= twoDaysFromNow &&
           (!pt.previousDate || new Date(pt.previousDate) < localDateTime)
         );
       }) || [];
