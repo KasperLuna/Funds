@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@dicebear/collection": "^9.2.2",
-    "@dicebear/core": "^9.2.2",
+    "@dicebear/collection": "^9.4.2",
+    "@dicebear/core": "^9.4.2",
     "@formkit/auto-animate": "^0.8.2",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -24,8 +24,8 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@tanstack/react-query": "^5.52.2",
-    "@typescript-eslint/eslint-plugin": "^8.43.0",
-    "@typescript-eslint/parser": "^8.43.0",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
     "brace-expansion": "4.0.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
@@ -56,14 +56,24 @@
     "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.17",
     "cross-spawn": "^7.0.6",
-    "eslint": "^9.35.0",
-    "eslint-config-next": "15.5.3",
-    "glob": "^13.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "15.5.14",
+    "glob": "^13.0.6",
     "jws": "^4.0.1",
     "nanoid": "^3.3.11",
     "postcss": "^8.4.35",
     "prettier": "^3.2.5",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.3.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "flatted": ">=3.4.2",
+      "ajv": ">=6.14.0",
+      "js-yaml": ">=4.1.1",
+      "bn.js": ">=4.12.3",
+      "@isaacs/brace-expansion": ">=5.0.1",
+      "brace-expansion@^1": "^1.1.12"
+    }
   }
 }
