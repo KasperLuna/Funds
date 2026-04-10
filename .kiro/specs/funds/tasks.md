@@ -7,13 +7,13 @@ This implementation plan breaks down the Funds personal finance tracker into act
 ## Tasks
 
 - [-] 1. Bootstrap T3 project and configure core infrastructure
-  - [-] 1.1 Initialize project with `pnpm create t3-app@latest` and configure TypeScript strict mode
+  - [x] 1.1 Initialize project with `pnpm create t3-app@latest` and configure TypeScript strict mode
     - Bootstrap with Next.js, TypeScript, Tailwind CSS (skip tRPC, Prisma, NextAuth options)
     - Configure path aliases (`@/` for `src/`)
     - Set up `pnpm-workspace.yaml` and commit `pnpm-lock.yaml`
     - _Requirements: 26.1, 26.2, 27.1_
 
-  - [~] 1.2 Set up shadcn/ui component library and Tailwind theme
+  - [-] 1.2 Set up shadcn/ui component library and Tailwind theme
     - Install and initialize shadcn/ui via CLI
     - Add core primitives: Button, Dialog, Form, Input, Select, Tabs, Card
     - Configure dark theme and color tokens
