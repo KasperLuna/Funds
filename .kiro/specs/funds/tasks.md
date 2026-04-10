@@ -6,64 +6,64 @@ This implementation plan breaks down the Funds personal finance tracker into act
 
 ## Tasks
 
-- [-] 1. Bootstrap T3 project and configure core infrastructure
+- [x] 1. Bootstrap T3 project and configure core infrastructure
   - [x] 1.1 Initialize project with `pnpm create t3-app@latest` and configure TypeScript strict mode
     - Bootstrap with Next.js, TypeScript, Tailwind CSS (skip tRPC, Prisma, NextAuth options)
     - Configure path aliases (`@/` for `src/`)
     - Set up `pnpm-workspace.yaml` and commit `pnpm-lock.yaml`
     - _Requirements: 26.1, 26.2, 27.1_
 
-  - [-] 1.2 Set up shadcn/ui component library and Tailwind theme
+  - [x] 1.2 Set up shadcn/ui component library and Tailwind theme
     - Install and initialize shadcn/ui via CLI
     - Add core primitives: Button, Dialog, Form, Input, Select, Tabs, Card
     - Configure dark theme and color tokens
     - _Requirements: 29.1, 29.2, 29.4, 29.5_
 
-  - [~] 1.3 Configure development tooling and repository hygiene
+  - [x] 1.3 Configure development tooling and repository hygiene
     - Set up ESLint, Prettier, and Git hooks (husky)
     - Create root `.gitignore` and directory-specific `.gitignore` files
     - Create `.env.example` with placeholder values, ensure `.env.local` is gitignored
     - _Requirements: 27.1 through 27.9_
 
-  - [~] 1.4 Set up PocketBase client and schema management
+  - [x] 1.4 Set up PocketBase client and schema management
     - Install PocketBase SDK, create client instance in `src/lib/pocketbase/pocketbase.ts`
     - Create `src/lib/pocketbase/schema.ts` with all collection definitions (banks, categories, transactions, planned_transactions, tokens, push_subscriptions)
     - Create `src/lib/pocketbase/schema-validator.ts` with `validateAndCreateCollections()` and `validateSchema()` functions
     - Document RLS rules for each collection (user = @request.auth.id)
     - _Requirements: 21.1, 21.2, 21.3, 21.4_
 
-  - [~] 1.5 Configure React Query with default options and query key factory
+  - [x] 1.5 Configure React Query with default options and query key factory
     - Install `@tanstack/react-query`, create `QueryClient` with stale times (5 min banks/transactions, 2 min categories)
     - Create `src/lib/providers/QueryProvider.tsx`
     - Create query key factory in `src/lib/hooks/queryKeys.ts`
     - Configure retry logic with exponential backoff, `refetchOnWindowFocus: false`, `refetchOnReconnect: true`
     - _Requirements: 14.1, 14.2, 14.6_
 
-  - [~] 1.6 Set up Zustand stores for UI state
+  - [x] 1.6 Set up Zustand stores for UI state
     - Create `useAuthStore` for token and session management only (not server data)
     - Create `useUIStore` for privacy mode, theme, sidebar state, modal visibility
     - Configure localStorage persistence for both stores
     - _Requirements: 12.3, 12.6, 9.4_
 
-  - [~] 1.7 Configure Vitest testing framework with React Testing Library
+  - [x] 1.7 Configure Vitest testing framework with React Testing Library
     - Install and configure Vitest with jsdom environment
     - Set up `vitest.config.ts` with path aliases and coverage (v8 provider)
     - Create `src/test/setup.ts` with cleanup, `matchMedia` mock, `IntersectionObserver` mock
     - Add test scripts to `package.json`: `test`, `test:watch`, `test:ui`, `test:coverage`
     - _Requirements: 25.8, 28.9, 28.11_
 
-  - [~] 1.8 Create TypeScript interfaces and types
+  - [x] 1.8 Create TypeScript interfaces and types
     - Define all core interfaces in `src/lib/types.ts`: User, Bank, Category, Transaction, Transfer, PlannedTransaction, Token, PushSubscription, Currency, RecurrenceRule
     - Define form data types, filter types, and expanded types (ExpandedTransaction)
     - _Requirements: 24.7_
 
-  - [ ]* 1.9 Write unit tests for utility scaffolding
+  - [ ]\* 1.9 Write unit tests for utility scaffolding
     - Test PocketBase client initialization
     - Test query key factory structure
     - Test Zustand store initial state
     - _Requirements: 25.3_
 
-- [ ] 2. Checkpoint - Verify project bootstrapping
+- [x] 2. Checkpoint - Verify project bootstrapping
   - Ensure the T3 app builds and runs, all tooling is configured, PocketBase schema is defined, and test framework works. Ask the user if questions arise.
 
 - [ ] 3. Implement authentication and user management
@@ -90,11 +90,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Create `ProtectedRoute` component that redirects unauthenticated users to login
     - _Requirements: 1.5, 17.4, 17.5_
 
-  - [ ]* 3.5 Write property test for authentication token persistence
+  - [ ]\* 3.5 Write property test for authentication token persistence
     - **Property 23: Authentication Token Persistence**
     - **Validates: Requirement 1.6**
 
-  - [ ]* 3.6 Write integration tests for authentication flow
+  - [ ]\* 3.6 Write integration tests for authentication flow
     - Test email/password login, OAuth login, logout, session restoration, token refresh
     - _Requirements: 28.1_
 
@@ -112,11 +112,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Disable submit button during submission, reset form on success
     - _Requirements: 2.1, 2.2, 13.1 through 13.7_
 
-  - [ ]* 4.3 Write property test for bank balance calculation
+  - [ ]\* 4.3 Write property test for bank balance calculation
     - **Property 3: Bank Balance Calculation**
     - **Validates: Requirement 2.6**
 
-  - [ ]* 4.4 Write property test for bank deletion cascade
+  - [ ]\* 4.4 Write property test for bank deletion cascade
     - **Property 25: Bank Deletion Cascade**
     - **Validates: Requirement 2.5**
 
@@ -153,17 +153,17 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Ensure balance preservation across both banks
     - _Requirements: 3.12_
 
-  - [ ]* 5.7 Write property tests for transaction validation
+  - [ ]\* 5.7 Write property tests for transaction validation
     - **Property 1: Transaction Amount Validation**
     - **Validates: Requirement 3.4**
     - **Property 2: Category Requirement for Transactions**
     - **Validates: Requirement 3.5**
 
-  - [ ]* 5.8 Write property test for transfer balance preservation
+  - [ ]\* 5.8 Write property test for transfer balance preservation
     - **Property 18: Transfer Balance Preservation**
     - **Validates: Requirement 3.12**
 
-  - [ ]* 5.9 Write integration tests for transaction management
+  - [ ]\* 5.9 Write integration tests for transaction management
     - Test create, update, delete with validation, optimistic updates, rollback on error
     - _Requirements: 28.2_
 
@@ -191,7 +191,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Support privacy mode (hide amounts)
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 9.1, 9.2_
 
-  - [ ]* 6.5 Write property tests for budget calculations
+  - [ ]\* 6.5 Write property tests for budget calculations
     - **Property 4: Category Spending Calculation**
     - **Validates: Requirement 5.2**
     - **Property 5: Budget Remaining Calculation**
@@ -199,11 +199,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 8: Timezone-Aware Budget Periods**
     - **Validates: Requirement 5.7**
 
-  - [ ]* 6.6 Write property test for category deletion cascade
+  - [ ]\* 6.6 Write property test for category deletion cascade
     - **Property 24: Category Deletion Cascade**
     - **Validates: Requirement 4.6**
 
-  - [ ]* 6.7 Write integration tests for budget tracking
+  - [ ]\* 6.7 Write integration tests for budget tracking
     - Test monthly spending calculation, budget remaining, overspending detection
     - _Requirements: 28.4_
 
@@ -238,11 +238,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Support privacy mode
     - _Requirements: 7.3, 7.5, 7.6, 7.7, 9.1, 9.2_
 
-  - [ ]* 8.6 Write property test for crypto portfolio calculation
+  - [ ]\* 8.6 Write property test for crypto portfolio calculation
     - **Property 19: Crypto Portfolio Calculation**
     - **Validates: Requirement 7.3**
 
-  - [ ]* 8.7 Write integration tests for crypto tracking
+  - [ ]\* 8.7 Write integration tests for crypto tracking
     - Test token CRUD, portfolio value calculation, price updates without full re-renders
     - _Requirements: 28.3_
 
@@ -281,13 +281,13 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Update `previousDate`, `invokeDate`, `lastNotifiedAt` fields
     - _Requirements: 6.5, 6.6, 6.8, 8.2, 8.3, 8.4_
 
-  - [ ]* 9.7 Write property tests for planned transaction recurrence
+  - [ ]\* 9.7 Write property tests for planned transaction recurrence
     - **Property 7: Planned Transaction Recurrence**
     - **Validates: Requirement 6.2, 6.8**
     - **Property 9: Timezone-Aware Planned Transactions**
     - **Validates: Requirement 6.4**
 
-  - [ ]* 9.8 Write integration tests for planned transactions
+  - [ ]\* 9.8 Write integration tests for planned transactions
     - Test recurrence calculation, timezone-aware triggering, notification sending
     - _Requirements: 28.5_
 
@@ -333,7 +333,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Apply privacy mode to all monetary displays across all views
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ]* 11.8 Write property tests for responsive layout
+  - [ ]\* 11.8 Write property tests for responsive layout
     - **Property 11: Responsive Layout Adaptation**
     - **Validates: Requirement 10.1, 10.2, 10.3, 10.4**
     - **Property 12: Touch Target Size**
@@ -341,11 +341,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 13: Horizontal Scroll Prevention**
     - **Validates: Requirement 10.7**
 
-  - [ ]* 11.9 Write property test for privacy mode consistency
+  - [ ]\* 11.9 Write property test for privacy mode consistency
     - **Property 10: Privacy Mode Consistency**
     - **Validates: Requirement 9.1, 9.2**
 
-  - [ ]* 11.10 Write integration tests for responsive design
+  - [ ]\* 11.10 Write integration tests for responsive design
     - Test mobile, tablet, desktop layout rendering and adaptation on resize
     - _Requirements: 28.8_
 
@@ -368,7 +368,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Implement `calculateTotalBalance(banks)` in `src/lib/utils/calculations.ts`
     - _Requirements: 22.2, 22.3_
 
-  - [ ]* 12.4 Write property tests for state management architecture
+  - [ ]\* 12.4 Write property tests for state management architecture
     - **Property 14: React Query Server State**
     - **Validates: Requirement 12.1**
     - **Property 15: React Hook Form Usage**
@@ -376,17 +376,17 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 16: Zustand UI State Only**
     - **Validates: Requirement 12.3**
 
-  - [ ]* 12.5 Write property tests for optimistic updates
+  - [ ]\* 12.5 Write property tests for optimistic updates
     - **Property 17: Optimistic Update Rollback**
     - **Validates: Requirement 14.4**
     - **Property 21: Cache Invalidation on Mutation**
     - **Validates: Requirement 14.5**
 
-  - [ ]* 12.6 Write property test for form validation error display
+  - [ ]\* 12.6 Write property test for form validation error display
     - **Property 22: Form Validation Error Display**
     - **Validates: Requirement 13.4**
 
-  - [ ]* 12.7 Write unit tests for utility functions
+  - [ ]\* 12.7 Write unit tests for utility functions
     - Test formatting utilities (currency, date, percentage)
     - Test calculation utilities (balance, spending, budget)
     - _Requirements: 25.3_
@@ -413,7 +413,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Server-side validation via PocketBase collection rules
     - _Requirements: 17.7_
 
-  - [ ]* 14.4 Write property test for user data isolation
+  - [ ]\* 14.4 Write property test for user data isolation
     - **Property 6: User Data Isolation**
     - **Validates: Requirement 12.1**
 
@@ -434,11 +434,11 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Show sync status for queued transactions
     - _Requirements: 11.4_
 
-  - [ ]* 15.4 Write property test for offline transaction queueing
+  - [ ]\* 15.4 Write property test for offline transaction queueing
     - **Property 20: Offline Transaction Queueing**
     - **Validates: Requirement 11.2**
 
-  - [ ]* 15.5 Write integration tests for offline support
+  - [ ]\* 15.5 Write integration tests for offline support
     - Test offline data caching, transaction queueing, sync on reconnect
     - _Requirements: 28.3_
 
@@ -458,7 +458,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Build install prompt UI component
     - _Requirements: 20.3, 20.4_
 
-  - [ ]* 16.4 Write property tests for PWA
+  - [ ]\* 16.4 Write property tests for PWA
     - **Property 34: PWA Installation on iOS**
     - **Validates: Requirement 20.1, 20.2**
     - **Property 35: PWA Installation on Android**
@@ -489,7 +489,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Add unsupported browser warning
     - _Requirements: 19.1 through 19.5_
 
-  - [ ]* 17.5 Write property tests for shadcn/ui accessibility
+  - [ ]\* 17.5 Write property tests for shadcn/ui accessibility
     - **Property 32: shadcn/ui Component Accessibility**
     - **Validates: Requirement 29.6**
     - **Property 33: Custom Component Wrapper Consistency**
@@ -513,7 +513,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Responsive design test (layout adaptation across breakpoints)
     - _Requirements: 28.1 through 28.8_
 
-  - [ ]* 18.3 Write property test for test coverage threshold
+  - [ ]\* 18.3 Write property test for test coverage threshold
     - **Property 30: Test Coverage Threshold**
     - **Validates: Requirement 28.12**
 

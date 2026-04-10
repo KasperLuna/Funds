@@ -16,25 +16,25 @@ graph TB
         Query["Data Fetching<br/>React Query"]
         Forms["Form Handling<br/>React Hook Form"]
     end
-    
+
     subgraph Responsive["Responsive Design"]
         Mobile["Mobile<br/>Bottom Nav + Touch"]
         Tablet["Tablet<br/>Hybrid Layout"]
         Desktop["Desktop<br/>Sidebar + Full Features"]
     end
-    
+
     subgraph Backend["Backend Layer (PocketBase)"]
         Auth["Authentication<br/>Email/OAuth"]
         API["REST API<br/>Real-time Subscriptions"]
         DB["Database<br/>SQLite/PostgreSQL"]
     end
-    
+
     subgraph Services["External Services"]
         Push["Push Notifications<br/>Web Push API"]
         Crypto["Crypto Data<br/>CoinGecko API"]
         OAuth["OAuth Providers<br/>Google"]
     end
-    
+
     Client --> Responsive
     Client --> Query
     Query --> Backend
@@ -53,22 +53,22 @@ graph TB
 ```mermaid
 graph TD
     App["App Root<br/>layout.tsx"]
-    
+
     App --> AuthProvider["AuthProvider<br/>User Context"]
     App --> QueryProvider["QueryClientProvider<br/>React Query"]
     App --> TokensProvider["TokensProvider<br/>Crypto Data"]
-    
+
     AuthProvider --> Layout["Dashboard Layout<br/>Responsive Container"]
-    
+
     Layout --> Sidebar["Desktop Sidebar<br/>Navigation + Settings"]
     Layout --> Header["Mobile Header<br/>Logo + Menu"]
     Layout --> Footer["Mobile Footer<br/>Tab Navigation"]
     Layout --> Main["Main Content<br/>Page Routes"]
-    
+
     Main --> Dashboard["Dashboard Page<br/>Overview & Summary"]
     Main --> Banks["Banks Page<br/>Account Management"]
     Main --> Crypto["Crypto Page<br/>Token Tracking"]
-    
+
     Dashboard --> Components["Dashboard Components<br/>AssetSummary, BankSummary,<br/>BudgetsSummary, Trends"]
     Banks --> BankComponents["Bank Components<br/>TransactionForm,<br/>TransactionList,<br/>BankForm"]
     Crypto --> CryptoComponents["Crypto Components<br/>TokenList, Holdings"]
@@ -77,6 +77,7 @@ graph TD
 ## Responsive Design Strategy
 
 ### Mobile (< 768px)
+
 - **Navigation**: Bottom tab bar with 4 primary sections (Dashboard, Banks, Crypto, Settings)
 - **Header**: Fixed top bar with logo, privacy toggle, and menu dropdown
 - **Layout**: Single column, full-width content
@@ -85,6 +86,7 @@ graph TD
 - **Charts**: Responsive sizing, touch-friendly interactions
 
 ### Tablet (768px - 1024px)
+
 - **Navigation**: Hybrid approach - collapsible sidebar or tab-based
 - **Layout**: Two-column layout for transaction lists and details
 - **Sidebar**: Compact sidebar (176px) with icon + text labels
@@ -92,6 +94,7 @@ graph TD
 - **Charts**: Larger viewports for better data visualization
 
 ### Desktop (> 1024px)
+
 - **Navigation**: Fixed sidebar (240px - 240px XL) with full navigation
 - **Layout**: Multi-column layouts, side-by-side panels
 - **Sidebar**: Full-width with expanded labels and icons
@@ -118,7 +121,7 @@ interface User {
 // Bank - Account Management
 interface Bank {
   id: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   name: string;
   balance: number;
   primaryColor?: string;
@@ -130,7 +133,7 @@ interface Bank {
 // Category - Transaction Organization
 interface Category {
   id: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   name: string;
   hideable: boolean;
   total_exempt?: boolean;
@@ -142,13 +145,13 @@ interface Category {
 // Transaction - Core Financial Records
 interface Transaction {
   id?: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   description: string;
   type: "income" | "expense" | "deposit" | "withdrawal";
   amount: number;
-  bank: string;           // FK: Bank.id
-  categories: string[];   // FK: Category.id[]
-  date: string;           // ISO 8601 date string
+  bank: string; // FK: Bank.id
+  categories: string[]; // FK: Category.id[]
+  date: string; // ISO 8601 date string
   created?: Date;
   updated?: Date;
 }
@@ -158,21 +161,21 @@ interface Transfer {
   description: string;
   originAmount: number;
   destinationAmount: number;
-  originBank: string;     // FK: Bank.id
+  originBank: string; // FK: Bank.id
   destinationBank: string; // FK: Bank.id
   date: Date;
-  category?: string[];    // FK: Category.id[]
+  category?: string[]; // FK: Category.id[]
 }
 
 // PlannedTransaction - Recurring Transactions
 interface PlannedTransaction {
   id?: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   description: string;
   type: "income" | "expense" | "deposit" | "withdrawal";
   amount: number;
-  bank: string;           // FK: Bank.id
-  categories: string[];   // FK: Category.id[]
+  bank: string; // FK: Bank.id
+  categories: string[]; // FK: Category.id[]
   recurrence: RecurrenceRule;
   timezone: number;
   previousDate: Date | null;
@@ -186,7 +189,7 @@ interface PlannedTransaction {
 // Token - Cryptocurrency Holdings
 interface Token {
   id: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   name: string;
   symbol: string;
   coingecko_id: string;
@@ -199,7 +202,7 @@ interface Token {
 // PushSubscription - Notification Management
 interface PushSubscription {
   id?: string;
-  user: string;           // FK: User.id
+  user: string; // FK: User.id
   endpoint: string;
   keys: {
     p256dh: string;
@@ -233,6 +236,7 @@ interface RecurrenceRule {
 3. **Zustand**: ONLY UI state that doesn't fit above (privacy mode, theme, modals, sidebar)
 
 **Components MUST NOT**:
+
 - Store server data in useState
 - Duplicate data from React Query in local state
 - Use useState for form fields (use React Hook Form)
@@ -241,13 +245,16 @@ interface RecurrenceRule {
 ### State Management
 
 **Zustand Stores**:
+
 - `useAuthStore`: Authentication token and session state ONLY (not server data)
 - `useUIStore`: Privacy mode, theme, sidebar state, modal visibility
 
 **React Context**:
+
 - `AuthContext`: User session and permissions (fetched via React Query)
 
 **React Query**:
+
 - Server state caching with automatic invalidation
 - Optimistic updates for transactions
 - Background refetching for real-time data
@@ -255,6 +262,7 @@ interface RecurrenceRule {
 - **ALL server data (banks, transactions, categories, tokens, etc.) managed here**
 
 **React Hook Form**:
+
 - **ALL form input state and validation**
 - Transaction forms, bank forms, category forms
 - No local useState for form fields
@@ -378,7 +386,7 @@ export function TransactionForm() {
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
   });
-  
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       {/* Form fields */}
@@ -392,6 +400,7 @@ export function TransactionForm() {
 ### PocketBase Integration
 
 **Authentication Flow**:
+
 1. User submits email/password or initiates OAuth
 2. PocketBase returns auth token and user record
 3. Token stored in Zustand store and localStorage
@@ -399,12 +408,14 @@ export function TransactionForm() {
 5. React Query handles token refresh and expiration
 
 **Real-time Subscriptions**:
+
 - Subscribe to transaction changes for live updates
 - Subscribe to planned transaction triggers
 - Subscribe to crypto price updates
 - Automatic reconnection on network loss
 
 **API Endpoints** (PocketBase Collections):
+
 - `POST /api/collections/users/auth-with-password`
 - `POST /api/collections/users/auth-with-oauth2`
 - `GET /api/collections/banks/records`
@@ -417,12 +428,14 @@ export function TransactionForm() {
 ### Cron Jobs & Background Tasks
 
 **Planned Transaction Notifications** (`/api/cron-planned-reminders`):
+
 - Runs periodically to check for upcoming planned transactions
 - Sends push notifications to subscribed users
 - Updates `lastNotifiedAt` timestamp
 - Handles timezone-aware scheduling
 
 **Crypto Price Updates**:
+
 - Fetches latest prices from CoinGecko API
 - Updates token valuations
 - Triggers portfolio recalculation
@@ -436,8 +449,8 @@ export function TransactionForm() {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,        // 5 minutes
-      gcTime: 10 * 60 * 1000,          // 10 minutes (formerly cacheTime)
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
       retry: 2,
@@ -455,23 +468,23 @@ const queryClient = new QueryClient({
 // Organized by domain
 const queryKeys = {
   banks: {
-    all: ['banks'],
-    list: () => [...queryKeys.banks.all, 'list'],
-    detail: (id: string) => [...queryKeys.banks.all, 'detail', id],
+    all: ["banks"],
+    list: () => [...queryKeys.banks.all, "list"],
+    detail: (id: string) => [...queryKeys.banks.all, "detail", id],
   },
   transactions: {
-    all: ['transactions'],
-    list: (filters?: TransactionFilters) => [...queryKeys.transactions.all, 'list', filters],
-    detail: (id: string) => [...queryKeys.transactions.all, 'detail', id],
+    all: ["transactions"],
+    list: (filters?: TransactionFilters) => [...queryKeys.transactions.all, "list", filters],
+    detail: (id: string) => [...queryKeys.transactions.all, "detail", id],
   },
   categories: {
-    all: ['categories'],
-    list: () => [...queryKeys.categories.all, 'list'],
+    all: ["categories"],
+    list: () => [...queryKeys.categories.all, "list"],
   },
   crypto: {
-    all: ['crypto'],
-    tokens: () => [...queryKeys.crypto.all, 'tokens'],
-    prices: () => [...queryKeys.crypto.all, 'prices'],
+    all: ["crypto"],
+    tokens: () => [...queryKeys.crypto.all, "tokens"],
+    prices: () => [...queryKeys.crypto.all, "prices"],
   },
 };
 ```
@@ -485,16 +498,16 @@ const createTransactionMutation = useMutation({
   onMutate: async (newTransaction) => {
     // Cancel outgoing refetches
     await queryClient.cancelQueries({ queryKey: queryKeys.transactions.list() });
-    
+
     // Snapshot previous data
     const previousTransactions = queryClient.getQueryData(queryKeys.transactions.list());
-    
+
     // Optimistically update cache
     queryClient.setQueryData(queryKeys.transactions.list(), (old: Transaction[]) => [
       ...old,
-      { ...newTransaction, id: 'temp-id' },
+      { ...newTransaction, id: "temp-id" },
     ]);
-    
+
     return { previousTransactions };
   },
   onError: (err, newTransaction, context) => {
@@ -525,6 +538,7 @@ const createTransactionMutation = useMutation({
 ### Layout Patterns
 
 **Mobile Layout**:
+
 ```
 ┌─────────────────────┐
 │  Logo  │ Menu │ Pri │  <- Header (60px)
@@ -540,6 +554,7 @@ const createTransactionMutation = useMutation({
 ```
 
 **Tablet Layout**:
+
 ```
 ┌──────┬──────────────────┐
 │      │                  │
@@ -550,6 +565,7 @@ const createTransactionMutation = useMutation({
 ```
 
 **Desktop Layout**:
+
 ```
 ┌──────────┬──────────────────────┐
 │          │                      │
@@ -565,7 +581,7 @@ const createTransactionMutation = useMutation({
 // Adaptive Navigation
 export function Navigation() {
   const { isMobile } = useResponsive();
-  
+
   return isMobile ? <MobileBottomNav /> : <DesktopSidebar />;
 }
 
@@ -581,7 +597,7 @@ export function TransactionsList() {
 // Adaptive Modal
 export function TransactionFormModal() {
   const { isMobile } = useResponsive();
-  
+
   return isMobile ? (
     <BottomSheet>
       <TransactionForm />
@@ -599,23 +615,27 @@ export function TransactionFormModal() {
 ### Error Scenarios
 
 **Network Errors**:
+
 - Automatic retry with exponential backoff
 - Offline indicator in UI
 - Queue mutations for retry when online
 - Service worker caches critical data
 
 **Authentication Errors**:
+
 - 401 Unauthorized: Redirect to login
 - 403 Forbidden: Show permission error
 - Token expiration: Automatic refresh or re-login
 
 **Validation Errors**:
+
 - Form-level validation with React Hook Form
 - Field-level error messages
 - Server-side validation feedback
 - Prevent submission of invalid data
 
 **Data Consistency Errors**:
+
 - Optimistic update rollback on failure
 - Conflict resolution for concurrent updates
 - Data validation on fetch
@@ -630,7 +650,7 @@ export function handleApiError(error: unknown) {
     if (error.status === 401) {
       // Handle auth error
       store.logout();
-      router.push('/login');
+      router.push("/login");
     } else if (error.status === 422) {
       // Handle validation error
       return error.data.data; // Field errors
@@ -658,30 +678,25 @@ The application uses **Vitest** for all unit and integration testing with `vi.mo
 
 ```typescript
 // vitest.config.ts
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        '**/*.config.*',
-      ],
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      exclude: ["node_modules/", "src/test/", "**/*.d.ts", "**/*.config.*"],
     },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 });
@@ -692,19 +707,20 @@ export default defineConfig({
 Integration tests focus on critical user workflows and core functionalities using `vi.mock()`:
 
 #### 1. Authentication Flow
+
 ```typescript
 // src/test/integration/auth.test.ts
-import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { vi, describe, it, expect, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // Mock PocketBase client
-vi.mock('@/lib/pocketbase/pocketbase', () => ({
+vi.mock("@/lib/pocketbase/pocketbase", () => ({
   pb: {
     collection: vi.fn(() => ({
       authWithPassword: vi.fn().mockResolvedValue({
-        record: { id: '1', email: 'test@example.com' },
-        token: 'test-token',
+        record: { id: "1", email: "test@example.com" },
+        token: "test-token",
       }),
       authWithOAuth2: vi.fn(),
     })),
@@ -714,82 +730,85 @@ vi.mock('@/lib/pocketbase/pocketbase', () => ({
   },
 }));
 
-describe('Authentication Flow', () => {
-  it('should authenticate user with email/password', async () => {
+describe("Authentication Flow", () => {
+  it("should authenticate user with email/password", async () => {
     // Test login, token storage, session restoration
   });
-  
-  it('should handle OAuth login', async () => {
+
+  it("should handle OAuth login", async () => {
     // Test Google OAuth flow
   });
-  
-  it('should logout and clear session', async () => {
+
+  it("should logout and clear session", async () => {
     // Test logout, token removal, redirect
   });
 });
 ```
 
 #### 2. Transaction Management
+
 ```typescript
 // src/test/integration/transactions.test.ts
-import { vi, describe, it, expect } from 'vitest';
-import { useCreateTransaction } from '@/lib/hooks/useCreateTransaction';
+import { vi, describe, it, expect } from "vitest";
+import { useCreateTransaction } from "@/lib/hooks/useCreateTransaction";
 
-vi.mock('@/lib/pocketbase/pocketbase');
-vi.mock('@tanstack/react-query');
+vi.mock("@/lib/pocketbase/pocketbase");
+vi.mock("@tanstack/react-query");
 
-describe('Transaction Management', () => {
-  it('should create transaction with validation', async () => {
+describe("Transaction Management", () => {
+  it("should create transaction with validation", async () => {
     // Test form validation, API call, cache update
   });
-  
-  it('should update transaction and sync cache', async () => {
+
+  it("should update transaction and sync cache", async () => {
     // Test optimistic update, rollback on error
   });
-  
-  it('should delete transaction and update balance', async () => {
+
+  it("should delete transaction and update balance", async () => {
     // Test deletion, balance recalculation
   });
 });
 ```
 
 #### 3. Bank Balance Calculation
+
 ```typescript
 // src/test/integration/bank-balance.test.ts
-import { describe, it, expect } from 'vitest';
-import { calculateTotalBalance } from '@/lib/utils/calculations';
+import { describe, it, expect } from "vitest";
+import { calculateTotalBalance } from "@/lib/utils/calculations";
 
-describe('Bank Balance Calculation', () => {
-  it('should calculate balance as sum of transactions', () => {
+describe("Bank Balance Calculation", () => {
+  it("should calculate balance as sum of transactions", () => {
     const banks = [
-      { id: '1', balance: 100 },
-      { id: '2', balance: 200 },
+      { id: "1", balance: 100 },
+      { id: "2", balance: 200 },
     ];
     expect(calculateTotalBalance(banks)).toBe(300);
   });
-  
-  it('should update balance on transaction changes', async () => {
+
+  it("should update balance on transaction changes", async () => {
     // Property: balance = sum(transactions)
   });
 });
 ```
 
 #### 4. Budget Tracking
+
 ```typescript
 // src/test/integration/budgets.test.ts
-import { describe, it, expect } from 'vitest';
-import { calculateBudgetRemaining } from '@/lib/utils/calculations';
+import { describe, it, expect } from "vitest";
+import { calculateBudgetRemaining } from "@/lib/utils/calculations";
 
-describe('Budget Tracking', () => {
-  it('should calculate monthly spending per category', () => {
+describe("Budget Tracking", () => {
+  it("should calculate monthly spending per category", () => {
     // Property: spending = sum(transactions in month)
   });
-  
-  it('should calculate budget remaining correctly', () => {
+
+  it("should calculate budget remaining correctly", () => {
     const budget = 1000;
     const spending = 600;
     expect(calculateBudgetRemaining(budget, spending)).toBe(400);
-    
+
     // Test overspending
     expect(calculateBudgetRemaining(budget, 1200)).toBe(0);
   });
@@ -797,43 +816,46 @@ describe('Budget Tracking', () => {
 ```
 
 #### 5. Planned Transactions
+
 ```typescript
 // src/test/integration/planned-transactions.test.ts
-import { vi, describe, it, expect } from 'vitest';
-import { calculateNextOccurrence } from '@/lib/utils/recurrence';
+import { vi, describe, it, expect } from "vitest";
+import { calculateNextOccurrence } from "@/lib/utils/recurrence";
 
-describe('Planned Transactions', () => {
-  it('should calculate next occurrence with recurrence rule', () => {
+describe("Planned Transactions", () => {
+  it("should calculate next occurrence with recurrence rule", () => {
     // Test daily, weekly, monthly, yearly recurrence
   });
-  
-  it('should trigger at correct timezone', () => {
+
+  it("should trigger at correct timezone", () => {
     // Property: triggers at correct local time
   });
 });
 ```
 
 #### 6. React Query Integration
+
 ```typescript
 // src/test/integration/react-query.test.ts
-import { vi, describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { useBanks } from '@/lib/hooks/useBanks';
+import { vi, describe, it, expect } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { useBanks } from "@/lib/hooks/useBanks";
 
-vi.mock('@/lib/pocketbase/pocketbase');
+vi.mock("@/lib/pocketbase/pocketbase");
 
-describe('React Query Integration', () => {
-  it('should cache data and refetch on stale', async () => {
+describe("React Query Integration", () => {
+  it("should cache data and refetch on stale", async () => {
     // Test cache behavior, stale time
   });
-  
-  it('should optimistically update on mutation', async () => {
+
+  it("should optimistically update on mutation", async () => {
     // Test optimistic update, rollback on error
   });
 });
 ```
 
 #### 7. Form Handling
+
 ```typescript
 // src/test/integration/forms.test.ts
 import { describe, it, expect } from 'vitest';
@@ -845,14 +867,14 @@ describe('Form Handling', () => {
   it('should validate transaction form with Zod', async () => {
     const user = userEvent.setup();
     render(<TransactionForm />);
-    
+
     // Submit empty form
     await user.click(screen.getByRole('button', { name: /submit/i }));
-    
+
     // Check validation errors
     expect(screen.getByText(/description required/i)).toBeInTheDocument();
   });
-  
+
   it('should submit form and update cache', async () => {
     // Test submission, cache invalidation
   });
@@ -860,6 +882,7 @@ describe('Form Handling', () => {
 ```
 
 #### 8. Responsive Design
+
 ```typescript
 // src/test/integration/responsive.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -874,12 +897,12 @@ describe('Responsive Design', () => {
       value: 375,
     });
   });
-  
+
   it('should render mobile layout on small screens', () => {
     render(<DashboardLayout />);
     expect(screen.getByRole('navigation')).toHaveClass('md:hidden');
   });
-  
+
   it('should render desktop layout on large screens', () => {
     Object.defineProperty(window, 'innerWidth', {
       value: 1200,
@@ -894,8 +917,8 @@ describe('Responsive Design', () => {
 
 ```typescript
 // src/test/setup.ts
-import { expect, afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { expect, afterEach, vi } from "vitest";
+import { cleanup } from "@testing-library/react";
 
 afterEach(() => {
   cleanup();
@@ -903,9 +926,9 @@ afterEach(() => {
 });
 
 // Mock window.matchMedia for responsive tests
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -931,22 +954,22 @@ Each test file mocks only the dependencies it needs:
 
 ```typescript
 // src/test/integration/example.test.ts
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect } from "vitest";
 
 // Mock PocketBase for API calls
-vi.mock('@/lib/pocketbase/pocketbase', () => ({
+vi.mock("@/lib/pocketbase/pocketbase", () => ({
   pb: {
     collection: vi.fn((name) => ({
       getFullList: vi.fn().mockResolvedValue([]),
-      create: vi.fn().mockResolvedValue({ id: '1' }),
-      update: vi.fn().mockResolvedValue({ id: '1' }),
+      create: vi.fn().mockResolvedValue({ id: "1" }),
+      update: vi.fn().mockResolvedValue({ id: "1" }),
       delete: vi.fn().mockResolvedValue({}),
     })),
   },
 }));
 
 // Mock React Query hooks
-vi.mock('@tanstack/react-query', () => ({
+vi.mock("@tanstack/react-query", () => ({
   useQuery: vi.fn(() => ({
     data: [],
     isLoading: false,
@@ -959,15 +982,15 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 
 // Mock Zustand stores
-vi.mock('@/lib/stores/useUIStore', () => ({
+vi.mock("@/lib/stores/useUIStore", () => ({
   useUIStore: vi.fn(() => ({
     privacyMode: false,
     togglePrivacyMode: vi.fn(),
   })),
 }));
 
-describe('Example Integration Test', () => {
-  it('should work with mocked dependencies', () => {
+describe("Example Integration Test", () => {
+  it("should work with mocked dependencies", () => {
     // Test implementation
   });
 });
@@ -1058,20 +1081,20 @@ Integration tests verify multiple components working together:
 
 ```typescript
 // src/test/integration/transaction-flow.test.ts
-import { vi, describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { vi, describe, it, expect } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
 
-vi.mock('@/lib/pocketbase/pocketbase');
-vi.mock('@tanstack/react-query');
+vi.mock("@/lib/pocketbase/pocketbase");
+vi.mock("@tanstack/react-query");
 
-describe('Complete Transaction Flow', () => {
-  it('should create transaction and update all related data', async () => {
+describe("Complete Transaction Flow", () => {
+  it("should create transaction and update all related data", async () => {
     // Mock API responses
     const mockCreateTransaction = vi.fn().mockResolvedValue({
-      id: 'tx-1',
+      id: "tx-1",
       amount: 100,
     });
-    
+
     // Test implementation
     expect(mockCreateTransaction).toHaveBeenCalled();
   });
@@ -1083,6 +1106,7 @@ describe('Complete Transaction Flow', () => {
 ### PWA Configuration
 
 #### manifest.json
+
 ```json
 {
   "name": "Funds - Personal Finance Tracker",
@@ -1153,38 +1177,38 @@ describe('Complete Transaction Flow', () => {
 ```
 
 #### Service Worker (sw.js)
+
 ```javascript
 // public/sw.js
-const CACHE_NAME = 'funds-v1';
-const URLS_TO_CACHE = [
-  '/',
-  '/dashboard',
-  '/offline.html',
-];
+const CACHE_NAME = "funds-v1";
+const URLS_TO_CACHE = ["/", "/dashboard", "/offline.html"];
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(URLS_TO_CACHE);
-    })
+    }),
   );
 });
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') {
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
     return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    }).catch(() => {
-      return caches.match('/offline.html');
-    })
+    caches
+      .match(event.request)
+      .then((response) => {
+        return response || fetch(event.request);
+      })
+      .catch(() => {
+        return caches.match("/offline.html");
+      }),
   );
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -1192,14 +1216,15 @@ self.addEventListener('activate', (event) => {
           if (cacheName !== CACHE_NAME) {
             return caches.delete(cacheName);
           }
-        })
+        }),
       );
-    })
+    }),
   );
 });
 ```
 
 #### iOS Home Screen Configuration
+
 ```html
 <!-- In src/app/head.tsx -->
 <meta name="apple-mobile-web-app-capable" content="true" />
@@ -1210,6 +1235,7 @@ self.addEventListener('activate', (event) => {
 ```
 
 #### Android Installation Prompt
+
 ```typescript
 // src/lib/hooks/usePWAInstall.ts
 export function usePWAInstall() {
@@ -1223,15 +1249,15 @@ export function usePWAInstall() {
       setShowPrompt(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   const handleInstall = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
+      if (outcome === "accepted") {
         setDeferredPrompt(null);
         setShowPrompt(false);
       }
@@ -1315,6 +1341,7 @@ funds/
 ### Gitignore Strategy
 
 #### Root `.gitignore`
+
 ```
 # Dependencies
 node_modules/
@@ -1363,6 +1390,7 @@ Thumbs.db
 ```
 
 #### `src/app/.gitignore`
+
 ```
 # Next.js specific
 .next/
@@ -1380,6 +1408,7 @@ out/
 ```
 
 #### `src/components/.gitignore`
+
 ```
 # Component build artifacts
 *.js
@@ -1393,6 +1422,7 @@ storybook-static/
 ```
 
 #### `src/lib/.gitignore`
+
 ```
 # Build artifacts
 *.js
@@ -1404,6 +1434,7 @@ generated/
 ```
 
 #### `src/test/.gitignore`
+
 ```
 # Test coverage
 coverage/
@@ -1421,6 +1452,7 @@ __snapshots__/
 ```
 
 #### `public/.gitignore`
+
 ```
 # Generated files
 *.map
@@ -1438,6 +1470,7 @@ build/
 ### Package Management with pnpm
 
 #### Installation
+
 ```bash
 # Install all dependencies
 pnpm install
@@ -1453,6 +1486,7 @@ pnpm add -P package-name
 ```
 
 #### Workspace Management
+
 ```bash
 # Install dependencies in all workspaces
 pnpm install -r
@@ -1465,6 +1499,7 @@ pnpm --filter @funds/web run build
 ```
 
 #### Dependency Management
+
 ```bash
 # Update all dependencies
 pnpm update
@@ -1483,6 +1518,7 @@ pnpm outdated
 ```
 
 #### Lock File Management
+
 ```bash
 # Regenerate lock file
 pnpm install --frozen-lockfile
@@ -1505,15 +1541,15 @@ pnpm prune
     "lint": "next lint",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
-    
+
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    
+
     "db:push": "pocketbase push",
     "db:pull": "pocketbase pull",
-    
+
     "clean": "rm -rf .next dist coverage node_modules",
     "clean:cache": "rm -rf .next",
     "clean:deps": "rm -rf node_modules pnpm-lock.yaml"
@@ -1522,6 +1558,7 @@ pnpm prune
 ```
 
 ### Frontend Optimization
+
 - Code splitting by route with Next.js dynamic imports
 - Image optimization with Next.js Image component
 - CSS-in-JS minimization with Tailwind
@@ -1529,6 +1566,7 @@ pnpm prune
 - Memoization of expensive computations
 
 ### Data Fetching Optimization
+
 - Pagination for large transaction lists
 - Lazy loading of historical data
 - Debounced search and filters
@@ -1536,12 +1574,14 @@ pnpm prune
 - Selective field fetching from API
 
 ### Caching Strategy
+
 - Browser cache for static assets (1 year)
 - Service worker cache for offline support
 - React Query cache for API responses
 - IndexedDB for large datasets (transactions, historical data)
 
 ### Bundle Size
+
 - Tree-shaking unused code
 - Dynamic imports for heavy libraries (charts)
 - Compression of assets
@@ -1550,24 +1590,28 @@ pnpm prune
 ## Security Considerations
 
 ### Authentication & Authorization
+
 - Secure token storage (httpOnly cookies preferred, localStorage fallback)
 - CSRF protection via PocketBase
 - OAuth 2.0 for third-party auth
 - Session timeout and refresh token rotation
 
 ### Data Protection
+
 - HTTPS for all communications
 - Encryption of sensitive data at rest (PocketBase)
 - Privacy mode to hide sensitive values in UI
 - User-scoped data queries (no cross-user data access)
 
 ### Input Validation
+
 - Client-side validation with Zod
 - Server-side validation in PocketBase
 - Sanitization of user input
 - Protection against injection attacks
 
 ### API Security
+
 - Rate limiting on backend
 - Request signing for critical operations
 - Audit logging for sensitive actions
@@ -1576,6 +1620,7 @@ pnpm prune
 ## Dependencies & External Services
 
 ### Core Dependencies
+
 - **Next.js 16+**: React framework with SSR/SSG
 - **React 19**: UI library
 - **TypeScript**: Type safety
@@ -1594,6 +1639,7 @@ pnpm prune
 - **date-fns & dayjs**: Date manipulation
 
 ### External Services
+
 - **PocketBase**: Authentication, database, real-time subscriptions
 - **Google OAuth**: Third-party authentication
 - **CoinGecko API**: Cryptocurrency price data
@@ -1601,6 +1647,7 @@ pnpm prune
 - **Service Workers**: Offline support and caching
 
 ### Development Dependencies
+
 - **ESLint**: Code linting
 - **Prettier**: Code formatting
 - **TypeScript**: Type checking
@@ -1612,6 +1659,7 @@ pnpm prune
 - **shadcn-ui CLI**: Component generation and management
 
 ### Package Management
+
 - **pnpm**: Fast, disk space efficient package manager
   - All package operations use `pnpm` (install, add, remove, update)
   - Monorepo support via `pnpm-workspace.yaml`
@@ -1619,158 +1667,157 @@ pnpm prune
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Transaction Amount Validation
 
-*For any* transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.4**
 
 ### Property 2: Category Requirement for Transactions
 
-*For any* transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.5**
 
 ### Property 3: Bank Balance Calculation
 
-*For any* bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
+_For any_ bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
 
 **Validates: Requirement 2.6**
 
 ### Property 4: Category Spending Calculation
 
-*For any* category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
+_For any_ category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
 
 **Validates: Requirement 5.2**
 
 ### Property 5: Budget Remaining Calculation
 
-*For any* category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
+_For any_ category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
 
 **Validates: Requirement 5.3**
 
 ### Property 6: User Data Isolation
 
-*For any* two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
+_For any_ two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
 
 **Validates: Requirement 12.1**
 
 ### Property 7: Planned Transaction Recurrence
 
-*For any* planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
+_For any_ planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
 
 **Validates: Requirement 6.2, 6.8**
 
 ### Property 8: Timezone-Aware Budget Periods
 
-*For any* user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
+_For any_ user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
 
 **Validates: Requirement 5.7**
 
 ### Property 9: Timezone-Aware Planned Transactions
 
-*For any* planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
+_For any_ planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
 
 **Validates: Requirement 6.4**
 
 ### Property 10: Privacy Mode Consistency
 
-*For any* UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
+_For any_ UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
 
 **Validates: Requirement 9.1, 9.2**
 
 ### Property 11: Responsive Layout Adaptation
 
-*For any* viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
+_For any_ viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
 
 **Validates: Requirement 10.1, 10.2, 10.3, 10.4**
 
 ### Property 12: Touch Target Size
 
-*For any* interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
+_For any_ interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
 
 **Validates: Requirement 10.6**
 
 ### Property 13: Horizontal Scroll Prevention
 
-*For any* viewport size, content SHALL be readable without requiring horizontal scrolling.
+_For any_ viewport size, content SHALL be readable without requiring horizontal scrolling.
 
 **Validates: Requirement 10.7**
 
 ### Property 14: React Query Server State
 
-*For any* server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
+_For any_ server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
 
 **Validates: Requirement 12.1**
 
 ### Property 15: React Hook Form Usage
 
-*For any* form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
+_For any_ form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
 
 **Validates: Requirement 12.2**
 
 ### Property 16: Zustand UI State Only
 
-*For any* Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
+_For any_ Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
 
 **Validates: Requirement 12.3**
 
 ### Property 17: Optimistic Update Rollback
 
-*For any* failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
+_For any_ failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
 
 **Validates: Requirement 14.4**
 
 ### Property 18: Transfer Balance Preservation
 
-*For any* transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
+_For any_ transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
 
 **Validates: Requirement 3.12**
 
 ### Property 19: Crypto Portfolio Calculation
 
-*For any* cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
+_For any_ cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
 
 **Validates: Requirement 7.3**
 
 ### Property 20: Offline Transaction Queueing
 
-*For any* transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
+_For any_ transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
 
 **Validates: Requirement 11.2**
 
 ### Property 21: Cache Invalidation on Mutation
 
-*For any* successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
+_For any_ successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
 
 **Validates: Requirement 14.5**
 
 ### Property 22: Form Validation Error Display
 
-*For any* form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
+_For any_ form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
 
 **Validates: Requirement 13.4**
 
 ### Property 23: Authentication Token Persistence
 
-*For any* authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
+_For any_ authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
 
 **Validates: Requirement 1.6**
 
 ### Property 24: Category Deletion Cascade
 
-*For any* category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
+_For any_ category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
 
 **Validates: Requirement 4.6**
 
 ### Property 25: Bank Deletion Cascade
 
-*For any* bank that is deleted, all transactions associated with the bank SHALL also be deleted.
+_For any_ bank that is deleted, all transactions associated with the bank SHALL also be deleted.
 
 **Validates: Requirement 2.5**
-
 
 ## PocketBase Database Schema & Programmatic Connection
 
@@ -1779,6 +1826,7 @@ pnpm prune
 The application uses PocketBase with the following collections that must be created and maintained programmatically:
 
 #### 1. Users Collection
+
 ```typescript
 // Collection: users (built-in PocketBase collection)
 interface User {
@@ -1795,10 +1843,12 @@ interface User {
 ```
 
 **PocketBase Configuration**:
+
 - Built-in collection, no creation needed
 - Add custom field: `currency` (text, optional)
 
 #### 2. Banks Collection
+
 ```typescript
 interface Bank {
   id: string;
@@ -1813,13 +1863,19 @@ interface Bank {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "banks",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "name", "type": "text", "required": true },
     { "name": "balance", "type": "number", "required": true },
     { "name": "primaryColor", "type": "text" },
@@ -1830,6 +1886,7 @@ interface Bank {
 ```
 
 #### 3. Categories Collection
+
 ```typescript
 interface Category {
   id: string;
@@ -1844,13 +1901,19 @@ interface Category {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "categories",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "name", "type": "text", "required": true },
     { "name": "hideable", "type": "bool", "required": true },
     { "name": "total_exempt", "type": "bool" },
@@ -1861,6 +1924,7 @@ interface Category {
 ```
 
 #### 4. Transactions Collection
+
 ```typescript
 interface Transaction {
   id: string;
@@ -1877,18 +1941,39 @@ interface Transaction {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "transactions",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "description", "type": "text", "required": true },
-    { "name": "type", "type": "select", "required": true, "options": { "values": ["income", "expense", "deposit", "withdrawal"] } },
+    {
+      "name": "type",
+      "type": "select",
+      "required": true,
+      "options": { "values": ["income", "expense", "deposit", "withdrawal"] }
+    },
     { "name": "amount", "type": "number", "required": true },
-    { "name": "bank", "type": "relation", "required": true, "options": { "collectionId": "banks" } },
-    { "name": "categories", "type": "relation", "required": true, "options": { "collectionId": "categories", "maxSelect": null } },
+    {
+      "name": "bank",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "banks" }
+    },
+    {
+      "name": "categories",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "categories", "maxSelect": null }
+    },
     { "name": "date", "type": "date", "required": true }
   ],
   "indexes": ["user", "bank", "date", "created"]
@@ -1896,6 +1981,7 @@ interface Transaction {
 ```
 
 #### 5. Categories (for transactions) Collection
+
 ```typescript
 interface Category {
   id: string;
@@ -1910,6 +1996,7 @@ interface Category {
 ```
 
 #### 6. PlannedTransactions Collection
+
 ```typescript
 interface PlannedTransaction {
   id: string;
@@ -1931,18 +2018,39 @@ interface PlannedTransaction {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "planned_transactions",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "description", "type": "text", "required": true },
-    { "name": "type", "type": "select", "required": true, "options": { "values": ["income", "expense", "deposit", "withdrawal"] } },
+    {
+      "name": "type",
+      "type": "select",
+      "required": true,
+      "options": { "values": ["income", "expense", "deposit", "withdrawal"] }
+    },
     { "name": "amount", "type": "number", "required": true },
-    { "name": "bank", "type": "relation", "required": true, "options": { "collectionId": "banks" } },
-    { "name": "categories", "type": "relation", "required": true, "options": { "collectionId": "categories", "maxSelect": null } },
+    {
+      "name": "bank",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "banks" }
+    },
+    {
+      "name": "categories",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "categories", "maxSelect": null }
+    },
     { "name": "recurrence", "type": "json", "required": true },
     { "name": "timezone", "type": "number", "required": true },
     { "name": "previousDate", "type": "date" },
@@ -1955,6 +2063,7 @@ interface PlannedTransaction {
 ```
 
 #### 7. Tokens Collection
+
 ```typescript
 interface Token {
   id: string;
@@ -1970,13 +2079,19 @@ interface Token {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "tokens",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "name", "type": "text", "required": true },
     { "name": "symbol", "type": "text", "required": true },
     { "name": "coingecko_id", "type": "text", "required": true },
@@ -1988,6 +2103,7 @@ interface Token {
 ```
 
 #### 8. PushSubscriptions Collection
+
 ```typescript
 interface PushSubscription {
   id: string;
@@ -1999,13 +2115,19 @@ interface PushSubscription {
 ```
 
 **PocketBase Configuration**:
+
 ```json
 {
   "name": "push_subscriptions",
   "type": "base",
   "system": false,
   "fields": [
-    { "name": "user", "type": "relation", "required": true, "options": { "collectionId": "users" } },
+    {
+      "name": "user",
+      "type": "relation",
+      "required": true,
+      "options": { "collectionId": "users" }
+    },
     { "name": "endpoint", "type": "text", "required": true },
     { "name": "keys", "type": "json", "required": true }
   ],
@@ -2016,6 +2138,7 @@ interface PushSubscription {
 ### Programmatic Schema Management
 
 #### Schema Definition File
+
 ```typescript
 // src/lib/pocketbase/schema.ts
 export const POCKETBASE_SCHEMA = {
@@ -2091,10 +2214,11 @@ export const POCKETBASE_SCHEMA = {
 ```
 
 #### Schema Validation Utility
+
 ```typescript
 // src/lib/pocketbase/schema-validator.ts
-import { pb } from './pocketbase';
-import { POCKETBASE_SCHEMA } from './schema';
+import { pb } from "./pocketbase";
+import { POCKETBASE_SCHEMA } from "./schema";
 
 export async function validateAndCreateCollections() {
   for (const [key, schema] of Object.entries(POCKETBASE_SCHEMA)) {
@@ -2106,7 +2230,7 @@ export async function validateAndCreateCollections() {
       console.log(`Creating collection: ${schema.name}`);
       await pb.collections.create({
         name: schema.name,
-        type: 'base',
+        type: "base",
         fields: schema.fields,
       });
     }
@@ -2115,28 +2239,29 @@ export async function validateAndCreateCollections() {
 
 export async function validateSchema() {
   const collections = await pb.collections.getFullList();
-  
+
   for (const [key, expectedSchema] of Object.entries(POCKETBASE_SCHEMA)) {
-    const collection = collections.find(c => c.name === expectedSchema.name);
-    
+    const collection = collections.find((c) => c.name === expectedSchema.name);
+
     if (!collection) {
       throw new Error(`Collection ${expectedSchema.name} not found`);
     }
-    
+
     // Validate fields exist
     for (const field of expectedSchema.fields) {
-      const collectionField = collection.fields.find(f => f.name === field.name);
+      const collectionField = collection.fields.find((f) => f.name === field.name);
       if (!collectionField) {
         throw new Error(`Field ${field.name} not found in collection ${expectedSchema.name}`);
       }
     }
   }
-  
-  console.log('✓ All collections and fields validated');
+
+  console.log("✓ All collections and fields validated");
 }
 ```
 
 #### Initialization in App
+
 ```typescript
 // src/app/layout.tsx
 import { validateAndCreateCollections } from '@/lib/pocketbase/schema-validator';
@@ -2148,7 +2273,7 @@ export default async function RootLayout({ children }) {
   } catch (error) {
     console.error('Failed to validate PocketBase schema:', error);
   }
-  
+
   return (
     <html>
       <body>{children}</body>
@@ -2191,6 +2316,7 @@ src/lib/pocketbase/migrations/
 ```
 
 Each migration should:
+
 1. Define the change
 2. Provide rollback capability
 3. Be idempotent
@@ -2202,18 +2328,18 @@ Add a health check endpoint to verify database connectivity:
 
 ```typescript
 // src/app/api/health/route.ts
-import { pb } from '@/lib/pocketbase/pocketbase';
+import { pb } from "@/lib/pocketbase/pocketbase";
 
 export async function GET() {
   try {
     // Test connection
-    await pb.collection('users').getList(1, 1);
-    
-    return Response.json({ status: 'ok', database: 'connected' });
+    await pb.collection("users").getList(1, 1);
+
+    return Response.json({ status: "ok", database: "connected" });
   } catch (error) {
     return Response.json(
-      { status: 'error', database: 'disconnected', error: error.message },
-      { status: 503 }
+      { status: "error", database: "disconnected", error: error.message },
+      { status: 503 },
     );
   }
 }

@@ -5,8 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
 @theme inline {
@@ -88,37 +89,38 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* Finance app dark theme — slate-based with #0f172a (slate-900) as background */
+  --background: oklch(0.129 0.042 264.695); /* slate-900 #0f172a */
+  --foreground: oklch(0.968 0.007 264.354); /* slate-50 #f8fafc */
+  --card: oklch(0.208 0.042 265.755); /* slate-800 #1e293b */
+  --card-foreground: oklch(0.968 0.007 264.354); /* slate-50 */
+  --popover: oklch(0.208 0.042 265.755); /* slate-800 */
+  --popover-foreground: oklch(0.968 0.007 264.354); /* slate-50 */
+  --primary: oklch(0.968 0.007 264.354); /* slate-50 */
+  --primary-foreground: oklch(0.129 0.042 264.695); /* slate-900 */
+  --secondary: oklch(0.279 0.041 260.031); /* slate-700 #334155 */
+  --secondary-foreground: oklch(0.968 0.007 264.354);
+  --muted: oklch(0.279 0.041 260.031); /* slate-700 */
+  --muted-foreground: oklch(0.704 0.04 256.788); /* slate-400 #94a3b8 */
+  --accent: oklch(0.279 0.041 260.031); /* slate-700 */
+  --accent-foreground: oklch(0.968 0.007 264.354);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(0.279 0.041 260.031 / 60%); /* slate-700 at 60% */
+  --input: oklch(0.279 0.041 260.031 / 80%); /* slate-700 at 80% */
+  --ring: oklch(0.551 0.027 264.364); /* slate-500 */
+  --chart-1: oklch(0.746 0.16 232.661); /* sky-400 — income */
+  --chart-2: oklch(0.696 0.17 162.48); /* emerald-400 — savings */
+  --chart-3: oklch(0.828 0.189 84.429); /* amber-300 — expenses */
+  --chart-4: oklch(0.704 0.191 22.216); /* red-400 — overspend */
+  --chart-5: oklch(0.702 0.183 293.541); /* violet-400 — crypto */
+  --sidebar: oklch(0.208 0.042 265.755); /* slate-800 */
+  --sidebar-foreground: oklch(0.968 0.007 264.354);
+  --sidebar-primary: oklch(0.746 0.16 232.661); /* sky-400 — accent */
+  --sidebar-primary-foreground: oklch(0.968 0.007 264.354);
+  --sidebar-accent: oklch(0.279 0.041 260.031); /* slate-700 */
+  --sidebar-accent-foreground: oklch(0.968 0.007 264.354);
+  --sidebar-border: oklch(0.279 0.041 260.031 / 60%);
+  --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
 @layer base {

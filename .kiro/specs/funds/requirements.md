@@ -443,155 +443,155 @@ Funds is a comprehensive personal finance tracker web application that enables u
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Transaction Amount Validation
 
-*For any* transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.4**
 
 ### Property 2: Category Requirement for Transactions
 
-*For any* transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.5**
 
 ### Property 3: Bank Balance Calculation
 
-*For any* bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
+_For any_ bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
 
 **Validates: Requirement 2.6**
 
 ### Property 4: Category Spending Calculation
 
-*For any* category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
+_For any_ category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
 
 **Validates: Requirement 5.2**
 
 ### Property 5: Budget Remaining Calculation
 
-*For any* category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
+_For any_ category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
 
 **Validates: Requirement 5.3**
 
 ### Property 6: User Data Isolation
 
-*For any* two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
+_For any_ two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
 
 **Validates: Requirement 12.1**
 
 ### Property 7: Planned Transaction Recurrence
 
-*For any* planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
+_For any_ planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
 
 **Validates: Requirement 6.2, 6.8**
 
 ### Property 8: Timezone-Aware Budget Periods
 
-*For any* user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
+_For any_ user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
 
 **Validates: Requirement 5.7**
 
 ### Property 9: Timezone-Aware Planned Transactions
 
-*For any* planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
+_For any_ planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
 
 **Validates: Requirement 6.4**
 
 ### Property 10: Privacy Mode Consistency
 
-*For any* UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
+_For any_ UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
 
 **Validates: Requirement 9.1, 9.2**
 
 ### Property 11: Responsive Layout Adaptation
 
-*For any* viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
+_For any_ viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
 
 **Validates: Requirement 10.1, 10.2, 10.3, 10.4**
 
 ### Property 12: Touch Target Size
 
-*For any* interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
+_For any_ interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
 
 **Validates: Requirement 10.6**
 
 ### Property 13: Horizontal Scroll Prevention
 
-*For any* viewport size, content SHALL be readable without requiring horizontal scrolling.
+_For any_ viewport size, content SHALL be readable without requiring horizontal scrolling.
 
 **Validates: Requirement 10.7**
 
 ### Property 14: React Query Server State
 
-*For any* server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
+_For any_ server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
 
 **Validates: Requirement 12.1**
 
 ### Property 15: React Hook Form Usage
 
-*For any* form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
+_For any_ form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
 
 **Validates: Requirement 12.2**
 
 ### Property 16: Zustand UI State Only
 
-*For any* Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
+_For any_ Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
 
 **Validates: Requirement 12.3**
 
 ### Property 17: Optimistic Update Rollback
 
-*For any* failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
+_For any_ failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
 
 **Validates: Requirement 14.4**
 
 ### Property 18: Transfer Balance Preservation
 
-*For any* transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
+_For any_ transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
 
 **Validates: Requirement 3.12**
 
 ### Property 19: Crypto Portfolio Calculation
 
-*For any* cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
+_For any_ cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
 
 **Validates: Requirement 7.3**
 
 ### Property 20: Offline Transaction Queueing
 
-*For any* transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
+_For any_ transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
 
 **Validates: Requirement 11.2**
 
 ### Property 21: Cache Invalidation on Mutation
 
-*For any* successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
+_For any_ successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
 
 **Validates: Requirement 14.5**
 
 ### Property 22: Form Validation Error Display
 
-*For any* form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
+_For any_ form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
 
 **Validates: Requirement 13.4**
 
 ### Property 23: Authentication Token Persistence
 
-*For any* authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
+_For any_ authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
 
 **Validates: Requirement 1.6**
 
 ### Property 24: Category Deletion Cascade
 
-*For any* category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
+_For any_ category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
 
 **Validates: Requirement 4.6**
 
 ### Property 25: Bank Deletion Cascade
 
-*For any* bank that is deleted, all transactions associated with the bank SHALL also be deleted.
+_For any_ bank that is deleted, all transactions associated with the bank SHALL also be deleted.
 
 **Validates: Requirement 2.5**
 
@@ -688,8 +688,6 @@ All components MUST follow these patterns:
 - Submit button disabled during submission
 - Form reset on successful submission
 
-
-
 ### Requirement 25: Testing Strategy
 
 **User Story:** As a developer, I want comprehensive test coverage using Vitest, so that the application is reliable and bugs are caught early.
@@ -764,185 +762,185 @@ All components MUST follow these patterns:
 
 ## Correctness Properties
 
-*A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
+_A property is a characteristic or behavior that should hold true across all valid executions of a system—essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees._
 
 ### Property 1: Transaction Amount Validation
 
-*For any* transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if the amount is zero or negative, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.4**
 
 ### Property 2: Category Requirement for Transactions
 
-*For any* transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
+_For any_ transaction creation attempt, if no categories are selected, the transaction SHALL be rejected and the transaction list SHALL remain unchanged.
 
 **Validates: Requirement 3.5**
 
 ### Property 3: Bank Balance Calculation
 
-*For any* bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
+_For any_ bank account, the displayed balance SHALL equal the sum of all transactions associated with that bank.
 
 **Validates: Requirement 2.6**
 
 ### Property 4: Category Spending Calculation
 
-*For any* category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
+_For any_ category in the current month, the displayed spending SHALL equal the sum of all transaction amounts tagged with that category in the current month.
 
 **Validates: Requirement 5.2**
 
 ### Property 5: Budget Remaining Calculation
 
-*For any* category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
+_For any_ category with a monthly budget, the displayed budget remaining SHALL equal (monthly_budget - current_spending), and SHALL never be negative (displayed as 0 if overspent).
 
 **Validates: Requirement 5.3**
 
 ### Property 6: User Data Isolation
 
-*For any* two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
+_For any_ two different users, when user A queries their banks/transactions/categories, the results SHALL NOT include any data belonging to user B.
 
 **Validates: Requirement 12.1**
 
 ### Property 7: Planned Transaction Recurrence
 
-*For any* planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
+_For any_ planned transaction with a recurrence rule, the next occurrence date SHALL be calculated correctly based on the frequency and interval, and SHALL always be after the previous occurrence date.
 
 **Validates: Requirement 6.2, 6.8**
 
 ### Property 8: Timezone-Aware Budget Periods
 
-*For any* user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
+_For any_ user with a specified timezone, when calculating monthly spending, the month boundaries SHALL respect the user's local timezone (not UTC).
 
 **Validates: Requirement 5.7**
 
 ### Property 9: Timezone-Aware Planned Transactions
 
-*For any* planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
+_For any_ planned transaction with a specified timezone, the transaction SHALL be triggered at the correct local time in that timezone, regardless of the server's timezone.
 
 **Validates: Requirement 6.4**
 
 ### Property 10: Privacy Mode Consistency
 
-*For any* UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
+_For any_ UI component displaying monetary amounts, when privacy mode is enabled, the component SHALL display placeholder values instead of actual amounts; when privacy mode is disabled, the component SHALL display actual amounts.
 
 **Validates: Requirement 9.1, 9.2**
 
 ### Property 11: Responsive Layout Adaptation
 
-*For any* viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
+_For any_ viewport size, the layout SHALL adapt correctly: mobile (< 768px) displays bottom nav, tablet (768-1024px) displays collapsible sidebar, desktop (> 1024px) displays fixed sidebar.
 
 **Validates: Requirement 10.1, 10.2, 10.3, 10.4**
 
 ### Property 12: Touch Target Size
 
-*For any* interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
+_For any_ interactive element on mobile devices, the element SHALL have a minimum size of 44px × 44px to ensure touch-friendliness.
 
 **Validates: Requirement 10.6**
 
 ### Property 13: Horizontal Scroll Prevention
 
-*For any* viewport size, content SHALL be readable without requiring horizontal scrolling.
+_For any_ viewport size, content SHALL be readable without requiring horizontal scrolling.
 
 **Validates: Requirement 10.7**
 
 ### Property 14: React Query Server State
 
-*For any* server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
+_For any_ server data (banks, transactions, categories, tokens), the data SHALL be fetched and cached via React Query, not stored in component local state.
 
 **Validates: Requirement 12.1**
 
 ### Property 15: React Hook Form Usage
 
-*For any* form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
+_For any_ form in the application, form input state and validation SHALL be managed by React Hook Form, not useState.
 
 **Validates: Requirement 12.2**
 
 ### Property 16: Zustand UI State Only
 
-*For any* Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
+_For any_ Zustand store, the store SHALL contain ONLY UI state (privacy mode, theme, modals, sidebar), never server data or form input state.
 
 **Validates: Requirement 12.3**
 
 ### Property 17: Optimistic Update Rollback
 
-*For any* failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
+_For any_ failed mutation, the optimistic update to the cache SHALL be rolled back, and the UI SHALL display the previous state.
 
 **Validates: Requirement 14.4**
 
 ### Property 18: Transfer Balance Preservation
 
-*For any* transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
+_For any_ transfer between two banks, the total portfolio balance before and after the transfer SHALL remain the same (accounting for exchange rates if applicable).
 
 **Validates: Requirement 3.12**
 
 ### Property 19: Crypto Portfolio Calculation
 
-*For any* cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
+_For any_ cryptocurrency portfolio, the total portfolio value SHALL equal the sum of (token_quantity × current_price) for all tokens.
 
 **Validates: Requirement 7.3**
 
 ### Property 20: Offline Transaction Queueing
 
-*For any* transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
+_For any_ transaction created while offline, the transaction SHALL be queued and automatically synced when the user goes online.
 
 **Validates: Requirement 11.2**
 
 ### Property 21: Cache Invalidation on Mutation
 
-*For any* successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
+_For any_ successful mutation (create, update, delete), the relevant React Query cache SHALL be invalidated and refetched to ensure consistency.
 
 **Validates: Requirement 14.5**
 
 ### Property 22: Form Validation Error Display
 
-*For any* form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
+_For any_ form submission with validation errors, error messages SHALL be displayed for each invalid field, and the form SHALL NOT be submitted.
 
 **Validates: Requirement 13.4**
 
 ### Property 23: Authentication Token Persistence
 
-*For any* authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
+_For any_ authenticated user who closes and reopens the browser, if a valid token exists in storage, the user's session SHALL be restored without requiring re-authentication.
 
 **Validates: Requirement 1.6**
 
 ### Property 24: Category Deletion Cascade
 
-*For any* category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
+_For any_ category that is deleted, the category SHALL be removed from all associated transactions, and the transactions SHALL remain valid.
 
 **Validates: Requirement 4.6**
 
 ### Property 25: Bank Deletion Cascade
 
-*For any* bank that is deleted, all transactions associated with the bank SHALL also be deleted.
+_For any_ bank that is deleted, all transactions associated with the bank SHALL also be deleted.
 
 **Validates: Requirement 2.5**
 
 ### Property 26: pnpm Lock File Consistency
 
-*For any* developer who clones the repository and runs `pnpm install --frozen-lockfile`, the installed dependencies SHALL be identical to those in `pnpm-lock.yaml`.
+_For any_ developer who clones the repository and runs `pnpm install --frozen-lockfile`, the installed dependencies SHALL be identical to those in `pnpm-lock.yaml`.
 
 **Validates: Requirement 26.9**
 
 ### Property 27: Gitignore Effectiveness
 
-*For any* file matching a gitignore pattern, the file SHALL NOT be tracked by git and SHALL NOT appear in `git status`.
+_For any_ file matching a gitignore pattern, the file SHALL NOT be tracked by git and SHALL NOT appear in `git status`.
 
 **Validates: Requirement 27.1 through 27.9**
 
 ### Property 28: Vitest Integration Test Coverage
 
-*For any* core functionality (authentication, transactions, budgets, planned transactions), there SHALL exist at least one integration test that verifies the complete workflow.
+_For any_ core functionality (authentication, transactions, budgets, planned transactions), there SHALL exist at least one integration test that verifies the complete workflow.
 
 **Validates: Requirement 28.1 through 28.8**
 
 ### Property 29: Mock Service Worker Interception
 
-*For any* HTTP request made during a Vitest test, if a matching MSW handler exists, the request SHALL be intercepted and the mock response SHALL be returned instead of making a real network request.
+_For any_ HTTP request made during a Vitest test, if a matching MSW handler exists, the request SHALL be intercepted and the mock response SHALL be returned instead of making a real network request.
 
 **Validates: Requirement 28.10**
 
 ### Property 30: Test Coverage Threshold
 
-*For any* core functionality module (authentication, transactions, calculations, forms), the test coverage SHALL be at least 80%.
+_For any_ core functionality module (authentication, transactions, calculations, forms), the test coverage SHALL be at least 80%.
 
 **Validates: Requirement 28.12**
 
@@ -1065,7 +1063,6 @@ All components MUST follow these patterns:
 - Clean separation of concerns: app, components, lib, test, public
 - Organized test structure with mocks, fixtures, and integration tests
 
-
 ### Requirement 29: shadcn/ui Component Library
 
 **User Story:** As a developer, I want to use shadcn/ui as the base for UI components, so that I have pre-built, accessible, and customizable components.
@@ -1080,46 +1077,44 @@ All components MUST follow these patterns:
 6. WHEN components are used, THE System SHALL ensure accessibility standards are met
 7. WHEN custom components are created, THE System SHALL document the wrapper's purpose and usage
 
-
 ### Property 31: Mock Service Worker Interception
 
-*For any* HTTP request made during a Vitest test, if a matching `vi.mock()` handler exists, the request SHALL be intercepted and the mock response SHALL be returned instead of making a real network request.
+_For any_ HTTP request made during a Vitest test, if a matching `vi.mock()` handler exists, the request SHALL be intercepted and the mock response SHALL be returned instead of making a real network request.
 
 **Validates: Requirement 28.10**
 
 ### Property 32: shadcn/ui Component Accessibility
 
-*For any* shadcn/ui component used in the application, the component SHALL maintain accessibility standards including proper ARIA labels, keyboard navigation, and semantic HTML.
+_For any_ shadcn/ui component used in the application, the component SHALL maintain accessibility standards including proper ARIA labels, keyboard navigation, and semantic HTML.
 
 **Validates: Requirement 29.6**
 
 ### Property 33: Custom Component Wrapper Consistency
 
-*For any* custom component wrapper around shadcn/ui, the wrapper SHALL maintain the same accessibility and functionality as the base component while adding domain-specific behavior.
+_For any_ custom component wrapper around shadcn/ui, the wrapper SHALL maintain the same accessibility and functionality as the base component while adding domain-specific behavior.
 
 **Validates: Requirement 29.3, 29.7**
 
-
 ### Property 34: PWA Installation on iOS
 
-*For any* user on iOS who accesses the application and uses the "Add to Home Screen" feature, the application SHALL create a home screen icon and launch in fullscreen mode without browser UI.
+_For any_ user on iOS who accesses the application and uses the "Add to Home Screen" feature, the application SHALL create a home screen icon and launch in fullscreen mode without browser UI.
 
 **Validates: Requirement 20.1, 20.2**
 
 ### Property 35: PWA Installation on Android
 
-*For any* user on Android who sees the install prompt and accepts installation, the application SHALL create a home screen icon and launch in fullscreen mode without browser UI.
+_For any_ user on Android who sees the install prompt and accepts installation, the application SHALL create a home screen icon and launch in fullscreen mode without browser UI.
 
 **Validates: Requirement 20.3, 20.4**
 
 ### Property 36: PWA Offline Support
 
-*For any* user with the PWA installed who goes offline, the application SHALL serve cached content via service worker and display previously loaded data.
+_For any_ user with the PWA installed who goes offline, the application SHALL serve cached content via service worker and display previously loaded data.
 
 **Validates: Requirement 20.6**
 
 ### Property 37: PWA Manifest Configuration
 
-*For any* PWA installation, the manifest.json configuration SHALL be correctly applied, including app name, icons, theme color, and display mode.
+_For any_ PWA installation, the manifest.json configuration SHALL be correctly applied, including app name, icons, theme color, and display mode.
 
 **Validates: Requirement 20.8, 20.9, 20.10**

@@ -23,10 +23,10 @@ This document provides detailed implementation specifications for the Funds appl
 // ✅ CORRECT: Use React Query for server state
 export function TransactionsList() {
   const { data: transactions, isLoading, error } = useTransactions();
-  
+
   if (isLoading) return <Skeleton />;
   if (error) return <ErrorMessage error={error} />;
-  
+
   return (
     <div className="space-y-2">
       {transactions?.map((tx) => (
@@ -40,11 +40,11 @@ export function TransactionsList() {
 export function TransactionsListWrong() {
   const { data: transactions } = useTransactions();
   const [localTransactions, setLocalTransactions] = useState([]);
-  
+
   useEffect(() => {
     setLocalTransactions(transactions || []);
   }, [transactions]);
-  
+
   return (
     <div>
       {localTransactions.map((tx) => (
@@ -65,14 +65,14 @@ export function TransactionForm() {
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
   });
-  
+
   const createMutation = useCreateTransaction();
-  
+
   const onSubmit = async (data: TransactionFormData) => {
     await createMutation.mutateAsync(data);
     form.reset();
   };
-  
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <input {...form.register('description')} />
@@ -90,17 +90,17 @@ export function TransactionForm() {
 export function TransactionFormWrong() {
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Manual validation, error handling, etc.
   };
-  
+
   return (
     <form onSubmit={handleSubmit}>
-      <input 
-        value={description} 
-        onChange={(e) => setDescription(e.target.value)} 
+      <input
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
       />
       {errors.description && <span>{errors.description}</span>}
       <button type="submit">Submit</button>
@@ -117,7 +117,7 @@ export function TransactionFormWrong() {
 // ✅ CORRECT: Use Zustand for UI state
 export function PrivacyToggle() {
   const { privacyMode, togglePrivacyMode } = useUIStore();
-  
+
   return (
     <button onClick={togglePrivacyMode}>
       {privacyMode ? 'Privacy On' : 'Privacy Off'}
@@ -128,13 +128,13 @@ export function PrivacyToggle() {
 // ❌ WRONG: Don't use useState for persistent UI state
 export function PrivacyToggleWrong() {
   const [privacyMode, setPrivacyMode] = useState(false);
-  
+
   const handleToggle = () => {
     setPrivacyMode(!privacyMode);
     // Manually persist to localStorage
     localStorage.setItem('privacyMode', JSON.stringify(!privacyMode));
   };
-  
+
   return (
     <button onClick={handleToggle}>
       {privacyMode ? 'Privacy On' : 'Privacy Off'}
@@ -154,10 +154,10 @@ export function BankForm({ initialData }: { initialData?: Bank }) {
     resolver: zodResolver(bankSchema),
     defaultValues: initialData,
   });
-  
+
   const createMutation = useCreateBank();
   const updateMutation = useUpdateBank();
-  
+
   const onSubmit = async (data: BankFormData) => {
     if (initialData?.id) {
       await updateMutation.mutateAsync({ id: initialData.id, ...data });
@@ -166,12 +166,12 @@ export function BankForm({ initialData }: { initialData?: Bank }) {
     }
     form.reset();
   };
-  
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <input {...form.register('name')} />
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={form.formState.isSubmitting || createMutation.isPending}
       >
         {initialData ? 'Update' : 'Create'}
@@ -185,12 +185,12 @@ export function BankFormWrong({ initialData }: { initialData?: Bank }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(initialData?.name || '');
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // Manual API call
       await api.createBank({ name });
@@ -201,7 +201,7 @@ export function BankFormWrong({ initialData }: { initialData?: Bank }) {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <form onSubmit={handleSubmit}>
       <input value={name} onChange={(e) => setName(e.target.value)} />
@@ -219,6 +219,7 @@ export function BankFormWrong({ initialData }: { initialData?: Bank }) {
 #### Root Layout (`src/app/layout.tsx`)
 
 **Responsibilities**:
+
 - Initialize global providers (Auth, Query, Tokens)
 - Set up viewport and metadata
 - Configure font loading
@@ -226,6 +227,7 @@ export function BankFormWrong({ initialData }: { initialData?: Bank }) {
 **Key Props**: `children: React.ReactNode`
 
 **State Management**:
+
 - Query client configuration
 - Provider initialization
 
@@ -245,17 +247,20 @@ interface RootLayoutProps {
 #### Dashboard Layout (`src/app/dashboard/layout.tsx`)
 
 **Responsibilities**:
+
 - Render responsive navigation (desktop sidebar, mobile header/footer)
 - Manage layout structure for all dashboard pages
 - Handle responsive breakpoint transitions
 
 **Key Components**:
+
 - Desktop Sidebar (md:block, hidden on mobile)
 - Mobile Header (md:hidden, fixed top)
 - Mobile Footer (md:hidden, fixed bottom)
 - Main content area
 
 **Responsive Behavior**:
+
 - Mobile: Header (60px) + Content + Footer (60px)
 - Tablet+: Sidebar (176px/240px) + Content
 
@@ -278,11 +283,13 @@ interface DashboardLayoutProps {
 #### Dashboard Page (`src/app/dashboard/page.tsx`)
 
 **Responsibilities**:
+
 - Display financial overview and summary
 - Show upcoming planned transactions
 - Render asset summary and trends
 
 **Key Sections**:
+
 - Asset Summary (total balance, net worth)
 - Bank Summary (account balances)
 - Budget Summary (spending vs limits)
@@ -290,6 +297,7 @@ interface DashboardLayoutProps {
 - Monthly Trends Chart
 
 **Data Dependencies**:
+
 - Banks (for balances)
 - Transactions (for calculations)
 - Categories (for budgets)
@@ -309,17 +317,20 @@ interface DashboardLayoutProps {
 #### Banks Page (`src/app/dashboard/banks/page.tsx`)
 
 **Responsibilities**:
+
 - Display list of bank accounts
 - Show transactions for selected bank
 - Provide transaction management UI
 
 **Key Sections**:
+
 - Bank selector/carousel
 - Transaction list/table
 - Transaction form (create/edit)
 - Transaction filters
 
 **Data Dependencies**:
+
 - Banks
 - Transactions
 - Categories
@@ -337,17 +348,20 @@ interface DashboardLayoutProps {
 #### Crypto Page (`src/app/dashboard/crypto/page.tsx`)
 
 **Responsibilities**:
+
 - Display cryptocurrency holdings
 - Show token prices and valuations
 - Provide token management UI
 
 **Key Sections**:
+
 - Token list with holdings
 - Portfolio value summary
 - Price charts
 - Add/remove token forms
 
 **Data Dependencies**:
+
 - Tokens
 - Crypto prices (from CoinGecko)
 
@@ -368,6 +382,7 @@ interface DashboardLayoutProps {
 **Purpose**: Display total assets across all accounts and crypto
 
 **Props**:
+
 ```typescript
 interface AssetSummaryProps {
   banks: Bank[];
@@ -378,11 +393,13 @@ interface AssetSummaryProps {
 ```
 
 **Calculations**:
+
 - Bank total = sum of all bank balances
 - Crypto total = sum of (token quantity × current price)
 - Total assets = bank total + crypto total
 
 **Rendering**:
+
 - Large display of total assets
 - Breakdown by category (banks, crypto)
 - Percentage change indicator
@@ -403,6 +420,7 @@ interface AssetSummaryProps {
 **Purpose**: Display summary of all bank accounts
 
 **Props**:
+
 ```typescript
 interface BankSummaryProps {
   banks: Bank[];
@@ -412,12 +430,14 @@ interface BankSummaryProps {
 ```
 
 **Features**:
+
 - Card carousel for each bank
 - Balance display with color coding
 - Recent transactions preview
 - Quick action buttons (add transaction, transfer)
 
 **Responsive Behavior**:
+
 - Mobile: Single card visible, swipe to navigate
 - Tablet: 2 cards visible
 - Desktop: 3+ cards visible
@@ -437,6 +457,7 @@ interface BankSummaryProps {
 **Purpose**: Display budget tracking and spending
 
 **Props**:
+
 ```typescript
 interface BudgetsSummaryProps {
   categories: Category[];
@@ -447,11 +468,13 @@ interface BudgetsSummaryProps {
 ```
 
 **Calculations**:
+
 - Monthly spending per category = sum of transactions in month
 - Budget remaining = monthly_budget - spending
 - Percentage used = spending / monthly_budget
 
 **Rendering**:
+
 - Progress bars for each category
 - Color coding (green < 50%, yellow 50-80%, red > 80%)
 - Spending vs budget display
@@ -471,6 +494,7 @@ interface BudgetsSummaryProps {
 **Purpose**: Display cryptocurrency holdings and portfolio
 
 **Props**:
+
 ```typescript
 interface CryptoDashboardProps {
   tokens: Token[];
@@ -480,12 +504,14 @@ interface CryptoDashboardProps {
 ```
 
 **Features**:
+
 - Token list with holdings and values
 - Portfolio composition chart
 - Price change indicators
 - Add/remove token forms
 
 **Calculations**:
+
 - Token value = quantity × current price
 - Portfolio total = sum of all token values
 - Percentage change = (current price - cost avg) / cost avg
@@ -507,6 +533,7 @@ interface CryptoDashboardProps {
 **Purpose**: Create or edit bank account
 
 **Props**:
+
 ```typescript
 interface BankFormProps {
   initialData?: Bank;
@@ -516,15 +543,18 @@ interface BankFormProps {
 ```
 
 **Form Fields**:
+
 - Name (text input, required)
 - Primary Color (color picker)
 - Secondary Color (color picker)
 
 **Validation**:
+
 - Name: min 1 char, max 50 chars
 - Colors: valid hex format
 
 **Submission**:
+
 - POST /api/collections/banks/records (create)
 - PATCH /api/collections/banks/records/{id} (update)
 
@@ -543,6 +573,7 @@ interface BankFormProps {
 **Purpose**: Create or edit transaction
 
 **Props**:
+
 ```typescript
 interface TransactionFormProps {
   initialData?: Transaction;
@@ -554,6 +585,7 @@ interface TransactionFormProps {
 ```
 
 **Form Fields**:
+
 - Description (text input, required)
 - Type (select: income/expense/deposit/withdrawal)
 - Amount (number input, required, positive)
@@ -562,10 +594,11 @@ interface TransactionFormProps {
 - Date (date picker, required)
 
 **Validation Schema**:
+
 ```typescript
 const transactionSchema = z.object({
   description: z.string().min(1).max(200),
-  type: z.enum(['income', 'expense', 'deposit', 'withdrawal']),
+  type: z.enum(["income", "expense", "deposit", "withdrawal"]),
   amount: z.number().positive(),
   bank: z.string().min(1),
   categories: z.array(z.string()).min(1),
@@ -574,6 +607,7 @@ const transactionSchema = z.object({
 ```
 
 **Submission**:
+
 - POST /api/collections/transactions/records (create)
 - PATCH /api/collections/transactions/records/{id} (update)
 
@@ -594,6 +628,7 @@ const transactionSchema = z.object({
 **Purpose**: Display single transaction in card format
 
 **Props**:
+
 ```typescript
 interface TransactionCardProps {
   transaction: ExpandedTransaction;
@@ -604,6 +639,7 @@ interface TransactionCardProps {
 ```
 
 **Display**:
+
 - Description
 - Amount (with type icon)
 - Categories (as tags)
@@ -611,11 +647,13 @@ interface TransactionCardProps {
 - Bank (with color indicator)
 
 **Actions**:
+
 - Edit button
 - Delete button
 - Category click to filter
 
 **Responsive**:
+
 - Mobile: Full width, stacked layout
 - Desktop: Compact layout
 
@@ -633,6 +671,7 @@ interface TransactionCardProps {
 **Purpose**: Display transactions in table format (desktop)
 
 **Props**:
+
 ```typescript
 interface TransactionsTableProps {
   transactions: ExpandedTransaction[];
@@ -644,6 +683,7 @@ interface TransactionsTableProps {
 ```
 
 **Columns**:
+
 - Date
 - Description
 - Type (with icon)
@@ -653,6 +693,7 @@ interface TransactionsTableProps {
 - Actions (edit, delete)
 
 **Features**:
+
 - Sortable columns
 - Pagination
 - Row selection
@@ -673,6 +714,7 @@ interface TransactionsTableProps {
 **Purpose**: Filter and search transactions
 
 **Props**:
+
 ```typescript
 interface TransactionFilterProps {
   onFilterChange: (filters: TransactionFilters) => void;
@@ -690,6 +732,7 @@ interface TransactionFilters {
 ```
 
 **Filter Options**:
+
 - Bank (select)
 - Categories (multi-select)
 - Type (select)
@@ -697,6 +740,7 @@ interface TransactionFilters {
 - Search text (text input)
 
 **Behavior**:
+
 - Debounced search (300ms)
 - Immediate filter updates
 - Clear all button
@@ -762,10 +806,12 @@ export function MyForm() {
 ```
 
 **Preconditions**:
+
 - Schema is valid and matches form data
 - Resolver is properly configured
 
 **Postconditions**:
+
 - Form validates on submit
 - Errors displayed to user
 - Submission handled correctly
@@ -807,7 +853,7 @@ interface AuthState {
   // Session management only - NOT server data
   token: string | null;
   isAuthenticated: boolean;
-  
+
   setToken: (token: string | null) => void;
   clearAuth: () => void;
 }
@@ -815,11 +861,12 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   isAuthenticated: false,
-  
-  setToken: (token) => set({ 
-    token, 
-    isAuthenticated: !!token 
-  }),
+
+  setToken: (token) =>
+    set({
+      token,
+      isAuthenticated: !!token,
+    }),
   clearAuth: () => set({ token: null, isAuthenticated: false }),
 }));
 ```
@@ -827,10 +874,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 **Important**: User data (email, username, currency) is fetched via React Query, NOT stored in Zustand.
 
 **Preconditions**:
+
 - Store is initialized before use
 - Token is persisted to localStorage
 
 **Postconditions**:
+
 - Token available for API calls
 - Authentication state accessible to all components
 
@@ -841,12 +890,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 ```typescript
 interface UIState {
   privacyMode: boolean;
-  theme: 'dark' | 'light';
+  theme: "dark" | "light";
   sidebarOpen: boolean;
   modals: Record<string, boolean>;
-  
+
   togglePrivacyMode: () => void;
-  setTheme: (theme: 'dark' | 'light') => void;
+  setTheme: (theme: "dark" | "light") => void;
   toggleSidebar: () => void;
   openModal: (id: string) => void;
   closeModal: (id: string) => void;
@@ -854,37 +903,44 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   privacyMode: false,
-  theme: 'dark',
+  theme: "dark",
   sidebarOpen: true,
   modals: {},
-  
-  togglePrivacyMode: () => set((state) => ({
-    privacyMode: !state.privacyMode,
-  })),
+
+  togglePrivacyMode: () =>
+    set((state) => ({
+      privacyMode: !state.privacyMode,
+    })),
   setTheme: (theme) => set({ theme }),
-  toggleSidebar: () => set((state) => ({
-    sidebarOpen: !state.sidebarOpen,
-  })),
-  openModal: (id) => set((state) => ({
-    modals: { ...state.modals, [id]: true },
-  })),
-  closeModal: (id) => set((state) => ({
-    modals: { ...state.modals, [id]: false },
-  })),
+  toggleSidebar: () =>
+    set((state) => ({
+      sidebarOpen: !state.sidebarOpen,
+    })),
+  openModal: (id) =>
+    set((state) => ({
+      modals: { ...state.modals, [id]: true },
+    })),
+  closeModal: (id) =>
+    set((state) => ({
+      modals: { ...state.modals, [id]: false },
+    })),
 }));
 ```
 
 **Preconditions**:
+
 - UI preferences are loaded from localStorage
 - Store is initialized
 
 **Postconditions**:
+
 - UI state persisted
 - Preferences applied to UI
 
 ### What NOT to Store in Zustand
 
 ❌ **DO NOT use Zustand for**:
+
 - Banks, transactions, categories, tokens (use React Query)
 - Form field values (use React Hook Form)
 - Loading/error states for API calls (use React Query)
@@ -946,10 +1002,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 ```
 
 **Preconditions**:
+
 - PocketBase client is initialized
 - Provider wraps entire app
 
 **Postconditions**:
+
 - User authentication state available
 - Auth methods accessible to all components
 
@@ -962,13 +1020,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 ```typescript
 export function useBanks() {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: queryKeys.banks.list(),
     queryFn: async () => {
-      const records = await pb.collection('banks').getFullList({
+      const records = await pb.collection("banks").getFullList({
         filter: `user = "${user?.id}"`,
-        sort: '-created',
+        sort: "-created",
       });
       return records as Bank[];
     },
@@ -979,10 +1037,12 @@ export function useBanks() {
 ```
 
 **Preconditions**:
+
 - User is authenticated
 - PocketBase client is initialized
 
 **Postconditions**:
+
 - Banks fetched from API
 - Data cached for 5 minutes
 - Automatic refetch on stale
@@ -999,27 +1059,27 @@ interface UseTransactionsOptions {
 
 export function useTransactions(options?: UseTransactionsOptions) {
   const { user } = useAuth();
-  
+
   return useQuery({
     queryKey: queryKeys.transactions.list(options?.filters),
     queryFn: async () => {
       let filter = `user = "${user?.id}"`;
-      
+
       if (options?.bankId) {
         filter += ` && bank = "${options.bankId}"`;
       }
-      
+
       if (options?.filters?.dateRange) {
         const { start, end } = options.filters.dateRange;
         filter += ` && date >= "${start.toISOString()}" && date <= "${end.toISOString()}"`;
       }
-      
-      const records = await pb.collection('transactions').getFullList({
+
+      const records = await pb.collection("transactions").getFullList({
         filter,
-        sort: '-date',
-        expand: 'bank,categories',
+        sort: "-date",
+        expand: "bank,categories",
       });
-      
+
       return records as ExpandedTransaction[];
     },
     enabled: !!user,
@@ -1029,10 +1089,12 @@ export function useTransactions(options?: UseTransactionsOptions) {
 ```
 
 **Preconditions**:
+
 - User is authenticated
 - Filter options are valid
 
 **Postconditions**:
+
 - Transactions fetched with filters applied
 - Related data expanded
 - Sorted by date descending
@@ -1043,10 +1105,10 @@ export function useTransactions(options?: UseTransactionsOptions) {
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  
+
   return useMutation({
     mutationFn: async (data: TransactionFormData) => {
-      return await pb.collection('transactions').create({
+      return await pb.collection("transactions").create({
         ...data,
         user: user?.id,
       });
@@ -1054,16 +1116,16 @@ export function useCreateTransaction() {
     onMutate: async (newTransaction) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: queryKeys.transactions.list() });
-      
+
       // Snapshot previous data
       const previousTransactions = queryClient.getQueryData(queryKeys.transactions.list());
-      
+
       // Optimistically update cache
       queryClient.setQueryData(queryKeys.transactions.list(), (old: Transaction[]) => [
         ...old,
-        { ...newTransaction, id: 'temp-id' } as Transaction,
+        { ...newTransaction, id: "temp-id" } as Transaction,
       ]);
-      
+
       return { previousTransactions };
     },
     onError: (err, newTransaction, context) => {
@@ -1079,10 +1141,12 @@ export function useCreateTransaction() {
 ```
 
 **Preconditions**:
+
 - User is authenticated
 - Transaction data is valid
 
 **Postconditions**:
+
 - Transaction created on server
 - Optimistic update applied
 - Cache invalidated on success
@@ -1093,37 +1157,39 @@ export function useCreateTransaction() {
 
 ```typescript
 export function useResponsive() {
-  const [breakpoint, setBreakpoint] = useState<'mobile' | 'tablet' | 'desktop'>('mobile');
-  
+  const [breakpoint, setBreakpoint] = useState<"mobile" | "tablet" | "desktop">("mobile");
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
-        setBreakpoint('mobile');
+        setBreakpoint("mobile");
       } else if (window.innerWidth < 1024) {
-        setBreakpoint('tablet');
+        setBreakpoint("tablet");
       } else {
-        setBreakpoint('desktop');
+        setBreakpoint("desktop");
       }
     };
-    
+
     handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
-  
+
   return {
-    isMobile: breakpoint === 'mobile',
-    isTablet: breakpoint === 'tablet',
-    isDesktop: breakpoint === 'desktop',
+    isMobile: breakpoint === "mobile",
+    isTablet: breakpoint === "tablet",
+    isDesktop: breakpoint === "desktop",
     breakpoint,
   };
 }
 ```
 
 **Preconditions**:
+
 - Hook is called in component
 
 **Postconditions**:
+
 - Breakpoint state updated on resize
 - Component re-renders on breakpoint change
 
@@ -1133,7 +1199,7 @@ export function useResponsive() {
 export function TransactionsList() {
   const { isMobile, isTablet } = useResponsive();
   const { data: transactions } = useTransactions();
-  
+
   if (isMobile) {
     return (
       <div className="space-y-2">
@@ -1143,7 +1209,7 @@ export function TransactionsList() {
       </div>
     );
   }
-  
+
   if (isTablet) {
     return (
       <div className="grid grid-cols-2 gap-4">
@@ -1153,7 +1219,7 @@ export function TransactionsList() {
       </div>
     );
   }
-  
+
   return (
     <TransactionsTable transactions={transactions || []} />
   );
@@ -1161,10 +1227,12 @@ export function TransactionsList() {
 ```
 
 **Preconditions**:
+
 - useResponsive hook is available
 - Transactions are loaded
 
 **Postconditions**:
+
 - Correct layout rendered for breakpoint
 - Layout updates on resize
 
@@ -1175,15 +1243,15 @@ export function TransactionsList() {
 ```typescript
 // Currency formatting
 export function formatCurrency(amount: number, currency: Currency): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
     currency: currency.code,
   }).format(amount);
 }
 
 // Date formatting
 export function formatDate(date: Date | string): string {
-  return format(new Date(date), 'MMM dd, yyyy');
+  return format(new Date(date), "MMM dd, yyyy");
 }
 
 // Percentage formatting
@@ -1193,9 +1261,11 @@ export function formatPercentage(value: number, decimals = 2): string {
 ```
 
 **Preconditions**:
+
 - Input values are valid
 
 **Postconditions**:
+
 - Values formatted according to locale/currency
 
 ### Calculation Utilities
@@ -1210,33 +1280,30 @@ export function calculateTotalBalance(banks: Bank[]): number {
 export function calculateCategorySpending(
   transactions: Transaction[],
   categoryId: string,
-  dateRange: { start: Date; end: Date }
+  dateRange: { start: Date; end: Date },
 ): number {
   return transactions
     .filter((tx) => {
       const txDate = new Date(tx.date);
       return (
-        tx.categories.includes(categoryId) &&
-        txDate >= dateRange.start &&
-        txDate <= dateRange.end
+        tx.categories.includes(categoryId) && txDate >= dateRange.start && txDate <= dateRange.end
       );
     })
     .reduce((sum, tx) => sum + tx.amount, 0);
 }
 
 // Calculate budget remaining
-export function calculateBudgetRemaining(
-  budget: number,
-  spending: number
-): number {
+export function calculateBudgetRemaining(budget: number, spending: number): number {
   return Math.max(0, budget - spending);
 }
 ```
 
 **Preconditions**:
+
 - Input data is valid and non-null
 
 **Postconditions**:
+
 - Calculations are accurate
 - Results are numeric
 
@@ -1260,45 +1327,53 @@ export function validateDate(date: Date): boolean {
 ```
 
 **Preconditions**:
+
 - Input data is provided
 
 **Postconditions**:
+
 - Validation result returned
 - Type guard applied if successful
 
 ## Correctness Properties
 
 ### Component Rendering
+
 - **Property**: Component renders without errors when props are valid
 - **Property**: Component handles missing optional props gracefully
 - **Property**: Component updates when props change
 - **Property**: Component cleans up resources on unmount
 
 ### State Management
+
 - **Property**: Store state is immutable (no direct mutations)
 - **Property**: Store updates trigger component re-renders
 - **Property**: Multiple components can subscribe to same store
 - **Property**: Store state persists across navigation
 
 ### Data Fetching
+
 - **Property**: Query is only executed when enabled
 - **Property**: Query result is cached for staleTime duration
 - **Property**: Query refetches when invalidated
 - **Property**: Mutation optimistic update is rolled back on error
 
 ### Form Handling
+
 - **Property**: Form validation runs before submission
 - **Property**: Form errors are displayed to user
 - **Property**: Form submission is prevented if invalid
 - **Property**: Form resets after successful submission
 
 ### Responsive Design
+
 - **Property**: Layout adapts to all breakpoints
 - **Property**: Content is readable at all sizes
 - **Property**: Touch targets are min 44px on mobile
 - **Property**: No horizontal scrolling on any breakpoint
 
 ### Performance
+
 - **Property**: Component memoization prevents unnecessary re-renders
 - **Property**: Debounced functions don't fire excessively
 - **Property**: Large lists render efficiently with virtualization
