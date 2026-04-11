@@ -33,10 +33,10 @@ export const useTransactionsQuery = () => {
     queryFn: ({ pageParam = 1 }) =>
       paginatedFetchTransactions({
         pageParam,
-        bankName,
-        query,
+        bankName: bankName ?? null,
+        query: query ?? null,
         categories: categoryIds as string[],
-        month,
+        month: month ?? null,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {

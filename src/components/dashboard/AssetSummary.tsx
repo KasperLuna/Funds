@@ -3,16 +3,17 @@ import { useState, memo, useMemo, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import clsx from "clsx";
 import { RotateCw, PieChart, Wallet, Coins } from "lucide-react";
 
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
-import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
+import { parseAmount, trimToTwoDecimals, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PrivacyPeek } from "@/components/PrivacyPeek";
+import { Bank, Token } from "@/lib/types";
+import { CoinGeckoMarketData } from "@/lib/types/coingecko";
 
 // Constants
 const COLORS = [
@@ -59,7 +60,11 @@ type TabKey = (typeof TABS)[number]["key"];
 type AssetItem = { name: string; value: number; type: "bank" | "crypto" };
 
 // Custom hook for asset calculations
-function useAssetCalculations(banks: any[], coins: any[], market: any[]) {
+function useAssetCalculations(
+  banks: Bank[],
+  coins: Token[],
+  market: CoinGeckoMarketData[],
+) {
   return useMemo(() => {
     const bankTotal = banks.reduce((acc, bank) => acc + bank.balance, 0);
     const cryptoTotal = coins.reduce((acc, coin) => {
@@ -80,9 +85,9 @@ function useAssetCalculations(banks: any[], coins: any[], market: any[]) {
 // Custom hook for tab data preparation
 function useTabData(
   tab: TabKey,
-  banks: any[],
-  coins: any[],
-  market: any[],
+  banks: Bank[],
+  coins: Token[],
+  market: CoinGeckoMarketData[],
   hasCrypto: boolean,
 ) {
   return useMemo(() => {
@@ -161,7 +166,7 @@ const TabNavigation = memo(function TabNavigation({
           return (
             <button
               key={tabItem.key}
-              className={clsx(
+              className={cn(
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300",
                 currentTab === tabItem.key
                   ? "bg-gradient-to-r from-emerald-500/20 to-blue-500/20 text-emerald-300 border border-emerald-500/30"
@@ -351,9 +356,10 @@ const AssetRow = memo(function AssetRow({
   onClick?: () => void;
 }) {
   return (
-    <div
-      className={clsx(
-        "flex items-center gap-3 py-2 px-1 rounded-md transition-colors duration-200",
+    <button
+      type="button"
+      className={cn(
+        "flex items-center gap-3 py-2 px-1 rounded-md transition-colors duration-200 w-full text-left",
         onClick
           ? "cursor-pointer hover:bg-slate-800/50"
           : "hover:bg-slate-800/30",
@@ -391,7 +397,7 @@ const AssetRow = memo(function AssetRow({
           maskedContent={`${currencySymbol}••••`}
         />
       </span>
-    </div>
+    </button>
   );
 });
 
@@ -513,21 +519,13 @@ const ProgressSection = memo(function ProgressSection({
       }}
     >
       <small
-        className={clsx(
+        className={cn(
           { hidden: percentage < 10 },
           "font-mono text-xs font-semibold text-white drop-shadow-lg",
         )}
       >
         {trimToTwoDecimals(percentage)}%
       </small>
-      {/* Tooltip for small sections */}
-      {/* {percentage < 10 && (
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10">
-          <span className="bg-slate-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap border border-slate-700">
-            {trimToTwoDecimals(percentage)}%
-          </span>
-        </div>
-      )} */}
     </div>
   );
 });

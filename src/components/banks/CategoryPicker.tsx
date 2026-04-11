@@ -9,7 +9,7 @@ import {
 import { Button } from "../ui/button";
 import { Plus, Check, ChevronDown, X } from "lucide-react";
 import { useState } from "react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -67,13 +67,13 @@ export const CategoryPicker = ({
           className="text-base w-full"
         >
           <MultiSelectorTrigger
-            className={clsx(
+            className={cn(
               "bg-transparent flex border-slate-700 rounded-md h-full text-sm text-inherit py-[9px] focus-within:border-slate-500",
               {
                 "rounded-r-none": hasAddButton,
                 "px-2": value,
                 "px-1": !value,
-              }
+              },
             )}
           >
             <MultiSelectorInput
@@ -112,10 +112,10 @@ export const CategoryPicker = ({
               variant="outline"
               role="combobox"
               aria-expanded={isOpen}
-              className={clsx(
+              className={cn(
                 "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit",
                 hasAddButton ? "rounded-r-none" : "",
-                { "text-slate-500": !value?.length }
+                { "text-slate-500": !value?.length },
               )}
             >
               <div className="flex flex-wrap items-center gap-2 text-left overflow-hidden max-w-[85%]">
@@ -194,9 +194,9 @@ export const CategoryPicker = ({
                       <Button
                         key={category.name}
                         variant={isSelected ? "secondary" : "ghost"}
-                        className={clsx(
+                        className={cn(
                           "flex items-center justify-start w-full px-3 py-2 text-left text-sm text-white",
-                          isSelected ? "bg-slate-700" : "hover:bg-slate-700"
+                          isSelected ? "bg-slate-700" : "hover:bg-slate-700",
                         )}
                         onClick={(e) => {
                           e.preventDefault();

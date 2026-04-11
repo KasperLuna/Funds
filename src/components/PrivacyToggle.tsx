@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import { EyeOff, Eye } from "lucide-react";
 import { Button } from "./ui/button";
 import { usePrivacy } from "@/hooks/usePrivacy";
@@ -14,7 +14,7 @@ export const PrivacyToggle = ({ showText = false }: PrivacyToggleProps) => {
       onClick={() => {
         togglePrivacy();
       }}
-      className={clsx("px-2 border-2 hover:border-slate-600 rounded-lg", {
+      className={cn("px-2 border-2 hover:border-slate-600 rounded-lg", {
         "border-blue-800": isPrivate,
         "border-red-700": !isPrivate,
       })}

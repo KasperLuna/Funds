@@ -1,6 +1,6 @@
 import { ExpandedTransaction } from "@/lib/types";
 import dayjs from "dayjs";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { MixedDialogTrigger } from "../MixedDialog";
@@ -32,7 +32,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
           </div>
           <div className="flex flex-col text-right min-w-0 flex-1">
             <p
-              className={clsx("text-lg font-semibold font-mono truncate", {
+              className={cn("text-lg font-semibold font-mono truncate", {
                 "text-red-400": amount < 0,
                 "text-emerald-400": amount > 0,
               })}
@@ -54,7 +54,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
           {categories?.slice(0, 3).map((category) => (
             <small
               key={category.id}
-              className={clsx(
+              className={cn(
                 "bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap transition-colors duration-200 text-xs px-2 py-0.5 truncate max-w-[80px]",
                 {
                   "": !!category,

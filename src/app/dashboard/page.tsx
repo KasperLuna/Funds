@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AssetSummary } from "@/components/dashboard/AssetSummary";
-import UpcomingPlannedTransactions from "@/components/dashboard/UpcomingPlannedTransactions";
+import { UpcomingPlannedTransactions } from "@/components/dashboard/UpcomingPlannedTransactions";
 import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
 import { BudgetsSummary } from "@/components/dashboard/BudgetsSummary";
 import { Onboarding } from "@/components/dashboard/Onboarding";

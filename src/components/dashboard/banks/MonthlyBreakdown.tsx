@@ -4,9 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import dynamic from "next/dynamic";
-import { parseAmount } from "@/lib/utils";
+import { parseAmount, cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import clsx from "clsx";
 import { useRouter } from "next/navigation";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import dayjs from "dayjs";
@@ -73,7 +72,7 @@ export const MonthlyBreakdown: React.FC = () => {
     // Helper to check if a category is exempt
     const isCategoryExempt = (categoryId: string) => {
       return categoryData?.categories?.some(
-        (c) => c.id === categoryId && (c as any).total_exempt === true,
+        (c) => c.id === categoryId && c.total_exempt === true,
       );
     };
 
@@ -243,8 +242,7 @@ export const MonthlyBreakdown: React.FC = () => {
     const totals: Record<string, Decimal> = {};
     const counts: Record<string, Decimal> = {};
     data.forEach((txn) => {
-      // Assume txn has a 'bank' property (string, bank id)
-      const bankId = (txn as any).bank || "Unknown Bank";
+      const bankId = txn.bank || "Unknown Bank";
       if (!totals[bankId]) totals[bankId] = new Decimal(0);
       if (!counts[bankId]) counts[bankId] = new Decimal(0);
       totals[bankId] = totals[bankId].add(new Decimal(txn.amount));
@@ -363,7 +361,7 @@ export const MonthlyBreakdown: React.FC = () => {
                 />
               </p>
               <p
-                className={clsx({
+                className={cn({
                   "text-green-500":
                     (memoized.totalPositive?.toNumber() ?? 0) > 0,
                   "text-red-500": (memoized.totalPositive?.toNumber() ?? 0) < 0,
@@ -385,7 +383,7 @@ export const MonthlyBreakdown: React.FC = () => {
           <div className="flex flex-row items-center justify-center gap-2 px-3 mt-1 w-fit mx-auto">
             <span className="text-xs text-slate-400">No category:</span>
             <span
-              className={clsx("text-xs font-mono", {
+              className={cn("text-xs font-mono", {
                 "text-green-400":
                   !isPrivate && !isLoading && memoized.uncategorizedTotal.gt(0),
                 "text-red-400":

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { usePushNotification } from "@/hooks/usePushNotification";
 
-const PushNotificationSettings: React.FC = () => {
+export const PushNotificationSettings: React.FC = () => {
   const { permission, isSubscribed, subscribe, unsubscribe } =
     usePushNotification();
   const { addToast } = useToast();
@@ -30,12 +30,14 @@ const PushNotificationSettings: React.FC = () => {
   const isIOS = () =>
     typeof window !== "undefined" &&
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as any).MSStream;
+    !("MSStream" in window);
 
   const isStandalone = () =>
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true);
+      ("standalone" in window.navigator &&
+        (window.navigator as Navigator & { standalone?: boolean })
+          .standalone === true));
 
   const showPushControls = !isIOS() || (isIOS() && isStandalone());
 
@@ -49,13 +51,13 @@ const PushNotificationSettings: React.FC = () => {
         description:
           "You will now receive push notifications for planned transactions.",
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : undefined;
       addToast({
         type: "error",
         title: "Failed to enable notifications",
         description:
-          e?.message ||
-          "Unable to enable push notifications. Please try again.",
+          message || "Unable to enable push notifications. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -71,13 +73,13 @@ const PushNotificationSettings: React.FC = () => {
         title: "Notifications disabled",
         description: "You will no longer receive push notifications.",
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : undefined;
       addToast({
         type: "error",
         title: "Failed to disable notifications",
         description:
-          e?.message ||
-          "Unable to disable push notifications. Please try again.",
+          message || "Unable to disable push notifications. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -303,5 +305,3 @@ const PushNotificationSettings: React.FC = () => {
     </div>
   );
 };
-
-export default PushNotificationSettings;

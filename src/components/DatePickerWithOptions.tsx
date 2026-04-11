@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import clsx from "clsx";
 import dayjs from "dayjs";
 
 export function DatePickerWithOptions({
@@ -42,7 +41,7 @@ export function DatePickerWithOptions({
           variant={"outline"}
           className={cn(
             "w-full justify-start text-left font-normal bg-transparent hover:bg-slate-800 border-slate-700 hover:text-slate-200",
-            !date && "text-muted-foreground"
+            !date && "text-muted-foreground",
           )}
         >
           <CalendarIcon className="mr-1 h-4 w-4" />
@@ -58,7 +57,7 @@ export function DatePickerWithOptions({
       <PopoverContent className="flex w-auto flex-col p-1 bg-slate-800 border-2 border-slate-800 z-50">
         <div className="flex flex-row w-full gap-3 px-1">
           <Button
-            className={clsx("w-full", {
+            className={cn("w-full", {
               "border-2 border-slate-500": isYesterday,
             })}
             onClick={() => {
@@ -69,7 +68,7 @@ export function DatePickerWithOptions({
             Yesterday
           </Button>
           <Button
-            className={clsx("w-full", {
+            className={cn("w-full", {
               "border-2 border-slate-500": isToday,
             })}
             onClick={() => {

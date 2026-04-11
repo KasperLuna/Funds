@@ -1,4 +1,4 @@
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -37,7 +37,7 @@ export const TrendCard = ({
         new Date(trend.year, parseInt(trend.month), 0),
       ).format("YYYY-MM-DD")}`}
       prefetch={false}
-      className={clsx(
+      className={cn(
         "flex flex-col mr-2 my-2 transition-all flex-grow h-full p-2 gap-2 rounded-xl bg-slate-900 hover:bg-slate-700",
         {
           "border-2 border-slate-600": isCurrentMonth,
@@ -57,7 +57,7 @@ export const TrendCard = ({
             Net {trend.monthly_total > 0 ? "Income" : "Expense"}
           </p>
           <p
-            className={clsx("font-semibold", {
+            className={cn("font-semibold", {
               "text-red-400": trend.monthly_total < 0,
               "text-green-400": trend.monthly_total > 0,
             })}

@@ -5,7 +5,7 @@ import { PlannedTransaction, Transaction } from "@/lib/types";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
-import UpcomingPlannedTransactionCard from "./UpcomingPlannedTransactionCard";
+import { UpcomingPlannedTransactionCard } from "./UpcomingPlannedTransactionCard";
 import { EditPlannedTransactionDialog } from "./EditPlannedTransactionDialog";
 import { Calendar, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
@@ -206,4 +206,4 @@ const UpcomingPlannedTransactions = memo(
   },
 );
 
-export default UpcomingPlannedTransactions;
+export { UpcomingPlannedTransactions };

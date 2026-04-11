@@ -12,15 +12,19 @@ import { Input } from "@/components/ui/input";
 import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
-import { FormType, Transaction, Bank } from "@/lib/types";
+import {
+  FormType,
+  Transaction,
+  Bank,
+  Type,
+  PlannedTransaction,
+} from "@/lib/types";
 import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
-import clsx from "clsx";
-import { parseAmount } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { ArrowRight } from "lucide-react";
 import { TemplatePicker } from "@/components/banks/TemplatePicker";
-import { PlannedTransaction } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Decimal } from "decimal.js";
@@ -191,7 +195,7 @@ function getTransactionBatch(
       : 0;
     const submitValue = {
       ...data,
-      type: (differenceAmount > 0 ? "income" : "expense") as any,
+      type: (differenceAmount > 0 ? "income" : "expense") as Type,
       amount: new Decimal(differenceAmount).abs().toNumber(),
     };
     return [submitValue];
@@ -280,7 +284,7 @@ export const TransactionForm = ({
   useEffect(() => {
     if (transaction) return;
     setValue("newBalance", undefined);
-    setValue("amount", undefined as any);
+    setValue("amount", 0);
   }, [formType, setValue, transaction]);
 
   // Submit handler (refactored)
@@ -342,7 +346,7 @@ export const TransactionForm = ({
           />
         )}
 
-        <div className={clsx("flex flex-row justify-center gap-4")}>
+        <div className={cn("flex flex-row justify-center gap-4")}>
           {formType === "Transaction" && (
             <div className="w-full flex flex-col gap-1">
               <Label htmlFor="link">{"Type: "}</Label>
@@ -384,7 +388,7 @@ export const TransactionForm = ({
               <p className="text-xs">
                 Transaction Amount:{" "}
                 <span
-                  className={clsx({
+                  className={cn({
                     "text-red-500": projectedAmount < 0,
                     "text-green-500": projectedAmount > 0,
                   })}

@@ -1,8 +1,7 @@
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Bank } from "@/lib/types";
-import { parseAmount } from "@/lib/utils";
-import clsx from "clsx";
+import { parseAmount, cn } from "@/lib/utils";
 import { memo } from "react";
 import { Wallet } from "lucide-react";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
@@ -34,15 +33,12 @@ export const StatCard = memo(function StatCard({
     return "text-lg";
   };
 
-  // Determine if we need compact layout for long names
-  const isLongName = name.length > 12;
-
   return (
     <div
       tabIndex={0}
       role="button"
       onClick={() => setQueryParams({ bank: !isSelected ? name : undefined })}
-      className={clsx(
+      className={cn(
         "group relative overflow-hidden rounded-lg bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border p-3 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full",
         isSelected
           ? "border-blue-500/50 bg-gradient-to-br from-blue-900/20 to-zinc-900/60 shadow-blue-500/25"
@@ -66,7 +62,7 @@ export const StatCard = memo(function StatCard({
               />
             </div>
             <span
-              className={clsx(
+              className={cn(
                 "font-semibold transition-colors min-w-0 truncate",
                 "text-sm",
                 isSelected
@@ -88,7 +84,7 @@ export const StatCard = memo(function StatCard({
         {/* Balance section with adaptive sizing */}
         <div className="flex flex-col gap-1.5 min-w-0">
           <p
-            className={clsx(
+            className={cn(
               "font-mono font-bold transition-colors break-all",
               getBalanceTextSize(),
               isSelected

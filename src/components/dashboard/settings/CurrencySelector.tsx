@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import { Check, ChevronDown } from "lucide-react";
 import {
   Select,
@@ -48,9 +48,9 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
           }}
         >
           <SelectTrigger
-            className={clsx(
+            className={cn(
               "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500 text-white w-full",
-              { "text-slate-600": !selected, "text-white": selected }
+              { "text-slate-600": !selected, "text-white": selected },
             )}
           >
             <SelectValue placeholder="Select Currency" />
@@ -78,9 +78,9 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
               variant="outline"
               role="combobox"
               aria-expanded={isOpen}
-              className={clsx(
+              className={cn(
                 "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit text-white",
-                { "text-slate-600": !selected, "text-white": selected }
+                { "text-slate-600": !selected, "text-white": selected },
               )}
             >
               {selectedCurrency
@@ -100,11 +100,11 @@ export function CurrencySelector({ value, onChange }: CurrencySelectorProps) {
                   {currencies.map((currency) => (
                     <button
                       key={currency.code}
-                      className={clsx(
+                      className={cn(
                         "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm text-white rounded-md border-0 bg-transparent cursor-pointer",
                         currency.code === selected
                           ? "bg-slate-700"
-                          : "hover:bg-slate-700 active:bg-slate-600"
+                          : "hover:bg-slate-700 active:bg-slate-600",
                       )}
                       onClick={(e) => {
                         e.preventDefault();

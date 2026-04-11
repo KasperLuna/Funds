@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
 import dynamic from "next/dynamic";
 import dayjs from "dayjs";
-import clsx from "clsx";
+import { cn, parseAmount } from "@/lib/utils";
 
 import { MonthPicker } from "@/components/MonthPicker";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +18,6 @@ import { usePrivacy } from "@/hooks/usePrivacy";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
-import { parseAmount } from "@/lib/utils";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -44,7 +43,7 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
   const memoized = useMemo(() => {
     const isCategoryExempt = (categoryId: string) => {
       return categoryData?.categories?.some(
-        (c) => c.id === categoryId && (c as any).total_exempt === true,
+        (c) => c.id === categoryId && c.total_exempt === true,
       );
     };
 
@@ -215,7 +214,7 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
             />
           </p>
           <p
-            className={clsx({
+            className={cn({
               "text-green-500": (memoized.totalPositive?.toNumber() ?? 0) > 0,
               "text-red-500": (memoized.totalPositive?.toNumber() ?? 0) < 0,
             })}
@@ -236,7 +235,7 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
       <div className="flex flex-row items-center justify-center gap-2 px-3 mt-1 w-fit mx-auto">
         <span className="text-xs text-slate-400">No category:</span>
         <span
-          className={clsx("text-xs font-mono", {
+          className={cn("text-xs font-mono", {
             "text-green-400":
               !isPrivate && !isLoading && memoized.uncategorizedTotal.gt(0),
             "text-red-400":

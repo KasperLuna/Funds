@@ -8,7 +8,7 @@ import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { MonthPicker } from "@/components/MonthPicker";
 import dayjs from "dayjs";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 
 export const TransactionFilter = () => {
   const { queryParams, setQueryParams } = useQueryParams();
@@ -22,7 +22,7 @@ export const TransactionFilter = () => {
 
   // Search bar
   const [query, setQuery] = useState<string>(() => {
-    return queryParams["query"] || undefined;
+    return queryParams["query"] || "";
   });
   const debouncedQuery = useDebounce(query, 300);
   useEffect(() => {
@@ -43,9 +43,9 @@ export const TransactionFilter = () => {
     <div id="layout-filter-group" className="flex flex-row gap-2 flex-wrap">
       <div id="layout-search-group" className="flex flex-row gap-2">
         <Button
-          className={clsx(
+          className={cn(
             "px-2 border-2 border-slate-800",
-            viewMode === "table" && "bg-slate-800"
+            viewMode === "table" && "bg-slate-800",
           )}
           onClick={() =>
             setQueryParams({
@@ -90,7 +90,7 @@ export const TransactionFilter = () => {
                 setQueryParams({
                   month: dayjs(
                     //last day of month
-                    new Date(date.getFullYear(), date.getMonth() + 1, 0)
+                    new Date(date.getFullYear(), date.getMonth() + 1, 0),
                   ).format("YYYY-MM-DD"),
                 });
               }}

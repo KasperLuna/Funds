@@ -3,9 +3,8 @@ import dayjs from "dayjs";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TransactionCard } from "@/components/banks/transactions/TransactionCard";
 import Decimal from "decimal.js";
-import { parseAmount } from "@/lib/utils";
+import { parseAmount, cn } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
-import clsx from "clsx";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { PrivacyPeek } from "@/components/PrivacyPeek";
 
@@ -33,7 +32,7 @@ export const TransactionGroupDisplay = ({
           {dayjs(transactions[0].date).format("dddd, MMMM D")}
         </h4>
         <p
-          className={clsx("text-sm", {
+          className={cn("text-sm", {
             "text-red-400": total < 0,
             "text-green-400": total > 0,
           })}

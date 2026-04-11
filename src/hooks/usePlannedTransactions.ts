@@ -3,7 +3,9 @@ import { pb } from "@/lib/pocketbase/pocketbase";
 import { PlannedTransaction } from "@/lib/types";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 
-function recordToPlannedTransaction(record: any): PlannedTransaction {
+import { RecordModel } from "pocketbase";
+
+function recordToPlannedTransaction(record: RecordModel): PlannedTransaction {
   return {
     id: record.id,
     created: record.created ? new Date(record.created) : undefined,

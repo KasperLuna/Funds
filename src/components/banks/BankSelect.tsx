@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -38,9 +38,9 @@ export const BankSelect = ({
       <div className="hidden sm:block w-full">
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger
-            className={clsx(
+            className={cn(
               "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500 text-white",
-              { "text-slate-600": !value, "text-white": value }
+              { "text-slate-600": !value, "text-white": value },
             )}
           >
             <SelectValue placeholder="Select Bank" />
@@ -68,9 +68,9 @@ export const BankSelect = ({
               variant="outline"
               role="combobox"
               aria-expanded={isOpen}
-              className={clsx(
+              className={cn(
                 "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit text-white",
-                { "text-slate-600": !value, "text-white": value }
+                { "text-slate-600": !value, "text-white": value },
               )}
             >
               {selectedBankName}
@@ -88,11 +88,11 @@ export const BankSelect = ({
                   {bankData?.banks?.map((bank) => (
                     <button
                       key={bank.id}
-                      className={clsx(
+                      className={cn(
                         "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm text-white rounded-md border-0 bg-transparent cursor-pointer",
                         bank.id === value
                           ? "bg-slate-700"
-                          : "hover:bg-slate-700 active:bg-slate-600"
+                          : "hover:bg-slate-700 active:bg-slate-600",
                       )}
                       onClick={(e) => {
                         e.preventDefault();

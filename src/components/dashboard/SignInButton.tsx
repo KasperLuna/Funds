@@ -10,7 +10,7 @@ export const SignInButton = ({ children }: { children?: React.ReactNode }) => {
   const router = useRouter();
 
   const handleSignIn = async () => {
-    const isSignedIn = !!pb.authStore.model;
+    const isSignedIn = !!pb.authStore.record;
 
     if (isSignedIn) {
       router.push("/dashboard");

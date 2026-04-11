@@ -4,7 +4,7 @@ import { Settings, User, Building2, FolderOpen, Bell, X } from "lucide-react";
 import { AccountSettings } from "./AccountSettings";
 import { BankSettings } from "./banks/BankSettings";
 import { CategorySettings } from "./CategorySettings";
-import PushNotificationSettings from "./settings/PushNotificationSettings";
+import { PushNotificationSettings } from "./settings/PushNotificationSettings";
 import { ToastProvider } from "../ui/toast";
 import {
   AlertDialog,

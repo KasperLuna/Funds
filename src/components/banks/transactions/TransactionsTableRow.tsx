@@ -2,7 +2,7 @@ import React from "react";
 import { ExpandedTransaction } from "@/lib/types";
 import { MixedDialogTrigger } from "../MixedDialog";
 import dayjs from "dayjs";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
@@ -21,7 +21,7 @@ export const TransactionsTableRow: React.FC<{
   return (
     <MixedDialogTrigger transaction={transaction}>
       <tr
-        className={clsx(
+        className={cn(
           "hover:bg-slate-800 cursor-pointer border-b border-slate-800 transition-colors",
           odd ? "bg-slate-950/80" : "bg-slate-900/60",
         )}
@@ -31,7 +31,7 @@ export const TransactionsTableRow: React.FC<{
         </td>
         <td className="px-4 py-2 whitespace-nowrap">{bank?.name}</td>
         <td
-          className={clsx(
+          className={cn(
             "px-4 py-2 font-mono",
             amount < 0 ? "text-red-400" : "text-green-400",
           )}

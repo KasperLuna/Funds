@@ -7,7 +7,7 @@ interface UseQueryParamsConfig<T> {
   defaultValues: T;
 }
 
-export function useQueryParams<T extends Record<string, any>>(
+export function useQueryParams<T extends Record<string, string | undefined>>(
   config?: UseQueryParamsConfig<T>
 ): {
   queryParams: T;
@@ -21,7 +21,7 @@ export function useQueryParams<T extends Record<string, any>>(
     if (!searchParams) return { ...config?.defaultValues } as T;
     const params = Object.fromEntries(searchParams.entries()) as Record<
       string,
-      any
+      string
     >;
     return { ...config?.defaultValues, ...params } as T;
   }, [searchParams, config?.defaultValues]);

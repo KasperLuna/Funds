@@ -14,33 +14,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter(); // For redirecting
 
   useEffect(() => {
-    // Attempt to refresh the auth token on page load
+    let cancelled = false;
+
     const refreshToken = async () => {
       if (pb.authStore.isValid) {
         try {
           await pb.collection("users").authRefresh();
         } catch {
-          // Token refresh failed — clear auth and let redirect handle it
           pb.authStore.clear();
         }
       }
     };
 
-    // Handle the initial state
-    if (pb.authStore.model) {
-      setUser(pb.authStore.model);
-      refreshToken().finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false); // No user but still set loading to false
-    }
+    // Wait a tick for AsyncAuthStore to finish loading its initial value,
+    // then read the hydrated auth state.
+    const init = async () => {
+      // AsyncAuthStore fires onChange once it finishes parsing `initial`.
+      // Give it a microtask to settle before reading the model.
+      await new Promise((r) => setTimeout(r, 0));
 
-    // Subscribe to auth changes
+      if (cancelled) return;
+
+      if (pb.authStore.record) {
+        setUser(pb.authStore.record);
+        await refreshToken();
+      }
+
+      if (!cancelled) setIsLoading(false);
+    };
+
+    init();
+
+    // Subscribe to auth changes (covers login/logout after mount)
     const unsubscribe = pb.authStore.onChange((_token, model) => {
       setUser(model ?? null);
-      setIsLoading(false); // Ensure loading is false after any auth change
+      setIsLoading(false);
     });
 
     return () => {
+      cancelled = true;
       unsubscribe();
     };
   }, []);

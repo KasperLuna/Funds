@@ -114,4 +114,4 @@ const UpcomingPlannedTransactionCard: React.FC<
   );
 };
 
-export default UpcomingPlannedTransactionCard;
+export { UpcomingPlannedTransactionCard };
