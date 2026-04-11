@@ -63,14 +63,15 @@ export async function POST(req: NextRequest) {
       continue;
     }
     // Always use the user's local timezone for all date checks
-    const localNow = getLocalDateFromUTC(now, tx.timezone);
+    const tz = tx.timezone ?? undefined;
+    const localNow = getLocalDateFromUTC(now, tz);
     const localToday = new Date(localNow);
     localToday.setHours(0, 0, 0, 0);
-    const localInvokeDate = getLocalDateFromUTC(tx.invokeDate, tx.timezone);
+    const localInvokeDate = getLocalDateFromUTC(tx.invokeDate, tz);
     localInvokeDate.setHours(0, 0, 0, 0);
     if (localInvokeDate.getTime() === localToday.getTime()) {
       console.log(`[CRON] Planned transaction ${tx.id} is for today.`);
-      if (localNow < getLocalDateFromUTC(tx.invokeDate, tx.timezone)) {
+      if (localNow < getLocalDateFromUTC(tx.invokeDate, tz)) {
         console.log(
           `[CRON] Too early to notify for planned transaction ${tx.id}. Invoke time is ${tx.invokeDate}`
         );
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       }
       // Check if the transaction has been notified in the past 3 hours (in user's local time)
       const lastNotifiedAt = tx.lastNotifiedAt
-        ? getLocalDateFromUTC(tx.lastNotifiedAt, tx.timezone)
+        ? getLocalDateFromUTC(tx.lastNotifiedAt, tz)
         : null;
       const threeHoursAgo = new Date(localNow.getTime() - 3 * 60 * 60 * 1000);
       const notifiedToday =
