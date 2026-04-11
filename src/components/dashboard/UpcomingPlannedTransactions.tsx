@@ -1,12 +1,13 @@
 "use client";
-import React, { memo } from "react";
+import React, { memo, useState, useMemo } from "react";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
-import { Transaction } from "@/lib/types";
+import { PlannedTransaction, Transaction } from "@/lib/types";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import UpcomingPlannedTransactionCard from "./UpcomingPlannedTransactionCard";
-import { Calendar, Clock } from "lucide-react";
+import { EditPlannedTransactionDialog } from "./EditPlannedTransactionDialog";
+import { Calendar, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
@@ -14,6 +15,8 @@ import { useUserQuery } from "@/lib/hooks/useUserQuery";
 
 const UpcomingPlannedTransactions = memo(
   function UpcomingPlannedTransactions() {
+    const [showAll, setShowAll] = useState(false);
+    const [editingPt, setEditingPt] = useState<PlannedTransaction | null>(null);
     const { isPrivate } = usePrivacy();
     const { plannedTransactions, updatePlannedTransaction, loading } =
       usePlannedTransactions();
@@ -22,19 +25,31 @@ const UpcomingPlannedTransactions = memo(
     const { baseCurrency } = useUserQuery();
     const categories = categoryData?.categories || [];
 
-    const upcoming =
-      plannedTransactions?.filter((pt) => {
-        const localDateTime = new Date();
-        const twoDaysFromNow = new Date(localDateTime);
-        twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
-        twoDaysFromNow.setHours(23, 59, 59, 999);
+    const upcoming = useMemo(() => {
+      if (!plannedTransactions) return [];
+      const localDateTime = new Date();
 
-        return (
+      if (showAll) {
+        // Show all active planned transactions sorted by invokeDate
+        return plannedTransactions
+          .filter((pt) => pt.active)
+          .sort((a, b) => a.invokeDate.getTime() - b.invokeDate.getTime());
+      }
+
+      const twoDaysFromNow = new Date(localDateTime);
+      twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+      twoDaysFromNow.setHours(23, 59, 59, 999);
+
+      return plannedTransactions.filter(
+        (pt) =>
           pt.active &&
           pt.invokeDate <= twoDaysFromNow &&
-          (!pt.previousDate || new Date(pt.previousDate) < localDateTime)
-        );
-      }) || [];
+          (!pt.previousDate || new Date(pt.previousDate) < localDateTime),
+      );
+    }, [plannedTransactions, showAll]);
+
+    const totalActive =
+      plannedTransactions?.filter((pt) => pt.active).length ?? 0;
 
     // Loading state
     if (loading || bankData?.loading || categoryData?.loading) {
@@ -53,7 +68,31 @@ const UpcomingPlannedTransactions = memo(
       );
     }
 
-    if (!upcoming || upcoming.length === 0) return null;
+    if (!upcoming || (upcoming.length === 0 && !showAll)) {
+      if (totalActive > 0) {
+        // There are active planned transactions but none due soon — show a toggle
+        return (
+          <div className="relative mb-3 border-b border-slate-700/50 pb-3">
+            <div className="flex items-center gap-3 p-1">
+              <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
+                <Calendar className="w-4 h-4 text-emerald-400" />
+                <span className="font-bold text-base text-slate-100">
+                  Planned Transactions
+                </span>
+              </div>
+              <button
+                onClick={() => setShowAll(true)}
+                className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200"
+              >
+                View All ({totalActive})
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        );
+      }
+      return null;
+    }
 
     return (
       <div className="relative mb-3 border-b border-slate-700/50 pb-3">
@@ -63,7 +102,9 @@ const UpcomingPlannedTransactions = memo(
             <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
               <Calendar className="w-4 h-4 text-emerald-400" />
               <span className="font-bold text-base text-slate-100">
-                Upcoming Planned Transactions
+                {showAll
+                  ? "All Planned Transactions"
+                  : "Upcoming Planned Transactions"}
               </span>
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30">
                 <Clock className="w-3 h-3 text-emerald-400" />
@@ -72,6 +113,22 @@ const UpcomingPlannedTransactions = memo(
                 </span>
               </div>
             </div>
+            <button
+              onClick={() => setShowAll((prev) => !prev)}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200"
+            >
+              {showAll ? (
+                <>
+                  Due Soon
+                  <ChevronUp className="w-3 h-3" />
+                </>
+              ) : (
+                <>
+                  View All ({totalActive})
+                  <ChevronDown className="w-3 h-3" />
+                </>
+              )}
+            </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {upcoming?.map((pt) => {
@@ -95,7 +152,7 @@ const UpcomingPlannedTransactions = memo(
                           break;
                         case "weekly":
                           nextInvoke.setDate(
-                            nextInvoke.getDate() + 7 * interval
+                            nextInvoke.getDate() + 7 * interval,
                           );
                           break;
                         case "monthly":
@@ -103,7 +160,7 @@ const UpcomingPlannedTransactions = memo(
                           break;
                         case "yearly":
                           nextInvoke.setFullYear(
-                            nextInvoke.getFullYear() + interval
+                            nextInvoke.getFullYear() + interval,
                           );
                           break;
                         default:
@@ -123,6 +180,7 @@ const UpcomingPlannedTransactions = memo(
                         baseCurrency={baseCurrency}
                         isPrivate={isPrivate}
                         parseAmount={parseAmount}
+                        onEdit={setEditingPt}
                       />
                     </div>
                   </MixedDialogTrigger>
@@ -131,9 +189,16 @@ const UpcomingPlannedTransactions = memo(
             })}
           </div>
         </div>
+        <EditPlannedTransactionDialog
+          plannedTransaction={editingPt}
+          open={!!editingPt}
+          onOpenChange={(open) => {
+            if (!open) setEditingPt(null);
+          }}
+        />
       </div>
     );
-  }
+  },
 );
 
 export default UpcomingPlannedTransactions;

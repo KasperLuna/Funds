@@ -2,6 +2,7 @@ import clsx from "clsx";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 // Subcomponent: Trend Card
 export const TrendCard = ({
@@ -33,7 +34,7 @@ export const TrendCard = ({
   >
     <Link
       href={`/dashboard/banks?month=${dayjs(
-        new Date(trend.year, parseInt(trend.month), 0)
+        new Date(trend.year, parseInt(trend.month), 0),
       ).format("YYYY-MM-DD")}`}
       prefetch={false}
       className={clsx(
@@ -41,7 +42,7 @@ export const TrendCard = ({
         {
           "border-2 border-slate-600": isCurrentMonth,
           "border-slate-700 opacity-70": !isCurrentMonth,
-        }
+        },
       )}
     >
       <p className="mx-auto">
@@ -61,9 +62,14 @@ export const TrendCard = ({
               "text-green-400": trend.monthly_total > 0,
             })}
           >
-            {isPrivate
-              ? `${baseCurrency?.symbol ?? "$"}••••••`
-              : parseAmount(trend.monthly_total, baseCurrency?.code)}
+            <PrivacyPeek
+              isPrivate={isPrivate}
+              revealedContent={parseAmount(
+                trend.monthly_total,
+                baseCurrency?.code,
+              )}
+              maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+            />
           </p>
         </div>
       </div>

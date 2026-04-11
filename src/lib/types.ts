@@ -48,6 +48,20 @@ export type Token = {
   user: string;
 };
 
+export type TokenTransaction = {
+  id?: string;
+  created?: Date;
+  updated?: Date;
+  user: string;
+  token: string; // relation to tokens
+  type: "buy" | "sell";
+  amount: number; // quantity of tokens
+  price: number; // price per token at time of transaction
+  total_cost: number; // amount * price
+  date: string; // parseable date string
+  note?: string;
+};
+
 export type Type = "income" | "expense" | "deposit" | "withdrawal";
 
 export type Transaction = {
@@ -107,17 +121,19 @@ export type PlannedTransaction = {
   created?: Date;
   updated?: Date;
   user: string;
+  name?: string; // template display name (used when isTemplate is true)
   description: string;
   type: Type;
   amount: number;
   bank: string;
   categories: string[];
-  recurrence: RecurrenceRule;
-  timezone: number;
-  previousDate: Date | null; // last time it was invoked
-  invokeDate: Date; // next scheduled occurrence
+  recurrence?: RecurrenceRule | null; // null/undefined for templates
+  timezone?: number | null; // null/undefined for templates
+  previousDate?: Date | null; // last time it was invoked
+  invokeDate?: Date | null; // next scheduled occurrence, null for templates
   lastNotifiedAt?: Date; // when the user was last notified about this planned transaction
-  active: boolean;
+  active?: boolean; // defaults to true for planned, irrelevant for templates
+  isTemplate?: boolean; // true = template only, false/undefined = planned transaction
 };
 
 export type PushSubscription = {

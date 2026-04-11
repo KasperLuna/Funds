@@ -3,6 +3,7 @@ import {
   Category,
   ExpandedTransaction,
   Token,
+  TokenTransaction,
   Transaction,
   Trend,
   User,
@@ -320,4 +321,71 @@ export const updateTokenById = async (
 
 export const deleteTokenById = async (tokenId: string) => {
   await pb.collection("tokens").delete(tokenId);
+};
+
+// Token transaction operations
+export const fetchTokenTransactions = async (tokenId: string) => {
+  const records = await pb
+    .collection("token_transactions")
+    .getFullList<TokenTransaction>({
+      filter: `token="${tokenId}"`,
+      sort: "-date",
+    });
+  return records;
+};
+
+export const addTokenTransaction = async (
+  txn: Omit<TokenTransaction, "id" | "created" | "updated">
+) => {
+  const id = pb.authStore.record?.id;
+  const record = await pb.collection("token_transactions").create(
+    {
+      ...txn,
+      user: id,
+    },
+    { requestKey: null }
+  );
+  return record as unknown as TokenTransaction;
+};
+
+export const deleteTokenTransaction = async (txnId: string) => {
+  await pb.collection("token_transactions").delete(txnId);
+};
+
+/** Recalculate a token's total and costAvg from its transaction history */
+export const recalculateTokenTotals = async (tokenId: string) => {
+  const txns = await pb
+    .collection("token_transactions")
+    .getFullList<TokenTransaction>({
+      filter: `token="${tokenId}"`,
+      sort: "date",
+    });
+
+  let totalAmount = new Decimal(0);
+  let totalCost = new Decimal(0);
+
+  for (const txn of txns) {
+    if (txn.type === "buy") {
+      totalCost = totalCost.add(
+        new Decimal(txn.amount).mul(new Decimal(txn.price))
+      );
+      totalAmount = totalAmount.add(new Decimal(txn.amount));
+    } else {
+      // sell — reduce holdings, reduce cost proportionally
+      const sellAmount = new Decimal(txn.amount);
+      if (totalAmount.gt(0)) {
+        const costPerUnit = totalCost.div(totalAmount);
+        totalCost = totalCost.sub(costPerUnit.mul(sellAmount));
+      }
+      totalAmount = totalAmount.sub(sellAmount);
+    }
+  }
+
+  const costAvg =
+    totalAmount.gt(0) ? totalCost.div(totalAmount).toNumber() : 0;
+
+  await pb.collection("tokens").update(tokenId, {
+    total: Math.max(totalAmount.toNumber(), 0),
+    costAvg,
+  });
 };

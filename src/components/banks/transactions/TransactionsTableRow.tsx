@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const TransactionsTableRow: React.FC<{
   transaction: ExpandedTransaction;
@@ -22,7 +23,7 @@ export const TransactionsTableRow: React.FC<{
       <tr
         className={clsx(
           "hover:bg-slate-800 cursor-pointer border-b border-slate-800 transition-colors",
-          odd ? "bg-slate-950/80" : "bg-slate-900/60"
+          odd ? "bg-slate-950/80" : "bg-slate-900/60",
         )}
       >
         <td className="px-4 py-2 whitespace-nowrap">
@@ -32,12 +33,14 @@ export const TransactionsTableRow: React.FC<{
         <td
           className={clsx(
             "px-4 py-2 font-mono",
-            amount < 0 ? "text-red-400" : "text-green-400"
+            amount < 0 ? "text-red-400" : "text-green-400",
           )}
         >
-          {isHideable && isPrivate
-            ? `${baseCurrency?.symbol ?? "$"}••••••`
-            : parseAmount(amount, baseCurrency?.code)}
+          <PrivacyPeek
+            isPrivate={!!(isHideable && isPrivate)}
+            revealedContent={parseAmount(amount, baseCurrency?.code)}
+            maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+          />
         </td>
         <td className="px-4 py-2 max-w-[200px] truncate">
           {description.length > 50

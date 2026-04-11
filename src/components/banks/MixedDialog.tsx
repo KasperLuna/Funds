@@ -30,6 +30,7 @@ import {
 import { BankForm } from "./BankForm";
 import { CategoryForm } from "../CategoryForm";
 import { PlannedTransactionForm } from "./PlannedTransactionForm";
+import { TransactionTemplateForm } from "./TransactionTemplateForm";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useCallback, useMemo, useState } from "react";
@@ -57,7 +58,7 @@ export const MixedDialogTrigger = ({
     (value: boolean) => {
       setQueryParams({ create: value ? "Transaction" : undefined });
     },
-    [setQueryParams]
+    [setQueryParams],
   );
 
   // Use media query to determine if we're on mobile
@@ -101,7 +102,7 @@ export const MixedDialog = ({
   const formType = queryParams["create"] ?? "Transaction";
   const setFormType = useCallback(
     (value: string) => setQueryParams({ create: value }),
-    [setQueryParams]
+    [setQueryParams],
   );
   const { addPlannedTransaction } = usePlannedTransactions();
   const { user } = useAuth();
@@ -109,7 +110,7 @@ export const MixedDialog = ({
   // Memoize bank lookups for performance
   const originalBank = useMemo(
     () => bankData?.banks.find((bank) => bank.id === transaction?.bank),
-    [bankData, transaction]
+    [bankData, transaction],
   );
 
   // Memoize onSubmit handler
@@ -125,14 +126,14 @@ export const MixedDialog = ({
               data.categories.map(
                 (categ) =>
                   categoryData?.categories.find((cat) => cat.name === categ)
-                    ?.id || ""
+                    ?.id || "",
               ) || [],
             amount: ["expense", "withdrawal"].includes(data.type)
               ? new Decimal(data.amount).negated().toNumber()
               : new Decimal(data.amount).toNumber(),
           };
           const transactionBank = bankData?.banks.find(
-            (bank) => bank.id === parsedData.bank
+            (bank) => bank.id === parsedData.bank,
           );
           if (!transactionBank?.id || !parsedData)
             throw new Error("Error updating bank balance");
@@ -142,7 +143,7 @@ export const MixedDialog = ({
             // Find the original transaction and bank
             const original = transaction;
             const originalBank = bankData?.banks.find(
-              (bank) => bank.id === original?.bank
+              (bank) => bank.id === original?.bank,
             );
             if (!original || !originalBank)
               throw new Error("Original transaction/bank not found");
@@ -198,7 +199,7 @@ export const MixedDialog = ({
       queryClient,
       onPlannedSubmit,
       transaction,
-    ]
+    ],
   );
 
   // Memoize dialog actions
@@ -208,7 +209,7 @@ export const MixedDialog = ({
     const { id, ...rest } = transaction;
     // Inline updateBankBalanceOnTransaction logic for batching
     const transactionBank = bankData?.banks.find(
-      (bank) => bank.id === rest.bank
+      (bank) => bank.id === rest.bank,
     );
     const batch = pb.createBatch();
     if (!transactionBank?.id || !rest)
@@ -286,15 +287,17 @@ export const MixedDialog = ({
                       </DropdownMenuRadioItem>
                     ))}
                     <DropdownMenuSeparator className="mx-2" />
-                    {["Bank", "Category", "PlannedTransaction"].map((type) => (
-                      <DropdownMenuRadioItem
-                        key={type}
-                        value={type}
-                        className="hover:bg-slate-600"
-                      >
-                        {type}
-                      </DropdownMenuRadioItem>
-                    ))}
+                    {["Bank", "Category", "PlannedTransaction", "Template"].map(
+                      (type) => (
+                        <DropdownMenuRadioItem
+                          key={type}
+                          value={type}
+                          className="hover:bg-slate-600"
+                        >
+                          {type}
+                        </DropdownMenuRadioItem>
+                      ),
+                    )}
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -369,7 +372,7 @@ export const MixedDialog = ({
                 pt.categories.map(
                   (categ) =>
                     categoryData?.categories.find((cat) => cat.name === categ)
-                      ?.id || categ
+                      ?.id || categ,
                 ) || [];
               await addPlannedTransaction({
                 ...pt,
@@ -382,6 +385,32 @@ export const MixedDialog = ({
               setIsModalOpen(false);
             }}
             // onCancel={() => setIsModalOpen(false)}
+          />
+        )}
+        {formType === "Template" && (
+          <TransactionTemplateForm
+            onSubmit={async (t) => {
+              if (!user?.id) {
+                alert("You must be logged in to create a template.");
+                return;
+              }
+              const mappedCategories =
+                t.categories.map(
+                  (categ) =>
+                    categoryData?.categories.find((cat) => cat.name === categ)
+                      ?.id || categ,
+                ) || [];
+              await addPlannedTransaction({
+                ...t,
+                user: user.id,
+                isTemplate: true,
+                amount: ["expense", "withdrawal"].includes(t.type)
+                  ? new Decimal(t.amount).abs().negated().toNumber()
+                  : new Decimal(t.amount).abs().toNumber(),
+                categories: mappedCategories,
+              });
+              setIsModalOpen(false);
+            }}
           />
         )}
       </AlertDialogContent>

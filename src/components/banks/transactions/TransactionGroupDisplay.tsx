@@ -7,6 +7,7 @@ import { parseAmount } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import clsx from "clsx";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const TransactionGroupDisplay = ({
   transactions,
@@ -38,9 +39,11 @@ export const TransactionGroupDisplay = ({
           })}
         >
           <span className="text-slate-100">Total: </span>
-          {isPrivate
-            ? `${baseCurrency?.symbol}••••••`
-            : parseAmount(total, baseCurrency?.code)}
+          <PrivacyPeek
+            isPrivate={isPrivate}
+            revealedContent={parseAmount(total, baseCurrency?.code)}
+            maskedContent={`${baseCurrency?.symbol}••••••`}
+          />
         </p>
       </div>
 

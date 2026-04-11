@@ -1,5 +1,7 @@
 import React from "react";
 import { Category, Currency, PlannedTransaction } from "@/lib/types";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
+import { Settings2 } from "lucide-react";
 
 interface UpcomingPlannedTransactionCardProps {
   pt: PlannedTransaction;
@@ -7,16 +9,30 @@ interface UpcomingPlannedTransactionCardProps {
   baseCurrency: Currency | undefined;
   isPrivate: boolean;
   parseAmount: (amount: number, code?: string) => string;
+  onEdit?: (pt: PlannedTransaction) => void;
 }
 
 const UpcomingPlannedTransactionCard: React.FC<
   UpcomingPlannedTransactionCardProps
-> = ({ pt, categories, baseCurrency, isPrivate, parseAmount }) => {
+> = ({ pt, categories, baseCurrency, isPrivate, parseAmount, onEdit }) => {
   return (
     <div
       role="button"
       className="group relative transition-all flex-grow h-full text-slate-200 border-2 gap-2 border-slate-600/50 hover:border-slate-500/70 rounded-xl bg-gradient-to-br from-slate-800/70 to-slate-700/50 hover:bg-gradient-to-br hover:from-slate-700/80 hover:to-slate-600/60 hover:cursor-pointer overflow-hidden hover:shadow-lg hover:shadow-slate-900/50 hover:scale-[1.01] duration-300"
     >
+      {onEdit && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(pt);
+          }}
+          className="absolute top-1.5 right-1.5 z-20 p-1 rounded-md bg-slate-700/80 hover:bg-slate-600 border border-slate-600/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          title="Edit planned transaction"
+          aria-label="Edit planned transaction"
+        >
+          <Settings2 className="w-3.5 h-3.5 text-slate-300" />
+        </button>
+      )}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       <div className="relative z-10 flex flex-col gap-2 p-2">
         <div className="flex flex-row w-full items-center justify-between gap-2 min-w-0">
@@ -43,9 +59,11 @@ const UpcomingPlannedTransactionCard: React.FC<
                   : "text-lg font-semibold font-mono text-emerald-400 truncate"
               }
             >
-              {isPrivate
-                ? `${baseCurrency?.symbol ?? "$"}••••••`
-                : parseAmount(pt.amount, baseCurrency?.code)}
+              <PrivacyPeek
+                isPrivate={isPrivate}
+                revealedContent={parseAmount(pt.amount, baseCurrency?.code)}
+                maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+              />
             </p>
             <small className="text-slate-300 truncate">
               {pt.description && pt.description.length > 30 ? (
@@ -64,7 +82,7 @@ const UpcomingPlannedTransactionCard: React.FC<
             .slice(0, 3)
             .map((catId: string) => {
               const cat = categories.find(
-                (c) => c.id === catId || c.name === catId
+                (c) => c.id === catId || c.name === catId,
               );
               return (
                 <small

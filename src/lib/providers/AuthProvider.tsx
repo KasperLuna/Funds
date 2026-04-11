@@ -14,10 +14,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter(); // For redirecting
 
   useEffect(() => {
+    // Attempt to refresh the auth token on page load
+    const refreshToken = async () => {
+      if (pb.authStore.isValid) {
+        try {
+          await pb.collection("users").authRefresh();
+        } catch {
+          // Token refresh failed — clear auth and let redirect handle it
+          pb.authStore.clear();
+        }
+      }
+    };
+
     // Handle the initial state
     if (pb.authStore.model) {
       setUser(pb.authStore.model);
-      setIsLoading(false);
+      refreshToken().finally(() => setIsLoading(false));
     } else {
       setIsLoading(false); // No user but still set loading to false
     }

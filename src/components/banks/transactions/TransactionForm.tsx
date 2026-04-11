@@ -17,8 +17,10 @@ import { BankSelect } from "@/components/banks/BankSelect";
 import { useAuth } from "@/lib/hooks/useAuth";
 import clsx from "clsx";
 import { parseAmount } from "@/lib/utils";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { ArrowRight } from "lucide-react";
+import { TemplatePicker } from "@/components/banks/TemplatePicker";
+import { PlannedTransaction } from "@/lib/types";
 import { Switch } from "@/components/ui/switch";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Decimal } from "decimal.js";
@@ -151,7 +153,7 @@ function getTransactionBatch(
   setError: UseFormSetError<TransactionFormData>,
   isTransferAmountsDifferent: boolean,
   formType: FormType,
-  bankData: { banks: Bank[] } | undefined
+  bankData: { banks: Bank[] } | undefined,
 ): Array<Omit<Transaction, "date"> & { date: Date }> | null {
   if (formType === "Transfer") {
     if (
@@ -182,7 +184,7 @@ function getTransactionBatch(
   }
   if (formType === "Difference" && bankData) {
     const bankBalance = bankData.banks.find(
-      (bank: Bank) => bank.id === data.bank
+      (bank: Bank) => bank.id === data.bank,
     )?.balance;
     const differenceAmount = !!(data?.newBalance && bankBalance)
       ? new Decimal(data.newBalance).sub(bankBalance).toNumber()
@@ -252,16 +254,28 @@ export const TransactionForm = ({
   const selectedBank = watch("bank");
   const bankBalance = useMemo(
     () => bankData?.banks.find((bank) => bank.id === selectedBank)?.balance,
-    [bankData, selectedBank]
+    [bankData, selectedBank],
   );
   const newBalance = watch("newBalance");
   const projectedAmount = useMemo(
     () => (!!newBalance && !!bankBalance ? newBalance - bankBalance : 0),
-    [newBalance, bankBalance]
+    [newBalance, bankBalance],
   );
 
   const [isTransferAmountsDifferent, setIsTransferAmountsDifferent] =
     useState<boolean>(false);
+
+  const handleTemplateSelect = useCallback(
+    (template: PlannedTransaction) => {
+      if (template.bank) setValue("bank", template.bank);
+      if (template.type) setValue("type", template.type);
+      if (template.amount) setValue("amount", template.amount);
+      if (template.description) setValue("description", template.description);
+      if (template.categories?.length)
+        setValue("categories", template.categories);
+    },
+    [setValue],
+  );
 
   useEffect(() => {
     if (transaction) return;
@@ -276,7 +290,7 @@ export const TransactionForm = ({
       setError,
       isTransferAmountsDifferent,
       formType,
-      bankData ? { banks: bankData.banks } : undefined
+      bankData ? { banks: bankData.banks } : undefined,
     );
     if (batch) {
       onSubmit(batch);
@@ -286,6 +300,9 @@ export const TransactionForm = ({
   return (
     <form onSubmit={handleFormSubmit}>
       <div className="flex flex-col gap-3 pb-3">
+        {!transaction?.id && formType === "Transaction" && (
+          <TemplatePicker onSelect={handleTemplateSelect} />
+        )}
         <div className="flex flex-col gap-1 w-full">
           <Label htmlFor="date">{"Date: "}</Label>
           <Controller
@@ -394,7 +411,7 @@ export const TransactionForm = ({
                     valueAsNumber: true,
                     required: true,
                     min: 0,
-                  }
+                  },
                 )}
               />
               {!!(errors.amount || errors.newBalance) && (

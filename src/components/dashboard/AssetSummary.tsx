@@ -12,6 +12,7 @@ import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { parseAmount, trimToTwoDecimals } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 // Constants
 const COLORS = [
@@ -82,7 +83,7 @@ function useTabData(
   banks: any[],
   coins: any[],
   market: any[],
-  hasCrypto: boolean
+  hasCrypto: boolean,
 ) {
   return useMemo(() => {
     let items: AssetItem[] = [];
@@ -105,7 +106,7 @@ function useTabData(
             })
           : [];
         items = [...bankItems, ...cryptoItems].sort(
-          (a, b) => b.value - a.value
+          (a, b) => b.value - a.value,
         );
         break;
       }
@@ -164,7 +165,7 @@ const TabNavigation = memo(function TabNavigation({
                 "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-300",
                 currentTab === tabItem.key
                   ? "bg-gradient-to-r from-emerald-500/20 to-blue-500/20 text-emerald-300 border border-emerald-500/30"
-                  : "bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 hover:text-slate-200 border border-slate-700/50"
+                  : "bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 hover:text-slate-200 border border-slate-700/50",
               )}
               onClick={() => onTabChange(tabItem.key)}
             >
@@ -210,7 +211,11 @@ const TotalDisplay = memo(function TotalDisplay({
   return (
     <div className="flex flex-col gap-2 mb-3">
       <span className="text-3xl font-mono font-bold bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-        {isPrivate ? `${currencySymbol}••••••` : parseAmount(total, currency)}
+        <PrivacyPeek
+          isPrivate={isPrivate}
+          revealedContent={parseAmount(total, currency)}
+          maskedContent={`${currencySymbol}••••••`}
+        />
       </span>
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-sm text-slate-400 font-medium">{tab} Total</span>
@@ -234,16 +239,14 @@ const TotalDisplay = memo(function TotalDisplay({
 // Component for Loading State
 const LoadingSkeleton = memo(function LoadingSkeleton() {
   return (
-    <div className="space-y-3">
-      <div className="h-6 w-full bg-slate-800/60 rounded animate-pulse" />
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-2">
-        {Array.from({ length: 6 }, (_, index) => (
-          <div
-            key={`skeleton-${index + 1}`}
-            className="h-16 w-full bg-slate-800/60 rounded animate-pulse"
-          />
-        ))}
-      </div>
+    <div className="space-y-1">
+      <div className="h-8 w-full bg-slate-800/60 rounded animate-pulse" />
+      {Array.from({ length: 4 }, (_, index) => (
+        <div
+          key={`skeleton-${index + 1}`}
+          className="h-9 w-full bg-slate-800/60 rounded animate-pulse"
+        />
+      ))}
     </div>
   );
 });
@@ -304,15 +307,15 @@ const AssetBreakdown = memo(function AssetBreakdown({
         </div>
       </div>
 
-      {/* Asset grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-2">
+      {/* Compact asset list */}
+      <div className="flex flex-col divide-y divide-slate-700/40">
         {items.map((item, idx) => {
           const percent = total > 0 ? (item.value / total) * 100 : 0;
           const isBank = item.type === "bank";
           const accentColor = COLORS[idx % COLORS.length];
 
           return (
-            <AssetCard
+            <AssetRow
               key={item.name}
               item={item}
               percent={percent}
@@ -329,8 +332,8 @@ const AssetBreakdown = memo(function AssetBreakdown({
   );
 });
 
-// Component for Individual Asset Card
-const AssetCard = memo(function AssetCard({
+// Component for Individual Asset Row
+const AssetRow = memo(function AssetRow({
   item,
   percent,
   accentColor,
@@ -347,60 +350,47 @@ const AssetCard = memo(function AssetCard({
   isPrivate: boolean;
   onClick?: () => void;
 }) {
-  const isBank = item.type === "bank";
-
   return (
     <div
       className={clsx(
-        "group relative overflow-hidden rounded-lg bg-gradient-to-br from-slate-800/70 to-slate-700/50 border border-slate-600/50 p-2 shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:border-slate-500/70",
-        onClick && "cursor-pointer",
-        isBank && "hover:from-slate-700/80 hover:to-slate-600/60"
+        "flex items-center gap-3 py-2 px-1 rounded-md transition-colors duration-200",
+        onClick
+          ? "cursor-pointer hover:bg-slate-800/50"
+          : "hover:bg-slate-800/30",
       )}
-      style={{
-        boxShadow: `0 4px 12px 0 ${accentColor}15, inset 0 1px 0 ${accentColor}25`,
-      }}
       onClick={onClick}
     >
-      {/* Accent border */}
+      {/* Color swatch */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg"
+        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
         style={{ backgroundColor: accentColor }}
       />
 
-      <div className="relative z-10 flex flex-col gap-2">
-        <div className="flex items-start justify-between">
-          <p className="font-semibold text-slate-100 group-hover:text-white transition-colors text-sm line-clamp-2 pr-1 min-w-0 flex-1">
-            {item.name.length > 20 ? item.name.slice(0, 20) + "..." : item.name}
-          </p>
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5"
-            style={{ backgroundColor: accentColor }}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <p className="text-base font-mono font-bold text-slate-100 group-hover:text-white transition-colors truncate">
-            {isPrivate
-              ? `${currencySymbol}••••••`
-              : parseAmount(item.value, currency)}
-          </p>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-medium truncate">
-              {trimToTwoDecimals(percent)}%
-            </span>
-            {isBank && (
-              <span className="text-blue-400 font-medium flex-shrink-0">
-                Bank
-              </span>
-            )}
-            {item.type === "crypto" && (
-              <span className="text-orange-400 font-medium flex-shrink-0">
-                Crypto
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Name + type */}
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span className="text-sm text-slate-200 font-medium truncate">
+          {item.name}
+        </span>
+        {item.type === "crypto" && (
+          <span className="text-[10px] font-semibold text-orange-400/80 bg-orange-400/10 px-1.5 py-0.5 rounded flex-shrink-0">
+            Crypto
+          </span>
+        )}
       </div>
+
+      {/* Percentage */}
+      <span className="text-xs text-slate-400 font-mono tabular-nums flex-shrink-0 w-12 text-right">
+        {trimToTwoDecimals(percent)}%
+      </span>
+
+      {/* Amount */}
+      <span className="text-sm font-mono font-semibold text-slate-100 tabular-nums flex-shrink-0 text-right min-w-[5rem]">
+        <PrivacyPeek
+          isPrivate={isPrivate}
+          revealedContent={parseAmount(item.value, currency)}
+          maskedContent={`${currencySymbol}••••`}
+        />
+      </span>
     </div>
   );
 });
@@ -424,7 +414,7 @@ export const AssetSummary = memo(function AssetSummary() {
       currency: baseCurrency?.code || "USD",
       currencySymbol: baseCurrency?.symbol || "$",
     }),
-    [bankData, tokenData, marketData, baseCurrency]
+    [bankData, tokenData, marketData, baseCurrency],
   );
 
   // Calculate totals
@@ -497,7 +487,7 @@ export const AssetSummary = memo(function AssetSummary() {
             isPrivate={isPrivate}
             onBankClick={(bankName) =>
               router.push(
-                `/dashboard/banks?bank=${encodeURIComponent(bankName)}`
+                `/dashboard/banks?bank=${encodeURIComponent(bankName)}`,
               )
             }
           />
@@ -525,7 +515,7 @@ const ProgressSection = memo(function ProgressSection({
       <small
         className={clsx(
           { hidden: percentage < 10 },
-          "font-mono text-xs font-semibold text-white drop-shadow-lg"
+          "font-mono text-xs font-semibold text-white drop-shadow-lg",
         )}
       >
         {trimToTwoDecimals(percentage)}%

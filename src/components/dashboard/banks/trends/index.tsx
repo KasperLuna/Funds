@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrendsChart } from "./TrendsChart";
 import { TrendsCarousel } from "./TrendsCarousel";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 // Subcomponent: Average Summary
 type BankTrendsSummaryProps = {
@@ -38,9 +39,11 @@ const BankTrendsSummary = ({
     <div className="flex flex-row align-middle items-center gap-2">
       <p className="text-sm">{trimToTwoDecimals(averageChange)}%</p>
       <p>
-        {isPrivate
-          ? `${baseCurrency?.symbol ?? "$"}••••••`
-          : parseAmount(averageIncome, baseCurrency?.code)}
+        <PrivacyPeek
+          isPrivate={isPrivate}
+          revealedContent={parseAmount(averageIncome, baseCurrency?.code)}
+          maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+        />
       </p>
     </div>
   </div>
@@ -133,7 +136,7 @@ export const BankTrends = () => {
     },
     xaxis: {
       categories: trends.map((trend) =>
-        dayjs(`${trend.year}-${trend.month}-01`).format("MMM YYYY")
+        dayjs(`${trend.year}-${trend.month}-01`).format("MMM YYYY"),
       ),
       labels: {
         style: {

@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { X } from "lucide-react";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const BanksHeader = () => {
   const { queryParams, setQueryParams } = useQueryParams();
@@ -37,9 +38,11 @@ export const BanksHeader = () => {
       </div>
       <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
         Total:{" "}
-        {isPrivate
-          ? `${baseCurrency?.symbol ?? "$"}••••••`
-          : parseAmount(displayValue, baseCurrency?.code)}
+        <PrivacyPeek
+          isPrivate={isPrivate}
+          revealedContent={parseAmount(displayValue, baseCurrency?.code)}
+          maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+        />
       </small>
     </div>
   );

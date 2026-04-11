@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { memo } from "react";
 import { Wallet } from "lucide-react";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const StatCard = memo(function StatCard({
   name,
@@ -45,7 +46,7 @@ export const StatCard = memo(function StatCard({
         "group relative overflow-hidden rounded-lg bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border p-3 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full",
         isSelected
           ? "border-blue-500/50 bg-gradient-to-br from-blue-900/20 to-zinc-900/60 shadow-blue-500/25"
-          : "border-zinc-700/50 hover:border-zinc-600/50 hover:from-zinc-700/60 hover:to-zinc-800/60"
+          : "border-zinc-700/50 hover:border-zinc-600/50 hover:from-zinc-700/60 hover:to-zinc-800/60",
       )}
     >
       {/* Gradient overlay */}
@@ -70,7 +71,7 @@ export const StatCard = memo(function StatCard({
                 "text-sm",
                 isSelected
                   ? "text-blue-100"
-                  : "text-zinc-200 group-hover:text-zinc-100"
+                  : "text-zinc-200 group-hover:text-zinc-100",
               )}
               title={name} // Show full name on hover
             >
@@ -92,11 +93,15 @@ export const StatCard = memo(function StatCard({
               getBalanceTextSize(),
               isSelected
                 ? "text-blue-100"
-                : "text-zinc-100 group-hover:text-white"
+                : "text-zinc-100 group-hover:text-white",
             )}
             title={formattedBalance} // Show full amount on hover
           >
-            {formattedBalance}
+            <PrivacyPeek
+              isPrivate={isPrivate}
+              revealedContent={parseAmount(balance, baseCurrency?.code)}
+              maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+            />
           </p>
 
           {/* Balance indicator */}

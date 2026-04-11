@@ -1,11 +1,15 @@
-import { useLocalStorage } from "./useLocalStorage";
+import { useSessionStorage } from "./useSessionStorage";
 
 /**
  * usePrivacy hook
- * Returns { isPrivate, togglePrivacy } using localStorage
+ * Returns { isPrivate, togglePrivacy } using sessionStorage.
+ * Privacy defaults to true and resets each browser session.
  */
 export function usePrivacy() {
-  const [isPrivate, setIsPrivate] = useLocalStorage<boolean>("isPrivate", true);
+  const [isPrivate, setIsPrivate] = useSessionStorage<boolean>(
+    "isPrivate",
+    true
+  );
 
   const togglePrivacy = () => setIsPrivate((prev: boolean) => !prev);
 

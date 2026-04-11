@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState, memo, useCallback } from "react";
-import { TrendingUp, Wallet, Coins } from "lucide-react";
+import { TrendingUp, Wallet, Coins, Settings } from "lucide-react";
 import Image from "next/image";
 import { useQueries, UseQueryResult } from "@tanstack/react-query";
 import dayjs from "dayjs";
@@ -14,6 +14,8 @@ import {
   CoinGeckoPriceDataPoint,
 } from "@/lib/types/coingecko";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { TokenDialog } from "./TokenDialog";
+import { Button } from "@/components/ui/button";
 
 // Error response type for CoinGecko API
 interface CoinGeckoErrorResponse {
@@ -535,7 +537,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
       .filter(
         (id, idx) =>
           Array.isArray(historyQueries[idx]?.data) &&
-          !historyQueries[idx]?.isError
+          !historyQueries[idx]?.isError,
       );
     const erroredIds = coins
       .map((coin) => coin.coingecko_id)
@@ -563,7 +565,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
       }
       const first = filtered[0]?.[1] || 1;
       const normalized = filtered.map((p) =>
-        first ? (p[1] / first) * 100 : null
+        first ? (p[1] / first) * 100 : null,
       );
       return {
         name: coin ? coin.name : id,
@@ -590,7 +592,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
       });
     }
     const catLabels = categories.map((p) =>
-      dayjs(p[0]).format(selectedRange === "1mo" ? "MMM D" : "MMM YYYY")
+      dayjs(p[0]).format(selectedRange === "1mo" ? "MMM D" : "MMM YYYY"),
     );
     return { series, categories: catLabels, loadedIds, erroredIds };
   }
@@ -653,7 +655,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
                         >
                           {coin.name}
                         </span>
-                      ) : null
+                      ) : null,
                     )}
                   </div>
                 </div>
@@ -794,6 +796,7 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
 export function CryptoDashboard() {
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
   const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const { isPrivate } = usePrivacy();
   const { baseCurrency } = useUserQuery();
   const { tokenData, marketData, marketLoading, marketError } =
@@ -803,11 +806,11 @@ export function CryptoDashboard() {
   const coins = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
   const isTokensLoading = useMemo(
     () => tokenData?.loading,
-    [tokenData?.loading]
+    [tokenData?.loading],
   );
   const CURRENCY = useMemo(
     () => baseCurrency?.code || "USD",
-    [baseCurrency?.code]
+    [baseCurrency?.code],
   );
   const market = useMemo(() => marketData || [], [marketData]);
 
@@ -837,7 +840,7 @@ export function CryptoDashboard() {
   // Memoize range value
   const range = useMemo(
     () => (selectedRange === "1mo" ? 30 : 365),
-    [selectedRange]
+    [selectedRange],
   );
 
   // Callback for range selection
@@ -853,7 +856,7 @@ export function CryptoDashboard() {
         // Stagger requests more efficiently with shorter delays
         if (idx > 0) {
           await new Promise((resolve) =>
-            setTimeout(resolve, Math.min(idx * 2000, 10000))
+            setTimeout(resolve, Math.min(idx * 2000, 10000)),
           );
         }
 
@@ -868,7 +871,7 @@ export function CryptoDashboard() {
               headers: {
                 Accept: "application/json",
               },
-            }
+            },
           );
 
           clearTimeout(timeoutId);
@@ -910,7 +913,8 @@ export function CryptoDashboard() {
         }
         return true;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: (attemptIndex: number) =>
+        Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false,
       refetchOnReconnect: "always",
       enabled: !!coin.coingecko_id, // Only fetch if ID exists
@@ -924,7 +928,7 @@ export function CryptoDashboard() {
       marketLoading,
       loadingHistory: historyQueries.some((q) => q.isLoading),
     }),
-    [isTokensLoading, marketLoading, historyQueries]
+    [isTokensLoading, marketLoading, historyQueries],
   );
 
   const errorStates = useMemo(
@@ -932,7 +936,7 @@ export function CryptoDashboard() {
       marketError,
       historyError: historyQueries.find((q) => q.isError)?.error,
     }),
-    [marketError, historyQueries]
+    [marketError, historyQueries],
   );
 
   // Memoize token history calculation
@@ -959,29 +963,50 @@ export function CryptoDashboard() {
     return (
       <div className="flex flex-col items-center justify-center w-full h-48 gap-3">
         <span className="text-slate-400 text-lg font-semibold">
-          🚧 Crypto Portfolio Coming Soon
+          No tokens in your portfolio
         </span>
         <span className="text-slate-500 text-sm">
-          This feature is under development. Stay tuned for updates!
+          Add your first crypto token to start tracking.
         </span>
+        <Button
+          variant="outline"
+          className="border-slate-600 hover:bg-slate-700 gap-2 mt-2"
+          onClick={() => setTokenDialogOpen(true)}
+        >
+          <Coins className="w-4 h-4" />
+          Add Token
+        </Button>
+        <TokenDialog open={tokenDialogOpen} onOpenChange={setTokenDialogOpen} />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="flex items-center gap-1 text-xs text-slate-400 select-none z-10">
-        {lastFetched ? (
-          <span>
-            Data last fetched:{" "}
-            {lastFetched.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })}
-          </span>
-        ) : null}
+      <div className="flex items-center justify-between gap-2 z-10">
+        <div className="flex items-center gap-1 text-xs text-slate-400 select-none">
+          {lastFetched ? (
+            <span>
+              Data last fetched:{" "}
+              {lastFetched.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </span>
+          ) : null}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-slate-600 hover:bg-slate-700 gap-1.5 text-slate-300"
+          onClick={() => setTokenDialogOpen(true)}
+        >
+          <Settings className="w-3.5 h-3.5" />
+          Manage Tokens
+        </Button>
       </div>
+      <TokenDialog open={tokenDialogOpen} onOpenChange={setTokenDialogOpen} />
       <div className="flex flex-col md:flex-row gap-4 w-full relative min-w-0">
         <CryptoSummary
           portfolio={coins}

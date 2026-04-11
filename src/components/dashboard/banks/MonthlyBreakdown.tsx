@@ -22,6 +22,7 @@ import { Bank } from "@/lib/types";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -72,7 +73,7 @@ export const MonthlyBreakdown: React.FC = () => {
     // Helper to check if a category is exempt
     const isCategoryExempt = (categoryId: string) => {
       return categoryData?.categories?.some(
-        (c) => c.id === categoryId && (c as any).total_exempt === true
+        (c) => c.id === categoryId && (c as any).total_exempt === true,
       );
     };
 
@@ -85,11 +86,11 @@ export const MonthlyBreakdown: React.FC = () => {
               acc["no category"] = new Decimal(0);
             }
             acc["no category"] = acc["no category"].add(
-              new Decimal(curr.amount).toNumber()
+              new Decimal(curr.amount).toNumber(),
             );
           } else {
             const splitAmount = new Decimal(curr.amount).div(
-              curr.categories.length
+              curr.categories.length,
             );
             curr.categories.forEach((categ) => {
               if (!acc[categ]) {
@@ -100,7 +101,7 @@ export const MonthlyBreakdown: React.FC = () => {
           }
           return acc;
         },
-        {} as Record<string, Decimal>
+        {} as Record<string, Decimal>,
       ) || {};
 
     // get the total of the positive amounts, only for transactions with categories
@@ -164,7 +165,7 @@ export const MonthlyBreakdown: React.FC = () => {
     const categoryTotalsWithNames = Object.entries(categoryTotals).reduce(
       (acc, [key, value]) => {
         const category = categoryData?.categories?.find(
-          (categ) => categ.id === key
+          (categ) => categ.id === key,
         );
         const net = value.toNumber();
         const throughput = categoryThroughput[key] || 0;
@@ -179,12 +180,12 @@ export const MonthlyBreakdown: React.FC = () => {
         }
         return acc;
       },
-      {} as Record<string, number>
+      {} as Record<string, number>,
     );
 
     // Sort categories by descending absolute value
     const sortedCategories = Object.entries(categoryTotalsWithNames).sort(
-      ([, a], [, b]) => Math.abs(b) - Math.abs(a)
+      ([, a], [, b]) => Math.abs(b) - Math.abs(a),
     );
     const sortedKeys = sortedCategories.map(([key]) => key);
     const sortedValues = sortedCategories.map(([, value]) => value);
@@ -205,7 +206,7 @@ export const MonthlyBreakdown: React.FC = () => {
           handleBarClick: (dataPointIndex: number) => {
             const category: string = sortedKeys[dataPointIndex];
             router.push(
-              `/dashboard/banks?month=${selectedMonth?.toISOString().split("T")[0]}&categories=${category}`
+              `/dashboard/banks?month=${selectedMonth?.toISOString().split("T")[0]}&categories=${category}`,
             );
           },
         }),
@@ -251,7 +252,7 @@ export const MonthlyBreakdown: React.FC = () => {
     });
     // Sort by absolute value of totals
     const sortedBanks = Object.entries(totals).sort(
-      ([, a], [, b]) => a.abs().cmp(b.abs()) * -1
+      ([, a], [, b]) => a.abs().cmp(b.abs()) * -1,
     );
     const sortedBankIds = sortedBanks.map(([key]) => key);
     // Map bank IDs to names using bankData
@@ -260,13 +261,13 @@ export const MonthlyBreakdown: React.FC = () => {
         acc[bank.id] = bank.name;
         return acc;
       },
-      {}
+      {},
     );
     const sortedBankNames = sortedBankIds.map((id) => bankIdToName[id] || id);
     const sortedTotals = sortedBanks.map(([, value]) => value.toNumber());
     // For counts, sort by same bank order
     const sortedCounts = sortedBankIds.map(
-      (bank) => counts[bank]?.toNumber() || 0
+      (bank) => counts[bank]?.toNumber() || 0,
     );
     return {
       totals,
@@ -324,7 +325,7 @@ export const MonthlyBreakdown: React.FC = () => {
               if (!date) return;
               setQueryParams({
                 monthlyFilter: dayjs(
-                  new Date(date.getFullYear(), date.getMonth() + 1, 0)
+                  new Date(date.getFullYear(), date.getMonth() + 1, 0),
                 ).format("YYYY-MM-DD"),
               });
             }}
@@ -342,20 +343,24 @@ export const MonthlyBreakdown: React.FC = () => {
             <p className="text-sm font-semibold">Total:</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <p className="text-green-500">
-                {isPrivate || isLoading
-                  ? `${baseCurrency?.symbol ?? ""}••••••`
-                  : parseAmount(
-                      memoized.totalPositive?.toNumber(),
-                      baseCurrency?.code
-                    )}
+                <PrivacyPeek
+                  isPrivate={isPrivate || isLoading}
+                  revealedContent={parseAmount(
+                    memoized.totalPositive?.toNumber(),
+                    baseCurrency?.code,
+                  )}
+                  maskedContent={`${baseCurrency?.symbol ?? ""}••••••`}
+                />
               </p>
               <p className="text-red-500">
-                {isPrivate || isLoading
-                  ? `${baseCurrency?.symbol ?? ""}••••••`
-                  : parseAmount(
-                      memoized.totalNegative?.toNumber(),
-                      baseCurrency?.code
-                    )}
+                <PrivacyPeek
+                  isPrivate={isPrivate || isLoading}
+                  revealedContent={parseAmount(
+                    memoized.totalNegative?.toNumber(),
+                    baseCurrency?.code,
+                  )}
+                  maskedContent={`${baseCurrency?.symbol ?? ""}••••••`}
+                />
               </p>
               <p
                 className={clsx({
@@ -365,12 +370,14 @@ export const MonthlyBreakdown: React.FC = () => {
                 })}
               >
                 <span className="text-slate-200">=</span>{" "}
-                {isPrivate || isLoading
-                  ? `${baseCurrency?.symbol ?? ""}••••••`
-                  : parseAmount(
-                      memoized.overallBalance?.toNumber(),
-                      baseCurrency?.code
-                    )}
+                <PrivacyPeek
+                  isPrivate={isPrivate || isLoading}
+                  revealedContent={parseAmount(
+                    memoized.overallBalance?.toNumber(),
+                    baseCurrency?.code,
+                  )}
+                  maskedContent={`${baseCurrency?.symbol ?? ""}••••••`}
+                />
               </p>
             </div>
           </div>
@@ -387,12 +394,14 @@ export const MonthlyBreakdown: React.FC = () => {
                   isPrivate || isLoading || memoized.uncategorizedTotal.eq(0),
               })}
             >
-              {isPrivate || isLoading
-                ? `${baseCurrency?.symbol ?? ""}••••••`
-                : parseAmount(
-                    memoized.uncategorizedTotal.toNumber(),
-                    baseCurrency?.code
-                  )}
+              <PrivacyPeek
+                isPrivate={isPrivate || isLoading}
+                revealedContent={parseAmount(
+                  memoized.uncategorizedTotal.toNumber(),
+                  baseCurrency?.code,
+                )}
+                maskedContent={`${baseCurrency?.symbol ?? ""}••••••`}
+              />
             </span>
           </div>
           {isLoading ? (
@@ -597,7 +606,7 @@ export const MonthlyBreakdown: React.FC = () => {
                           >
                             {d}
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                     {/* Calendar grid for transaction counts */}
@@ -609,7 +618,7 @@ export const MonthlyBreakdown: React.FC = () => {
                         const firstDayOfWeek = new Date(
                           year,
                           month,
-                          1
+                          1,
                         ).getDay();
                         const weeks: Array<
                           Array<{ day: number | null; count: number }>
@@ -713,7 +722,7 @@ export const MonthlyBreakdown: React.FC = () => {
                           >
                             {d}
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                     {/* Calendar grid for daily totals */}
@@ -725,7 +734,7 @@ export const MonthlyBreakdown: React.FC = () => {
                         const firstDayOfWeek = new Date(
                           year,
                           month,
-                          1
+                          1,
                         ).getDay();
                         const weeks: Array<
                           Array<{ day: number | null; total: number }>
@@ -753,7 +762,7 @@ export const MonthlyBreakdown: React.FC = () => {
                         // Compute monthly max/min for scaling
                         const maxAbs = Math.max(
                           1,
-                          ...historyMemoized.totals.map((v) => Math.abs(v))
+                          ...historyMemoized.totals.map((v) => Math.abs(v)),
                         );
                         const monthlyTotal =
                           memoized.overallBalance?.toNumber() || 1;

@@ -5,6 +5,7 @@ import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
 import { MixedDialogTrigger } from "../MixedDialog";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const TransactionCard = (props: ExpandedTransaction) => {
   const { isPrivate } = usePrivacy();
@@ -36,9 +37,11 @@ export const TransactionCard = (props: ExpandedTransaction) => {
                 "text-emerald-400": amount > 0,
               })}
             >
-              {isHideable && isPrivate
-                ? `${baseCurrency?.symbol ?? "$"}••••••`
-                : parseAmount(amount, baseCurrency?.code)}
+              <PrivacyPeek
+                isPrivate={!!(isHideable && isPrivate)}
+                revealedContent={parseAmount(amount, baseCurrency?.code)}
+                maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
+              />
             </p>
             <small className="text-slate-300 truncate">
               {description.length > 30
@@ -55,7 +58,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
                 "bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap transition-colors duration-200 text-xs px-2 py-0.5 truncate max-w-[80px]",
                 {
                   "": !!category,
-                }
+                },
               )}
               title={category?.name}
             >
