@@ -18,7 +18,7 @@ export function PlannedTransactionPrefillHandler() {
   useEffect(() => {
     if (queryParams.plannedId) {
       const planned = plannedTransactions.find(
-        (pt) => pt.id === queryParams.plannedId
+        (pt) => pt.id === queryParams.plannedId,
       );
       if (planned) {
         setPrefill({
@@ -50,9 +50,9 @@ export function PlannedTransactionPrefillHandler() {
       transaction={prefill}
       onPlannedSubmit={async () => {
         const planned = plannedTransactions.find(
-          (pt) => pt.id === queryParams.plannedId
+          (pt) => pt.id === queryParams.plannedId,
         );
-        if (!planned) return;
+        if (!planned || !planned.invokeDate || !planned.recurrence) return;
         // Move previousDate to current invokeDate, and calculate new invokeDate
         const prev = planned.invokeDate;
         let nextInvoke = new Date(prev);

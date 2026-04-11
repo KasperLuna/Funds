@@ -39,7 +39,7 @@ const UpcomingPlannedTransactionCard: React.FC<
           <div className="flex flex-col text-start min-w-0 flex-shrink">
             <div className="flex flex-row items-center gap-2">
               <p className="text-nowrap text-sm font-medium">
-                {pt?.invokeDate.toLocaleDateString(undefined, {
+                {pt?.invokeDate?.toLocaleDateString(undefined, {
                   month: "short",
                   day: "numeric",
                 })}
@@ -47,8 +47,10 @@ const UpcomingPlannedTransactionCard: React.FC<
             </div>
             <div className="h-px bg-slate-600/60 my-1" />
             <p className="text-xs mt-0.5 text-slate-400 truncate">
-              {pt.recurrence.frequency.charAt(0).toUpperCase() +
-                pt.recurrence.frequency.slice(1).toLowerCase()}
+              {pt.recurrence?.frequency
+                ? pt.recurrence.frequency.charAt(0).toUpperCase() +
+                  pt.recurrence.frequency.slice(1).toLowerCase()
+                : ""}
             </p>
           </div>
           <div className="flex flex-col text-right min-w-0 flex-1">

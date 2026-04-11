@@ -33,7 +33,10 @@ const UpcomingPlannedTransactions = memo(
         // Show all active planned transactions sorted by invokeDate
         return plannedTransactions
           .filter((pt) => pt.active)
-          .sort((a, b) => a.invokeDate.getTime() - b.invokeDate.getTime());
+          .sort(
+            (a, b) =>
+              (a.invokeDate?.getTime() ?? 0) - (b.invokeDate?.getTime() ?? 0),
+          );
       }
 
       const twoDaysFromNow = new Date(localDateTime);
@@ -43,6 +46,7 @@ const UpcomingPlannedTransactions = memo(
       return plannedTransactions.filter(
         (pt) =>
           pt.active &&
+          pt.invokeDate &&
           pt.invokeDate <= twoDaysFromNow &&
           (!pt.previousDate || new Date(pt.previousDate) < localDateTime),
       );
@@ -142,11 +146,12 @@ const UpcomingPlannedTransactions = memo(
                   <MixedDialogTrigger
                     transaction={transaction}
                     onPlannedSubmit={async () => {
+                      if (!pt.invokeDate || !pt.recurrence) return;
                       // On submit, move previousDate to current invokeDate, and calculate new invokeDate
                       const prev = pt.invokeDate;
                       let nextInvoke = new Date(prev);
-                      const interval = pt.recurrence.interval || 1;
-                      switch (pt.recurrence.frequency) {
+                      const interval = pt.recurrence!.interval || 1;
+                      switch (pt.recurrence!.frequency) {
                         case "daily":
                           nextInvoke.setDate(nextInvoke.getDate() + interval);
                           break;
