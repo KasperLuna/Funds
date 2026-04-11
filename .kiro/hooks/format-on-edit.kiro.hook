@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Format on Edit",
+  "description": "Runs Prettier (pnpm format) whenever a file is edited to keep formatting consistent.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "pnpm format"
+  }
+}

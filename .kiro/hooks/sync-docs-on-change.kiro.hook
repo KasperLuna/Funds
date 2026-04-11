@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Sync Docs on Source Change",
+  "description": "When source files (TypeScript, CSS, config, etc.) are edited, asks the agent to review the changes and update the README or /docs folder to keep documentation in sync with the codebase.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.ts",
+      "*.tsx",
+      "*.js",
+      "*.jsx",
+      "*.css",
+      "*.json",
+      "next.config.js",
+      "postcss.config.js",
+      "tailwind.config.*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file was just edited. Review the change and determine if the README.md or any files in a /docs folder (if one exists) need to be updated to reflect the change. If documentation updates are needed, apply them. Focus on keeping feature descriptions, setup instructions, project structure, and usage examples accurate and up to date."
+  }
+}

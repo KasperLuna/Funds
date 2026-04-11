@@ -1,11 +1,37 @@
 /**
  * PocketBase collection schema definitions.
  *
- * Each collection includes field definitions and Row-Level Security (RLS) rules
- * ensuring users can only access their own data:
- *   - listRule / viewRule / updateRule / deleteRule: `user = @request.auth.id`
- *   - createRule: `@request.data.user = @request.auth.id`
- *     (ensures users can only create records for themselves)
+ * ## Row-Level Security (RLS)
+ *
+ * Every user-owned collection enforces data isolation via PocketBase API rules.
+ * These rules are applied server-side by PocketBase on every request:
+ *
+ * | Rule        | Expression                            | Purpose                                      |
+ * |-------------|---------------------------------------|----------------------------------------------|
+ * | listRule    | `user = @request.auth.id`             | Users can only list their own records         |
+ * | viewRule    | `user = @request.auth.id`             | Users can only view their own records         |
+ * | createRule  | `@request.data.user = @request.auth.id` | Users can only create records for themselves |
+ * | updateRule  | `user = @request.auth.id`             | Users can only update their own records       |
+ * | deleteRule  | `user = @request.auth.id`             | Users can only delete their own records       |
+ *
+ * The `userRLS` constant below is spread into every collection schema.
+ * The schema-validator (`schema-validator.ts`) passes these rules to PocketBase
+ * when creating collections via `validateAndCreateCollections()`.
+ *
+ * ### Client-side enforcement
+ *
+ * In addition to server-side RLS, every React Query hook in `src/lib/hooks/`
+ * applies `filter: \`user = "\${userId}"\`` on read queries and sets
+ * `user: userId` on create mutations as a defense-in-depth measure.
+ *
+ * ### Collections protected by RLS
+ *
+ * - **banks** — Bank accounts
+ * - **categories** — Transaction categories
+ * - **transactions** — Financial transactions
+ * - **planned_transactions** — Recurring/scheduled transactions
+ * - **tokens** — Cryptocurrency holdings
+ * - **push_subscriptions** — Web Push notification endpoints
  */
 
 export interface CollectionField {
@@ -26,7 +52,12 @@ export interface CollectionSchema {
   deleteRule: string;
 }
 
-/** RLS rules scoped to the authenticated user */
+/**
+ * Shared RLS rules scoped to the authenticated user.
+ * Applied to every user-owned collection via object spread.
+ *
+ * @see https://pocketbase.io/docs/api-rules-and-filters/
+ */
 const userRLS = {
   listRule: "user = @request.auth.id",
   viewRule: "user = @request.auth.id",
@@ -35,6 +66,7 @@ const userRLS = {
   deleteRule: "user = @request.auth.id",
 };
 
+/** Banks collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const banksCollection: CollectionSchema = {
   name: "banks",
   type: "base",
@@ -53,6 +85,7 @@ export const banksCollection: CollectionSchema = {
   ],
 };
 
+/** Categories collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const categoriesCollection: CollectionSchema = {
   name: "categories",
   type: "base",
@@ -71,6 +104,7 @@ export const categoriesCollection: CollectionSchema = {
   ],
 };
 
+/** Transactions collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const transactionsCollection: CollectionSchema = {
   name: "transactions",
   type: "base",
@@ -106,6 +140,7 @@ export const transactionsCollection: CollectionSchema = {
   ],
 };
 
+/** Planned transactions collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const plannedTransactionsCollection: CollectionSchema = {
   name: "planned_transactions",
   type: "base",
@@ -146,6 +181,7 @@ export const plannedTransactionsCollection: CollectionSchema = {
   ],
 };
 
+/** Tokens collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const tokensCollection: CollectionSchema = {
   name: "tokens",
   type: "base",
@@ -165,6 +201,7 @@ export const tokensCollection: CollectionSchema = {
   ],
 };
 
+/** Push subscriptions collection — RLS: all operations scoped to `user = @request.auth.id` */
 export const pushSubscriptionsCollection: CollectionSchema = {
   name: "push_subscriptions",
   type: "base",

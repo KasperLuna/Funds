@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Code Quality Review",
+  "description": "Analyzes modified source code files for potential improvements including code smells, design patterns, and best practices. Generates suggestions for improving readability, maintainability, and performance while preserving existing functionality.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "src/**/*.ts",
+      "src/**/*.tsx"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the changed file for potential code quality improvements. Analyze for:\n\n1. **Code smells** – duplicated logic, overly complex functions, long parameter lists, magic numbers/strings.\n2. **Design patterns** – opportunities to apply or improve patterns (e.g., extracting custom hooks, composing components, using proper abstractions).\n3. **Best practices** – consistent type imports, proper error handling, accessibility concerns, React/Next.js conventions.\n4. **Readability** – naming clarity, function length, comments where logic is non-obvious.\n5. **Maintainability** – separation of concerns, testability, coupling between modules.\n6. **Performance** – unnecessary re-renders, missing memoization, inefficient data transformations, proper use of React Query patterns.\n\nProvide concise, actionable suggestions. Do not rewrite the entire file — just highlight specific areas and recommend targeted improvements. If the code looks solid, say so briefly."
+  }
+}

@@ -66,18 +66,18 @@ This implementation plan breaks down the Funds personal finance tracker into act
 - [x] 2. Checkpoint - Verify project bootstrapping
   - Ensure the T3 app builds and runs, all tooling is configured, PocketBase schema is defined, and test framework works. Ask the user if questions arise.
 
-- [ ] 3. Implement authentication and user management
-  - [ ] 3.1 Create AuthContext and AuthProvider
+- [x] 3. Implement authentication and user management
+  - [x] 3.1 Create AuthContext and AuthProvider
     - Implement `src/lib/providers/AuthProvider.tsx` with user state, session restoration on mount
     - Implement `login(email, password)`, `loginWithOAuth(provider)`, `logout()` methods
     - Handle token refresh via PocketBase `authRefresh()`
     - _Requirements: 1.1, 1.2, 1.6, 1.7_
 
-  - [ ] 3.2 Create `useAuth` hook
+  - [x] 3.2 Create `useAuth` hook
     - Expose `user`, `isLoading`, `isAuthenticated`, `login`, `loginWithOAuth`, `logout`
     - _Requirements: 1.1, 1.6_
 
-  - [ ] 3.3 Build login page with email/password and Google OAuth
+  - [x] 3.3 Build login page with email/password and Google OAuth
     - Create login form using React Hook Form + Zod validation
     - Implement email/password login flow
     - Implement Google OAuth login button and callback handling
@@ -85,7 +85,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Redirect to `/dashboard` on success
     - _Requirements: 1.2, 1.3, 1.4, 13.1 through 13.8_
 
-  - [ ] 3.4 Implement logout and protected routes
+  - [x] 3.4 Implement logout and protected routes
     - Implement logout: clear token from Zustand + localStorage, clear PocketBase authStore, redirect to login
     - Create `ProtectedRoute` component that redirects unauthenticated users to login
     - _Requirements: 1.5, 17.4, 17.5_
@@ -98,15 +98,15 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test email/password login, OAuth login, logout, session restoration, token refresh
     - _Requirements: 28.1_
 
-- [ ] 4. Implement core data layer - Banks
-  - [ ] 4.1 Create bank management React Query hooks
+- [x] 4. Implement core data layer - Banks
+  - [x] 4.1 Create bank management React Query hooks
     - Implement `useBanks()` hook with user-scoped filtering and 5-min stale time
     - Implement `useCreateBank()` mutation with optimistic update
     - Implement `useUpdateBank()` mutation with optimistic update
     - Implement `useDeleteBank()` mutation with cascade awareness
     - _Requirements: 2.1, 2.3, 2.4, 2.5, 12.1, 12.8, 12.9_
 
-  - [ ] 4.2 Build BankForm component
+  - [x] 4.2 Build BankForm component
     - Create form with name, primaryColor, secondaryColor fields using React Hook Form + Zod
     - Handle create and edit modes via `initialData` prop
     - Disable submit button during submission, reset form on success
@@ -120,35 +120,35 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 25: Bank Deletion Cascade**
     - **Validates: Requirement 2.5**
 
-- [ ] 5. Implement core data layer - Transactions
-  - [ ] 5.1 Create Zod validation schemas for transactions
+- [x] 5. Implement core data layer - Transactions
+  - [x] 5.1 Create Zod validation schemas for transactions
     - Define `transactionSchema` with description (min 1), type (enum), amount (positive), bank (min 1), categories (min 1), date
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 13.1, 13.2_
 
-  - [ ] 5.2 Create transaction management React Query hooks
+  - [x] 5.2 Create transaction management React Query hooks
     - Implement `useTransactions(bankId?, filters?)` with user-scoped filtering, date range, category, search text support
     - Implement `useCreateTransaction()` with optimistic update and rollback
     - Implement `useUpdateTransaction()` with optimistic update
     - Implement `useDeleteTransaction()` with cache invalidation
     - _Requirements: 3.1, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 14.3, 14.4, 14.5_
 
-  - [ ] 5.3 Build TransactionForm component
+  - [x] 5.3 Build TransactionForm component
     - Create form with description, type, amount, bank (select), categories (multi-select), date (date picker) using React Hook Form + Zod
     - Handle create and edit modes, disable submit during submission
     - _Requirements: 3.1, 3.2, 3.3, 13.1 through 13.8_
 
-  - [ ] 5.4 Build TransactionCard and TransactionsTable components
+  - [x] 5.4 Build TransactionCard and TransactionsTable components
     - Create `TransactionCard` for mobile display with description, amount, categories as tags, date, bank color indicator, edit/delete actions
     - Create `TransactionsTable` for desktop with sortable columns, pagination, row actions
     - Both support privacy mode
     - _Requirements: 10.10, 10.11, 9.1, 9.2_
 
-  - [ ] 5.5 Build TransactionFilter component
+  - [x] 5.5 Build TransactionFilter component
     - Implement bank select, category multi-select, type select, date range picker, search text input
     - Implement debounced search (300ms)
     - _Requirements: 3.7, 3.8, 3.9, 16.5_
 
-  - [ ] 5.6 Implement transfer functionality
+  - [x] 5.6 Implement transfer functionality
     - Create transfer logic that creates two transactions (withdrawal from origin, deposit to destination)
     - Ensure balance preservation across both banks
     - _Requirements: 3.12_
@@ -167,25 +167,25 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test create, update, delete with validation, optimistic updates, rollback on error
     - _Requirements: 28.2_
 
-- [ ] 6. Implement category management and budget tracking
-  - [ ] 6.1 Create category management React Query hooks
+- [x] 6. Implement category management and budget tracking
+  - [x] 6.1 Create category management React Query hooks
     - Implement `useCategories()` with user-scoped filtering and 2-min stale time
     - Implement `useCreateCategory()`, `useUpdateCategory()`, `useDeleteCategory()` mutations
     - Handle category deletion cascade (remove from associated transactions)
     - _Requirements: 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 4.8_
 
-  - [ ] 6.2 Build CategoryForm component
+  - [x] 6.2 Build CategoryForm component
     - Create form with name, monthly_budget, hideable, total_exempt fields using React Hook Form + Zod
     - Handle create and edit modes
     - _Requirements: 4.1, 4.2, 13.1 through 13.8_
 
-  - [ ] 6.3 Implement budget calculation utilities
+  - [x] 6.3 Implement budget calculation utilities
     - Create `calculateCategorySpending(transactions, categoryId, dateRange)` in `src/lib/utils/calculations.ts`
     - Create `calculateBudgetRemaining(budget, spending)` returning `Math.max(0, budget - spending)`
     - Implement timezone-aware month boundary calculation using user's local timezone
     - _Requirements: 5.2, 5.3, 5.6, 5.7_
 
-  - [ ] 6.4 Build BudgetsSummary component
+  - [x] 6.4 Build BudgetsSummary component
     - Display progress bars per category with color coding (green < 50%, yellow 50-80%, red > 80%)
     - Show spending vs budget, percentage used
     - Support privacy mode (hide amounts)
@@ -207,31 +207,31 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test monthly spending calculation, budget remaining, overspending detection
     - _Requirements: 28.4_
 
-- [ ] 7. Checkpoint - Verify core data layer
+- [x] 7. Checkpoint - Verify core data layer
   - Ensure all tests pass for banks, transactions, categories, and budget calculations. Ask the user if questions arise.
 
-- [ ] 8. Implement cryptocurrency tracking
-  - [ ] 8.1 Create cryptocurrency React Query hooks
+- [x] 8. Implement cryptocurrency tracking
+  - [x] 8.1 Create cryptocurrency React Query hooks
     - Implement `useTokens()` with user-scoped filtering
     - Implement `useCreateToken()`, `useUpdateToken()`, `useDeleteToken()` mutations
     - _Requirements: 7.1, 7.2, 7.3, 7.8_
 
-  - [ ] 8.2 Set up CoinGecko API integration
+  - [x] 8.2 Set up CoinGecko API integration
     - Create `src/lib/utils/crypto.ts` with price fetching utility
     - Implement price update mechanism with configurable interval
     - Handle API rate limiting gracefully
     - _Requirements: 7.4, 7.5, 7.9_
 
-  - [ ] 8.3 Create TokensProvider context
+  - [x] 8.3 Create TokensProvider context
     - Implement `src/lib/providers/TokensProvider.tsx` for crypto data context
     - Manage price state and portfolio calculations
     - _Requirements: 7.3, 7.5_
 
-  - [ ] 8.4 Build TokenForm component
+  - [x] 8.4 Build TokenForm component
     - Create form with name, symbol, coingecko_id, quantity, costAvg using React Hook Form + Zod
     - _Requirements: 7.1, 7.2, 13.1 through 13.8_
 
-  - [ ] 8.5 Build CryptoDashboard component
+  - [x] 8.5 Build CryptoDashboard component
     - Display token list with holdings, current values, price changes
     - Show portfolio composition and total value
     - Calculate percentage change: `(current_price - costAvg) / costAvg`
@@ -246,35 +246,35 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test token CRUD, portfolio value calculation, price updates without full re-renders
     - _Requirements: 28.3_
 
-- [ ] 9. Implement planned transactions and notifications
-  - [ ] 9.1 Create planned transaction React Query hooks
+- [x] 9. Implement planned transactions and notifications
+  - [x] 9.1 Create planned transaction React Query hooks
     - Implement `usePlannedTransactions()` with user-scoped filtering
     - Implement `useCreatePlannedTransaction()`, `useUpdatePlannedTransaction()`, `useDeletePlannedTransaction()` mutations
     - _Requirements: 6.1, 6.7, 6.9, 6.10_
 
-  - [ ] 9.2 Implement recurrence calculation utilities
+  - [x] 9.2 Implement recurrence calculation utilities
     - Create `calculateNextOccurrence(recurrenceRule, previousDate)` in `src/lib/utils/recurrence.ts`
     - Support daily, weekly, monthly, yearly frequencies with interval
     - Implement timezone-aware scheduling
     - Ensure next occurrence is always after previous occurrence
     - _Requirements: 6.2, 6.3, 6.4_
 
-  - [ ] 9.3 Build PlannedTransactionForm component
+  - [x] 9.3 Build PlannedTransactionForm component
     - Create form with description, type, amount, bank, categories, recurrence (frequency + interval), timezone using React Hook Form + Zod
     - _Requirements: 6.1, 13.1 through 13.8_
 
-  - [ ] 9.4 Build UpcomingPlannedTransactions component
+  - [x] 9.4 Build UpcomingPlannedTransactions component
     - Display upcoming planned transactions with next occurrence dates
     - Support privacy mode
     - _Requirements: 6.1, 9.1, 9.2_
 
-  - [ ] 9.5 Implement push notification subscription
+  - [x] 9.5 Implement push notification subscription
     - Create `usePushSubscription` hook for managing Web Push API subscriptions
     - Handle subscription endpoint storage in PocketBase push_subscriptions collection
     - Handle subscription management (subscribe/unsubscribe)
     - _Requirements: 8.1, 8.5, 8.6_
 
-  - [ ] 9.6 Create cron job API endpoint for planned transaction triggers
+  - [x] 9.6 Create cron job API endpoint for planned transaction triggers
     - Implement `/api/cron-planned-reminders/route.ts`
     - Check for due planned transactions, create corresponding transactions
     - Send push notifications to subscribed devices
@@ -291,44 +291,44 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test recurrence calculation, timezone-aware triggering, notification sending
     - _Requirements: 28.5_
 
-- [ ] 10. Checkpoint - Verify feature modules
+- [x] 10. Checkpoint - Verify feature modules
   - Ensure all tests pass for crypto, planned transactions, and notifications. Ask the user if questions arise.
 
-- [ ] 11. Build responsive layout and dashboard UI
-  - [ ] 11.1 Create `useResponsive` hook
+- [x] 11. Build responsive layout and dashboard UI
+  - [x] 11.1 Create `useResponsive` hook
     - Implement breakpoint detection: mobile (< 768px), tablet (768-1024px), desktop (> 1024px)
     - Return `isMobile`, `isTablet`, `isDesktop`, `breakpoint`
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
 
-  - [ ] 11.2 Build RootLayout with providers
+  - [x] 11.2 Build RootLayout with providers
     - Wire up `AuthProvider`, `QueryClientProvider`, `TokensProvider` in `src/app/layout.tsx`
     - Set up viewport metadata, font loading, global styles
     - _Requirements: 24.1_
 
-  - [ ] 11.3 Build DashboardLayout with responsive navigation
+  - [x] 11.3 Build DashboardLayout with responsive navigation
     - Implement desktop sidebar (240px, collapsible to 176px on tablet)
     - Implement mobile header (60px fixed top) with logo, privacy toggle, menu
     - Implement mobile bottom nav (60px fixed bottom) with Dashboard, Banks, Crypto, Settings tabs
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
 
-  - [ ] 11.4 Build Dashboard page with summary components
+  - [x] 11.4 Build Dashboard page with summary components
     - Create `AssetSummary` component (total assets = bank total + crypto total, breakdown)
     - Create `BankSummary` component (bank card carousel, responsive: 1 card mobile, 2 tablet, 3+ desktop)
     - Integrate `BudgetsSummary` and `UpcomingPlannedTransactions`
     - All components support privacy mode
     - _Requirements: 9.1, 9.2, 9.4, 9.5_
 
-  - [ ] 11.5 Build Banks management page
+  - [x] 11.5 Build Banks management page
     - Create `BankSelect` component for bank selection
     - Create `TransactionsContainer` wiring TransactionFilter, TransactionCard (mobile), TransactionsTable (desktop)
     - Integrate BankForm and TransactionForm in dialogs/bottom sheets
     - _Requirements: 10.10, 10.11_
 
-  - [ ] 11.6 Build Crypto tracking page
+  - [x] 11.6 Build Crypto tracking page
     - Wire `CryptoDashboard`, `TokenForm`, portfolio summary
     - _Requirements: 7.3, 7.5, 7.6, 7.7_
 
-  - [ ] 11.7 Implement PrivacyToggle component
+  - [x] 11.7 Implement PrivacyToggle component
     - Create toggle component integrated with `useUIStore`
     - Apply privacy mode to all monetary displays across all views
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
@@ -349,21 +349,21 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test mobile, tablet, desktop layout rendering and adaptation on resize
     - _Requirements: 28.8_
 
-- [ ] 12. Implement state management patterns and optimistic updates
-  - [ ] 12.1 Implement optimistic update pattern for all mutations
+- [x] 12. Implement state management patterns and optimistic updates
+  - [x] 12.1 Implement optimistic update pattern for all mutations
     - Create reusable optimistic update helpers for create/update/delete
     - Implement rollback on error for all mutation hooks
     - Handle cache invalidation on success
     - _Requirements: 14.3, 14.4, 14.5, 12.8, 12.9_
 
-  - [ ] 12.2 Implement error handling and retry logic
+  - [x] 12.2 Implement error handling and retry logic
     - Create `handleApiError` utility in `src/lib/utils/error.ts`
     - Handle 401 (redirect to login), 422 (validation errors), network errors
     - Implement automatic retry with exponential backoff
     - Display user-friendly error messages via toast
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6_
 
-  - [ ] 12.3 Create formatting and calculation utility functions
+  - [x] 12.3 Create formatting and calculation utility functions
     - Implement `formatCurrency(amount, currency)`, `formatDate(date)`, `formatPercentage(value)` in `src/lib/utils/formatting.ts`
     - Implement `calculateTotalBalance(banks)` in `src/lib/utils/calculations.ts`
     - _Requirements: 22.2, 22.3_
@@ -391,24 +391,24 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test calculation utilities (balance, spending, budget)
     - _Requirements: 25.3_
 
-- [ ] 13. Checkpoint - Verify UI and state management
+- [x] 13. Checkpoint - Verify UI and state management
   - Ensure all tests pass for layout, dashboard, state management, and utilities. Ask the user if questions arise.
 
-- [ ] 14. Implement security and data isolation
-  - [ ] 14.1 Implement user data isolation
+- [x] 14. Implement security and data isolation
+  - [x] 14.1 Implement user data isolation
     - Add user filter (`user = @request.auth.id`) to all PocketBase queries
     - Verify user ownership on all mutations
     - Ensure RLS rules are documented and applied per collection
     - _Requirements: 17.6, 6.1_
 
-  - [ ] 14.2 Implement authentication token management
+  - [x] 14.2 Implement authentication token management
     - Secure token storage in localStorage with Zustand persistence
     - Token refresh logic via PocketBase `authRefresh()`
     - Token expiration handling and automatic re-authentication prompt
     - Session timeout after 30 minutes of inactivity
     - _Requirements: 17.1, 17.2, 17.3, 17.8_
 
-  - [ ] 14.3 Implement input validation on client and server
+  - [x] 14.3 Implement input validation on client and server
     - Client-side validation with Zod schemas for all forms
     - Server-side validation via PocketBase collection rules
     - _Requirements: 17.7_
@@ -417,19 +417,19 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 6: User Data Isolation**
     - **Validates: Requirement 12.1**
 
-- [ ] 15. Implement offline support and service worker
-  - [ ] 15.1 Implement service worker for offline caching
+- [x] 15. Implement offline support and service worker
+  - [x] 15.1 Implement service worker for offline caching
     - Create `public/sw.js` with cache-first strategy for critical assets
     - Cache `/`, `/dashboard`, `/offline.html`
     - Handle fetch events with cache fallback
     - _Requirements: 11.1, 11.4, 20.6_
 
-  - [ ] 15.2 Implement offline transaction queueing
+  - [x] 15.2 Implement offline transaction queueing
     - Create offline queue in localStorage
     - Queue transactions when offline, sync when online
     - _Requirements: 11.2, 11.3, 11.5_
 
-  - [ ] 15.3 Build offline indicator component
+  - [x] 15.3 Build offline indicator component
     - Display offline status in UI
     - Show sync status for queued transactions
     - _Requirements: 11.4_
@@ -442,18 +442,18 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - Test offline data caching, transaction queueing, sync on reconnect
     - _Requirements: 28.3_
 
-- [ ] 16. Implement PWA support
-  - [ ] 16.1 Create PWA manifest and configure icons
+- [x] 16. Implement PWA support
+  - [x] 16.1 Create PWA manifest and configure icons
     - Create `public/manifest.json` with app name, icons (192px, 512px), theme color (`#0f172a`), standalone display mode, shortcuts
     - Configure PWA screenshots for mobile and desktop
     - _Requirements: 20.8, 20.9, 20.10_
 
-  - [ ] 16.2 Implement iOS home screen support
+  - [x] 16.2 Implement iOS home screen support
     - Add iOS meta tags: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`
     - Configure `apple-touch-icon`
     - _Requirements: 20.1, 20.2_
 
-  - [ ] 16.3 Implement Android install prompt
+  - [x] 16.3 Implement Android install prompt
     - Create `usePWAInstall` hook handling `beforeinstallprompt` event
     - Build install prompt UI component
     - _Requirements: 20.3, 20.4_
@@ -468,23 +468,23 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 37: PWA Manifest Configuration**
     - **Validates: Requirement 20.8, 20.9, 20.10**
 
-- [ ] 17. Implement accessibility and browser compatibility
-  - [ ] 17.1 Implement keyboard navigation
+- [x] 17. Implement accessibility and browser compatibility
+  - [x] 17.1 Implement keyboard navigation
     - Ensure all interactive elements are keyboard accessible
     - Add keyboard shortcuts for common actions
     - _Requirements: 18.1_
 
-  - [ ] 17.2 Add ARIA labels and semantic HTML
+  - [x] 17.2 Add ARIA labels and semantic HTML
     - Add ARIA labels to all interactive elements and forms
     - Use semantic HTML elements throughout (nav, main, section, article)
     - Announce page changes and updates for screen readers
     - _Requirements: 18.2, 18.4, 18.5_
 
-  - [ ] 17.3 Ensure color contrast meets WCAG AA
+  - [x] 17.3 Ensure color contrast meets WCAG AA
     - Verify and adjust color contrast ratios across all themes
     - _Requirements: 18.3_
 
-  - [ ] 17.4 Verify browser compatibility
+  - [x] 17.4 Verify browser compatibility
     - Test on Chrome/Edge 90+, Firefox 88+, Safari 14+, mobile browsers
     - Add unsupported browser warning
     - _Requirements: 19.1 through 19.5_
@@ -495,14 +495,14 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 33: Custom Component Wrapper Consistency**
     - **Validates: Requirement 29.3, 29.7**
 
-- [ ] 18. Set up test infrastructure and write remaining integration tests
-  - [ ] 18.1 Create test utilities, fixtures, and mock data factories
+- [x] 18. Set up test infrastructure and write remaining integration tests
+  - [x] 18.1 Create test utilities, fixtures, and mock data factories
     - Create mock data factories for all entities (banks, transactions, categories, tokens, planned transactions)
     - Create custom render function with all providers
     - Create test helpers for common assertions
     - _Requirements: 25.1 through 25.7_
 
-  - [ ] 18.2 Create core integration tests
+  - [x] 18.2 Create core integration tests
     - Authentication flow test (email/password, OAuth, logout)
     - Transaction management test (CRUD, optimistic updates)
     - Bank balance calculation test
@@ -517,7 +517,7 @@ This implementation plan breaks down the Funds personal finance tracker into act
     - **Property 30: Test Coverage Threshold**
     - **Validates: Requirement 28.12**
 
-- [ ] 19. Final checkpoint - Ensure all tests pass
+- [x] 19. Final checkpoint - Ensure all tests pass
   - Run full test suite with `pnpm test`. Verify all requirements are covered. Ask the user if questions arise.
 
 ## Notes
