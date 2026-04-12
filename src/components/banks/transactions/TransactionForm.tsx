@@ -60,7 +60,7 @@ const TransferFields = ({
   <>
     <div className="flex flex-row gap-2">
       <div className="flex flex-col gap-1 w-full">
-        <Label htmlFor="date">{"Origin Bank: "}</Label>
+        <Label htmlFor="originBank">Origin Bank:</Label>
         <Controller
           name="originBank"
           control={control}
@@ -73,9 +73,9 @@ const TransferFields = ({
           <p className="text-xs text-red-500">This field is required.</p>
         )}
       </div>
-      <ArrowRight className="size-10 mt-4" />
+      <ArrowRight className="size-10 mt-4" aria-hidden="true" />
       <div className="w-full gap-1 flex flex-col relative">
-        <Label htmlFor="amount">Destination Bank:</Label>
+        <Label htmlFor="destinationBank">Destination Bank:</Label>
         <Controller
           name="destinationBank"
           control={control}
@@ -94,13 +94,13 @@ const TransferFields = ({
     <div className="flex flex-col gap-2 w-full mt-2">
       <div className="flex flex-row gap-2 items-center">
         <div className="w-full gap-1 flex flex-col relative">
-          <Label htmlFor="amount">
+          <Label htmlFor="originDeduction">
             {isTransferAmountsDifferent
               ? "Origin Deduction:"
               : "Transfer Amount:"}{" "}
           </Label>
           <Input
-            id="amount"
+            id="originDeduction"
             type="number"
             inputMode="decimal"
             step={0.01}
@@ -117,11 +117,11 @@ const TransferFields = ({
         </div>
         {isTransferAmountsDifferent && (
           <>
-            <ArrowRight className="size-10 mt-4" />
+            <ArrowRight className="size-10 mt-4" aria-hidden="true" />
             <div className="w-full gap-1 flex flex-col relative">
-              <Label htmlFor="amount">Destination Addition:</Label>
+              <Label htmlFor="destinationAddition">Destination Addition:</Label>
               <Input
-                id="amount"
+                id="destinationAddition"
                 type="number"
                 inputMode="decimal"
                 step={0.01}
@@ -141,11 +141,14 @@ const TransferFields = ({
       </div>
       <div className="flex flex-row items-center gap-2 text-sm">
         <Switch
+          id="transfer-different-amounts"
           checked={isTransferAmountsDifferent}
           onCheckedChange={setIsTransferAmountsDifferent}
           className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-slate-700"
         />
-        Transfer different amounts
+        <Label htmlFor="transfer-different-amounts">
+          Transfer different amounts
+        </Label>
       </div>
     </div>
   </>
@@ -308,7 +311,7 @@ export const TransactionForm = ({
           <TemplatePicker onSelect={handleTemplateSelect} />
         )}
         <div className="flex flex-col gap-1 w-full">
-          <Label htmlFor="date">{"Date: "}</Label>
+          <Label htmlFor="txn-date">Date:</Label>
           <Controller
             name="date"
             control={control}
@@ -322,7 +325,7 @@ export const TransactionForm = ({
         </div>
         {formType != "Transfer" && (
           <div className="flex flex-col gap-1 w-full">
-            <Label htmlFor="date">{"Bank: "}</Label>
+            <Label htmlFor="txn-bank">Bank:</Label>
             <Controller
               name="bank"
               control={control}
@@ -349,7 +352,7 @@ export const TransactionForm = ({
         <div className={cn("flex flex-row justify-center gap-4")}>
           {formType === "Transaction" && (
             <div className="w-full flex flex-col gap-1">
-              <Label htmlFor="link">{"Type: "}</Label>
+              <Label htmlFor="txn-type">Type:</Label>
               <div className="flex flex-row gap-2">
                 <Controller
                   name="type"
@@ -432,14 +435,15 @@ export const TransactionForm = ({
           </small>
         )}
         <div className="flex flex-col gap-1">
-          <Label htmlFor="description">{"Description: "}</Label>
+          <Label htmlFor="description">Description:</Label>
           <Input
+            id="description"
             {...register("description")}
             className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <Label htmlFor="categories">{"Category: "}</Label>
+          <Label>Category:</Label>
           <Controller
             name="categories"
             control={control}

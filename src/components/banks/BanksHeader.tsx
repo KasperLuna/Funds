@@ -29,21 +29,22 @@ export const BanksHeader = () => {
         {bankName && (
           <Button
             onClick={() => setQueryParams({ bank: undefined })}
-            className="rounded-full p-1 w-5 h-5"
+            aria-label="Clear bank filter"
+            className="rounded-full p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
             variant={"secondary"}
           >
             <X className="w-5 h-5 stroke-2" />
           </Button>
         )}
       </div>
-      <small className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full">
+      <span className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full text-sm">
         Total:{" "}
         <PrivacyPeek
           isPrivate={isPrivate}
           revealedContent={parseAmount(displayValue, baseCurrency?.code)}
           maskedContent={`${baseCurrency?.symbol ?? "$"}••••••`}
         />
-      </small>
+      </span>
     </div>
   );
 };

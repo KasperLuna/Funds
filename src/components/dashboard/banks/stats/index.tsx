@@ -7,6 +7,9 @@ import autoAnimate from "@formkit/auto-animate";
 import { Button } from "@/components/ui/button";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 
+// Max visible = 2 rows. CSS grid handles responsive cols, so use 10 as safe max for 2 rows at xl (5 cols * 2).
+const MAX_VISIBLE = 10;
+
 export const StatsSection = () => {
   const { banks, loading } = useBanksQuery();
   const totalAmount =
@@ -17,24 +20,6 @@ export const StatsSection = () => {
   const [expanded, setExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Responsive: determine cards per row based on window width
-  const [cardsPerRow, setCardsPerRow] = useState(2);
-  useEffect(() => {
-    function updateCardsPerRow() {
-      const width = window.innerWidth;
-      if (width >= 1280)
-        setCardsPerRow(5); // xl
-      else if (width >= 1024)
-        setCardsPerRow(4); // lg
-      else if (width >= 640)
-        setCardsPerRow(3); // sm & md
-      else setCardsPerRow(2); // below sm
-    }
-    updateCardsPerRow();
-    window.addEventListener("resize", updateCardsPerRow);
-    return () => window.removeEventListener("resize", updateCardsPerRow);
-  }, []);
-
   // Enable auto-animate
   useEffect(() => {
     if (containerRef.current) {
@@ -43,10 +28,9 @@ export const StatsSection = () => {
   }, []);
 
   // Show only first 2 rows unless expanded
-  const maxVisible = cardsPerRow * 2;
-  const shouldCollapse = banks && banks.length > maxVisible;
+  const shouldCollapse = banks && banks.length > MAX_VISIBLE;
   const visibleBanks =
-    !expanded && shouldCollapse && banks ? banks.slice(0, maxVisible) : banks;
+    !expanded && shouldCollapse && banks ? banks.slice(0, MAX_VISIBLE) : banks;
 
   return (
     <>
@@ -66,10 +50,7 @@ export const StatsSection = () => {
         ))}
         {/* Show collapse button at end when expanded and shouldCollapse */}
         {expanded && shouldCollapse && (
-          <div
-            className="w-full"
-            style={{ gridColumn: `1 / span ${cardsPerRow}` }}
-          >
+          <div className="w-full col-span-full">
             <Button
               variant="ghost"
               className="w-full flex items-center justify-center mt-0.5 text-muted-foreground text-xs py-1 h-fit"

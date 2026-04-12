@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCw } from "lucide-react";
-import React from "react";
 import { BanksHeader } from "@/components/banks/BanksHeader";
 import { MixedDialogTrigger } from "@/components/banks/MixedDialog";
 import { TransactionsContainer } from "@/components/banks/transactions/TransactionsContainer";
@@ -15,7 +14,7 @@ function Page() {
   const title = "Funds - Banks";
   const queryClient = useQueryClient();
   return (
-    <div className="min-h-screen">
+    <main className="min-h-screen">
       <title>{title}</title>
       <div className="relative">
         <div className="absolute inset-0 pointer-events-none" />
@@ -25,16 +24,17 @@ function Page() {
 
           <div className="flex items-center gap-2 p-1">
             <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
-              <p className="text-slate-100 text-base font-semibold">
+              <h2 className="text-slate-100 text-base font-semibold">
                 Transactions
-              </p>
+              </h2>
               <Button
-                className="rounded-full p-1 h-fit bg-slate-700/60 hover:bg-slate-600/80 border border-slate-600/50 hover:border-slate-500/70 group transition-all duration-300"
+                aria-label="Refresh transactions"
+                className="rounded-full p-1 h-fit bg-slate-700/60 hover:bg-slate-600/80 border border-slate-600/50 hover:border-slate-500/70 group transition-colors duration-300"
                 onClick={() => {
                   queryClient.invalidateQueries({ queryKey: ["transactions"] });
                 }}
               >
-                <RotateCw className="size-4 group-hover:rotate-180 transition-all duration-500 text-emerald-400" />
+                <RotateCw className="size-4 group-hover:rotate-180 transition-transform duration-500 text-emerald-400" />
               </Button>
             </div>
           </div>
@@ -44,8 +44,8 @@ function Page() {
               <TransactionFilter />
               <div className="flex-row md:flex hidden">
                 <MixedDialogTrigger isMobile={false}>
-                  <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 px-6 py-2 shadow-lg hover:shadow-emerald-500/25 transition-all duration-300">
-                    Add
+                  <Button className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 px-6 py-2 shadow-lg hover:shadow-emerald-500/25 transition-colors duration-300">
+                    Add Transaction
                   </Button>
                 </MixedDialogTrigger>
               </div>
@@ -58,12 +58,15 @@ function Page() {
 
       <div className="flex md:hidden fixed bottom-[95px] z-50 right-5">
         <MixedDialogTrigger isMobile={true}>
-          <Button className="px-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-full w-14 h-14 shadow-lg hover:shadow-emerald-500/30 hover:scale-110 transition-all duration-300">
+          <Button
+            aria-label="Add transaction"
+            className="px-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-full w-14 h-14 shadow-lg hover:shadow-emerald-500/30 motion-safe:hover:scale-110 transition-shadow duration-300"
+          >
             <Plus className="text-white" />
           </Button>
         </MixedDialogTrigger>
       </div>
-    </div>
+    </main>
   );
 }
 

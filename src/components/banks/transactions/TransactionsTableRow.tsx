@@ -2,9 +2,8 @@ import React from "react";
 import { ExpandedTransaction } from "@/lib/types";
 import { MixedDialogTrigger } from "../MixedDialog";
 import dayjs from "dayjs";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
-import { parseAmount } from "@/lib/utils";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { PrivacyPeek } from "@/components/PrivacyPeek";
 
@@ -44,7 +43,7 @@ export const TransactionsTableRow: React.FC<{
         </td>
         <td className="px-4 py-2 max-w-[200px] truncate">
           {description.length > 50
-            ? description.slice(0, 50) + "..."
+            ? description.slice(0, 50) + "…"
             : description}
         </td>
         <td className="px-4 py-2">

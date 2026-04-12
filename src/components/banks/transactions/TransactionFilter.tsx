@@ -60,12 +60,16 @@ export const TransactionFilter = () => {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search descriptions...`}
+            placeholder="Search descriptions…"
+            aria-label="Search transactions"
             className="bg-transparent text-slate-100 rounded-r-none focus-visible:ring-offset-0 group-focus-visible:ring-offset-0 group-focus-within:border-slate-500 border-slate-700 transition-none focus-visible:ring-0 group-focus-visible:ring-0 border-r-0"
           />
-          <Button className="px-2 border-[1px] border-slate-700 rounded-l-none bg-transparent group-focus-within:border-slate-500 transition-none border-l-0">
-            <Search className="stroke-slate-500 group-focus-within:stroke-slate-300" />
-          </Button>
+          <div className="px-2 border-[1px] border-slate-700 rounded-l-none bg-transparent group-focus-within:border-slate-500 transition-none border-l-0 flex items-center">
+            <Search
+              aria-hidden="true"
+              className="stroke-slate-500 group-focus-within:stroke-slate-300"
+            />
+          </div>
         </div>
       </div>
 
@@ -78,8 +82,10 @@ export const TransactionFilter = () => {
           variant={isTriggered ? "outline" : "default"}
           className="px-2  border-2 border-slate-800"
           onClick={() => setIsOpen(!isOpen)}
+          aria-label="Toggle filters"
+          aria-expanded={isOpen}
         >
-          <Filter />
+          <Filter aria-hidden="true" />
         </Button>
         {isOpen && (
           <>

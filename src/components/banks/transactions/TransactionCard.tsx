@@ -1,8 +1,7 @@
 import { ExpandedTransaction } from "@/lib/types";
 import dayjs from "dayjs";
-import { cn } from "@/lib/utils";
+import { cn, parseAmount } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
-import { parseAmount } from "@/lib/utils";
 import { MixedDialogTrigger } from "../MixedDialog";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { PrivacyPeek } from "@/components/PrivacyPeek";
@@ -10,7 +9,7 @@ import { PrivacyPeek } from "@/components/PrivacyPeek";
 export const TransactionCard = (props: ExpandedTransaction) => {
   const { isPrivate } = usePrivacy();
   const { baseCurrency } = useUserQuery();
-  const { date, amount, description, expand } = props;
+  const { id, date, amount, description, expand } = props;
   const { bank, categories } = expand || {};
   const isHideable = categories?.some((categ) => categ.hideable);
 
@@ -18,8 +17,15 @@ export const TransactionCard = (props: ExpandedTransaction) => {
     <MixedDialogTrigger transaction={props}>
       <div
         role="button"
-        id="transaction-card"
-        className="group relative flex flex-col justify-between transition-all flex-grow h-full text-slate-200 p-2 border-2 gap-2 border-slate-600/50 hover:border-slate-500/70 rounded-xl bg-gradient-to-br from-slate-800/70 to-slate-700/50 hover:bg-gradient-to-br hover:from-slate-700/80 hover:to-slate-600/60 hover:cursor-pointer overflow-hidden hover:shadow-lg hover:shadow-slate-900/50 hover:scale-[1.01] duration-300"
+        tabIndex={0}
+        id={`transaction-card-${id}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            (e.currentTarget as HTMLElement).click();
+          }
+        }}
+        className="group relative flex flex-col justify-between transition-shadow flex-grow h-full text-slate-200 p-2 border-2 gap-2 border-slate-600/50 hover:border-slate-500/70 rounded-xl bg-gradient-to-br from-slate-800/70 to-slate-700/50 hover:bg-gradient-to-br hover:from-slate-700/80 hover:to-slate-600/60 hover:cursor-pointer overflow-hidden hover:shadow-lg hover:shadow-slate-900/50 motion-safe:hover:scale-[1.01] duration-300"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         <div className="relative z-10 flex flex-row w-full items-center justify-between gap-2 min-w-0">
@@ -45,7 +51,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
             </p>
             <small className="text-slate-300 truncate">
               {description.length > 30
-                ? description.slice(0, 30) + "..."
+                ? description.slice(0, 30) + "…"
                 : description}
             </small>
           </div>

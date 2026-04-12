@@ -3,6 +3,7 @@ import {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogCancel,
@@ -189,7 +190,7 @@ export const MixedDialog = ({
           queryClient.invalidateQueries({ queryKey: ["plannedTransactions"] });
         }
       } catch (error) {
-        alert(error);
+        console.error("Transaction error:", error);
       }
     },
     [
@@ -231,6 +232,12 @@ export const MixedDialog = ({
 
   const handleDelete = useCallback(() => {
     if (!transaction) return;
+    if (
+      !window.confirm(
+        "Delete this transaction? This will also adjust the bank balance.",
+      )
+    )
+      return;
     setIsModalOpen(false);
     const batch = pb.createBatch();
     // Add transaction deletion to batch
@@ -253,10 +260,12 @@ export const MixedDialog = ({
   return (
     <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
       {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
-      <AlertDialogContent
-        className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-1 rounded-md"
-        aria-describedby={undefined}
-      >
+      <AlertDialogContent className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-1 rounded-md">
+        <AlertDialogDescription className="sr-only">
+          {transaction?.id
+            ? "Edit an existing transaction"
+            : "Create a new item"}
+        </AlertDialogDescription>
         <AlertDialogHeader className="flex flex-row w-full justify-between">
           <AlertDialogTitle className="self-center">
             {transaction?.id ? "Edit" : "Create"}{" "}

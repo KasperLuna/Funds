@@ -37,9 +37,16 @@ export const StatCard = memo(function StatCard({
     <div
       tabIndex={0}
       role="button"
+      aria-pressed={isSelected}
       onClick={() => setQueryParams({ bank: !isSelected ? name : undefined })}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setQueryParams({ bank: !isSelected ? name : undefined });
+        }
+      }}
       className={cn(
-        "group relative overflow-hidden rounded-lg bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border p-3 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl w-full",
+        "group relative overflow-hidden rounded-lg bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border p-3 shadow-lg transition-shadow duration-300 motion-safe:hover:scale-105 hover:shadow-xl w-full",
         isSelected
           ? "border-blue-500/50 bg-gradient-to-br from-blue-900/20 to-zinc-900/60 shadow-blue-500/25"
           : "border-zinc-700/50 hover:border-zinc-600/50 hover:from-zinc-700/60 hover:to-zinc-800/60",
@@ -55,9 +62,10 @@ export const StatCard = memo(function StatCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <div
-              className={`p-1.5 rounded-md ${isSelected ? "bg-blue-500/20 border border-blue-500/30" : "bg-zinc-700/50 border border-zinc-600/50"} transition-all duration-300 flex-shrink-0`}
+              className={`p-1.5 rounded-md ${isSelected ? "bg-blue-500/20 border border-blue-500/30" : "bg-zinc-700/50 border border-zinc-600/50"} transition-colors duration-300 flex-shrink-0`}
             >
               <Wallet
+                aria-hidden="true"
                 className={`h-3 w-3 ${isSelected ? "text-blue-400" : "text-zinc-400"}`}
               />
             </div>
@@ -102,13 +110,12 @@ export const StatCard = memo(function StatCard({
 
           {/* Balance indicator */}
           <div
-            className={`h-1 rounded-full transition-all duration-300 ${
-              balance > 0
-                ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                : balance < 0
-                  ? "bg-gradient-to-r from-red-500 to-rose-500"
-                  : "bg-zinc-600"
-            }`}
+            className={cn(
+              "h-1 rounded-full transition-colors duration-300",
+              balance > 0 && "bg-gradient-to-r from-green-500 to-emerald-500",
+              balance < 0 && "bg-gradient-to-r from-red-500 to-rose-500",
+              balance === 0 && "bg-zinc-600",
+            )}
           />
         </div>
       </div>

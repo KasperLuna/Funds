@@ -61,15 +61,15 @@ export const TransactionsContainer = () => {
       ?.reduce(
         (
           acc: { [key: string]: ExpandedTransaction[] },
-          transaction: ExpandedTransaction
+          transaction: ExpandedTransaction,
         ) => {
           const date = dayjs(transaction.date).format("YYYY-MM-DD");
           acc[date] = acc[date] || [];
           acc[date].push(transaction);
           return acc;
         },
-        {}
-      ) || {}
+        {},
+      ) || {},
   );
 
   return (
@@ -79,14 +79,19 @@ export const TransactionsContainer = () => {
         "grid pb-20 md:pb-0 w-full rounded-lg grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[150px] px-[2px] py-1 z-0",
         {
           "pb-0": viewMode === "table",
-        }
+        },
       )}
       ref={parent}
     >
       {isRefetching && (
-        <Skeleton className="w-full col-span-full bg-slate-800 p-4 text-center text-slate-400 italic font-semibold">
-          Updating Transactions...
-        </Skeleton>
+        <output className="col-span-full">
+          <Skeleton
+            aria-live="polite"
+            className="w-full bg-slate-800 p-4 text-center text-slate-400 italic font-semibold"
+          >
+            Updating Transactions…
+          </Skeleton>
+        </output>
       )}
 
       {!isLoading && groupedTransactions?.length === 0 && (
@@ -119,9 +124,7 @@ export const TransactionsContainer = () => {
                         return (
                           <div className="flex justify-center items-center w-full">
                             <div className="h-6 w-6 animate-spin rounded-full border-4 border-orange-400 border-t-transparent" />
-                            <span className="ml-3 font-semibold">
-                              Loading...
-                            </span>
+                            <span className="ml-3 font-semibold">Loading…</span>
                           </div>
                         );
                       }}
@@ -141,7 +144,7 @@ export const TransactionsContainer = () => {
             />
           ) : (
             <TransactionCard key={transactions[0].id} {...transactions[0]} />
-          )
+          ),
         )
       )}
 
