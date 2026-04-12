@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { PrivacyPeek } from "@/components/PrivacyPeek";
 
 export const BudgetsSummary = memo(function BudgetsSummary() {
   const { queryParams, setQueryParams } = useQueryParams();
@@ -47,7 +48,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
       });
       return acc;
     },
-    {} as Record<string, Decimal>
+    {} as Record<string, Decimal>,
   );
 
   // Prepare display data
@@ -93,7 +94,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
   // Calculate total budget and total spent for budgeted categories
   const totalBudget = budgetedRows.reduce(
     (sum, row) => sum + Math.abs(row.budget ?? 0),
-    0
+    0,
   );
   const totalSpent = budgetedRows.reduce((sum, row) => sum + row.spent, 0);
   let totalBarColor = "text-green-400";
@@ -113,7 +114,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
               if (!date) return;
               setQueryParams({
                 monthlyFilter: dayjs(
-                  new Date(date.getFullYear(), date.getMonth() + 1, 0)
+                  new Date(date.getFullYear(), date.getMonth() + 1, 0),
                 ).format("YYYY-MM-DD"),
               });
             }}
@@ -127,10 +128,12 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                 Total Budget
               </span>
             </div>
-            <span className="text-xs text-slate-300 font-mono">
-              {isPrivate
-                ? `${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`
-                : `${parseAmount(totalSpent, baseCurrency?.code)} / ${parseAmount(totalBudget, baseCurrency?.code)}`}
+            <span className="text-xs text-slate-300 font-mono tabular-nums">
+              <PrivacyPeek
+                isPrivate={isPrivate}
+                revealedContent={`${parseAmount(totalSpent, baseCurrency?.code)} / ${parseAmount(totalBudget, baseCurrency?.code)}`}
+                maskedContent={`${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`}
+              />
             </span>
             <span
               className={`text-[11px] font-mono ${totalBarColor} flex items-center gap-1`}
@@ -204,7 +207,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                   className="group relative flex flex-col gap-1 p-2 rounded-lg bg-gradient-to-br from-slate-800/70 to-slate-700/50 border border-slate-600/50 hover:shadow-lg hover:shadow-slate-900/50 transition-all duration-300 hover:bg-gradient-to-br hover:from-slate-700/80 hover:to-slate-600/60 hover:border-slate-500/70 text-left w-full hover:scale-[1.01]"
                   onClick={() => {
                     router.push(
-                      `/dashboard/banks?month=${selectedMonth.toISOString().split("T")[0]}&categories=${row.name}`
+                      `/dashboard/banks?month=${selectedMonth.toISOString().split("T")[0]}&categories=${row.name}`,
                     );
                   }}
                   title="View in Banks breakdown"
@@ -233,9 +236,14 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                         <CheckCircle className="w-3 h-3" />
                       )}
                       <span className="truncate">
-                        {isPrivate
-                          ? "••••"
-                          : `${parseAmount(Math.abs(row.remaining ?? 0), baseCurrency?.code)}`}
+                        <PrivacyPeek
+                          isPrivate={isPrivate}
+                          revealedContent={parseAmount(
+                            Math.abs(row.remaining ?? 0),
+                            baseCurrency?.code,
+                          )}
+                          maskedContent="••••"
+                        />
                         {row.remaining != null && row.remaining > 0
                           ? " over"
                           : " left"}
@@ -262,10 +270,12 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       <TrendingUp className="w-3 h-3" />
                       Spent
                     </span>
-                    <span className="text-slate-300 font-mono truncate max-w-[220px]">
-                      {isPrivate
-                        ? `${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`
-                        : `${parseAmount(row.spent, baseCurrency?.code)} / ${parseAmount(Math.abs(row.budget ?? 0), baseCurrency?.code)}`}
+                    <span className="text-slate-300 font-mono tabular-nums truncate max-w-[220px]">
+                      <PrivacyPeek
+                        isPrivate={isPrivate}
+                        revealedContent={`${parseAmount(row.spent, baseCurrency?.code)} / ${parseAmount(Math.abs(row.budget ?? 0), baseCurrency?.code)}`}
+                        maskedContent={`${baseCurrency?.symbol}••••• / ${baseCurrency?.symbol}•••••`}
+                      />
                     </span>
                   </div>
                 </button>
@@ -297,7 +307,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       className="group relative flex justify-between items-center p-2 rounded-lg bg-gradient-to-r from-slate-800/50 to-slate-700/30 border border-slate-600/40 hover:shadow-lg hover:shadow-slate-900/30 transition-all duration-300 hover:bg-gradient-to-r hover:from-slate-700/60 hover:to-slate-600/40 hover:border-slate-500/60 text-left w-full hover:scale-[1.005]"
                       onClick={() => {
                         router.push(
-                          `/dashboard/banks?month=${selectedMonth.toISOString().split("T")[0]}&categories=${row.name}`
+                          `/dashboard/banks?month=${selectedMonth.toISOString().split("T")[0]}&categories=${row.name}`,
                         );
                       }}
                       title="View in Banks breakdown"
@@ -324,9 +334,14 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                           <TrendingUp className="w-3 h-3" />
                         ) : null}
                         <span className="truncate max-w-[80px]">
-                          {isPrivate
-                            ? `${baseCurrency?.symbol}•••••`
-                            : parseAmount(amount, baseCurrency?.code)}
+                          <PrivacyPeek
+                            isPrivate={isPrivate}
+                            revealedContent={parseAmount(
+                              amount,
+                              baseCurrency?.code,
+                            )}
+                            maskedContent={`${baseCurrency?.symbol}•••••`}
+                          />
                         </span>
                       </span>
                     </button>

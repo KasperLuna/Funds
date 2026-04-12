@@ -39,7 +39,10 @@ function Page() {
             </div>
           </div>
 
-          <div className="py-2 sticky md:top-0 gap-2 top-[58.8px] bg-slate-950/90 backdrop-filter backdrop-blur-md bg-opacity-80 z-10 border border-slate-950">
+          <div
+            className="py-2 sticky gap-2 bg-slate-950/90 backdrop-filter backdrop-blur-md bg-opacity-80 z-10 border border-slate-950 top-0"
+            style={{ top: "var(--sticky-top, 0px)" }}
+          >
             <div className="flex flex-row justify-between px-3">
               <TransactionFilter />
               <div className="flex-row md:flex hidden">
@@ -56,11 +59,14 @@ function Page() {
         </div>
       </div>
 
-      <div className="flex md:hidden fixed bottom-[95px] z-50 right-5">
+      <div
+        className="flex md:hidden fixed z-50 right-5"
+        style={{ bottom: "calc(95px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <MixedDialogTrigger isMobile={true}>
           <Button
             aria-label="Add transaction"
-            className="px-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-full w-14 h-14 shadow-lg hover:shadow-emerald-500/30 motion-safe:hover:scale-110 transition-shadow duration-300"
+            className="px-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-full w-14 h-14 shadow-lg hover:shadow-emerald-500/30 motion-safe:hover:scale-110 transition-shadow duration-300 touch-action-manipulation"
           >
             <Plus className="text-white" />
           </Button>

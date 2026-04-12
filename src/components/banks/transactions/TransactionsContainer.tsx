@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTransactionsQuery } from "@/lib/hooks/useTransactionsQuery";
 import { ExpandedTransaction } from "@/lib/types";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
@@ -6,7 +6,6 @@ import { TransactionCard } from "./TransactionCard";
 import { TransactionGroupDisplay } from "./TransactionGroupDisplay";
 import { TransactionCardLoader } from "./TransactionCardLoader";
 import { Skeleton } from "@/components/ui/skeleton";
-import dayjs from "dayjs";
 import NextIntersectionObserver from "@/components/ui/next-intersection-observer";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { TransactionsTable } from "./TransactionsTable";
@@ -24,11 +23,11 @@ export const TransactionsContainer = () => {
   } = useTransactionsQuery();
 
   const [canFetchNext, setCanFetchNext] = useState(false);
-  const isLocked = useRef(false); // Lock to prevent multiple fetches
+  const isLocked = useRef(false);
   const { queryParams } = useQueryParams();
   const viewMode = queryParams["view"] || "cards";
 
-  // Enable fetching after 200ms when not loading
+  // Enable fetching after delay when not loading
   useEffect(() => {
     if (!isLoading) {
       const timer = setTimeout(() => setCanFetchNext(true), 100);
@@ -49,41 +48,40 @@ export const TransactionsContainer = () => {
       isLocked.current = true;
       fetchNextPage().finally(() => {
         setTimeout(() => {
-          isLocked.current = false; // Release lock after delay
+          isLocked.current = false;
         }, 100);
       });
     }
   }, [hasNextPage, canFetchNext, isLoading, isFetchingNextPage, fetchNextPage]);
 
-  const groupedTransactions = Object.values(
-    data?.pages
-      ?.flatMap((page) => page.items)
-      ?.reduce(
-        (
-          acc: { [key: string]: ExpandedTransaction[] },
-          transaction: ExpandedTransaction,
-        ) => {
-          const date = dayjs(transaction.date).format("YYYY-MM-DD");
-          acc[date] = acc[date] || [];
-          acc[date].push(transaction);
-          return acc;
-        },
-        {},
-      ) || {},
-  );
+  // Group transactions by date in a single pass
+  const groupedTransactions = useMemo(() => {
+    const items = data?.pages?.flatMap((page) => page.items);
+    if (!items?.length) return [];
+
+    const groups: Record<string, ExpandedTransaction[]> = {};
+    for (const txn of items) {
+      const d = new Date(txn.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(txn);
+    }
+    return Object.entries(groups);
+  }, [data?.pages]);
+
+  const isTableView = viewMode === "table";
+  const showLoader = isLoading || isFetchingNextPage || hasNextPage;
 
   return (
     <div
       id="transactions-container"
       className={cn(
         "grid pb-20 md:pb-0 w-full rounded-lg grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-h-[150px] px-[2px] py-1 z-0",
-        {
-          "pb-0": viewMode === "table",
-        },
+        { "pb-0": isTableView },
       )}
       ref={parent}
     >
-      {isRefetching && (
+      {isRefetching ? (
         <output className="col-span-full">
           <Skeleton
             aria-live="polite"
@@ -92,9 +90,9 @@ export const TransactionsContainer = () => {
             Updating Transactions…
           </Skeleton>
         </output>
-      )}
+      ) : null}
 
-      {!isLoading && groupedTransactions?.length === 0 && (
+      {!isLoading && groupedTransactions.length === 0 ? (
         <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col text-center gap-3">
           <h4 className="text-2xl text-slate-400">No transactions yet!</h4>
           <p className="text-slate-500">
@@ -102,15 +100,15 @@ export const TransactionsContainer = () => {
             transactions to get started.`}
           </p>
         </div>
-      )}
+      ) : null}
 
-      {viewMode === "table" ? (
+      {isTableView ? (
         <div className="col-span-full">
           <TransactionsTable
-            transactions={groupedTransactions?.flat() || []}
+            transactions={groupedTransactions.flatMap(([, txns]) => txns)}
             handleFetchNextPage={handleFetchNextPage}
             loaderRow={
-              (isLoading || isFetchingNextPage || hasNextPage) && (
+              showLoader ? (
                 <tr>
                   <td colSpan={5} className="py-6 text-center bg-slate-900/80">
                     <NextIntersectionObserver
@@ -131,40 +129,50 @@ export const TransactionsContainer = () => {
                     </NextIntersectionObserver>
                   </td>
                 </tr>
-              )
+              ) : null
             }
           />
         </div>
       ) : (
-        groupedTransactions?.map((transactions) =>
+        groupedTransactions.map(([dateKey, transactions]) =>
           transactions.length > 1 ? (
             <TransactionGroupDisplay
-              key={dayjs(transactions[0].date).toString()}
+              key={dateKey}
               transactions={transactions}
             />
           ) : (
-            <TransactionCard key={transactions[0].id} {...transactions[0]} />
+            <div
+              key={transactions[0].id}
+              className="overflow-visible"
+              style={{
+                contentVisibility: "auto",
+                containIntrinsicSize: "auto 120px",
+                contain: "layout style",
+              }}
+            >
+              <TransactionCard {...transactions[0]} />
+            </div>
           ),
         )
       )}
 
-      <NextIntersectionObserver
-        classes="col-span-full"
-        rootmargin="0px"
-        thresholdValue={[0, 1]}
-      >
-        {(boundary) => {
-          if (
-            (boundary === "topIn" || boundary === "bottomIn") &&
-            viewMode !== "table"
-          )
-            handleFetchNextPage();
-          return null;
-        }}
-      </NextIntersectionObserver>
-      {(isLoading || isFetchingNextPage || hasNextPage) &&
-        viewMode !== "table" &&
-        [0, 1, 2, 3].map((n) => <TransactionCardLoader key={`loader-${n}`} />)}
+      {!isTableView ? (
+        <NextIntersectionObserver
+          classes="col-span-full"
+          rootmargin="0px"
+          thresholdValue={[0, 1]}
+        >
+          {(boundary) => {
+            if (boundary === "topIn" || boundary === "bottomIn")
+              handleFetchNextPage();
+            return null;
+          }}
+        </NextIntersectionObserver>
+      ) : null}
+
+      {showLoader && !isTableView
+        ? [0, 1, 2, 3].map((n) => <TransactionCardLoader key={`loader-${n}`} />)
+        : null}
     </div>
   );
 };

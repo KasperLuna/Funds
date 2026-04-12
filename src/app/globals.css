@@ -103,6 +103,40 @@ body {
 }
 
 @layer utilities {
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .touch-action-manipulation {
+    touch-action: manipulation;
+  }
+}
+
+/* Sticky filter offset: accounts for mobile header + safe area on small screens, 0 on desktop */
+:root {
+  --sticky-top: calc(60px + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 768px) {
+  :root {
+    --sticky-top: 0px;
+  }
 }
 
 @media screen and (display-mode: standalone) and (orientation: portrait) {

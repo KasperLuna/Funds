@@ -37,7 +37,7 @@ export const BanksHeader = () => {
           </Button>
         )}
       </div>
-      <span className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full text-sm">
+      <span className="text-slate-200 bg-slate-700 h-fit px-2 border-2 border-slate-600 rounded-full text-sm tabular-nums">
         Total:{" "}
         <PrivacyPeek
           isPrivate={isPrivate}

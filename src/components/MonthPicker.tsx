@@ -26,6 +26,7 @@ export function MonthPicker({
   return (
     <div className="flex flex-row">
       <Button
+        aria-label="Previous month"
         className="rounded-r-none px-1 bg-slate-900 hover:bg-slate-700"
         disabled={!date}
         onClick={() => {
@@ -40,6 +41,11 @@ export function MonthPicker({
         <PopoverTrigger asChild>
           <Button
             variant={"outline"}
+            aria-label={
+              date
+                ? `Selected month: ${dayjs(date).format("MMM YYYY")}. Click to change`
+                : "Select month"
+            }
             className={
               "border-slate-700 border-opacity-50 hover:bg-slate-700 hover:text-slate-200 rounded-none w-[145px] justify-start text-left font-normal bg-slate-800 text-slate-100"
             }
@@ -59,6 +65,7 @@ export function MonthPicker({
         </PopoverContent>
       </Popover>
       <Button
+        aria-label="Next month"
         className="rounded-l-none px-1 bg-slate-900 hover:bg-slate-700"
         disabled={!date}
         onClick={() => {

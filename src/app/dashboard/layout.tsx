@@ -69,7 +69,10 @@ export default function RootLayout({
             </aside>
             <div
               id="mobile-header"
-              className="md:hidden h-[60px] justify-between flex-row sticky flex top-0 px-4 items-center bg-black border-b-2 border-slate-700/50 z-40"
+              className="md:hidden justify-between flex-row sticky flex top-0 px-4 items-center bg-black border-b-2 border-slate-700/50 z-40 safe-top"
+              style={{
+                minHeight: "calc(60px + env(safe-area-inset-top, 0px))",
+              }}
             >
               <Link href="/">
                 <FundsLogo className="w-16 fill-slate-100 md:hidden" />
@@ -100,7 +103,7 @@ export default function RootLayout({
             </div>
             <div
               id="mobile-footer"
-              className="flex md:hidden justify-center fixed bottom-0 pb-4 p-1 border-t-2 z-50 border-slate-700/50 bg-black w-full"
+              className="flex md:hidden justify-center fixed bottom-0 pb-4 p-1 border-t-2 z-50 border-slate-700/50 bg-black w-full safe-bottom"
             >
               <MobileTabs />
             </div>

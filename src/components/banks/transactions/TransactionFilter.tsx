@@ -62,6 +62,9 @@ export const TransactionFilter = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search descriptions…"
             aria-label="Search transactions"
+            name="transaction-search"
+            autoComplete="off"
+            spellCheck={false}
             className="bg-transparent text-slate-100 rounded-r-none focus-visible:ring-offset-0 group-focus-visible:ring-offset-0 group-focus-within:border-slate-500 border-slate-700 transition-none focus-visible:ring-0 group-focus-visible:ring-0 border-r-0"
           />
           <div className="px-2 border-[1px] border-slate-700 rounded-l-none bg-transparent group-focus-within:border-slate-500 transition-none border-l-0 flex items-center">
@@ -103,6 +106,7 @@ export const TransactionFilter = () => {
             />
             {selectedMonth && (
               <Button
+                aria-label="Clear month filter"
                 className="hover:bg-slate-700"
                 onClick={() => setQueryParams({ month: undefined })}
               >

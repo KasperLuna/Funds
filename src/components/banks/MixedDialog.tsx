@@ -1,4 +1,3 @@
-import { TransactionForm } from "./transactions/TransactionForm";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -28,10 +27,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BankForm } from "./BankForm";
-import { CategoryForm } from "../CategoryForm";
-import { PlannedTransactionForm } from "./PlannedTransactionForm";
-import { TransactionTemplateForm } from "./TransactionTemplateForm";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import React, { useCallback, useMemo, useState } from "react";
@@ -40,6 +35,82 @@ import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 import useMediaQuery from "@/lib/hooks/useMediaQuery";
+import dynamic from "next/dynamic";
+
+// Dynamic imports for form components — only loaded when needed
+const TransactionForm = dynamic(
+  () =>
+    import("./transactions/TransactionForm").then((m) => ({
+      default: m.TransactionForm,
+    })),
+  { loading: () => <FormLoader /> },
+);
+const BankForm = dynamic(
+  () => import("./BankForm").then((m) => ({ default: m.BankForm })),
+  { loading: () => <FormLoader /> },
+);
+const CategoryForm = dynamic(
+  () => import("../CategoryForm").then((m) => ({ default: m.CategoryForm })),
+  { loading: () => <FormLoader /> },
+);
+const PlannedTransactionForm = dynamic(
+  () =>
+    import("./PlannedTransactionForm").then((m) => ({
+      default: m.PlannedTransactionForm,
+    })),
+  { loading: () => <FormLoader /> },
+);
+const TransactionTemplateForm = dynamic(
+  () =>
+    import("./TransactionTemplateForm").then((m) => ({
+      default: m.TransactionTemplateForm,
+    })),
+  { loading: () => <FormLoader /> },
+);
+
+function FormLoader() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+    </div>
+  );
+}
+
+/** In-app delete confirmation dialog */
+function DeleteConfirmDialog({
+  open,
+  onOpenChange,
+  onConfirm,
+}: Readonly<{
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}>) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-4 rounded-md max-w-sm">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+          <AlertDialogDescription className="text-slate-400">
+            This will permanently delete the transaction and adjust the bank
+            balance. This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="flex flex-row justify-end gap-2 mt-2">
+          <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-red-700 hover:bg-red-600 text-white"
+            onClick={onConfirm}
+          >
+            Delete
+          </AlertDialogAction>
+        </div>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export const MixedDialogTrigger = ({
   children,
@@ -107,12 +178,19 @@ export const MixedDialog = ({
   );
   const { addPlannedTransaction } = usePlannedTransactions();
   const { user } = useAuth();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Memoize bank lookups for performance
   const originalBank = useMemo(
     () => bankData?.banks.find((bank) => bank.id === transaction?.bank),
     [bankData, transaction],
   );
+
+  const invalidateAll = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
+    queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
+  }, [queryClient]);
 
   // Memoize onSubmit handler
   const onSubmit = useCallback(
@@ -141,15 +219,13 @@ export const MixedDialog = ({
           if (data.id) {
             // Update existing transaction
             batcher.collection("transactions").update(data.id, parsedData);
-            // Find the original transaction and bank
             const original = transaction;
-            const originalBank = bankData?.banks.find(
+            const origBank = bankData?.banks.find(
               (bank) => bank.id === original?.bank,
             );
-            if (!original || !originalBank)
+            if (!original || !origBank)
               throw new Error("Original transaction/bank not found");
-            if (originalBank.id === transactionBank.id) {
-              // Same bank: subtract old amount, add new amount
+            if (origBank.id === transactionBank.id) {
               batcher.collection("banks").update(transactionBank.id, {
                 balance: new Decimal(transactionBank.balance)
                   .sub(new Decimal(original.amount))
@@ -157,9 +233,8 @@ export const MixedDialog = ({
                   .toNumber(),
               });
             } else {
-              // Bank changed: subtract from old, add to new
-              batcher.collection("banks").update(originalBank.id, {
-                balance: new Decimal(originalBank.balance)
+              batcher.collection("banks").update(origBank.id, {
+                balance: new Decimal(origBank.balance)
                   .sub(new Decimal(original.amount))
                   .toNumber(),
               });
@@ -170,7 +245,6 @@ export const MixedDialog = ({
               });
             }
           } else {
-            // Create new transaction
             batcher
               .collection("transactions")
               .create(parsedData, { requestKey: null });
@@ -182,9 +256,7 @@ export const MixedDialog = ({
           }
         }
         await batcher.send();
-        queryClient.invalidateQueries({ queryKey: ["transactions"] });
-        queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
-        queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
+        invalidateAll();
         if (onPlannedSubmit) {
           await onPlannedSubmit();
           queryClient.invalidateQueries({ queryKey: ["plannedTransactions"] });
@@ -200,49 +272,35 @@ export const MixedDialog = ({
       queryClient,
       onPlannedSubmit,
       transaction,
+      invalidateAll,
     ],
   );
 
-  // Memoize dialog actions
   const handleDuplicate = useCallback(() => {
     if (!transaction) return;
     setIsModalOpen(false);
     const { id, ...rest } = transaction;
-    // Inline updateBankBalanceOnTransaction logic for batching
     const transactionBank = bankData?.banks.find(
       (bank) => bank.id === rest.bank,
     );
     const batch = pb.createBatch();
     if (!transactionBank?.id || !rest)
       throw new Error("Error updating bank balance");
-    // Add transaction creation to batch
     batch.collection("transactions").create(rest);
-    // Add bank balance update to batch
     batch.collection("banks").update(transactionBank.id, {
       balance: new Decimal(transactionBank.balance)
         .add(new Decimal(rest.amount))
         .toNumber(),
     });
-    batch.send().then(() => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
-      queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
-    });
-  }, [transaction, setIsModalOpen, bankData, queryClient]);
+    batch.send().then(invalidateAll);
+  }, [transaction, setIsModalOpen, bankData, invalidateAll]);
 
-  const handleDelete = useCallback(() => {
+  const handleDeleteConfirmed = useCallback(() => {
     if (!transaction) return;
-    if (
-      !window.confirm(
-        "Delete this transaction? This will also adjust the bank balance.",
-      )
-    )
-      return;
+    setShowDeleteConfirm(false);
     setIsModalOpen(false);
     const batch = pb.createBatch();
-    // Add transaction deletion to batch
     batch.collection("transactions").delete(transaction.id as string);
-    // Inline updateBankBalanceOnTransaction logic for batching
     if (!originalBank?.id || !transaction)
       throw new Error("Error updating bank balance");
     batch.collection("banks").update(originalBank.id, {
@@ -250,54 +308,48 @@ export const MixedDialog = ({
         .sub(new Decimal(transaction.amount))
         .toNumber(),
     });
-    batch.send().then(() => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["bankTrends"] });
-      queryClient.invalidateQueries({ queryKey: ["transactionsOfMonth"] });
-    });
-  }, [transaction, setIsModalOpen, originalBank, queryClient]);
+    batch.send().then(invalidateAll);
+  }, [transaction, setIsModalOpen, originalBank, invalidateAll]);
 
   return (
-    <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
-      <AlertDialogContent className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-1 rounded-md">
-        <AlertDialogDescription className="sr-only">
-          {transaction?.id
-            ? "Edit an existing transaction"
-            : "Create a new item"}
-        </AlertDialogDescription>
-        <AlertDialogHeader className="flex flex-row w-full justify-between">
-          <AlertDialogTitle className="self-center">
-            {transaction?.id ? "Edit" : "Create"}{" "}
-            {transaction?.id ? (
-              "Transaction"
-            ) : (
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="bg-slate-800 hover:bg-slate-600 gap-1 hover:text-slate-200 py-[3px] text-base border-slate-600 px-2 h-fit"
-                  >
-                    {formType} <ChevronDown className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-slate-700 text-slate-100 border-0">
-                  <DropdownMenuRadioGroup
-                    value={formType}
-                    onValueChange={setFormType}
-                  >
-                    {["Transaction", "Transfer", "Difference"].map((type) => (
-                      <DropdownMenuRadioItem
-                        key={type}
-                        value={type}
-                        className="hover:bg-slate-600"
-                      >
-                        {type}
-                      </DropdownMenuRadioItem>
-                    ))}
-                    <DropdownMenuSeparator className="mx-2" />
-                    {["Bank", "Category", "PlannedTransaction", "Template"].map(
-                      (type) => (
+    <>
+      <DeleteConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onConfirm={handleDeleteConfirmed}
+      />
+      <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
+        <AlertDialogContent
+          className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-1 rounded-md"
+          style={{ overscrollBehavior: "contain" }}
+        >
+          <AlertDialogDescription className="sr-only">
+            {transaction?.id
+              ? "Edit an existing transaction"
+              : "Create a new item"}
+          </AlertDialogDescription>
+          <AlertDialogHeader className="flex flex-row w-full justify-between">
+            <AlertDialogTitle className="self-center">
+              {transaction?.id ? "Edit" : "Create"}{" "}
+              {transaction?.id ? (
+                "Transaction"
+              ) : (
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="bg-slate-800 hover:bg-slate-600 gap-1 hover:text-slate-200 py-[3px] text-base border-slate-600 px-2 h-fit"
+                    >
+                      {formType} <ChevronDown className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="bg-slate-700 text-slate-100 border-0">
+                    <DropdownMenuRadioGroup
+                      value={formType}
+                      onValueChange={setFormType}
+                    >
+                      {["Transaction", "Transfer", "Difference"].map((type) => (
                         <DropdownMenuRadioItem
                           key={type}
                           value={type}
@@ -305,124 +357,139 @@ export const MixedDialog = ({
                         >
                           {type}
                         </DropdownMenuRadioItem>
-                      ),
-                    )}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </AlertDialogTitle>
-          <div className="flex flex-row gap-1">
-            {transaction?.id && (
-              <AlertDialogAction asChild className="bg-red-700 w-[40px]">
-                <Popover>
-                  <PopoverTrigger asChild className="mt-2 sm:mt-0">
-                    <Button className="w-[40px] hover:bg-slate-700">
-                      <EllipsisVertical className="shrink-0" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    side="bottom"
-                    align="center"
-                    className="p-1 w-fit bg-slate-800 border-0 flex flex-col gap-2 z-50"
-                  >
-                    <PopoverArrow className="fill-slate-800" />
-                    <Button
-                      className="hover:bg-slate-700 bg-slate-800"
-                      onClick={handleDuplicate}
+                      ))}
+                      <DropdownMenuSeparator className="mx-2" />
+                      {[
+                        "Bank",
+                        "Category",
+                        "PlannedTransaction",
+                        "Template",
+                      ].map((type) => (
+                        <DropdownMenuRadioItem
+                          key={type}
+                          value={type}
+                          className="hover:bg-slate-600"
+                        >
+                          {type}
+                        </DropdownMenuRadioItem>
+                      ))}
+                    </DropdownMenuRadioGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </AlertDialogTitle>
+            <div className="flex flex-row gap-1">
+              {transaction?.id && (
+                <AlertDialogAction asChild className="bg-red-700 w-[40px]">
+                  <Popover>
+                    <PopoverTrigger asChild className="mt-2 sm:mt-0">
+                      <Button className="w-[40px] hover:bg-slate-700">
+                        <EllipsisVertical className="shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="bottom"
+                      align="center"
+                      className="p-1 w-fit bg-slate-800 border-0 flex flex-col gap-2 z-50"
                     >
-                      Duplicate
-                    </Button>
-                    <Button
-                      className="hover:bg-red-500 bg-red-700"
-                      onClick={handleDelete}
-                    >
-                      Delete
-                    </Button>
-                  </PopoverContent>
-                </Popover>
-              </AlertDialogAction>
-            )}
-            {/* Waive button for planned transactions */}
-            {onPlannedSubmit && (
-              <Button
-                className="w-fit bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-2 ml-1 mt-2 sm:mt-0"
-                onClick={async () => {
-                  setIsModalOpen(false);
-                  await onPlannedSubmit();
-                }}
-                type="button"
-              >
-                Waive
-              </Button>
-            )}
-            <AlertDialogCancel className="w-fit bg-transparent p-2 border-slate-700 hover:bg-slate-400">
-              <X />
-            </AlertDialogCancel>
-          </div>
-        </AlertDialogHeader>
-        {["Transaction", "Transfer", "Difference"].includes(formType) && (
-          <TransactionForm
-            transaction={transaction}
-            onSubmit={onSubmit}
-            formType={formType as FormType}
-          />
-        )}
-        {formType === "Bank" && <BankForm />}
-        {formType === "Category" && <CategoryForm />}
-        {formType === "PlannedTransaction" && (
-          <PlannedTransactionForm
-            onSubmit={async (pt) => {
-              if (!user?.id) {
-                alert("You must be logged in to create a planned transaction.");
-                return;
-              }
-              const mappedCategories =
-                pt.categories.map(
-                  (categ) =>
-                    categoryData?.categories.find((cat) => cat.name === categ)
-                      ?.id || categ,
-                ) || [];
-              await addPlannedTransaction({
-                ...pt,
-                user: user.id,
-                amount: ["expense", "withdrawal"].includes(pt.type)
-                  ? new Decimal(pt.amount).negated().toNumber()
-                  : new Decimal(pt.amount).toNumber(),
-                categories: mappedCategories,
-              });
-              setIsModalOpen(false);
-            }}
-            // onCancel={() => setIsModalOpen(false)}
-          />
-        )}
-        {formType === "Template" && (
-          <TransactionTemplateForm
-            onSubmit={async (t) => {
-              if (!user?.id) {
-                alert("You must be logged in to create a template.");
-                return;
-              }
-              const mappedCategories =
-                t.categories.map(
-                  (categ) =>
-                    categoryData?.categories.find((cat) => cat.name === categ)
-                      ?.id || categ,
-                ) || [];
-              await addPlannedTransaction({
-                ...t,
-                user: user.id,
-                isTemplate: true,
-                amount: ["expense", "withdrawal"].includes(t.type)
-                  ? new Decimal(t.amount).abs().negated().toNumber()
-                  : new Decimal(t.amount).abs().toNumber(),
-                categories: mappedCategories,
-              });
-              setIsModalOpen(false);
-            }}
-          />
-        )}
-      </AlertDialogContent>
-    </AlertDialog>
+                      <PopoverArrow className="fill-slate-800" />
+                      <Button
+                        className="hover:bg-slate-700 bg-slate-800"
+                        onClick={handleDuplicate}
+                      >
+                        Duplicate
+                      </Button>
+                      <Button
+                        className="hover:bg-red-500 bg-red-700"
+                        onClick={() => setShowDeleteConfirm(true)}
+                      >
+                        Delete
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+                </AlertDialogAction>
+              )}
+              {onPlannedSubmit && (
+                <Button
+                  className="w-fit bg-yellow-700 hover:bg-yellow-600 text-white px-3 py-2 ml-1 mt-2 sm:mt-0"
+                  onClick={async () => {
+                    setIsModalOpen(false);
+                    await onPlannedSubmit();
+                  }}
+                  type="button"
+                >
+                  Waive
+                </Button>
+              )}
+              <AlertDialogCancel className="w-fit bg-transparent p-2 border-slate-700 hover:bg-slate-400">
+                <X />
+              </AlertDialogCancel>
+            </div>
+          </AlertDialogHeader>
+          {["Transaction", "Transfer", "Difference"].includes(formType) && (
+            <TransactionForm
+              transaction={transaction}
+              onSubmit={onSubmit}
+              formType={formType as FormType}
+            />
+          )}
+          {formType === "Bank" && <BankForm />}
+          {formType === "Category" && <CategoryForm />}
+          {formType === "PlannedTransaction" && (
+            <PlannedTransactionForm
+              onSubmit={async (pt) => {
+                if (!user?.id) {
+                  alert(
+                    "You must be logged in to create a planned transaction.",
+                  );
+                  return;
+                }
+                const mappedCategories =
+                  pt.categories.map(
+                    (categ) =>
+                      categoryData?.categories.find((cat) => cat.name === categ)
+                        ?.id || categ,
+                  ) || [];
+                await addPlannedTransaction({
+                  ...pt,
+                  user: user.id,
+                  amount: ["expense", "withdrawal"].includes(pt.type)
+                    ? new Decimal(pt.amount).negated().toNumber()
+                    : new Decimal(pt.amount).toNumber(),
+                  categories: mappedCategories,
+                });
+                setIsModalOpen(false);
+              }}
+            />
+          )}
+          {formType === "Template" && (
+            <TransactionTemplateForm
+              onSubmit={async (t) => {
+                if (!user?.id) {
+                  alert("You must be logged in to create a template.");
+                  return;
+                }
+                const mappedCategories =
+                  t.categories.map(
+                    (categ) =>
+                      categoryData?.categories.find((cat) => cat.name === categ)
+                        ?.id || categ,
+                  ) || [];
+                await addPlannedTransaction({
+                  ...t,
+                  user: user.id,
+                  isTemplate: true,
+                  amount: ["expense", "withdrawal"].includes(t.type)
+                    ? new Decimal(t.amount).abs().negated().toNumber()
+                    : new Decimal(t.amount).abs().toNumber(),
+                  categories: mappedCategories,
+                });
+                setIsModalOpen(false);
+              }}
+            />
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

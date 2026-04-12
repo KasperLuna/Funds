@@ -14,7 +14,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   loaderRow,
 }) => {
   return (
-    <div className="overflow-x-auto w-full overflow-auto max-h-[calc(100dvh-200px)]">
+    <div className="overflow-x-auto w-full overflow-auto max-h-[calc(100dvh-200px)] touch-action-manipulation">
       <table
         className="min-w-full text-slate-100 border-separate border-spacing-0"
         aria-label="Transactions"

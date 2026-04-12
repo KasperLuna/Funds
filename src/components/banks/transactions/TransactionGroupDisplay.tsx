@@ -1,5 +1,4 @@
 import { ExpandedTransaction } from "@/lib/types";
-import dayjs from "dayjs";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TransactionCard } from "@/components/banks/transactions/TransactionCard";
 import Decimal from "decimal.js";
@@ -7,6 +6,12 @@ import { parseAmount, cn } from "@/lib/utils";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { PrivacyPeek } from "@/components/PrivacyPeek";
+
+const groupDateFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+});
 
 export const TransactionGroupDisplay = ({
   transactions,
@@ -29,10 +34,10 @@ export const TransactionGroupDisplay = ({
     >
       <div className="flex flex-row justify-between text-slate-100 items-end">
         <h4 className="text-lg">
-          {dayjs(transactions[0].date).format("dddd, MMMM D")}
+          {groupDateFormatter.format(new Date(transactions[0].date))}
         </h4>
         <p
-          className={cn("text-sm", {
+          className={cn("text-sm tabular-nums", {
             "text-red-400": total < 0,
             "text-green-400": total > 0,
           })}
@@ -48,7 +53,7 @@ export const TransactionGroupDisplay = ({
 
       <div
         ref={parent}
-        className="hover:outline-slate-400 transition-all rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-2 outline-dashed outline-[1.5px] outline-slate-600 border-slate-200"
+        className="hover:outline-slate-400 transition-colors rounded-xl grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 p-2 outline-dashed outline-[1.5px] outline-slate-600 border-slate-200"
       >
         {transactions.map((transaction) => {
           return <TransactionCard key={transaction.id} {...transaction} />;
