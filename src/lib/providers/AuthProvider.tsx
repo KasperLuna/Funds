@@ -74,9 +74,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           <LoaderCircle className="animate-spin size-10" />
           <div className="h-10" />
         </div>
-      ) : (
+      ) : user ? (
         children
-      )}
+      ) : null}
     </AuthContext.Provider>
   );
 };

@@ -16,21 +16,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SettingsDialogTrigger } from "@/components/dashboard/SettingsDialog";
 import { DropdownTrigger } from "@/components/dashboard/DropdownTrigger";
 import { PrivacyToggle } from "@/components/PrivacyToggle";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-    },
-  },
-});
+import { useState } from "react";
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+            staleTime: Infinity,
+          },
+        },
+      }),
+  );
+
   return (
     <div className="max-w-[1920px] mx-auto">
       <QueryClientProvider client={queryClient}>
