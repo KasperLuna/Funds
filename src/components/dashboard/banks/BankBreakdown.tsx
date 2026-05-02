@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
 import dynamic from "next/dynamic";
@@ -35,7 +35,7 @@ export const BankBreakdown = memo(function BankBreakdown() {
     queryFn: () => getTransactionsOfAMonth(selectedMonth?.toISOString() || ""),
   });
 
-  const [chartType, setChartType] = useState<"totals" | "counts">("totals");
+  const chartType = queryParams["chartType"] ?? "totals";
 
   const banksMemoized = useMemo(() => {
     if (!data)
@@ -105,7 +105,7 @@ export const BankBreakdown = memo(function BankBreakdown() {
               ? "bg-slate-700 text-slate-100 shadow-sm"
               : "text-slate-400 hover:text-slate-200",
           )}
-          onClick={() => setChartType("totals")}
+          onClick={() => setQueryParams({ chartType: "totals" })}
         >
           Totals
         </button>
@@ -116,7 +116,7 @@ export const BankBreakdown = memo(function BankBreakdown() {
               ? "bg-slate-700 text-slate-100 shadow-sm"
               : "text-slate-400 hover:text-slate-200",
           )}
-          onClick={() => setChartType("counts")}
+          onClick={() => setQueryParams({ chartType: "counts" })}
         >
           Counts
         </button>

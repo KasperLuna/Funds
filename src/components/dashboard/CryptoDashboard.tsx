@@ -8,6 +8,7 @@ import { usePrivacy } from "@/hooks/usePrivacy";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { Token } from "@/lib/types";
 import dynamic from "next/dynamic";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import {
   CoinGeckoMarketData,
   CoinGeckoMarketChartData,
@@ -794,8 +795,10 @@ const TokenTrendsChart = memo(function TokenTrendsChart({
 });
 
 export function CryptoDashboard() {
-  const [lastFetched, setLastFetched] = useState<Date | null>(null);
-  const [selectedRange, setSelectedRange] = useState<"1mo" | "1yr">("1mo");
+  const { queryParams, setQueryParams } = useQueryParams({
+    defaultValues: { range: "1mo" },
+  });
+  const selectedRange = (queryParams.range as "1mo" | "1yr") ?? "1mo";
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const { isPrivate } = usePrivacy();
   const { baseCurrency } = useUserQuery();
@@ -844,9 +847,12 @@ export function CryptoDashboard() {
   );
 
   // Callback for range selection
-  const handleRangeChange = useCallback((newRange: "1mo" | "1yr") => {
-    setSelectedRange(newRange);
-  }, []);
+  const handleRangeChange = useCallback(
+    (newRange: "1mo" | "1yr") => {
+      setQueryParams({ range: newRange });
+    },
+    [setQueryParams],
+  );
 
   // Optimized API calls with better batching and error handling
   const historyQueries = useQueries({
@@ -984,18 +990,7 @@ export function CryptoDashboard() {
   return (
     <div className="flex flex-col gap-4 w-full">
       <div className="flex items-center justify-between gap-2 z-10">
-        <div className="flex items-center gap-1 text-xs text-slate-400 select-none">
-          {lastFetched ? (
-            <span>
-              Data last fetched:{" "}
-              {lastFetched.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-                second: "2-digit",
-              })}
-            </span>
-          ) : null}
-        </div>
+        <div className="flex items-center gap-1 text-xs text-slate-400 select-none"></div>
         <Button
           variant="outline"
           size="sm"

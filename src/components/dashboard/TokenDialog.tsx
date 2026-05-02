@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useCallback, useMemo } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -48,15 +49,25 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
   const [view, setView] = useState<DialogView>("list");
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Token transaction form state
-  const [txnType, setTxnType] = useState<"buy" | "sell">("buy");
-  const [txnAmount, setTxnAmount] = useState("");
-  const [txnPrice, setTxnPrice] = useState("");
-  const [txnDate, setTxnDate] = useState(dayjs().format("YYYY-MM-DD"));
-  const [txnNote, setTxnNote] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [isAddingToken, setIsAddingToken] = useState(false);
   const [confirmDeleteToken, setConfirmDeleteToken] = useState(false);
+
+  const txnForm = useForm<{
+    type: "buy" | "sell";
+    amount: string;
+    price: string;
+    date: string;
+    note: string;
+  }>({
+    defaultValues: {
+      type: "buy",
+      amount: "",
+      price: "",
+      date: dayjs().format("YYYY-MM-DD"),
+      note: "",
+    },
+  });
+  const [watchedAmount, watchedPrice] = txnForm.watch(["amount", "price"]);
 
   const { data: searchResults, isLoading: searching } =
     useCoinGeckoSearch(searchQuery);
@@ -64,12 +75,8 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
     useTokenTransactionsQuery(selectedToken?.id || null);
 
   const resetTxnForm = useCallback(() => {
-    setTxnType("buy");
-    setTxnAmount("");
-    setTxnPrice("");
-    setTxnDate(dayjs().format("YYYY-MM-DD"));
-    setTxnNote("");
-  }, []);
+    txnForm.reset();
+  }, [txnForm]);
 
   const handleSelectCoinGecko = useCallback(
     async (coin: CoinGeckoSearchCoin) => {
@@ -83,7 +90,7 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
         return;
       }
       // Create new token
-      setSubmitting(true);
+      setIsAddingToken(true);
       try {
         await addToken({
           name: coin.name,
@@ -108,53 +115,49 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
       } catch (e) {
         alert("Failed to add token");
       } finally {
-        setSubmitting(false);
+        setIsAddingToken(false);
       }
     },
     [user, tokens, queryClient],
   );
 
-  const handleAddTransaction = useCallback(async () => {
-    if (!selectedToken?.id || !user?.id) return;
-    const amount = parseFloat(txnAmount);
-    const price = parseFloat(txnPrice);
-    if (isNaN(amount) || amount <= 0 || isNaN(price) || price < 0) return;
-
-    setSubmitting(true);
-    try {
-      await addTokenTransaction({
-        user: user.id,
-        token: selectedToken.id,
-        type: txnType,
-        amount,
-        price,
-        total_cost: new Decimal(amount).mul(new Decimal(price)).toNumber(),
-        date: new Date(txnDate).toISOString(),
-        note: txnNote || undefined,
-      });
-      await recalculateTokenTotals(selectedToken.id);
-      queryClient.invalidateQueries({ queryKey: ["tokens"] });
-      queryClient.invalidateQueries({
-        queryKey: ["tokenTransactions", selectedToken.id],
-      });
-      resetTxnForm();
-      setView("detail");
-    } catch (e) {
-      alert("Failed to add transaction");
-    } finally {
-      setSubmitting(false);
-    }
-  }, [
-    selectedToken,
-    user,
-    txnType,
-    txnAmount,
-    txnPrice,
-    txnDate,
-    txnNote,
-    queryClient,
-    resetTxnForm,
-  ]);
+  const handleAddTransaction = txnForm.handleSubmit(
+    async ({ type, amount, price, date, note }) => {
+      if (!selectedToken?.id || !user?.id) return;
+      const amountNum = Number.parseFloat(amount);
+      const priceNum = Number.parseFloat(price);
+      if (
+        Number.isNaN(amountNum) ||
+        amountNum <= 0 ||
+        Number.isNaN(priceNum) ||
+        priceNum < 0
+      )
+        return;
+      try {
+        await addTokenTransaction({
+          user: user.id,
+          token: selectedToken.id,
+          type,
+          amount: amountNum,
+          price: priceNum,
+          total_cost: new Decimal(amountNum)
+            .mul(new Decimal(priceNum))
+            .toNumber(),
+          date: new Date(date).toISOString(),
+          note: note || undefined,
+        });
+        await recalculateTokenTotals(selectedToken.id);
+        queryClient.invalidateQueries({ queryKey: ["tokens"] });
+        queryClient.invalidateQueries({
+          queryKey: ["tokenTransactions", selectedToken.id],
+        });
+        txnForm.reset();
+        setView("detail");
+      } catch {
+        alert("Failed to add transaction");
+      }
+    },
+  );
 
   const handleDeleteTokenTxn = useCallback(
     async (txnId: string) => {
@@ -510,26 +513,32 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1">
                 <Label>Type</Label>
-                <Tabs
-                  value={txnType}
-                  onValueChange={(v) => setTxnType(v as "buy" | "sell")}
-                  className="w-full"
-                >
-                  <TabsList className="bg-slate-800 w-full">
-                    <TabsTrigger
-                      className="w-full data-[state=active]:bg-emerald-800 data-[state=active]:text-slate-200"
-                      value="buy"
+                <Controller
+                  name="type"
+                  control={txnForm.control}
+                  render={({ field: { value, onChange } }) => (
+                    <Tabs
+                      value={value}
+                      onValueChange={(v) => onChange(v as "buy" | "sell")}
+                      className="w-full"
                     >
-                      Buy
-                    </TabsTrigger>
-                    <TabsTrigger
-                      className="w-full data-[state=active]:bg-red-800 data-[state=active]:text-slate-200"
-                      value="sell"
-                    >
-                      Sell
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                      <TabsList className="bg-slate-800 w-full">
+                        <TabsTrigger
+                          className="w-full data-[state=active]:bg-emerald-800 data-[state=active]:text-slate-200"
+                          value="buy"
+                        >
+                          Buy
+                        </TabsTrigger>
+                        <TabsTrigger
+                          className="w-full data-[state=active]:bg-red-800 data-[state=active]:text-slate-200"
+                          value="sell"
+                        >
+                          Sell
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  )}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <Label htmlFor="txn-amount">
@@ -540,8 +549,7 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                   type="number"
                   step="any"
                   min="0"
-                  value={txnAmount}
-                  onChange={(e) => setTxnAmount(e.target.value)}
+                  {...txnForm.register("amount")}
                   placeholder="0.00"
                   className="bg-slate-800 border-slate-700 text-slate-100"
                 />
@@ -553,19 +561,18 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                   type="number"
                   step="any"
                   min="0"
-                  value={txnPrice}
-                  onChange={(e) => setTxnPrice(e.target.value)}
+                  {...txnForm.register("price")}
                   placeholder="0.00"
                   className="bg-slate-800 border-slate-700 text-slate-100"
                 />
               </div>
-              {txnAmount && txnPrice && (
+              {watchedAmount && watchedPrice && (
                 <div className="text-sm text-slate-400">
                   Total cost:{" "}
                   <span className="text-slate-200 font-mono">
                     $
-                    {new Decimal(parseFloat(txnAmount) || 0)
-                      .mul(new Decimal(parseFloat(txnPrice) || 0))
+                    {new Decimal(Number.parseFloat(watchedAmount) || 0)
+                      .mul(new Decimal(Number.parseFloat(watchedPrice) || 0))
                       .toFixed(2)}
                   </span>
                 </div>
@@ -575,8 +582,7 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                 <Input
                   id="txn-date"
                   type="date"
-                  value={txnDate}
-                  onChange={(e) => setTxnDate(e.target.value)}
+                  {...txnForm.register("date")}
                   className="bg-slate-800 border-slate-700 text-slate-100"
                 />
               </div>
@@ -584,8 +590,7 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                 <Label htmlFor="txn-note">Note (optional)</Label>
                 <Input
                   id="txn-note"
-                  value={txnNote}
-                  onChange={(e) => setTxnNote(e.target.value)}
+                  {...txnForm.register("note")}
                   placeholder="e.g. DCA, dip buy..."
                   className="bg-slate-800 border-slate-700 text-slate-100"
                 />
@@ -595,16 +600,18 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                 className="w-full mt-1"
                 onClick={handleAddTransaction}
                 disabled={
-                  submitting ||
-                  !txnAmount ||
-                  !txnPrice ||
-                  parseFloat(txnAmount) <= 0
+                  txnForm.formState.isSubmitting ||
+                  !watchedAmount ||
+                  !watchedPrice ||
+                  Number.parseFloat(watchedAmount) <= 0
                 }
               >
-                {submitting ? (
+                {txnForm.formState.isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : null}
-                {submitting ? "Adding..." : "Add Transaction"}
+                {txnForm.formState.isSubmitting
+                  ? "Adding..."
+                  : "Add Transaction"}
               </Button>
             </div>
           </>

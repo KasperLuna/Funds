@@ -1,5 +1,5 @@
 "use client";
-import { useState, memo, useMemo, useCallback, useEffect } from "react";
+import { memo, useMemo, useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { RotateCw, PieChart, Wallet, Coins } from "lucide-react";
 import { useTokensContext } from "@/lib/hooks/useTokensContext";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
 import { parseAmount, trimToTwoDecimals, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -402,7 +403,11 @@ const AssetRow = memo(function AssetRow({
 });
 
 export const AssetSummary = memo(function AssetSummary() {
-  const [tab, setTab] = useState<TabKey>("Overall");
+  const { queryParams, setQueryParams } = useQueryParams({
+    defaultValues: { assetTab: "Overall" },
+  });
+  const tab = (queryParams.assetTab as TabKey) ?? "Overall";
+  const setTab = (key: TabKey) => setQueryParams({ assetTab: key });
   const queryClient = useQueryClient();
   const router = useRouter();
   const { isPrivate } = usePrivacy();

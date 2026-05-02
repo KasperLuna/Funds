@@ -3,13 +3,13 @@ import {
   updateCategoryById,
 } from "@/lib/pocketbase/queries";
 import {
-  Plus,
   FolderOpen,
   Edit3,
   Trash2,
   DollarSign,
   EyeOff,
   Calculator,
+  Plus,
 } from "lucide-react";
 import { useForm, Controller } from "react-hook-form";
 import { Button } from "../ui/button";
@@ -17,8 +17,8 @@ import { Label } from "../ui/label";
 import { Separator } from "../ui/separator";
 import { CategorySelect } from "../banks/CategorySelect";
 import { Switch } from "../ui/switch";
-import { useRouter } from "next/navigation";
 import React, { useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../ui/toast";
 import { ConfirmationDialog } from "../ui/confirmation-dialog";
 import {
@@ -37,9 +37,9 @@ import {
 } from "../ui/card";
 import { Input } from "../ui/input";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
 export const CategorySettings = () => {
-  const router = useRouter();
   const categoryData = useCategoriesQuery();
   const { addToast } = useToast();
   const { control, watch } = useForm();
@@ -48,34 +48,103 @@ export const CategorySettings = () => {
   // Find the selected category object
   const selectedCategory = useMemo(
     () => categoryData?.categories?.find((c) => c.id === categoryId),
-    [categoryId, categoryData]
+    [categoryId, categoryData],
   );
+
+  const {
+    register: registerRename,
+    handleSubmit: handleRenameSubmit,
+    formState: renameFormState,
+    reset: resetRenameForm,
+    watch: watchRename,
+  } = useForm({ defaultValues: { name: "" } });
+  const watchedNewName = watchRename("name");
 
   // State management
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isUpdatingToggle, setIsUpdatingToggle] = useState<string | null>(null);
+
+  const toggleMutation = useMutation({
+    mutationFn: async ({
+      field,
+      value,
+    }: {
+      field: "hideable" | "total_exempt";
+      value: boolean;
+    }) => {
+      if (!categoryId) return;
+      await updateCategoryById(categoryId, { [field]: value });
+      await categoryData?.refetch?.();
+    },
+    onSuccess: (_, { field, value }) =>
+      addToast({
+        type: "success",
+        title: "Setting updated",
+        description: `${field === "hideable" ? "Hideable" : "Total exempt"} setting has been ${value ? "enabled" : "disabled"}.`,
+      }),
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Update failed",
+        description: "Failed to update category setting. Please try again.",
+      }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCategory) return;
+      await deleteCategoryById(selectedCategory.id);
+      await categoryData?.refetch?.();
+    },
+    onSuccess: () => {
+      setShowDelete(false);
+      addToast({
+        type: "success",
+        title: "Category deleted",
+        description: "Category and all associated data have been removed.",
+      });
+    },
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Deletion failed",
+        description: "Failed to delete category. Please try again.",
+      }),
+  });
+
+  const budgetMutation = useMutation({
+    mutationFn: async (numValue: number | undefined) => {
+      if (!selectedCategory) return;
+      await updateCategoryById(selectedCategory.id, {
+        monthly_budget: numValue,
+      });
+      await categoryData?.refetch?.();
+    },
+    onSuccess: (_, numValue) =>
+      addToast({
+        type: "success",
+        title: "Budget updated",
+        description: numValue
+          ? `Monthly budget set to ${numValue}`
+          : "Monthly budget removed",
+      }),
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Budget update failed",
+        description: "Failed to update monthly budget. Please try again.",
+      }),
+  });
 
   // Budget Management State
   const [budgetInput, setBudgetInput] = useState<string>("");
   const [budgetError, setBudgetError] = useState("");
-  const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
-
-  // Update UI state when selected category changes
   React.useEffect(() => {
-    if (selectedCategory) {
-      setNewCategoryName(selectedCategory.name);
-      setBudgetInput(selectedCategory.monthly_budget?.toString() || "");
-    } else {
-      setNewCategoryName("");
-      setBudgetInput("");
-    }
-  }, [selectedCategory]);
+    resetRenameForm({ name: selectedCategory?.name ?? "" });
+    setBudgetInput(selectedCategory?.monthly_budget?.toString() || "");
+  }, [selectedCategory, resetRenameForm]);
 
-  // Debounced budget update
+  // Sync form fields when selected category changes
   const budgetDebounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const handleBudgetInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -95,78 +164,31 @@ export const CategorySettings = () => {
       }
     }
 
-    budgetDebounceRef.current = setTimeout(async () => {
+    budgetDebounceRef.current = setTimeout(() => {
       if (
         selectedCategory &&
         numValue !== selectedCategory.monthly_budget &&
         (numValue === undefined || !isNaN(numValue))
       ) {
-        setIsUpdatingBudget(true);
-        try {
-          await updateCategoryById(selectedCategory.id, {
-            monthly_budget: numValue,
-          });
-          await categoryData?.refetch?.();
-          addToast({
-            type: "success",
-            title: "Budget updated",
-            description: numValue
-              ? `Monthly budget set to ${numValue}`
-              : "Monthly budget removed",
-          });
-        } catch {
-          addToast({
-            type: "error",
-            title: "Budget update failed",
-            description: "Failed to update monthly budget. Please try again.",
-          });
-        } finally {
-          setIsUpdatingBudget(false);
-        }
+        budgetMutation.mutate(numValue);
       }
     }, 800);
   };
 
-  const handleToggle = async (
-    field: "hideable" | "total_exempt",
-    value: boolean
-  ) => {
-    if (!categoryId) return;
-
-    setIsUpdatingToggle(field);
-    try {
-      await updateCategoryById(categoryId, { [field]: value });
-      await categoryData?.refetch?.();
-      addToast({
-        type: "success",
-        title: "Setting updated",
-        description: `${field === "hideable" ? "Hideable" : "Total exempt"} setting has been ${value ? "enabled" : "disabled"}.`,
-      });
-    } catch {
-      addToast({
-        type: "error",
-        title: "Update failed",
-        description: "Failed to update category setting. Please try again.",
-      });
-    } finally {
-      setIsUpdatingToggle(null);
-    }
+  const handleToggle = (field: "hideable" | "total_exempt", value: boolean) => {
+    toggleMutation.mutate({ field, value });
   };
 
-  const handleRename = async () => {
-    if (!selectedCategory || !newCategoryName.trim()) return;
-
-    setIsRenaming(true);
+  const handleRename = handleRenameSubmit(async ({ name }) => {
+    if (!selectedCategory) return;
     try {
-      await updateCategoryById(selectedCategory.id, {
-        name: newCategoryName.trim(),
-      });
+      await updateCategoryById(selectedCategory.id, { name: name.trim() });
       await categoryData?.refetch?.();
       setShowRename(false);
       addToast({
         type: "success",
         title: "Category renamed",
-        description: `Category has been renamed to "${newCategoryName.trim()}".`,
+        description: `Category has been renamed to "${name.trim()}".`,
       });
     } catch {
       addToast({
@@ -174,34 +196,10 @@ export const CategorySettings = () => {
         title: "Rename failed",
         description: "Failed to rename category. Please try again.",
       });
-    } finally {
-      setIsRenaming(false);
     }
-  };
+  });
 
-  const handleDelete = async () => {
-    if (!selectedCategory) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteCategoryById(selectedCategory.id);
-      await categoryData?.refetch?.();
-      setShowDelete(false);
-      addToast({
-        type: "success",
-        title: "Category deleted",
-        description: "Category and all associated data have been removed.",
-      });
-    } catch {
-      addToast({
-        type: "error",
-        title: "Deletion failed",
-        description: "Failed to delete category. Please try again.",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const handleDelete = () => deleteMutation.mutate();
 
   return (
     <div className="space-y-3 pb-6">
@@ -236,12 +234,21 @@ export const CategorySettings = () => {
                   )}
                 />
               </div>
-              <Button
-                onClick={() => router.push("/dashboard/banks?create=Category")}
-                className="bg-orange-500 hover:bg-orange-600 px-3"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="bg-orange-500 hover:bg-orange-600 border-orange-500 px-3"
+                    aria-label="How to add a category"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="bg-slate-800 border-slate-700 text-slate-200 text-sm w-56 p-3">
+                  Type a new name in the selector to create a category.
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -261,20 +268,25 @@ export const CategorySettings = () => {
                     <EyeOff className="w-4 h-4 text-slate-400" />
                     <div>
                       <p className="text-white font-medium text-sm">
-                        Hideable Category
+                        Privacy Hidden
                       </p>
                       <p className="text-xs text-slate-400">
-                        Allow this category to be hidden from reports and
-                        breakdowns
+                        This category&apos;s transactions will be hidden when
+                        privacy mode is enabled.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    {isUpdatingToggle === "hideable" && (
-                      <LoadingSpinner size="sm" />
-                    )}
+                    {toggleMutation.isPending &&
+                      toggleMutation.variables?.field === "hideable" && (
+                        <LoadingSpinner size="sm" />
+                      )}
                     <Switch
-                      disabled={!categoryId || isUpdatingToggle === "hideable"}
+                      disabled={
+                        !categoryId ||
+                        (toggleMutation.isPending &&
+                          toggleMutation.variables?.field === "hideable")
+                      }
                       checked={!!selectedCategory?.hideable}
                       onCheckedChange={(checked) =>
                         handleToggle("hideable", checked)
@@ -289,21 +301,24 @@ export const CategorySettings = () => {
                     <Calculator className="w-4 h-4 text-slate-400" />
                     <div>
                       <p className="text-white font-medium text-sm">
-                        Total Exempt
+                        Exclude from balance totals
                       </p>
                       <p className="text-xs text-slate-400">
-                        Exclude transactions in this category from dashboard
-                        totals
+                        Transactions in this category won&apos;t affect your
+                        overall balance total.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    {isUpdatingToggle === "total_exempt" && (
-                      <LoadingSpinner size="sm" />
-                    )}
+                    {toggleMutation.isPending &&
+                      toggleMutation.variables?.field === "total_exempt" && (
+                        <LoadingSpinner size="sm" />
+                      )}
                     <Switch
                       disabled={
-                        !categoryId || isUpdatingToggle === "total_exempt"
+                        !categoryId ||
+                        (toggleMutation.isPending &&
+                          toggleMutation.variables?.field === "total_exempt")
                       }
                       checked={!!selectedCategory?.total_exempt}
                       onCheckedChange={(checked) =>
@@ -320,7 +335,7 @@ export const CategorySettings = () => {
                     <p className="text-white font-medium text-sm">
                       Monthly Budget
                     </p>
-                    {isUpdatingBudget && <LoadingSpinner size="sm" />}
+                    {budgetMutation.isPending && <LoadingSpinner size="sm" />}
                   </div>
                   <div className="space-y-2">
                     <Input
@@ -328,7 +343,7 @@ export const CategorySettings = () => {
                       step="0.01"
                       min="0"
                       value={budgetInput}
-                      disabled={!categoryId || isUpdatingBudget}
+                      disabled={!categoryId || budgetMutation.isPending}
                       onChange={handleBudgetInputChange}
                       placeholder="Enter monthly budget (optional)"
                       className="bg-slate-800 border-slate-600 text-white"
@@ -392,8 +407,7 @@ export const CategorySettings = () => {
               <span className="font-semibold">{selectedCategory?.name}</span>:
             </p>
             <Input
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
+              {...registerRename("name", { required: true })}
               placeholder="New category name"
               className="bg-slate-800 border-slate-600 text-white"
               autoFocus
@@ -402,7 +416,7 @@ export const CategorySettings = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowRename(false)}
-                disabled={isRenaming}
+                disabled={renameFormState.isSubmitting}
                 className="border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Cancel
@@ -410,13 +424,13 @@ export const CategorySettings = () => {
               <Button
                 onClick={handleRename}
                 disabled={
-                  !newCategoryName.trim() ||
-                  newCategoryName.trim() === selectedCategory?.name ||
-                  isRenaming
+                  !watchedNewName.trim() ||
+                  watchedNewName.trim() === selectedCategory?.name ||
+                  renameFormState.isSubmitting
                 }
                 className="bg-orange-500 hover:bg-orange-600"
               >
-                {isRenaming ? (
+                {renameFormState.isSubmitting ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
                     Renaming...
@@ -440,7 +454,7 @@ export const CategorySettings = () => {
         variant="destructive"
         confirmationPhrase={`DELETE ${selectedCategory?.name}`}
         onConfirm={handleDelete}
-        loading={isDeleting}
+        loading={deleteMutation.isPending}
       />
     </div>
   );

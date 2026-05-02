@@ -4,8 +4,8 @@ import { User } from "@/lib/types";
 import { Button } from "../ui/button";
 import { updateUser } from "@/lib/pocketbase/queries";
 import { Input } from "../ui/input";
-import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { thumbs } from "@dicebear/collection";
 import { createAvatar } from "@dicebear/core";
@@ -25,8 +25,6 @@ export const AccountSettings = () => {
   const queryClient = useQueryClient();
   const { data, isLoading: userLoading } = useUserQuery();
   const { addToast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRegeneratingAvatar, setIsRegeneratingAvatar] = useState(false);
 
   const avatar = createAvatar(thumbs, {
     seed: data?.username,
@@ -36,7 +34,7 @@ export const AccountSettings = () => {
     control,
     handleSubmit,
     register,
-    setValue,
+    reset,
     watch,
     formState: { errors, isDirty },
   } = useForm<Pick<User, "username" | "currency">>({
@@ -54,34 +52,33 @@ export const AccountSettings = () => {
 
   useEffect(() => {
     if (data) {
-      setValue(
-        "currency",
-        data?.currency ?? {
+      reset({
+        currency: data.currency ?? {
           code: "USD",
           name: "United States Dollar",
           symbol: "$",
-        }
-      );
-      setValue("username", data?.username ?? "");
+        },
+        username: data.username ?? "",
+      });
     }
-  }, [data, setValue]);
+  }, [data, reset]);
 
-  const onSubmit = async (submission: Pick<User, "username" | "currency">) => {
-    setIsSubmitting(true);
-    try {
+  const updateMutation = useMutation({
+    mutationFn: async (submission: Pick<User, "username" | "currency">) => {
       const formData = new FormData();
       formData.append("username", submission.username);
       formData.append("currency", JSON.stringify(submission.currency));
-
       await updateUser(formData);
       await queryClient.invalidateQueries({ queryKey: ["user"] });
-
+    },
+    onSuccess: () => {
       addToast({
         type: "success",
         title: "Account updated",
         description: "Your account settings have been saved successfully.",
       });
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Failed to update account:", error);
       addToast({
         type: "error",
@@ -89,10 +86,10 @@ export const AccountSettings = () => {
         description:
           "Failed to update your account settings. Please try again.",
       });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
+
+  const onSubmit = handleSubmit((data) => updateMutation.mutate(data));
 
   if (userLoading) {
     return (
@@ -115,23 +112,17 @@ export const AccountSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+          <form onSubmit={onSubmit} className="space-y-3">
             {/* Avatar Section */}
             <div className="flex flex-col items-center space-y-2">
               <div className="relative">
-                {isRegeneratingAvatar ? (
-                  <div className="w-20 h-20 rounded-lg bg-slate-700 flex items-center justify-center">
-                    <LoadingSpinner size="sm" />
-                  </div>
-                ) : (
-                  <Image
-                    src={avatar.toDataUri()}
-                    alt="User Profile"
-                    width={80}
-                    height={80}
-                    className="rounded-lg shadow-lg"
-                  />
-                )}
+                <Image
+                  src={avatar.toDataUri()}
+                  alt="User Profile"
+                  width={80}
+                  height={80}
+                  className="rounded-lg shadow-lg"
+                />
               </div>
               <div className="text-center space-y-1">
                 <p className="text-xs text-slate-400">
@@ -199,10 +190,10 @@ export const AccountSettings = () => {
             {/* Save Button */}
             <Button
               type="submit"
-              disabled={!isDirty || isSubmitting}
+              disabled={!isDirty || updateMutation.isPending}
               className="w-full bg-orange-500 hover:bg-orange-600 text-white mt-4"
             >
-              {isSubmitting ? (
+              {updateMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
                   Saving...

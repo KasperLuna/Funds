@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Decimal from "decimal.js";
 import dayjs from "dayjs";
@@ -167,7 +167,9 @@ export const HistoryBreakdown = memo(function HistoryBreakdown() {
     queryFn: () => getTransactionsOfAMonth(selectedMonth?.toISOString() || ""),
   });
 
-  const [viewType, setViewType] = useState<"total" | "transactions">("total");
+  const viewType = (queryParams["historyView"] ?? "total") as
+    | "total"
+    | "transactions";
 
   const overallBalance = useMemo(
     () =>
@@ -273,7 +275,7 @@ export const HistoryBreakdown = memo(function HistoryBreakdown() {
               ? "bg-slate-700 text-slate-100 shadow-sm"
               : "text-slate-400 hover:text-slate-200",
           )}
-          onClick={() => setViewType("total")}
+          onClick={() => setQueryParams({ historyView: "total" })}
         >
           Total
         </button>
@@ -284,7 +286,7 @@ export const HistoryBreakdown = memo(function HistoryBreakdown() {
               ? "bg-slate-700 text-slate-100 shadow-sm"
               : "text-slate-400 hover:text-slate-200",
           )}
-          onClick={() => setViewType("transactions")}
+          onClick={() => setQueryParams({ historyView: "transactions" })}
         >
           Transactions
         </button>

@@ -26,7 +26,7 @@ const UpcomingPlannedTransactionCard: React.FC<
             e.stopPropagation();
             onEdit(pt);
           }}
-          className="absolute top-1.5 right-1.5 z-20 p-1 rounded-md bg-slate-700/80 hover:bg-slate-600 border border-slate-600/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="absolute bottom-1.5 right-1.5 z-20 p-1 rounded-md bg-slate-700/80 hover:bg-slate-600 border border-slate-600/50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200"
           title="Edit planned transaction"
           aria-label="Edit planned transaction"
         >

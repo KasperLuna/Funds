@@ -4,13 +4,11 @@ import { TransactionsTableRow } from "./TransactionsTableRow";
 
 interface TransactionsTableProps {
   transactions: ExpandedTransaction[];
-  handleFetchNextPage?: () => void;
   loaderRow?: React.ReactNode;
 }
 
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({
   transactions,
-  handleFetchNextPage,
   loaderRow,
 }) => {
   return (

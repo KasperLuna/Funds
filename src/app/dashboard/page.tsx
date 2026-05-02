@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 import { AssetSummary } from "@/components/dashboard/AssetSummary";
 import { UpcomingPlannedTransactions } from "@/components/dashboard/UpcomingPlannedTransactions";
 import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
@@ -19,8 +20,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
 const SECTIONS = [
   { key: "budgets", label: "Budgets", icon: PieChart },
@@ -34,7 +34,12 @@ type SectionKey = (typeof SECTIONS)[number]["key"];
 
 export default function Page() {
   const title = "Funds - Dashboard";
-  const [activeSection, setActiveSection] = useState<SectionKey>("budgets");
+  const { queryParams, setQueryParams } = useQueryParams({
+    defaultValues: { section: "budgets" },
+  });
+  const activeSection = (queryParams.section as SectionKey) ?? "budgets";
+  const setActiveSection = (key: SectionKey) =>
+    setQueryParams({ section: key });
 
   return (
     <div className="text-slate-200 min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 mb-20 md:mb-0">

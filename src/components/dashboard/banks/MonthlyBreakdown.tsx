@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { VolatileCategoryInfo } from "./VolatileCategoryInfo";
 import {
   getCategoryChartOptions,
@@ -47,7 +47,9 @@ export const MonthlyBreakdown: React.FC = () => {
   });
 
   // Tab state: 0 = Categories, 1 = Banks
-  const [tab, setTab] = useState("categories");
+  const tab = queryParams["mbTab"] ?? "categories";
+  const bankChartType = queryParams["bankChartType"] ?? "totals";
+  const historyChartType = queryParams["historyChartType"] ?? "total";
 
   type Memoized = {
     categoryTotals: Record<string, Decimal>;
@@ -278,7 +280,7 @@ export const MonthlyBreakdown: React.FC = () => {
   }, [data, bankData]);
 
   // Toggle for bank chart type (totals vs counts)
-  const [bankChartType, setBankChartType] = useState<string>("totals");
+  // historyChartType and bankChartType are already derived from queryParams above
 
   // --- History breakdown logic ---
   // Compute transaction counts and totals per day for the selected month
@@ -304,11 +306,15 @@ export const MonthlyBreakdown: React.FC = () => {
   }, [data, selectedMonth]);
 
   // Add state for history sub-tab
-  const [historyChartType, setHistoryChartType] = useState<string>("total");
+  // historyChartType is already derived from queryParams above
 
   return (
     <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col gap-2">
-      <Tabs value={tab} onValueChange={setTab} className="w-full ">
+      <Tabs
+        value={tab}
+        onValueChange={(v) => setQueryParams({ mbTab: v })}
+        className="w-full "
+      >
         <div className="flex flex-row justify-between items-center">
           {/* This item is duplicated below */}
           <TabsList className="my-2 bg-transparent fill-slate-200 hidden sm:flex">
@@ -467,7 +473,7 @@ export const MonthlyBreakdown: React.FC = () => {
           <div className="bg-slate-900/60 rounded-lg p-3">
             <Tabs
               value={bankChartType}
-              onValueChange={setBankChartType}
+              onValueChange={(v) => setQueryParams({ bankChartType: v })}
               className="w-full min-h-[350px]"
             >
               <TabsList className="bg-transparent fill-slate-200 py-0">
@@ -568,7 +574,7 @@ export const MonthlyBreakdown: React.FC = () => {
           <div className="bg-slate-900/60 rounded-lg p-3">
             <Tabs
               value={historyChartType}
-              onValueChange={setHistoryChartType}
+              onValueChange={(v) => setQueryParams({ historyChartType: v })}
               className="w-full min-h-[350px]"
             >
               <TabsList className="bg-transparent fill-slate-200 py-0 mb-2">

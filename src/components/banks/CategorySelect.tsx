@@ -1,20 +1,18 @@
-import React, { useState } from "react";
+"use client";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Check, ChevronDown } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
+import { pb } from "@/lib/pocketbase/pocketbase";
+import { useToast } from "@/components/ui/toast";
 
 export const CategorySelect = ({
   value,
@@ -24,108 +22,137 @@ export const CategorySelect = ({
   onChange: (value: string) => void;
 }) => {
   const categoryData = useCategoriesQuery();
-  const [isOpen, setIsOpen] = useState(false);
+  const { addToast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Find the selected category name for display
-  const selectedCategoryName =
-    categoryData?.categories?.find((category) => category.id === value)?.name ||
-    "Select Category";
+  const categories = categoryData?.categories ?? [];
+  const selectedCategory = categories.find((c) => c.id === value);
 
-  // Using both Select (for desktop) and Popover (for mobile)
-  // We'll show/hide based on screen size using CSS media queries
+  const trimmed = search.trim();
+  const filtered = trimmed
+    ? categories.filter((c) =>
+        c.name.toLowerCase().includes(trimmed.toLowerCase()),
+      )
+    : categories;
+  const exactMatch = categories.some(
+    (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
+  );
+  const showCreate = trimmed.length > 0 && !exactMatch;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const handleCreate = async () => {
+    if (!trimmed || creating) return;
+    setCreating(true);
+    try {
+      const record = await pb
+        .collection("categories")
+        .create({ name: trimmed, user: pb.authStore.record?.id });
+      await categoryData?.refetch?.();
+      onChange(record.id);
+      setSearch("");
+      setOpen(false);
+    } catch {
+      addToast({
+        type: "error",
+        title: "Failed to create category",
+        description: "Please try again.",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
-    <div className="relative w-full">
-      {/* Traditional Select for larger screens */}
-      <div className="hidden sm:block w-full">
-        <Select value={value} onValueChange={onChange}>
-          <SelectTrigger
-            className={cn(
-              "bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 focus-within:border-slate-500 text-white",
-              { "text-slate-600": !value, "text-white": value },
-            )}
-          >
-            <SelectValue placeholder="Select Category" />
-          </SelectTrigger>
-          <SelectContent className="max-h-[200px] bg-slate-800 border-slate-700 text-slate-100 z-50 overflow-auto">
-            {categoryData?.categories?.length === 0 && (
-              <SelectItem value="0" disabled>
-                No Categories yet. Create one to get started!
-              </SelectItem>
-            )}
-            {categoryData?.categories?.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div ref={containerRef} className="relative w-full">
+      <Button
+        type="button"
+        variant="outline"
+        role="combobox"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "w-full justify-between bg-transparent border-slate-700 hover:bg-slate-800 hover:text-white focus-visible:ring-offset-0 focus-visible:ring-0",
+          selectedCategory ? "text-white" : "text-slate-500",
+        )}
+      >
+        <span className="truncate">
+          {selectedCategory?.name ?? "Select category"}
+        </span>
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
 
-      {/* Custom Grid-based selector for mobile */}
-      <div className="block sm:hidden w-full">
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={isOpen}
-              className={cn(
-                "w-full justify-between bg-transparent border-slate-700 focus-visible:ring-offset-0 focus-visible:ring-0 ring-0 hover:bg-transparent hover:text-inherit text-white",
-                { "text-slate-600": !value, "text-white": value },
-              )}
-            >
-              {selectedCategoryName}
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[94vw] max-w-screen-sm p-0 bg-slate-800 border-slate-700 text-slate-100">
-            {categoryData?.categories?.length === 0 ? (
-              <div className="px-3 py-2 text-center text-sm text-slate-400">
-                No Categories yet. Create one to get started!
-              </div>
-            ) : (
-              <div className="max-h-[50vh] overflow-y-auto overflow-x-hidden">
-                <div className="grid grid-cols-2 p-1 gap-1">
-                  {categoryData?.categories?.map((category) => (
-                    <button
-                      key={category.id}
+      {open && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+          <Command shouldFilter={false} className="bg-slate-800">
+            <CommandInput
+              placeholder="Search or create category"
+              value={search}
+              onValueChange={setSearch}
+              className="text-white placeholder:text-slate-500"
+              autoFocus
+            />
+            <CommandList className="max-h-[200px] overflow-y-auto">
+              <CommandGroup>
+                {filtered.map((cat) => (
+                  <CommandItem
+                    key={cat.id}
+                    value={cat.id}
+                    onSelect={() => {
+                      onChange(cat.id);
+                      setSearch("");
+                      setOpen(false);
+                    }}
+                    className="cursor-pointer text-slate-100 data-[selected=true]:bg-slate-700 data-[selected=true]:text-white"
+                  >
+                    <Check
                       className={cn(
-                        "flex items-center justify-start w-full px-2 py-1.5 text-left text-sm text-white rounded-md border-0 bg-transparent cursor-pointer",
-                        category.id === value
-                          ? "bg-slate-700"
-                          : "hover:bg-slate-700 active:bg-slate-600",
+                        "mr-2 h-4 w-4 shrink-0",
+                        value === cat.id ? "opacity-100" : "opacity-0",
                       )}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log("Category clicked:", category.name); // Debug log
-                        onChange(category.id);
-                        setIsOpen(false);
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log("Category touched:", category.name); // Debug log
-                        onChange(category.id);
-                        setIsOpen(false);
-                      }}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="truncate max-w-[80%]">
-                          {category.name}
-                        </span>
-                        {category.id === value && (
-                          <Check className="h-4 w-4 ml-2 flex-shrink-0" />
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </PopoverContent>
-        </Popover>
-      </div>
+                    />
+                    {cat.name}
+                  </CommandItem>
+                ))}
+                {filtered.length === 0 && !showCreate && (
+                  <p className="py-4 text-center text-sm text-slate-400">
+                    {trimmed
+                      ? "No categories match."
+                      : "No categories yet, type to create one."}
+                  </p>
+                )}
+              </CommandGroup>
+              {showCreate && (
+                <CommandGroup>
+                  <CommandItem
+                    value={`__create__${trimmed}`}
+                    onSelect={handleCreate}
+                    disabled={creating}
+                    className="cursor-pointer text-emerald-400 data-[selected=true]:bg-slate-700 data-[selected=true]:text-emerald-300"
+                  >
+                    <Plus className="mr-2 h-4 w-4 shrink-0" />
+                    {creating ? "Creating…" : `Create "${trimmed}"`}
+                  </CommandItem>
+                </CommandGroup>
+              )}
+            </CommandList>
+          </Command>
+        </div>
+      )}
     </div>
   );
 };

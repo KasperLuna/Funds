@@ -1,6 +1,7 @@
 "use client";
 import React, { memo, useState, useMemo } from "react";
 import { MixedDialogTrigger } from "../banks/MixedDialog";
+import { AddPlannedDialog, AddTemplateDialog } from "../banks/EntityDialogs";
 import { PlannedTransaction, Transaction } from "@/lib/types";
 import { usePrivacy } from "@/hooks/usePrivacy";
 import { parseAmount } from "@/lib/utils";
@@ -77,7 +78,7 @@ const UpcomingPlannedTransactions = memo(
         // There are active planned transactions but none due soon — show a toggle
         return (
           <div className="relative mb-3 border-b border-slate-700/50 pb-3">
-            <div className="flex items-center gap-3 p-1">
+            <div className="flex items-center gap-3 p-1 flex-wrap">
               <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
                 <Calendar className="w-4 h-4 text-emerald-400" />
                 <span className="font-bold text-base text-slate-100">
@@ -91,6 +92,16 @@ const UpcomingPlannedTransactions = memo(
                 View All ({totalActive})
                 <ChevronDown className="w-3 h-3" />
               </button>
+              <AddPlannedDialog>
+                <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                  + Planned
+                </button>
+              </AddPlannedDialog>
+              <AddTemplateDialog>
+                <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                  + Template
+                </button>
+              </AddTemplateDialog>
             </div>
           </div>
         );
@@ -102,7 +113,7 @@ const UpcomingPlannedTransactions = memo(
       <div className="relative mb-3 border-b border-slate-700/50 pb-3">
         <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none" />
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2 p-1">
+          <div className="flex items-center gap-3 mb-2 p-1 flex-wrap">
             <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
               <Calendar className="w-4 h-4 text-emerald-400" />
               <span className="font-bold text-base text-slate-100">
@@ -133,6 +144,16 @@ const UpcomingPlannedTransactions = memo(
                 </>
               )}
             </button>
+            <AddPlannedDialog>
+              <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                + Planned
+              </button>
+            </AddPlannedDialog>
+            <AddTemplateDialog>
+              <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                + Template
+              </button>
+            </AddTemplateDialog>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {upcoming?.map((pt) => {

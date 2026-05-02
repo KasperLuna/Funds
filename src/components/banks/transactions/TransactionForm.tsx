@@ -231,7 +231,7 @@ export const TransactionForm = ({
     watch,
     setValue,
     setError,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<TransactionFormData>({
     defaultValues: transaction
       ? {
@@ -409,7 +409,7 @@ export const TransactionForm = ({
               <Input
                 id="amount"
                 type="number"
-                inputMode="decimal"
+                inputMode={formType === "Difference" ? "text" : "decimal"}
                 step={0.01}
                 className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
                 {...register(
@@ -417,7 +417,7 @@ export const TransactionForm = ({
                   {
                     valueAsNumber: true,
                     required: true,
-                    min: 0,
+                    ...(formType !== "Difference" && { min: 0 }),
                   },
                 )}
               />
@@ -453,8 +453,21 @@ export const TransactionForm = ({
           />
         </div>
         <div></div>
-        <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-700">
-          {transaction?.id ? "Update" : "Create"}
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full bg-blue-900 hover:bg-blue-700"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent inline-block" />
+              Saving…
+            </>
+          ) : transaction?.id ? (
+            "Update"
+          ) : (
+            "Create"
+          )}
         </Button>
       </div>
     </form>

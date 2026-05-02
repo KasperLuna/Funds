@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { Transaction } from "@/lib/types";
 import { MixedDialog } from "../banks/MixedDialog";
@@ -13,24 +12,14 @@ export function PlannedTransactionPrefillHandler() {
     usePlannedTransactions();
   const bankData = useBanksQuery();
   const categoryData = useCategoriesQuery();
-  const [prefill, setPrefill] = useState<Transaction | undefined>(undefined);
 
-  useEffect(() => {
-    if (queryParams.plannedId) {
-      const planned = plannedTransactions.find(
-        (pt) => pt.id === queryParams.plannedId,
-      );
-      if (planned) {
-        setPrefill({
-          ...planned,
-          id: undefined, // Clear the ID to create a new transaction
-          date: new Date().toISOString(),
-        });
-        return;
-      }
-    }
-    setPrefill(undefined);
-  }, [queryParams.plannedId, plannedTransactions]);
+  const foundPlanned = queryParams.plannedId
+    ? plannedTransactions.find((pt) => pt.id === queryParams.plannedId)
+    : undefined;
+
+  const prefill: Transaction | undefined = foundPlanned
+    ? { ...foundPlanned, id: undefined, date: new Date().toISOString() }
+    : undefined;
 
   if (bankData?.loading || categoryData?.loading) {
     return null;
@@ -40,11 +29,8 @@ export function PlannedTransactionPrefillHandler() {
     <MixedDialog
       isModalOpen={!!prefill}
       setIsModalOpen={(open) => {
-        if (!open) {
-          setPrefill(undefined);
-          if (queryParams.plannedId) {
-            setQueryParams({ plannedId: undefined });
-          }
+        if (!open && queryParams.plannedId) {
+          setQueryParams({ plannedId: undefined });
         }
       }}
       transaction={prefill}

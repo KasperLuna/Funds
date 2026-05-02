@@ -9,16 +9,16 @@ import {
 } from "@/lib/pocketbase/queries";
 import { parseAmount } from "@/lib/utils";
 import {
-  Plus,
   Building2,
   DollarSign,
   Calculator,
   Edit3,
   Trash2,
+  Plus,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import {
@@ -38,9 +38,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { useUserQuery } from "@/lib/hooks/useUserQuery";
 import { useBanksQuery } from "@/lib/hooks/useBanksQuery";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export const BankSettings = () => {
-  const router = useRouter();
   const bankData = useBanksQuery();
   const { baseCurrency } = useUserQuery();
   const { addToast } = useToast();
@@ -48,55 +52,80 @@ export const BankSettings = () => {
   const bank = watch("bank");
   const selectedBank = bankData?.banks?.find((b) => b.id === bank);
 
+  const {
+    register: registerRename,
+    handleSubmit: handleRenameSubmit,
+    formState: renameFormState,
+    reset: resetRenameForm,
+    watch: watchRename,
+  } = useForm({ defaultValues: { name: "" } });
+  const watchedNewName = watchRename("name");
+
   // State management
   const [showRename, setShowRename] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [isRecomputingBalance, setIsRecomputingBalance] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [newBankName, setNewBankName] = useState("");
 
-  React.useEffect(() => {
-    if (selectedBank && showRename) {
-      setNewBankName(selectedBank.name);
-    }
-  }, [selectedBank, showRename]);
-
-  const handleRecomputeBalance = async () => {
-    if (!bank) return;
-
-    setIsRecomputingBalance(true);
-    try {
+  const recomputeMutation = useMutation({
+    mutationFn: async () => {
+      if (!bank) return;
       await recomputeBalanceById(bank);
       await bankData?.refetch?.();
+    },
+    onSuccess: () =>
       addToast({
         type: "success",
         title: "Balance recomputed",
         description: "Bank balance has been recalculated successfully.",
-      });
-    } catch {
+      }),
+    onError: () =>
       addToast({
         type: "error",
         title: "Recomputation failed",
         description: "Failed to recompute balance. Please try again.",
+      }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedBank) return;
+      await deleteBankById(selectedBank.id);
+      await bankData?.refetch?.();
+    },
+    onSuccess: () => {
+      setShowDelete(false);
+      addToast({
+        type: "success",
+        title: "Bank deleted",
+        description: "Bank and all associated data have been removed.",
       });
-    } finally {
-      setIsRecomputingBalance(false);
+    },
+    onError: () =>
+      addToast({
+        type: "error",
+        title: "Deletion failed",
+        description: "Failed to delete bank. Please try again.",
+      }),
+  });
+
+  React.useEffect(() => {
+    if (selectedBank && showRename) {
+      resetRenameForm({ name: selectedBank.name });
     }
-  };
+  }, [selectedBank, showRename, resetRenameForm]);
 
-  const handleRename = async () => {
-    if (!selectedBank || !newBankName.trim()) return;
+  const handleRecomputeBalance = () => recomputeMutation.mutate();
+  const handleDelete = () => deleteMutation.mutate();
 
-    setIsRenaming(true);
+  const handleRename = handleRenameSubmit(async ({ name }) => {
+    if (!selectedBank) return;
     try {
-      await renameBankById(selectedBank.id, newBankName.trim());
+      await renameBankById(selectedBank.id, name.trim());
       await bankData?.refetch?.();
       setShowRename(false);
       addToast({
         type: "success",
         title: "Bank renamed",
-        description: `Bank has been renamed to "${newBankName.trim()}".`,
+        description: `Bank has been renamed to "${name.trim()}".`,
       });
     } catch {
       addToast({
@@ -104,34 +133,8 @@ export const BankSettings = () => {
         title: "Rename failed",
         description: "Failed to rename bank. Please try again.",
       });
-    } finally {
-      setIsRenaming(false);
     }
-  };
-
-  const handleDelete = async () => {
-    if (!selectedBank) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteBankById(selectedBank.id);
-      await bankData?.refetch?.();
-      setShowDelete(false);
-      addToast({
-        type: "success",
-        title: "Bank deleted",
-        description: "Bank and all associated data have been removed.",
-      });
-    } catch {
-      addToast({
-        type: "error",
-        title: "Deletion failed",
-        description: "Failed to delete bank. Please try again.",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  });
 
   return (
     <div className="space-y-3">
@@ -163,12 +166,21 @@ export const BankSettings = () => {
                   )}
                 />
               </div>
-              <Button
-                onClick={() => router.push("/dashboard/banks?create=Bank")}
-                className="bg-orange-500 hover:bg-orange-600 px-3"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="bg-orange-500 hover:bg-orange-600 border-orange-500 px-3"
+                    aria-label="How to add a bank"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="bg-slate-800 border-slate-700 text-slate-200 text-sm w-56 p-3">
+                  Type a new name in the selector to create a bank.
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -199,12 +211,12 @@ export const BankSettings = () => {
             <h3 className="text-sm font-medium text-white">Bank Actions</h3>
 
             <Button
-              disabled={!bank || isRecomputingBalance}
+              disabled={!bank || recomputeMutation.isPending}
               variant="outline"
               onClick={handleRecomputeBalance}
               className="w-full border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white hover:border-slate-500 text-sm py-2"
             >
-              {isRecomputingBalance ? (
+              {recomputeMutation.isPending ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />
                   Recomputing...
@@ -216,6 +228,10 @@ export const BankSettings = () => {
                 </>
               )}
             </Button>
+            <p className="text-xs text-slate-400 -mt-1">
+              Recalculates the bank balance by summing all recorded
+              transactions. Use this if the balance looks incorrect.
+            </p>
 
             <Button
               disabled={!bank}
@@ -255,8 +271,7 @@ export const BankSettings = () => {
               <span className="font-semibold">{selectedBank?.name}</span>:
             </p>
             <Input
-              value={newBankName}
-              onChange={(e) => setNewBankName(e.target.value)}
+              {...registerRename("name", { required: true })}
               placeholder="New bank name"
               className="bg-slate-800 border-slate-600 text-white"
               autoFocus
@@ -265,7 +280,7 @@ export const BankSettings = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowRename(false)}
-                disabled={isRenaming}
+                disabled={renameFormState.isSubmitting}
                 className="border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Cancel
@@ -273,13 +288,13 @@ export const BankSettings = () => {
               <Button
                 onClick={handleRename}
                 disabled={
-                  !newBankName.trim() ||
-                  newBankName.trim() === selectedBank?.name ||
-                  isRenaming
+                  !watchedNewName.trim() ||
+                  watchedNewName.trim() === selectedBank?.name ||
+                  renameFormState.isSubmitting
                 }
                 className="bg-orange-500 hover:bg-orange-600"
               >
-                {isRenaming ? (
+                {renameFormState.isSubmitting ? (
                   <>
                     <LoadingSpinner size="sm" className="mr-2" />
                     Renaming...
@@ -303,7 +318,7 @@ export const BankSettings = () => {
         variant="destructive"
         confirmationPhrase={`DELETE ${selectedBank?.name}`}
         onConfirm={handleDelete}
-        loading={isDeleting}
+        loading={deleteMutation.isPending}
       />
     </div>
   );

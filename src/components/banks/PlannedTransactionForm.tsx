@@ -8,6 +8,13 @@ import { BankSelect } from "@/components/banks/BankSelect";
 import { CategoryPicker } from "@/components/banks/CategoryPicker";
 import { DatePickerWithOptions } from "@/components/DatePickerWithOptions";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PlannedTransactionFormProps {
   plannedTransaction?: PlannedTransaction;
@@ -23,22 +30,27 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
   plannedTransaction,
   onSubmit,
 }) => {
-  const { control, handleSubmit, register, watch } =
-    useForm<PlannedTransaction>({
-      defaultValues: plannedTransaction || {
-        user: "",
-        description: "",
-        type: "expense",
-        amount: 0,
-        bank: "",
-        categories: [],
-        recurrence: defaultRecurrence,
-        active: true,
-        timezone: new Date().getTimezoneOffset() / -60, // Convert to hours
-        previousDate: null,
-        invokeDate: new Date(),
-      },
-    });
+  const {
+    control,
+    handleSubmit,
+    register,
+    watch,
+    formState: { errors },
+  } = useForm<PlannedTransaction>({
+    defaultValues: plannedTransaction || {
+      user: "",
+      description: "",
+      type: "expense",
+      amount: 0,
+      bank: "",
+      categories: [],
+      recurrence: defaultRecurrence,
+      active: true,
+      timezone: new Date().getTimezoneOffset() / -60, // Convert to hours
+      previousDate: null,
+      invokeDate: new Date(),
+    },
+  });
 
   return (
     <form
@@ -53,7 +65,11 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
             name="invokeDate"
             render={({ field }) => {
               const dateValue = field.value
-                ? new Date(field.value.getFullYear(), field.value.getMonth(), field.value.getDate())
+                ? new Date(
+                    field.value.getFullYear(),
+                    field.value.getMonth(),
+                    field.value.getDate(),
+                  )
                 : undefined;
               const timeValue = field.value
                 ? `${field.value.getHours().toString().padStart(2, "0")}:${field.value
@@ -63,19 +79,23 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
                 : "";
               const handleDateChange = (date: Date | undefined) => {
                 if (!date) return;
-                let newDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                let newDate = new Date(
+                  date.getFullYear(),
+                  date.getMonth(),
+                  date.getDate(),
+                );
                 if (field.value && !isNaN(field.value.getTime())) {
                   newDate.setHours(
                     field.value.getHours(),
                     field.value.getMinutes(),
                     0,
-                    0
+                    0,
                   );
                 }
                 field.onChange(newDate);
               };
               const handleTimeChange = (
-                e: React.ChangeEvent<HTMLInputElement>
+                e: React.ChangeEvent<HTMLInputElement>,
               ) => {
                 let [hours, minutes] = e.target.value.split(":").map(Number);
                 let newDate = field.value ? new Date(field.value) : new Date();
@@ -149,16 +169,23 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
                 min: 0,
               })}
               type="number"
+              inputMode="decimal"
+              step={0.01}
               placeholder="Amount"
               className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
             />
           </div>
         </div>
       </div>
+      {errors.amount && (
+        <p className="text-red-400 text-xs -mt-1">
+          {errors.amount.message || "Amount is required"}
+        </p>
+      )}
       <div className="flex flex-col gap-2">
         <Label htmlFor="description">Description</Label>
         <Input
-          {...register("description", { required: true })}
+          {...register("description")}
           placeholder="Description"
           className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
         />
@@ -197,16 +224,20 @@ export const PlannedTransactionForm: React.FC<PlannedTransactionFormProps> = ({
             control={control}
             name="recurrence.frequency"
             render={({ field }) => (
-              <select
-                {...field}
-                className="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-slate-100 focus:border-blue-700 focus:outline-none"
-                aria-label="Recurrence frequency"
-              >
-                <option value="daily">day(s)</option>
-                <option value="weekly">week(s)</option>
-                <option value="monthly">month(s)</option>
-                <option value="yearly">year(s)</option>
-              </select>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger
+                  className="bg-slate-800 border-slate-700 text-slate-100 focus:ring-0 focus:ring-offset-0"
+                  aria-label="Recurrence frequency"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-700 text-slate-100">
+                  <SelectItem value="daily">day(s)</SelectItem>
+                  <SelectItem value="weekly">week(s)</SelectItem>
+                  <SelectItem value="monthly">month(s)</SelectItem>
+                  <SelectItem value="yearly">year(s)</SelectItem>
+                </SelectContent>
+              </Select>
             )}
           />
           <div className="flex items-center gap-2 ml-4">

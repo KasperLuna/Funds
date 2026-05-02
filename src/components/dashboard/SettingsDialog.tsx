@@ -5,7 +5,6 @@ import { AccountSettings } from "./AccountSettings";
 import { BankSettings } from "./banks/BankSettings";
 import { CategorySettings } from "./CategorySettings";
 import { PushNotificationSettings } from "./settings/PushNotificationSettings";
-import { ToastProvider } from "../ui/toast";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -24,11 +23,7 @@ export const SettingsDialogTrigger = ({
 
   const isModalOpen = !!queryParams["settings"];
 
-  return (
-    <ToastProvider>
-      <SettingsDialog isModalOpen={isModalOpen} trigger={children} />
-    </ToastProvider>
-  );
+  return <SettingsDialog isModalOpen={isModalOpen} trigger={children} />;
 };
 
 export const SettingsDialog = ({

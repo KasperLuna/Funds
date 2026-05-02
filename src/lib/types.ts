@@ -88,16 +88,6 @@ export type ExpandedTransaction = Transaction & {
   };
 };
 
-export type Transfer = {
-  description: string;
-  originAmount: number;
-  destinationAmount: number;
-  originBank: string;
-  destinationBank: string;
-  date: Date;
-  category?: string[];
-};
-
 export type Trend = {
   year: number;
   month: string;

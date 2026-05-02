@@ -106,7 +106,6 @@ export const TransactionsContainer = () => {
         <div className="col-span-full">
           <TransactionsTable
             transactions={groupedTransactions.flatMap(([, txns]) => txns)}
-            handleFetchNextPage={handleFetchNextPage}
             loaderRow={
               showLoader ? (
                 <tr>

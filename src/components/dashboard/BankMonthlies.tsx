@@ -1,9 +1,10 @@
 "use client";
-import { useState, memo } from "react";
+import { memo } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { MonthlyBreakdown } from "@/components/dashboard/banks/MonthlyBreakdown";
 import { BankTrends } from "@/components/dashboard/banks/trends";
 import { Building, TrendingUp, BarChart3 } from "lucide-react";
+import { useQueryParams } from "@/lib/hooks/useQueryParams";
 
 const TABS = [
   { key: "breakdown", label: "Breakdown", icon: BarChart3 },
@@ -11,11 +12,14 @@ const TABS = [
 ];
 
 export const BankMonthlies = memo(function BankMonthlies() {
-  const [tab, setTab] = useState("breakdown");
+  const { queryParams, setQueryParams } = useQueryParams({
+    defaultValues: { bmTab: "breakdown" },
+  });
+  const tab = queryParams.bmTab ?? "breakdown";
   return (
     <div className="relative w-full">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none" />
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={(v) => setQueryParams({ bmTab: v })}>
         <div className="relative z-10 flex flex-col gap-2">
           <div className="flex items-center gap-3 p-1">
             <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">

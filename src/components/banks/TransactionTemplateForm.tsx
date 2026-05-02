@@ -16,7 +16,12 @@ interface TransactionTemplateFormProps {
 export const TransactionTemplateForm: React.FC<
   TransactionTemplateFormProps
 > = ({ template, onSubmit }) => {
-  const { control, handleSubmit, register } = useForm<PlannedTransaction>({
+  const {
+    control,
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm<PlannedTransaction>({
     defaultValues: template || {
       user: "",
       name: "",
@@ -41,6 +46,11 @@ export const TransactionTemplateForm: React.FC<
           placeholder="e.g. Monthly Rent"
           className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
         />
+        {errors.name && (
+          <p className="text-red-400 text-xs">
+            {errors.name.message || "Name is required"}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor="bank">Bank</Label>
@@ -94,6 +104,11 @@ export const TransactionTemplateForm: React.FC<
               placeholder="Amount"
               className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
             />
+            {errors.amount && (
+              <p className="text-red-400 text-xs mt-1">
+                {errors.amount.message || "Amount is required"}
+              </p>
+            )}
           </div>
         </div>
       </div>
