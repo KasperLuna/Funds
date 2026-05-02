@@ -123,7 +123,6 @@ export const TransactionFilter = () => {
                     setQueryParams({ categories: value.join(",") });
                   }
                 }}
-                hasAddButton={false}
               />
             </div>
           </>

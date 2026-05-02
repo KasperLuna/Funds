@@ -312,7 +312,7 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                     <button
                       key={coin.id}
                       onClick={() => handleSelectCoinGecko(coin)}
-                      disabled={submitting}
+                      disabled={isAddingToken}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/60 transition-colors text-left disabled:opacity-50"
                     >
                       <Image
