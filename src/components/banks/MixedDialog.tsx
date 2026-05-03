@@ -83,7 +83,7 @@ function DeleteConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="flex flex-row justify-end gap-2 mt-2">
-          <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200">
+          <AlertDialogCancel className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-200 mt-0">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
