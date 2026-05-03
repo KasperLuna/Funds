@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -15,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronDown, Copy, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Trash2, X } from "lucide-react";
 import { FormType, Transaction } from "@/lib/types";
 import { pb } from "@/lib/pocketbase/pocketbase";
 import { Button } from "@/components/ui/button";
@@ -314,7 +315,8 @@ export const MixedDialog = ({
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent
-          className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-4 rounded-md"
+          hideClose
+          className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-2 rounded-md"
           style={{ overscrollBehavior: "contain" }}
         >
           <DialogDescription className="sr-only">
@@ -322,7 +324,7 @@ export const MixedDialog = ({
               ? "Edit an existing transaction"
               : "Create a new transaction"}
           </DialogDescription>
-          <DialogHeader className="flex flex-row w-full justify-between pr-8">
+          <DialogHeader className="flex flex-row w-full items-center justify-between">
             <DialogTitle className="self-center">
               {transaction?.id ? "Edit" : "Create"}{" "}
               {transaction?.id ? (
@@ -359,8 +361,8 @@ export const MixedDialog = ({
                 </DropdownMenu>
               )}
             </DialogTitle>
-            {transaction?.id && (
-              <div className="flex flex-row gap-1 mt-1">
+            {transaction?.id ? (
+              <div className="flex flex-row gap-1">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -379,7 +381,28 @@ export const MixedDialog = ({
                 >
                   <Trash2 className="size-4" />
                 </Button>
+                <DialogClose asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="hover:bg-slate-700 text-slate-400"
+                  >
+                    <X className="size-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                </DialogClose>
               </div>
+            ) : (
+              <DialogClose asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hover:bg-slate-700 text-slate-400"
+                >
+                  <X className="size-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </DialogClose>
             )}
           </DialogHeader>
           <TransactionForm
