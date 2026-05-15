@@ -53,12 +53,12 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
           if (curr.categories.length === 0) {
             if (!acc["no category"]) acc["no category"] = new Decimal(0);
             acc["no category"] = acc["no category"].add(
-              new Decimal(curr.amount).toNumber(),
+              new Decimal(curr.amount).toDecimalPlaces(2),
             );
           } else {
-            const splitAmount = new Decimal(curr.amount).div(
-              curr.categories.length,
-            );
+            const splitAmount = new Decimal(curr.amount)
+              .div(curr.categories.length)
+              .toDecimalPlaces(2); // Apply precision here
             curr.categories.forEach((categ) => {
               if (!acc[categ]) acc[categ] = new Decimal(0);
               acc[categ] = acc[categ].add(splitAmount);
@@ -122,12 +122,12 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
         const category = categoryData?.categories?.find(
           (categ) => categ.id === key,
         );
-        const net = value.toNumber();
-        const throughput = categoryThroughput[key] || 0;
+        const net = value; // Keep as Decimal
+        const throughput = new Decimal(categoryThroughput[key] || 0); // Keep as Decimal
         const isVolatile =
-          Math.abs(net) > 0 &&
-          throughput > VOLATILITY_MIN &&
-          throughput / Math.abs(net) > VOLATILITY_RATIO;
+          net.abs().gt(0) &&
+          throughput.gt(VOLATILITY_MIN) &&
+          throughput.div(net.abs()).gt(VOLATILITY_RATIO);
         if (category) {
           acc[category.name + (isVolatile ? " *" : "")] = net;
         } else if (key === "no category") {
@@ -135,14 +135,14 @@ export const CategoryBreakdown = memo(function CategoryBreakdown() {
         }
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, Decimal>,
     );
 
     const sortedCategories = Object.entries(categoryTotalsWithNames).sort(
-      ([, a], [, b]) => Math.abs(b) - Math.abs(a),
+      ([, a], [, b]) => b.abs().minus(a.abs()).toNumber(),
     );
     const sortedKeys = sortedCategories.map(([key]) => key);
-    const sortedValues = sortedCategories.map(([, value]) => value);
+    const sortedValues = sortedCategories.map(([, value]) => value.toNumber()); // Convert to number only for display
 
     const chartData = {
       series: [{ name: "Amount", data: sortedValues }],
