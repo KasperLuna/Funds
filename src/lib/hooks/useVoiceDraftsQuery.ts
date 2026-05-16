@@ -53,6 +53,7 @@ export const useVoiceDraftsQuery = () => {
     },
     enabled: !!user,
     refetchInterval: 15000, // refresh every 15s so expired ones disappear
+    refetchOnWindowFocus: true,
   });
 
   const dismissDraft = async (id: string) => {
