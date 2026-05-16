@@ -3,6 +3,8 @@ export type User = {
   // System Values (can not be changed)
   email: string;
   emailVisibility: boolean;
+  // API key for voice shortcuts/webhooks
+  voiceApiKey?: string;
   collectionId: string;
   collectionName: string;
   created: Date;

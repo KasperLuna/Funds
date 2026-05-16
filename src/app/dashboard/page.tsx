@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AssetSummary } from "@/components/dashboard/AssetSummary";
 import { UpcomingPlannedTransactions } from "@/components/dashboard/UpcomingPlannedTransactions";
 import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
+import { VoiceDraftPrefillHandler } from "@/components/dashboard/VoiceDraftPrefillHandler";
 import { BudgetsSummary } from "@/components/dashboard/BudgetsSummary";
 import { Onboarding } from "@/components/dashboard/Onboarding";
 import { CategoryBreakdown } from "@/components/dashboard/banks/CategoryBreakdown";
@@ -95,6 +96,7 @@ export default function Page() {
         </Link>
       </div>
       <PlannedTransactionPrefillHandler />
+      <VoiceDraftPrefillHandler />
     </div>
   );
 }
