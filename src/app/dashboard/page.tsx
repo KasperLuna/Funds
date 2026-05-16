@@ -6,6 +6,7 @@ import { AssetSummary } from "@/components/dashboard/AssetSummary";
 import { UpcomingPlannedTransactions } from "@/components/dashboard/UpcomingPlannedTransactions";
 import { PlannedTransactionPrefillHandler } from "@/components/dashboard/PlannedTransactionPrefillHandler";
 import { VoiceDraftPrefillHandler } from "@/components/dashboard/VoiceDraftPrefillHandler";
+import { UpcomingVoiceDrafts } from "@/components/dashboard/UpcomingVoiceDrafts";
 import { BudgetsSummary } from "@/components/dashboard/BudgetsSummary";
 import { Onboarding } from "@/components/dashboard/Onboarding";
 import { CategoryBreakdown } from "@/components/dashboard/banks/CategoryBreakdown";
@@ -47,6 +48,7 @@ export default function Page() {
       <title>{title}</title>
       <div className="flex flex-col gap-3 h-fit p-2">
         <UpcomingPlannedTransactions />
+        <UpcomingVoiceDrafts />
         <Onboarding />
         <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 gap-3">
           <AssetSummary />
