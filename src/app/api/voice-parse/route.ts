@@ -3,6 +3,9 @@ import PocketBase from "pocketbase";
 import { parseTransaction } from "@/lib/voiceParser";
 import { createVoiceDraft } from "@/lib/voiceDrafts";
 
+// Module-level admin PocketBase client reused across warm server processes
+const adminPb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || "");
+
 export async function POST(req: NextRequest) {
   try {
     const auth = req.headers.get("authorization") || "";
@@ -14,19 +17,21 @@ export async function POST(req: NextRequest) {
     }
     const token = auth.split(" ")[1];
 
-    // Authenticate to PocketBase as admin to lookup user by voiceApiKey
-    const pb = new PocketBase(process.env.NEXT_PUBLIC_POCKETBASE_URL || "");
-    await pb.admins.authWithPassword(
-      process.env.POCKETBASE_ADMIN_EMAIL || "",
-      process.env.POCKETBASE_ADMIN_PASSWORD || "",
-    );
+    // Ensure module-level admin client is authenticated (warm reuse)
+    if (!adminPb.authStore.isValid) {
+      await adminPb.admins.authWithPassword(
+        process.env.POCKETBASE_ADMIN_EMAIL || "",
+        process.env.POCKETBASE_ADMIN_PASSWORD || "",
+      );
+    }
 
-    // Find user by voiceApiKey
-    const usersResp = await pb.collection("users").getList(1, 1, {
-      filter: `voiceApiKey="${token}"`,
-    });
-    const userRecord = usersResp.items?.[0];
-    if (!userRecord) {
+    // Find user by voiceApiKey (faster single-item lookup)
+    let userRecord: any;
+    try {
+      userRecord = await adminPb
+        .collection("users")
+        .getFirstListItem(`voiceApiKey="${token}"`);
+    } catch {
       return NextResponse.json({ error: "Invalid API key" }, { status: 401 });
     }
 
@@ -39,15 +44,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing text" }, { status: 400 });
     }
 
-    // Fetch user's accounts and categories from PocketBase for better parsing
-    const banks = await pb
-      .collection("banks")
-      .getFullList({ filter: `user="${userId}"` });
-    const categories = await pb
-      .collection("categories")
-      .getFullList({ filter: `user="${userId}"` });
-    const accountNames = banks.map((b: any) => b.name).filter(Boolean);
-    const categoryNames = categories.map((c: any) => c.name).filter(Boolean);
+    // Fetch user's accounts and categories in parallel; limit page size
+    const [banksResp, categoriesResp] = await Promise.all([
+      adminPb.collection("banks").getList(1, 100, {
+        filter: `user="${userId}"`,
+        fields: "name",
+      }),
+      adminPb.collection("categories").getList(1, 100, {
+        filter: `user="${userId}"`,
+        fields: "name",
+      }),
+    ]);
+    const accountNames = banksResp.items
+      .map((b: any) => b.name)
+      .filter(Boolean);
+    const categoryNames = categoriesResp.items
+      .map((c: any) => c.name)
+      .filter(Boolean);
 
     const result = parseTransaction(text, {
       accounts: accountNames,
@@ -61,7 +74,7 @@ export async function POST(req: NextRequest) {
       userId,
     };
 
-    const draftToken = await createVoiceDraft(draft, 300, pb); // 5 minutes
+    const draftToken = await createVoiceDraft(draft, 300, adminPb); // 5 minutes
 
     return NextResponse.json({ status: "ok", draftToken, preview: result });
   } catch (err) {

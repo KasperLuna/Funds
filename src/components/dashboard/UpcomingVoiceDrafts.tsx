@@ -10,7 +10,6 @@ import {
   VoiceDraft,
 } from "@/lib/hooks/useVoiceDraftsQuery";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { TransactionCardLoader } from "@/components/banks/transactions/TransactionCardLoader";
 import { Mic, X } from "lucide-react";
 
 function draftToPrefill(
