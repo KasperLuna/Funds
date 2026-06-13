@@ -74,39 +74,37 @@ const UpcomingPlannedTransactions = memo(
     }
 
     if (!upcoming || (upcoming.length === 0 && !showAll)) {
-      if (totalActive > 0) {
-        // There are active planned transactions but none due soon — show a toggle
-        return (
-          <div className="relative mb-3 border-b border-slate-700/50 pb-3">
-            <div className="flex items-center gap-3 p-1 flex-wrap">
-              <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
-                <Calendar className="w-4 h-4 text-emerald-400" />
-                <span className="font-bold text-base text-slate-100">
-                  Planned Transactions
-                </span>
-              </div>
-              <button
-                onClick={() => setShowAll(true)}
-                className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200"
-              >
-                View All ({totalActive})
-                <ChevronDown className="w-3 h-3" />
-              </button>
-              <AddPlannedDialog>
-                <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
-                  + Planned
-                </button>
-              </AddPlannedDialog>
-              <AddTemplateDialog>
-                <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
-                  + Template
-                </button>
-              </AddTemplateDialog>
+      // Always show the header and add buttons so users can create planned transactions
+      return (
+        <div className="relative mb-3 border-b border-slate-700/50 pb-3">
+          <div className="flex items-center gap-3 p-1 flex-wrap">
+            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-slate-700/50">
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              <span className="font-bold text-base text-slate-100">Planned Transactions</span>
             </div>
+            <button
+              onClick={() => setShowAll(true)}
+              className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200"
+            >
+              View All ({totalActive})
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            <AddPlannedDialog>
+              <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                + Planned
+              </button>
+            </AddPlannedDialog>
+            <AddTemplateDialog>
+              <button className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 hover:text-slate-100 transition-all duration-200">
+                + Template
+              </button>
+            </AddTemplateDialog>
           </div>
-        );
-      }
-      return null;
+          {(!upcoming || upcoming.length === 0) && !showAll ? (
+            <div className="mt-3 px-2 text-sm text-slate-400">No planned transactions yet. Use the + Planned button to add one.</div>
+          ) : null}
+        </div>
+      );
     }
 
     return (
