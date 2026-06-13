@@ -188,7 +188,7 @@ export const AccountSettings = () => {
                 {...register("username", {
                   required: "Username is required",
                   minLength: {
-                    value: 3,
+                    value: 2,
                     message: "Username must be at least 3 characters",
                   },
                   maxLength: {
