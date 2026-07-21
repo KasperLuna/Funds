@@ -14,6 +14,8 @@ const nextConfig = {
       },
     ],
   },
+  // cavetail: Turbopack handles WASM natively in modern Next.js
+  // Upgrade path: if WebLLM init fails, switch to webpack explicitly
 };
 
 export default nextConfig;
