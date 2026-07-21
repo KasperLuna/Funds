@@ -16,11 +16,12 @@ export const getCategoryChartOptions = ({
     background: "transparent",
     toolbar: { show: false },
     events: {
-      dataPointSelection: (
-        _event,
-        _chartContext,
-        { dataPointIndex }: { dataPointIndex: number }
-      ) => handleBarClick(dataPointIndex),
+      dataPointSelection: (_event, _chartContext, options) => {
+        const dataPointIndex = options?.dataPointIndex;
+        if (typeof dataPointIndex === "number") {
+          handleBarClick(dataPointIndex);
+        }
+      },
     },
   },
   xaxis: {

@@ -1,7 +1,7 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BitcoinIcon, Home, LandmarkIcon } from "lucide-react";
+import { BitcoinIcon, Home, LandmarkIcon, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -48,6 +48,10 @@ export const DesktopTabs = () => {
           <BitcoinIcon className="w-5 h-5" />
           Crypto
         </TabTrigger>
+        <TabTrigger value="/dashboard/test-chat">
+          <MessageCircle className="w-5 h-5" />
+          AI Chat
+        </TabTrigger>
       </TabsList>
     </Tabs>
   );
@@ -76,6 +80,10 @@ export const MobileTabs = () => {
         <TabTrigger value="/dashboard/crypto">
           <BitcoinIcon className="w-5 h-5" />
           Crypto
+        </TabTrigger>
+        <TabTrigger value="/dashboard/test-chat">
+          <MessageCircle className="w-5 h-5" />
+          AI Chat
         </TabTrigger>
       </TabsList>
     </Tabs>
