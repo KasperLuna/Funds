@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -301,7 +300,7 @@ export function WebLLMChat() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-950 text-white safe-area-inset">
+    <div className="flex h-[90dvh] min-h-[90svh] w-full flex-col overflow-hidden bg-slate-950 text-white safe-area-inset">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-800 bg-slate-900 p-4">
         <div className="flex justify-between items-start">
@@ -383,7 +382,7 @@ export function WebLLMChat() {
       </div>
 
       {/* Messages */}
-      <ScrollArea ref={scrollRef} className="flex-1 overflow-hidden p-4">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="space-y-4 pr-4">
           {messages.length === 0 && !modelLoading && (
             <div className="text-center text-slate-400 py-8">
@@ -417,7 +416,7 @@ export function WebLLMChat() {
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Error Alert */}
       {error && (
