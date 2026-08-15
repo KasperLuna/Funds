@@ -136,7 +136,7 @@ const CalendarGrid = memo(function CalendarGrid({
                   className={`flex-1 min-w-0 max-h-[30px] aspect-square flex items-center justify-center rounded transition-colors duration-200 relative group ${getCellColor(cell, mode, monthlyTotal)}`}
                   title={tooltip}
                 >
-                  <span className="text-lg font-mono select-none text-white">
+                  <span className="text-xs sm:text-lg font-mono select-none text-white">
                     {cell.day ? cell.day : ""}
                   </span>
                   {cell.day && (

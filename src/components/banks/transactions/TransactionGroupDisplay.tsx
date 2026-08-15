@@ -32,8 +32,8 @@ export const TransactionGroupDisplay = ({
       key={new Date(transactions[0].date).toDateString()}
       className="col-span-full py-2 flex gap-2 flex-col"
     >
-      <div className="flex flex-row justify-between text-slate-100 items-end">
-        <h4 className="text-lg">
+      <div className="flex flex-row flex-wrap justify-between text-slate-100 items-end gap-x-2 gap-y-1">
+        <h4 className="text-lg min-w-0 truncate">
           {groupDateFormatter.format(new Date(transactions[0].date))}
         </h4>
         <p

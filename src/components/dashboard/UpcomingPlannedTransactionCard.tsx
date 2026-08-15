@@ -89,7 +89,7 @@ const UpcomingPlannedTransactionCard: React.FC<
               return (
                 <small
                   key={catId}
-                  className="bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap px-2 py-0.5 transition-colors duration-200 text-xs truncate max-w-[80px]"
+                  className="bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap px-2 py-0.5 transition-colors duration-200 text-xs truncate max-w-[80px] md:max-w-none"
                   title={cat ? cat.name : catId}
                 >
                   {cat ? cat.name : catId}

@@ -56,7 +56,7 @@ export const TransactionCard = (props: ExpandedTransaction) => {
           {categories?.slice(0, 3).map((category) => (
             <small
               key={category.id}
-              className="bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap transition-colors duration-200 text-xs px-2 py-0.5 truncate max-w-[80px]"
+              className="bg-slate-600/80 hover:bg-slate-500/80 rounded-full whitespace-nowrap transition-colors duration-200 text-xs px-2 py-0.5 truncate max-w-[80px] md:max-w-none"
               title={category?.name}
             >
               {category?.name}

@@ -75,7 +75,7 @@ export const BankBreakdown = memo(function BankBreakdown() {
 
   return (
     <div className="border rounded-xl border-slate-600/25 p-3 mb-3 flex flex-col gap-2">
-      <div className="flex flex-row justify-between items-center">
+      <div className="flex flex-row flex-wrap justify-between items-center gap-2">
         <h3 className="text-base font-semibold text-slate-200">
           Bank Breakdown
         </h3>

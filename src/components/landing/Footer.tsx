@@ -12,22 +12,22 @@ export const Footer = () => (
         </div>
         <div className="flex flex-col gap-2">
           <h3 className="font-medium">Links</h3>
-          <nav className="flex flex-col gap-2">
+          <nav className="flex flex-col gap-1">
             <Link
               href="#features"
-              className="text-sm text-zinc-400 hover:text-white"
+              className="flex min-h-11 items-center text-sm text-zinc-400 hover:text-white"
             >
               Features
             </Link>
             <Link
               href="#how-it-works"
-              className="text-sm text-zinc-400 hover:text-white"
+              className="flex min-h-11 items-center text-sm text-zinc-400 hover:text-white"
             >
               How It Works
             </Link>
             <Link
               href="#faq"
-              className="text-sm text-zinc-400 hover:text-white"
+              className="flex min-h-11 items-center text-sm text-zinc-400 hover:text-white"
             >
               FAQ
             </Link>
@@ -35,16 +35,16 @@ export const Footer = () => (
         </div>
         <div className="flex flex-col gap-2">
           <h3 className="font-medium">Legal</h3>
-          <nav className="flex flex-col gap-2">
+          <nav className="flex flex-col gap-1">
             <Link
               href="/privacy-policy"
-              className="text-sm text-zinc-400 hover:text-white"
+              className="flex min-h-11 items-center text-sm text-zinc-400 hover:text-white"
             >
               Privacy Policy
             </Link>
             <Link
               href="/terms-of-service"
-              className="text-sm text-zinc-400 hover:text-white"
+              className="flex min-h-11 items-center text-sm text-zinc-400 hover:text-white"
             >
               Terms of Service
             </Link>
@@ -55,16 +55,16 @@ export const Footer = () => (
         <p className="text-center text-sm text-zinc-400 md:text-left">
           © 2025 Funds. All rights reserved.
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-1">
           <Link
             href="/privacy-policy"
-            className="text-sm text-zinc-400 hover:text-white"
+            className="flex min-h-11 items-center px-1 text-sm text-zinc-400 hover:text-white"
           >
             Privacy Policy
           </Link>
           <Link
             href="/terms-of-service"
-            className="text-sm text-zinc-400 hover:text-white"
+            className="flex min-h-11 items-center px-1 text-sm text-zinc-400 hover:text-white"
           >
             Terms of Service
           </Link>

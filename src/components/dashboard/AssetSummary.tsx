@@ -160,8 +160,8 @@ const TabNavigation = memo(function TabNavigation({
   const availableTabs = TABS.filter((tab) => hasCrypto || tab.key === "Banks");
 
   return (
-    <div className="flex flex-row justify-between items-start mb-3">
-      <div className="flex flex-row gap-1">
+    <div className="flex flex-row flex-wrap justify-between items-start gap-2 mb-3">
+      <div className="flex flex-row flex-wrap gap-1">
         {availableTabs.map((tabItem) => {
           const Icon = tabItem.icon;
           return (
@@ -183,7 +183,7 @@ const TabNavigation = memo(function TabNavigation({
       </div>
 
       <Button
-        className="rounded-lg p-1.5 h-fit bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 group transition-all duration-300"
+        className="rounded-lg p-1.5 h-fit shrink-0 bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 group transition-all duration-300"
         onClick={onRefresh}
       >
         <RotateCw className="size-4 group-hover:rotate-180 transition-all duration-500 text-emerald-400" />

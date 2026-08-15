@@ -380,10 +380,10 @@ export const UserCoins = memo(function UserCoins({
                 {/* Mobile/Tablet Layout */}
                 <div className="flex lg:hidden items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-zinc-100 group-hover:text-white transition-colors">
-                        {coin.name}
-                      </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-bold text-zinc-100 group-hover:text-white transition-colors truncate">
+                    {coin.name}
+                  </span>
                       <span className="text-zinc-400 uppercase text-sm bg-zinc-800/50 px-2 py-0.5 rounded w-fit">
                         {coin.symbol}
                       </span>

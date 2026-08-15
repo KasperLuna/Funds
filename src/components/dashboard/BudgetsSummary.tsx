@@ -105,7 +105,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
   return (
     <div className="relative border rounded-xl border-slate-700/50 bg-gradient-to-br from-slate-900/90 via-slate-800/85 to-slate-900/90 backdrop-blur-sm p-2 mb-2 flex flex-col gap-2 shadow-lg hover:shadow-xl transition-all duration-300 group">
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-blue-500/5 rounded-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="relative z-10 flex justify-between items-start mb-1">
+      <div className="relative z-10 flex flex-wrap justify-between items-start gap-2 mb-1">
         <div className="flex items-center gap-2">
           <PieChart className="w-4 h-4 text-emerald-400" />
           <MonthPicker
@@ -121,7 +121,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
           />
         </div>
         {budgetedRows.length > 0 && (
-          <div className="flex flex-col items-end bg-slate-800/30 backdrop-blur-sm rounded-lg px-2 py-1 border border-slate-700/50">
+          <div className="flex flex-col items-end min-w-0 bg-slate-800/30 backdrop-blur-sm rounded-lg px-2 py-1 border border-slate-700/50">
             <div className="flex items-center gap-1 mb-0.5">
               <Target className="w-3 h-3 text-emerald-400" />
               <span className="text-xs text-slate-300 font-medium">
@@ -270,7 +270,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                       <TrendingUp className="w-3 h-3" />
                       Spent
                     </span>
-                    <span className="text-slate-300 font-mono tabular-nums truncate max-w-[220px]">
+                    <span className="text-slate-300 font-mono tabular-nums truncate min-w-0 max-w-[220px] md:max-w-none">
                       <PrivacyPeek
                         isPrivate={isPrivate}
                         revealedContent={`${parseAmount(row.spent, baseCurrency?.code)} / ${parseAmount(Math.abs(row.budget ?? 0), baseCurrency?.code)}`}
@@ -333,7 +333,7 @@ export const BudgetsSummary = memo(function BudgetsSummary() {
                         ) : isPositive ? (
                           <TrendingUp className="w-3 h-3" />
                         ) : null}
-                        <span className="truncate max-w-[80px]">
+                        <span className="truncate min-w-0">
                           <PrivacyPeek
                             isPrivate={isPrivate}
                             revealedContent={parseAmount(

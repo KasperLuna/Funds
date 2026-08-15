@@ -409,10 +409,10 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
                 {tokenTxns.map((txn) => (
                   <div
                     key={txn.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-slate-800/40 border border-slate-700/30"
+                    className="flex items-center justify-between flex-wrap gap-2 p-2 rounded-lg bg-slate-800/40 border border-slate-700/30"
                   >
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-0.5">
                         <span
                           className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
                             txn.type === "buy"
@@ -453,8 +453,8 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
 
               <div className="border-t border-slate-700 pt-3">
                 {confirmDeleteToken ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-red-400">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-red-400 min-w-0 flex-1">
                       Delete {selectedToken.name} and all its transactions?
                     </span>
                     <Button

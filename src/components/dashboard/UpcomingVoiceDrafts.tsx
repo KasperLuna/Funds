@@ -96,7 +96,7 @@ function VoiceDraftCard({
               </p>
             </div>
             <div className="h-px bg-slate-600/60 my-1" />
-            <p className="text-xs text-slate-300 truncate max-w-[140px]">
+            <p className="text-xs text-slate-300 truncate max-w-[140px] md:max-w-none">
               {prefill.description.replace(/^\(🎙️\)/, "").trim() ||
                 "Voice draft"}
             </p>

@@ -677,7 +677,7 @@ export const MonthlyBreakdown: React.FC = () => {
                                   }
                                 >
                                   <span
-                                    className={`text-lg font-mono select-none ${textColor}`}
+                                    className={`text-xs sm:text-lg font-mono select-none ${textColor}`}
                                   >
                                     {cell.day ? cell.day : ""}
                                   </span>
@@ -811,7 +811,7 @@ export const MonthlyBreakdown: React.FC = () => {
                                   }
                                 >
                                   <span
-                                    className={`text-lg font-mono select-none ${textColor}`}
+                                    className={`text-xs sm:text-lg font-mono select-none ${textColor}`}
                                   >
                                     {cell.day ? cell.day : ""}
                                   </span>
