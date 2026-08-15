@@ -3,6 +3,7 @@ import { pb } from "../pocketbase/pocketbase";
 import { Category } from "../types";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 
 // Module-level variables to ensure subscription is only set up once
 let isSubscribedToCategories = false;
@@ -11,6 +12,7 @@ let subscriptionPromise: Promise<void> | null = null;
 export const useCategoriesQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
 
   const fetchCategories = async () => {
     const result = await pb.collection("categories").getFullList<Category>({
@@ -67,7 +69,12 @@ export const useCategoriesQuery = () => {
       })
       .catch(() => {
         subscriptionPromise = null;
-        alert("Error subscribing to categories, close the app and try again");
+        addToast({
+          type: "error",
+          title: "Live sync unavailable",
+          description:
+            "Couldn't subscribe to category updates. Changes will still show on refresh.",
+        });
       });
 
     // Only unsubscribe if the app is unmounted (not on every hook unmount)
@@ -75,7 +82,7 @@ export const useCategoriesQuery = () => {
     return () => {
       // No-op: do not unsubscribe on every hook unmount
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, addToast]);
 
   return { categories, loading, refetch };
 };

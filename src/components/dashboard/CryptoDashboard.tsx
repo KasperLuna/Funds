@@ -209,7 +209,7 @@ export const CryptoSummary = memo(function CryptoSummary({
                 {privacyMode ? (
                   <span className="select-none">••••</span>
                 ) : (
-                  coin.total
+                  <TokenAmountDisplay amount={coin.total} />
                 )}
               </span>
             </div>
@@ -802,8 +802,13 @@ export function CryptoDashboard() {
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const { isPrivate } = usePrivacy();
   const { baseCurrency } = useUserQuery();
-  const { tokenData, marketData, marketLoading, marketError } =
-    useTokensContext();
+  const {
+    tokenData,
+    marketData,
+    marketLoading,
+    marketError,
+    marketRefetch,
+  } = useTokensContext();
 
   // Memoize expensive calculations
   const coins = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
@@ -956,8 +961,34 @@ export function CryptoDashboard() {
 
   if (loadingStates.isTokensLoading) {
     return (
-      <div className="flex items-center justify-center w-full h-48">
-        <span className="text-slate-400">Loading tokens data...</span>
+      <div className="flex flex-col gap-4 w-full" aria-busy="true">
+        <div className="flex flex-col md:flex-row gap-4 w-full">
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/60 p-6 flex-1 min-w-0">
+            <div className="h-6 w-40 bg-zinc-800 rounded animate-pulse" />
+            <div className="mt-4 h-10 w-56 bg-zinc-800 rounded animate-pulse" />
+            <div className="mt-3 h-5 w-32 bg-zinc-800 rounded animate-pulse" />
+          </div>
+          <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/60 p-5 flex-1 min-w-0">
+            <div className="h-5 w-32 bg-zinc-800 rounded animate-pulse mb-4" />
+            <div className="grid grid-cols-2 gap-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-20 bg-zinc-800/60 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/60 p-6">
+          <div className="h-6 w-44 bg-zinc-800 rounded animate-pulse mb-6" />
+          <div className="h-[300px] bg-zinc-800/50 rounded-lg animate-pulse" />
+        </div>
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/60 p-6">
+          <div className="h-6 w-36 bg-zinc-800 rounded animate-pulse mb-6" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-zinc-800/60 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -1011,14 +1042,35 @@ export function CryptoDashboard() {
           privacyMode={isPrivate}
         />
         {loadingStates.marketLoading ? (
-          <div className="flex flex-1 items-center justify-center min-h-[180px]">
-            <span className="text-slate-400">Loading market data...</span>
+          <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-3" aria-busy="true">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="h-32 rounded-lg bg-zinc-800/50 border border-zinc-700/40 animate-pulse"
+              />
+            ))}
           </div>
         ) : errorStates.marketError ? (
-          <div className="flex flex-1 items-center justify-center min-h-[180px]">
-            <span className="text-red-400">
-              {errorStates.marketError?.message || "Error loading data"}
-            </span>
+          <div
+            role="alert"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center min-h-[180px] gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center"
+          >
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+              <span className="text-red-400 text-xl">⚠</span>
+            </div>
+            <div>
+              <p className="text-red-400 font-medium mb-1">Market data unavailable</p>
+              <p className="text-zinc-400 text-sm">
+                {errorStates.marketError?.message || "Couldn't load live market prices."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => marketRefetch?.()}
+              className="px-4 py-2 rounded-lg bg-zinc-800/60 hover:bg-zinc-700/60 border border-zinc-700/50 text-zinc-200 text-sm font-medium transition-colors"
+            >
+              Try again
+            </button>
           </div>
         ) : (
           <MarketOverview

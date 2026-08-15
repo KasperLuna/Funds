@@ -126,6 +126,21 @@ body {
   .touch-action-manipulation {
     touch-action: manipulation;
   }
+
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Sticky filter offset: accounts for mobile header + safe area on small screens, 0 on desktop */

@@ -11,6 +11,7 @@ export type TokensContextType = {
   marketData?: CoinGeckoMarketData[];
   marketLoading?: boolean;
   marketError?: Error | null;
+  marketRefetch?: () => Promise<unknown>;
 };
 
 export const TokensContext = createContext<TokensContextType>({
@@ -18,4 +19,5 @@ export const TokensContext = createContext<TokensContextType>({
   marketData: undefined,
   marketLoading: false,
   marketError: null,
+  marketRefetch: undefined,
 });

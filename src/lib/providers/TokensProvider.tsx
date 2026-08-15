@@ -21,6 +21,7 @@ export function TokensProvider({ children }: { children: React.ReactNode }) {
     isLoading: marketLoading,
     isError,
     error: marketError,
+    refetch: marketRefetch,
   } = useQuery<CoinGeckoMarketData[], Error>({
     queryKey: ["coingecko-market", coinsParam, CURRENCY],
     queryFn: async () => {
@@ -63,8 +64,9 @@ export function TokensProvider({ children }: { children: React.ReactNode }) {
       marketData,
       marketLoading,
       marketError: isError ? marketError : null,
+      marketRefetch,
     }),
-    [tokenData, marketData, marketLoading, isError, marketError]
+    [tokenData, marketData, marketLoading, isError, marketError, marketRefetch]
   );
 
   return (

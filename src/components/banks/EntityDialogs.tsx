@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { usePlannedTransactions } from "@/hooks/usePlannedTransactions";
 import { useCategoriesQuery } from "@/lib/hooks/useCategoriesQuery";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { useToast } from "@/components/ui/toast";
 import { Decimal } from "decimal.js";
 import React, { useState } from "react";
 
@@ -45,6 +46,7 @@ export function AddPlannedDialog({ children }: { children: React.ReactNode }) {
   const { addPlannedTransaction } = usePlannedTransactions();
   const categoryData = useCategoriesQuery();
   const { user } = useAuth();
+  const { addToast } = useToast();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -56,7 +58,12 @@ export function AddPlannedDialog({ children }: { children: React.ReactNode }) {
         <PlannedTransactionForm
           onSubmit={async (pt) => {
             if (!user?.id) {
-              alert("You must be logged in to create a planned transaction.");
+              addToast({
+                type: "error",
+                title: "Sign in required",
+                description:
+                  "You must be logged in to create a planned transaction.",
+              });
               return;
             }
             const mappedCategories =
@@ -86,6 +93,7 @@ export function AddTemplateDialog({ children }: { children: React.ReactNode }) {
   const { addPlannedTransaction } = usePlannedTransactions();
   const categoryData = useCategoriesQuery();
   const { user } = useAuth();
+  const { addToast } = useToast();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -97,7 +105,12 @@ export function AddTemplateDialog({ children }: { children: React.ReactNode }) {
         <TransactionTemplateForm
           onSubmit={async (t) => {
             if (!user?.id) {
-              alert("You must be logged in to create a template.");
+              addToast({
+                type: "error",
+                title: "Sign in required",
+                description:
+                  "You must be logged in to create a template.",
+              });
               return;
             }
             const mappedCategories =

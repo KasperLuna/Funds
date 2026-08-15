@@ -65,7 +65,7 @@ export default function Page() {
                     <button
                       key={section.key}
                       className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200",
+                        "flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40",
                         activeSection === section.key
                           ? "bg-gradient-to-r from-emerald-500/20 to-blue-500/20 text-slate-100 shadow-sm"
                           : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/40",
@@ -80,11 +80,13 @@ export default function Page() {
               </div>
 
               {/* Content — only the active section renders */}
-              {activeSection === "budgets" && <BudgetsSummary />}
-              {activeSection === "categories" && <CategoryBreakdown />}
-              {activeSection === "banks" && <BankBreakdown />}
-              {activeSection === "history" && <HistoryBreakdown />}
-              {activeSection === "trends" && <BankTrends />}
+              <div key={activeSection} className="animate-fade-in">
+                {activeSection === "budgets" && <BudgetsSummary />}
+                {activeSection === "categories" && <CategoryBreakdown />}
+                {activeSection === "banks" && <BankBreakdown />}
+                {activeSection === "history" && <HistoryBreakdown />}
+                {activeSection === "trends" && <BankTrends />}
+              </div>
             </div>
           </div>
         </div>

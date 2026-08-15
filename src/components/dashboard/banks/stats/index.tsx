@@ -45,7 +45,11 @@ export const StatsSection = () => {
           <StatCard
             key={bank.id}
             {...bank}
-            percentage={`${trimToTwoDecimals((bank.balance / totalAmount) * 100)}%`}
+            percentage={
+              totalAmount > 0
+                ? `${trimToTwoDecimals((bank.balance / totalAmount) * 100)}%`
+                : undefined
+            }
           />
         ))}
         {/* Show collapse button at end when expanded and shouldCollapse */}

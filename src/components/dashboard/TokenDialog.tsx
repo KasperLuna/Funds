@@ -27,6 +27,7 @@ import {
 } from "@/lib/pocketbase/queries";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/toast";
 import { Trash2, Plus, ArrowLeft, Search, Loader2 } from "lucide-react";
 import Image from "next/image";
 import dayjs from "dayjs";
@@ -43,6 +44,7 @@ interface TokenDialogProps {
 export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
   const { tokenData } = useTokensContext();
   const tokens = useMemo(() => tokenData?.tokens || [], [tokenData?.tokens]);
 
@@ -113,7 +115,11 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
         }
         setSearchQuery("");
       } catch (e) {
-        alert("Failed to add token");
+        addToast({
+          type: "error",
+          title: "Failed to add token",
+          description: "Please try again.",
+        });
       } finally {
         setIsAddingToken(false);
       }
@@ -154,7 +160,11 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
         txnForm.reset();
         setView("detail");
       } catch {
-        alert("Failed to add transaction");
+        addToast({
+          type: "error",
+          title: "Failed to add transaction",
+          description: "Please try again.",
+        });
       }
     },
   );
@@ -170,7 +180,11 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
           queryKey: ["tokenTransactions", selectedToken.id],
         });
       } catch {
-        alert("Failed to delete transaction");
+        addToast({
+          type: "error",
+          title: "Failed to delete transaction",
+          description: "Please try again.",
+        });
       }
     },
     [selectedToken, queryClient],
@@ -185,7 +199,11 @@ export function TokenDialog({ open, onOpenChange }: TokenDialogProps) {
       setConfirmDeleteToken(false);
       setView("list");
     } catch {
-      alert("Failed to delete token. Delete its transactions first.");
+      addToast({
+        type: "error",
+        title: "Failed to delete token",
+        description: "Delete its transactions first.",
+      });
     }
   }, [selectedToken, queryClient]);
 

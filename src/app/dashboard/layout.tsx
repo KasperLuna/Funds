@@ -39,9 +39,9 @@ export default function RootLayout({
   return (
     <div className="max-w-[1920px] mx-auto">
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TokensProvider>
-            <ToastProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <TokensProvider>
               <aside
                 id="desktop-sidebar"
                 className="fixed md:block hidden top-0 z-40 h-screen w-44 xl:w-60 transition-transform bg-black"
@@ -113,9 +113,9 @@ export default function RootLayout({
               >
                 <MobileTabs />
               </div>
-            </ToastProvider>
-          </TokensProvider>
-        </AuthProvider>
+            </TokensProvider>
+          </AuthProvider>
+        </ToastProvider>
       </QueryClientProvider>
     </div>
   );

@@ -3,6 +3,7 @@ import { userQuery } from "../pocketbase/queries";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
 import { pb } from "../pocketbase/pocketbase";
+import { useToast } from "@/components/ui/toast";
 
 // Module-level variable to ensure subscription is only set up once
 let isSubscribedToUser = false;
@@ -10,6 +11,7 @@ let isSubscribedToUser = false;
 export const useUserQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ["user"],
@@ -30,7 +32,12 @@ export const useUserQuery = () => {
         isSubscribedToUser = true;
       })
       .catch(() => {
-        alert("Error subscribing to users, close the app and try again");
+        addToast({
+          type: "error",
+          title: "Live sync unavailable",
+          description:
+            "Couldn't subscribe to account updates. Changes will still show on refresh.",
+        });
       });
 
     // Only unsubscribe if the app is unmounted (not on every hook unmount)
@@ -38,7 +45,7 @@ export const useUserQuery = () => {
     return () => {
       // No-op: do not unsubscribe on every hook unmount
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, addToast]);
 
   return { data, isLoading, baseCurrency: data?.currency };
 };

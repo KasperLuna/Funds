@@ -438,6 +438,7 @@ export const TransactionForm = ({
           <Label htmlFor="description">Description:</Label>
           <Input
             id="description"
+            autoFocus={!transaction?.id}
             {...register("description")}
             className="bg-transparent border-slate-700 focus:border-slate-600 focus-visible:ring-offset-0 focus-visible:ring-0"
           />

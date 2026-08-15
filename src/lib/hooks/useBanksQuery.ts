@@ -3,6 +3,7 @@ import { pb } from "../pocketbase/pocketbase";
 import { Bank } from "../types";
 import { useAuth } from "./useAuth";
 import { useEffect } from "react";
+import { useToast } from "@/components/ui/toast";
 
 // Module-level variables to ensure subscription is only set up once
 let isSubscribedToBanks = false;
@@ -11,6 +12,7 @@ let subscriptionPromise: Promise<void> | null = null;
 export const useBanksQuery = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { addToast } = useToast();
 
   const fetchBanks = async () => {
     const result = await pb.collection("banks").getFullList<Bank>({
@@ -64,7 +66,12 @@ export const useBanksQuery = () => {
       })
       .catch(() => {
         subscriptionPromise = null;
-        alert("Error subscribing to banks, close the app and try again");
+        addToast({
+          type: "error",
+          title: "Live sync unavailable",
+          description:
+            "Couldn't subscribe to bank updates. Changes will still show on refresh.",
+        });
       });
 
     // Only unsubscribe if the app is unmounted (not on every hook unmount)
@@ -72,7 +79,7 @@ export const useBanksQuery = () => {
     return () => {
       // No-op: do not unsubscribe on every hook unmount
     };
-  }, [user, queryClient]);
+  }, [user, queryClient, addToast]);
 
   return { banks, loading, refetch };
 };

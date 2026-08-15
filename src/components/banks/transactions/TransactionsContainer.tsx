@@ -9,12 +9,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import NextIntersectionObserver from "@/components/ui/next-intersection-observer";
 import { useQueryParams } from "@/lib/hooks/useQueryParams";
 import { TransactionsTable } from "./TransactionsTable";
+import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const TransactionsContainer = () => {
   const [parent] = useAutoAnimate({ duration: 100 });
   const {
     data,
+    error,
+    refetch,
     fetchNextPage,
     hasNextPage,
     isLoading,
@@ -24,8 +27,14 @@ export const TransactionsContainer = () => {
 
   const [canFetchNext, setCanFetchNext] = useState(false);
   const isLocked = useRef(false);
-  const { queryParams } = useQueryParams();
+  const { queryParams, setQueryParams } = useQueryParams();
   const viewMode = queryParams["view"] || "cards";
+  const hasActiveFilters = !![
+    queryParams["query"],
+    queryParams["month"],
+    queryParams["categories"],
+    queryParams["bank"],
+  ].filter(Boolean).length;
 
   // Enable fetching after delay when not loading
   useEffect(() => {
@@ -92,13 +101,61 @@ export const TransactionsContainer = () => {
         </output>
       ) : null}
 
-      {!isLoading && groupedTransactions.length === 0 ? (
+      {!isLoading && error ? (
+        <div
+          role="alert"
+          className="w-full flex flex-col items-center justify-center col-span-full h-[300px] text-center gap-3"
+        >
+          <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-400" />
+          </div>
+          <div>
+            <h4 className="text-lg font-semibold text-slate-200">
+              Couldn&apos;t load transactions
+            </h4>
+            <p className="text-slate-500 text-sm max-w-md mt-1">
+              {error instanceof Error
+                ? error.message
+                : "Something went wrong while loading your transactions."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="mt-1 px-4 py-2 rounded-md bg-slate-700/60 hover:bg-slate-600/80 border border-slate-600/50 text-slate-200 text-sm font-medium transition-colors"
+          >
+            Try again
+          </button>
+        </div>
+      ) : null}
+
+      {!isLoading && !error && groupedTransactions.length === 0 ? (
         <div className="w-full flex items-center justify-center col-span-full h-[300px] flex-col text-center gap-3">
-          <h4 className="text-2xl text-slate-400">No transactions yet!</h4>
-          <p className="text-slate-500">
-            {`Click the "Add" button (or plus on mobile) to add banks and
-            transactions to get started.`}
+          <h4 className="text-2xl text-slate-400">
+            {hasActiveFilters ? "No matching transactions" : "No transactions yet!"}
+          </h4>
+          <p className="text-slate-500 max-w-md">
+            {hasActiveFilters
+              ? "Try adjusting your search, filters, or selected month."
+              : `Click the "Add" button (or plus on mobile) to add banks and
+                transactions to get started.`}
           </p>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={() =>
+                setQueryParams({
+                  query: undefined,
+                  month: undefined,
+                  categories: undefined,
+                  bank: undefined,
+                })
+              }
+              className="mt-2 px-4 py-2 rounded-md bg-slate-700/60 hover:bg-slate-600/80 border border-slate-600/50 text-slate-200 text-sm font-medium transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       ) : null}
 

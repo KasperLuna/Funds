@@ -4,9 +4,11 @@ import { pb } from "../pocketbase/pocketbase";
 import { useEffect } from "react";
 import { useQueryParams } from "./useQueryParams";
 import { useCategoriesQuery } from "./useCategoriesQuery";
+import { useToast } from "@/components/ui/toast";
 
 export const useTransactionsQuery = () => {
   const { queryParams } = useQueryParams();
+  const { addToast } = useToast();
   const bankName = queryParams["bank"]; //searchParams.get("bank");
   const query = queryParams["query"]; //searchParams.get("query");
 
@@ -59,9 +61,12 @@ export const useTransactionsQuery = () => {
             retries += 1;
             setTimeout(subscribeWithRetry, retryDelay); // Retry after delay
           } else {
-            alert(
-              "Max retries reached for transaction subscription. Refresh the tab or close the app."
-            );
+            addToast({
+              type: "error",
+              title: "Live sync unavailable",
+              description:
+                "Couldn't subscribe to transaction updates. Changes will still show on refresh.",
+            });
           }
         });
     };
@@ -71,11 +76,12 @@ export const useTransactionsQuery = () => {
     return () => {
       pb.collection("transactions").unsubscribe("*");
     };
-  }, [bankName, fetchNextPage, refetch]);
+  }, [bankName, fetchNextPage, refetch, addToast]);
 
   return {
     data,
     error,
+    refetch,
     isLoading,
     isRefetching,
     fetchNextPage,
