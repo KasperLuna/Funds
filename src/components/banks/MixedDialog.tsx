@@ -316,7 +316,7 @@ export const MixedDialog = ({
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent
           hideClose
-          className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-2 rounded-md"
+          className="bg-slate-900 text-white border-2 border-slate-800 px-4 py-2 rounded-md max-h-[100dvh] overflow-y-auto"
           style={{ overscrollBehavior: "contain" }}
         >
           <DialogDescription className="sr-only">

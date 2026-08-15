@@ -29,6 +29,7 @@ export const CategoryPicker = ({
   const [search, setSearch] = useState("");
   const [creating, setCreating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const categories = categoryData?.categories ?? [];
   const sorted = [...categories].sort((a, b) => a.name.localeCompare(b.name));
@@ -53,6 +54,20 @@ export const CategoryPicker = ({
     };
     if (open) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Keep dropdown above mobile keyboard: scroll into view on open and on keyboard-triggered viewport resize
+  useEffect(() => {
+    if (!open) return;
+    const keepInView = () => {
+      dropdownRef.current?.scrollIntoView({ block: "nearest" });
+    };
+    const raf = requestAnimationFrame(keepInView);
+    window.visualViewport?.addEventListener("resize", keepInView);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener("resize", keepInView);
+    };
   }, [open]);
 
   const toggle = (name: string) => {
@@ -131,7 +146,10 @@ export const CategoryPicker = ({
         </Button>
 
         {open && (
-          <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-md border border-slate-700 bg-slate-800 shadow-lg">
+          <div
+            ref={dropdownRef}
+            className="absolute z-50 top-full left-0 right-0 mt-1 rounded-md border border-slate-700 bg-slate-800 shadow-lg"
+          >
             <Command shouldFilter={false} className="bg-slate-800">
               <CommandInput
                 placeholder="Search or create category"
