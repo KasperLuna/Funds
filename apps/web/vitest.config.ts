@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
+  esbuild: { jsx: "automatic" },
   test: {
     passWithNoTests: true,
     fileParallelism: false, // cavetail: suites share one test PG; serialize to avoid cleanup races

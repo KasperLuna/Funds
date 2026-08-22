@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* cavetail: dark-only v1 (design.md §9) */
+:root {
+  --bg: #020617;
+  --surface-1: #0f172a;
+  --surface-2: #1e293b;
+  --surface-3: #334155;
+  --border: rgba(51, 65, 85, 0.5);
+  --accent: #10b981;
+  --accent-foreground: #020617;
+  --danger: #ef4444;
+  --warning: #fbbf24;
+  --info: #0ea5e9;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-sheet: 20px;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: #f1f5f9;
+    font-family:
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+  }
+  * {
+    border-color: var(--border);
+  }
+}
