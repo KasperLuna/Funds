@@ -1,11 +1,13 @@
-import { randomBytes } from "node:crypto";
-
 // cavetail: self-contained ULID-like generator; production ids come from @funds/core ulid
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 function newId(): string {
   const now = BigInt(Date.now());
-  const rand = BigInt("0x" + randomBytes(10).toString("hex"));
+  const buf = new Uint8Array(10);
+  crypto.getRandomValues(buf);
+  const rand = BigInt(
+    "0x" + Array.from(buf, (b) => b.toString(16).padStart(2, "0")).join(""),
+  );
   const encode = (value: bigint, chars: number) => {
     let v = value;
     let out = "";

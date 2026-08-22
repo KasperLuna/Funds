@@ -52,7 +52,7 @@ export function AccountDialog({
       onSave({ ...editAccount, name: trimmed, kind, updatedAt: now });
     } else {
       onSave({
-        id: crypto.randomUUID(),
+        id: `acc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
         name: trimmed,
         kind,
         assetId: "ast-1",
