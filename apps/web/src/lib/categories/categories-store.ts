@@ -1,12 +1,26 @@
 export type Category = {
   id: string;
   name: string;
+  color: string;
   hideable: boolean;
   monthlyBudgetMinor: bigint | null;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number | null;
 };
+
+export const DEFAULT_CATEGORY_COLORS = [
+  "#6366f1",
+  "#8b5cf6",
+  "#ec4899",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#14b8a6",
+  "#06b6d4",
+  "#3b82f6",
+];
 
 export function computeBudgetUsage(
   categories: Category[],

@@ -2,12 +2,14 @@ import type { Txn } from "@/lib/accounts/accounts-store";
 import { TransactionRow } from "@/components/banks/transaction-row";
 import { ReceiptText } from "lucide-react";
 
+type CategoryInfo = { id: string; name: string; color: string };
+
 export type RecentActivityProps = {
   txns: Txn[];
-  categoryNames: Map<string, string>;
+  categories: CategoryInfo[];
 };
 
-export function RecentActivity({ txns, categoryNames }: RecentActivityProps) {
+export function RecentActivity({ txns, categories }: RecentActivityProps) {
   if (txns.length === 0) {
     return (
       <section
@@ -37,7 +39,7 @@ export function RecentActivity({ txns, categoryNames }: RecentActivityProps) {
       </div>
       <div className="divide-y divide-(--border)">
         {txns.map((txn) => (
-          <TransactionRow key={txn.id} txn={txn} categoryNames={categoryNames} />
+          <TransactionRow key={txn.id} txn={txn} categories={categories} />
         ))}
       </div>
     </section>

@@ -1,5 +1,7 @@
 import type { Txn } from "@/lib/accounts/accounts-store";
 
+type CategoryInfo = { id: string; name: string; color: string };
+
 function formatMinor(cents: bigint): string {
   const sign = cents < 0n ? "-" : "";
   const abs = cents < 0n ? -cents : cents;
@@ -16,15 +18,14 @@ function formatTime(ts: number): string {
 
 export function TransactionRow({
   txn,
-  categoryNames,
+  categories,
 }: {
   txn: Txn;
-  categoryNames: Map<string, string>;
+  categories: CategoryInfo[];
 }) {
   const cats = txn.categoryIds
-    .map((id) => categoryNames.get(id))
-    .filter(Boolean)
-    .join(", ");
+    .map((id) => categories.find((c) => c.id === id))
+    .filter(Boolean) as CategoryInfo[];
 
   const isExpense = txn.amountMinor < 0n;
 
@@ -34,8 +35,21 @@ export function TransactionRow({
         <p className="truncate text-sm font-medium">
           {txn.description || "No description"}
         </p>
-        {cats && (
-          <p className="truncate text-xs text-slate-400">{cats}</p>
+        {cats.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {cats.map((cat, i) => (
+              <span
+                key={`${cat.name}-${i}`}
+                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{
+                  backgroundColor: cat.color,
+                  color: "#fff",
+                }}
+              >
+                {cat.name}
+              </span>
+            ))}
+          </div>
         )}
       </div>
       <div className="flex items-center gap-3 shrink-0">

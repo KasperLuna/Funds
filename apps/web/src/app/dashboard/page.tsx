@@ -12,6 +12,8 @@ import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
+import type { Category } from "@/lib/categories/categories-store";
+import { computeBudgetUsage } from "@/lib/categories/categories-store";
 
 function toAccount(row: RowRecord): Account {
   return {
@@ -41,6 +43,21 @@ function toTxn(row: RowRecord): Txn {
   };
 }
 
+function toCategory(row: RowRecord): Category {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    color: String(row.color ?? "#6366f1"),
+    hideable: Boolean(row.hideable),
+    monthlyBudgetMinor: row.monthlyBudgetMinor != null
+      ? BigInt(row.monthlyBudgetMinor as string | bigint)
+      : null,
+    createdAt: Number(row.createdAt),
+    updatedAt: Number(row.updatedAt),
+    deletedAt: row.deletedAt ? Number(row.deletedAt) : null,
+  };
+}
+
 const CRYPTO_KINDS = new Set(["wallet", "exchange"]);
 
 function DashboardContent() {
@@ -50,14 +67,17 @@ function DashboardContent() {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const accRows = (await db.query("SELECT * FROM accounts")).rows;
     const txnRows = (await db.query("SELECT * FROM transactions")).rows;
+    const catRows = (await db.query("SELECT * FROM categories")).rows;
     setAccounts(accRows.map(toAccount));
     setTxns(txnRows.map(toTxn));
+    setCategories(catRows.map(toCategory));
     setLastSyncedAt(Date.now());
   }, []);
 
@@ -97,8 +117,6 @@ function DashboardContent() {
       .slice(0, 10);
   }, [activeTxns]);
 
-  const categoryNames = useMemo(() => new Map<string, string>(), []);
-
   const recentForCapture: RecentTxn[] = useMemo(
     () =>
       recentTxns.map((t) => ({
@@ -109,6 +127,22 @@ function DashboardContent() {
         date: t.date,
       })),
     [recentTxns],
+  );
+
+  const now = new Date();
+  const budgetUsage = useMemo(
+    () => computeBudgetUsage(categories, activeTxns, now.getFullYear(), now.getMonth()),
+    [categories, activeTxns, now.getFullYear(), now.getMonth()],
+  );
+
+  const totalBudgetMinor = useMemo(
+    () => budgetUsage.reduce((sum, item) => sum + item.category.monthlyBudgetMinor!, 0n),
+    [budgetUsage],
+  );
+
+  const totalSpentMinor = useMemo(
+    () => budgetUsage.reduce((sum, item) => sum + item.spentMinor, 0n),
+    [budgetUsage],
   );
 
   const handleSave = useCallback(
@@ -144,9 +178,13 @@ function DashboardContent() {
         lastSyncedAt={lastSyncedAt}
       />
 
-      <RecentActivity txns={recentTxns} categoryNames={categoryNames} />
+      <RecentActivity txns={recentTxns} categories={[]} />
 
-      <BudgetPulse />
+      <BudgetPulse
+        items={budgetUsage}
+        totalBudgetMinor={totalBudgetMinor}
+        totalSpentMinor={totalSpentMinor}
+      />
 
       <CaptureSheet
         open={captureOpen}

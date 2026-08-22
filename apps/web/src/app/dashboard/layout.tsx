@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           aria-label="Primary"
           className="fixed inset-x-0 bottom-0 z-40 border-t border-(--border) bg-(--surface-1) px-4 pb-[env(safe-area-inset-bottom)] md:hidden"
         >
-          <div className="grid grid-cols-5 items-center">
+          <div className="grid grid-cols-6 items-center">
             <NavLink item={NAV_ITEMS[0]!} />
             <NavLink item={NAV_ITEMS[1]!} />
             <Link
@@ -80,6 +80,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Plus className="h-6 w-6" aria-hidden />
             </Link>
             <NavLink item={NAV_ITEMS[2]!} />
+            <NavLink item={NAV_ITEMS[3]!} />
             <PrivacyToggle />
           </div>
         </nav>

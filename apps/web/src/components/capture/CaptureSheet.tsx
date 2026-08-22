@@ -21,7 +21,7 @@ import {
 import type { RecentTxn } from "@/lib/capture";
 
 export type AccountOption = { id: string; name: string; assetId: string; decimals: number };
-export type CategoryOption = { id: string; name: string };
+export type CategoryOption = { id: string; name: string; color?: string };
 
 export type CaptureSheetProps = {
   open: boolean;
@@ -166,17 +166,20 @@ export function CaptureSheet({
           <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Categories">
             {categories.map((c) => {
               const active = categoryIds.includes(c.id);
+              const color = c.color;
               return (
                 <button
                   key={c.id}
                   type="button"
                   aria-pressed={active}
                   onClick={() => toggleCategory(c.id)}
-                  className={`min-h-11 rounded-(--radius-md) px-3 text-sm ${
-                    active
-                      ? "bg-(--accent) text-(--accent-foreground)"
-                      : "bg-(--surface-2) hover:bg-(--surface-3)"
+                  className={`min-h-11 rounded-(--radius-md) px-3 text-sm font-medium transition-colors ${
+                    active ? "text-white" : "hover:opacity-80"
                   }`}
+                  style={{
+                    backgroundColor: active ? color : "var(--surface-2)",
+                    color: active ? "#fff" : undefined,
+                  }}
                 >
                   {c.name}
                 </button>

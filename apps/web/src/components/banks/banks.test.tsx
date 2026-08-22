@@ -79,7 +79,7 @@ describe("AccountCard", () => {
 describe("TransactionRow", () => {
   it("renders description and expense amount in red", () => {
     const txn = makeTxn({ description: "Coffee", amountMinor: -450n });
-    render(<TransactionRow txn={txn} categoryNames={new Map()} />);
+    render(<TransactionRow txn={txn} categories={[]} />);
     expect(screen.getByText("Coffee")).toBeInTheDocument();
     const amount = screen.getByText("-$4.50");
     expect(amount).toBeInTheDocument();
@@ -88,22 +88,26 @@ describe("TransactionRow", () => {
 
   it("renders income amount in green", () => {
     const txn = makeTxn({ description: "Salary", amountMinor: 50000n, type: "income" });
-    render(<TransactionRow txn={txn} categoryNames={new Map()} />);
+    render(<TransactionRow txn={txn} categories={[]} />);
     const amount = screen.getByText("$500.00");
     expect(amount).toBeInTheDocument();
     expect(amount.className).toContain("green");
   });
 
-  it("shows category names when provided", () => {
-    const cats = new Map([["cat-1", "Food"], ["cat-2", "Daily"]]);
+  it("shows category chips with colors when provided", () => {
+    const cats = [
+      { id: "cat-1", name: "Food", color: "#6366f1" },
+      { id: "cat-2", name: "Daily", color: "#22c55e" },
+    ];
     const txn = makeTxn({ categoryIds: ["cat-1", "cat-2"] });
-    render(<TransactionRow txn={txn} categoryNames={cats} />);
-    expect(screen.getByText("Food, Daily")).toBeInTheDocument();
+    render(<TransactionRow txn={txn} categories={cats} />);
+    expect(screen.getAllByText("Food").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Daily").length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows 'No description' when description is empty", () => {
     const txn = makeTxn({ description: "" });
-    render(<TransactionRow txn={txn} categoryNames={new Map()} />);
+    render(<TransactionRow txn={txn} categories={[]} />);
     expect(screen.getByText("No description")).toBeInTheDocument();
   });
 });

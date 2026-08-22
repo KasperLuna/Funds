@@ -5,6 +5,7 @@ function cat(overrides: Partial<Category> = {}): Category {
   return {
     id: "cat-1",
     name: "Food",
+    color: "#6366f1",
     hideable: false,
     monthlyBudgetMinor: 50000n, // $500
     createdAt: Date.now(),

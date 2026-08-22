@@ -11,6 +11,7 @@ import {
   type Account,
   type Txn,
 } from "@/lib/accounts/accounts-store";
+import { type Category } from "@/lib/categories/categories-store";
 
 import { AccountCard } from "@/components/banks/account-card";
 import { AccountDialog } from "@/components/banks/account-dialog";
@@ -91,10 +92,24 @@ function upsertTxnSql(row: Record<string, unknown>): {
   };
 }
 
+function toCategory(row: Record<string, unknown>): Category {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    color: String(row.color),
+    hideable: Boolean(row.hideable),
+    monthlyBudgetMinor: row.monthly_budget_minor != null ? BigInt(row.monthly_budget_minor as number | string) : null,
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+    deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
+  };
+}
+
 export default function BanksPage() {
   const { db } = useSync();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
@@ -105,6 +120,8 @@ export default function BanksPage() {
     setAccounts(accRes.rows.map(toAccount));
     const txnRes = await db.query(`SELECT * FROM transactions WHERE deleted_at IS NULL`);
     setTxns(txnRes.rows.map(toTxn));
+    const catRes = await db.query(`SELECT * FROM categories WHERE deleted_at IS NULL`);
+    setCategories(catRes.rows.map(toCategory));
   }, [db]);
 
   useEffect(() => {
@@ -135,6 +152,18 @@ export default function BanksPage() {
     () => accounts.find((a) => a.id === selectedAccountId) ?? null,
     [accounts, selectedAccountId],
   );
+
+  const categoryOptions = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    color: c.color,
+  }));
+
+  const categoryInfoList = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    color: c.color,
+  }));
 
   const handleAccountSave = useCallback(
     async (a: Account) => {
@@ -282,7 +311,7 @@ export default function BanksPage() {
                   <TransactionRow
                     key={t.id}
                     txn={t}
-                    categoryNames={new Map()}
+                    categories={categoryInfoList}
                   />
                 ))}
               </div>
@@ -311,7 +340,7 @@ export default function BanksPage() {
         onOpenChange={setCaptureOpen}
         userId={USER_ID}
         accounts={accountOptions}
-        categories={[]}
+        categories={categoryOptions}
         recentTxns={[]}
         onSave={handleTxnSave}
         defaultAccountId={selectedAccountId ?? undefined}

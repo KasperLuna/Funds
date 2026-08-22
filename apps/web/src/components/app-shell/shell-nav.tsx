@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Landmark, Bitcoin, Plus, Check, type LucideIcon } from "lucide-react";
+import { Home, Landmark, Bitcoin, Tag, Plus, Check, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -10,6 +10,7 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/dashboard/banks", label: "Banks", icon: Landmark },
+  { href: "/dashboard/categories", label: "Categories", icon: Tag },
   { href: "/dashboard/crypto", label: "Crypto", icon: Bitcoin },
 ];
 
