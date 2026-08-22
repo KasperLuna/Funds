@@ -50,6 +50,19 @@ export function parseAmountToMinor(input: string, decimals: number): bigint {
   return negative ? -minor : minor;
 }
 
+export function convert(
+  amount: bigint,
+  fromDecimals: number,
+  toDecimals: number,
+  rate: number,
+): bigint {
+  const fromScale = 10n ** BigInt(fromDecimals);
+  const toScale = 10n ** BigInt(toDecimals);
+  const baseAmount = Number(amount) / Number(fromScale);
+  const converted = baseAmount * rate;
+  return BigInt(Math.round(converted * Number(toScale)));
+}
+
 export function formatMinor(
   minor: bigint,
   decimals: number,
