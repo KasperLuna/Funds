@@ -11,7 +11,7 @@
     "test": "vitest run --no-file-parallelism",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {

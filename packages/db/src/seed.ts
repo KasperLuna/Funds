@@ -80,9 +80,10 @@ export async function seed(db: ReturnType<typeof drizzle>) {
   if (existingUser.length === 0) {
     await db.insert(users).values({
       email: "demo@funds.local",
+      name: "demo",
       username: "demo",
       baseAssetId: usdAsset.id,
-      verified: true,
+      emailVerified: true,
     });
   }
 }

@@ -5,6 +5,9 @@ import pg from "pg";
 import {
   assets,
   users,
+  authSessions,
+  authAccounts,
+  authVerifications,
   accounts,
   categories,
   transactions,
@@ -49,6 +52,9 @@ describe("schema round-trip tests", () => {
     await db.delete(transfers);
     await db.delete(categories);
     await db.delete(accounts);
+    await db.delete(authSessions);
+    await db.delete(authVerifications);
+    await db.delete(authAccounts);
     await pool.query('UPDATE users SET base_asset_id = NULL');
     await db.delete(users);
     await db.delete(assets);
@@ -67,6 +73,9 @@ describe("schema round-trip tests", () => {
     await db.delete(transfers);
     await db.delete(categories);
     await db.delete(accounts);
+    await db.delete(authSessions);
+    await db.delete(authVerifications);
+    await db.delete(authAccounts);
     
     // Update users to clear base_asset_id foreign key before deleting assets
     await pool.query('UPDATE users SET base_asset_id = NULL');
@@ -109,10 +118,11 @@ describe("schema round-trip tests", () => {
     const user = {
       email: "test@example.com",
       username: "testuser",
+      name: "Test User",
       baseAssetId: asset.id,
       timezone: "America/New_York",
       voiceApiKeyHash: null,
-      verified: true,
+      emailVerified: true,
     };
 
     const inserted = first(await db.insert(users).values(user).returning());
@@ -121,9 +131,90 @@ describe("schema round-trip tests", () => {
     expect(inserted.id).toHaveLength(26);
     expect(inserted.email).toBe(user.email);
     expect(inserted.username).toBe(user.username);
+    expect(inserted.name).toBe(user.name);
     expect(inserted.baseAssetId).toBe(asset.id);
     expect(inserted.timezone).toBe(user.timezone);
-    expect(inserted.verified).toBe(true);
+    expect(inserted.emailVerified).toBe(true);
+    expect(inserted.createdAt).toBeInstanceOf(Date);
+    expect(inserted.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("should insert and select authSessions", async () => {
+    const user = first(await db
+      .insert(users)
+      .values({ email: "test@example.com", username: "testuser" })
+      .returning());
+
+    const session = {
+      token: "session-token-1",
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      ipAddress: "127.0.0.1",
+      userAgent: "vitest",
+    };
+
+    const inserted = first(await db.insert(authSessions).values(session).returning());
+
+    expect(inserted.id).toBeTruthy();
+    expect(inserted.id).toHaveLength(26);
+    expect(inserted.token).toBe(session.token);
+    expect(inserted.userId).toBe(user.id);
+    expect(inserted.expiresAt).toBeInstanceOf(Date);
+    expect(inserted.ipAddress).toBe("127.0.0.1");
+    expect(inserted.userAgent).toBe("vitest");
+    expect(inserted.createdAt).toBeInstanceOf(Date);
+    expect(inserted.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("should insert and select authAccounts", async () => {
+    const user = first(await db
+      .insert(users)
+      .values({ email: "test@example.com", username: "testuser" })
+      .returning());
+
+    const account = {
+      userId: user.id,
+      accountId: "google-123",
+      providerId: "google",
+      password: null,
+      refreshToken: null,
+      accessToken: "access-token",
+      accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      refreshTokenExpiresAt: null,
+      scope: "openid email",
+      idToken: null,
+      issuer: "https://accounts.google.com",
+    };
+
+    const inserted = first(await db.insert(authAccounts).values(account).returning());
+
+    expect(inserted.id).toBeTruthy();
+    expect(inserted.id).toHaveLength(26);
+    expect(inserted.userId).toBe(user.id);
+    expect(inserted.accountId).toBe(account.accountId);
+    expect(inserted.providerId).toBe(account.providerId);
+    expect(inserted.accessToken).toBe(account.accessToken);
+    expect(inserted.accessTokenExpiresAt).toBeInstanceOf(Date);
+    expect(inserted.scope).toBe(account.scope);
+    expect(inserted.issuer).toBe(account.issuer);
+    expect(inserted.createdAt).toBeInstanceOf(Date);
+    expect(inserted.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it("should insert and select authVerifications", async () => {
+    const verification = {
+      identifier: "test@example.com",
+      value: "123456",
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    };
+
+    const inserted = first(await db.insert(authVerifications).values(verification).returning());
+
+    expect(inserted.id).toBeTruthy();
+    expect(inserted.id).toHaveLength(26);
+    expect(inserted.identifier).toBe(verification.identifier);
+    expect(inserted.value).toBe(verification.value);
+    expect(inserted.expiresAt).toBeInstanceOf(Date);
     expect(inserted.createdAt).toBeInstanceOf(Date);
     expect(inserted.updatedAt).toBeInstanceOf(Date);
   });

@@ -19,20 +19,62 @@ export const assets = pgTable("assets", {
   codeIdx: unique("assets_code_unique").on(table.code),
 }));
 
-// Users (minimal, Better Auth will extend in P3)
+// Users (Better Auth compatible)
 export const users = pgTable("users", {
   id: text("id").primaryKey().$defaultFn(() => newId()),
   email: text("email").notNull(),
+  name: text("name").notNull().default(""),
+  image: text("image"),
   username: text("username").notNull(),
   baseAssetId: text("base_asset_id").references(() => assets.id),
   timezone: text("timezone"),
   voiceApiKeyHash: text("voice_api_key_hash"),
-  verified: boolean("verified").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => ({
   emailIdx: unique("users_email_unique").on(table.email),
 }));
+
+// Better Auth core tables (prefixed exports to avoid collision with bank accounts; singular SQL table names per Better Auth)
+export const authSessions = pgTable("session", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  token: text("token").notNull(),
+  userId: text("user_id").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => ({
+  tokenIdx: unique("sessions_token_unique").on(table.token),
+}));
+
+export const authAccounts = pgTable("account", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  userId: text("user_id").notNull().references(() => users.id),
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  password: text("password"),
+  refreshToken: text("refresh_token"),
+  accessToken: text("access_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+  scope: text("scope"),
+  idToken: text("id_token"),
+  issuer: text("issuer"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+export const authVerifications = pgTable("verification", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  identifier: text("identifier").notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+});
 
 // Accounts
 export const accounts = pgTable("accounts", {

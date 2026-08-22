@@ -46,7 +46,8 @@ describe("seed tests", () => {
     const demoUser = first(usersAfterFirstSeed);
     expect(demoUser.email).toBe("demo@funds.local");
     expect(demoUser.username).toBe("demo");
-    expect(demoUser.verified).toBe(true);
+    expect(demoUser.name).toBe("demo");
+    expect(demoUser.emailVerified).toBe(true);
 
     // Verify USD asset exists and is set as base asset
     const usdAsset = assetsAfterFirstSeed.find((a) => a.code === "USD");
