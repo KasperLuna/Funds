@@ -11,6 +11,7 @@ import type { RecentTxn } from "@/lib/capture";
 import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
 
 function toAccount(row: RowRecord): Account {
   return {
@@ -54,7 +55,7 @@ function DashboardContent() {
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
-  const [privacy, setPrivacy] = useState(true);
+  const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -146,7 +147,7 @@ function DashboardContent() {
         bankBalance={bankBalance}
         cryptoBalance={cryptoBalance}
         privacy={privacy}
-        onTogglePrivacy={() => setPrivacy((p) => !p)}
+        onTogglePrivacy={togglePrivacy}
         lastSyncedAt={lastSyncedAt}
       />
 
