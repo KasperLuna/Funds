@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NavLink, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
+import { UserCard } from "@/components/auth/user-card";
 
 function PrivacyButton() {
   const pathname = usePathname();
@@ -34,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="text-lg font-semibold">Funds</span>
         </div>
         <AddButton label="Add" className="mb-3 w-full" />
+        <UserCard />
         <nav aria-label="Primary" className="flex flex-1 flex-col gap-1">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.href} item={item} />
