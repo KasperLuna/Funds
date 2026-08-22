@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MemorySyncDatabase, type SyncDatabase } from "@/lib/sync";
+import { useSync } from "@/lib/sync/sync-context";
 import {
   computeBalance,
   groupByDay,
@@ -92,11 +92,7 @@ function upsertTxnSql(row: Record<string, unknown>): {
 }
 
 export default function BanksPage() {
-  const [db] = useState<SyncDatabase>(() => {
-    const d = new MemorySyncDatabase();
-    d.connect();
-    return d;
-  });
+  const { db } = useSync();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);

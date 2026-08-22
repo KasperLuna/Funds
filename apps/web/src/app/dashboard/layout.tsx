@@ -5,6 +5,7 @@ import Link from "next/link";
 import { NAV_ITEMS, NavLink, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
 import { UserCard } from "@/components/auth/user-card";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
+import { SyncProvider } from "@/lib/sync/sync-context";
 
 function PrivacyToggle() {
   const { masked, toggle } = usePrivacy();
@@ -24,6 +25,7 @@ function PrivacyToggle() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <PrivacyProvider>
+      <SyncProvider>
       <div className="mx-auto max-w-[1920px]">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
@@ -82,6 +84,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </nav>
       </div>
+      </SyncProvider>
     </PrivacyProvider>
   );
 }

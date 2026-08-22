@@ -6,6 +6,7 @@ import type {
   RowRecord,
   SyncDatabase,
 } from "./types.js";
+import { appSchema } from "./schema.js";
 
 /**
  * Real PowerSync-backed {@link SyncDatabase} facade.
@@ -17,13 +18,11 @@ import type {
  */
 export function createPowerSyncClient(): SyncDatabase & {
   connect(token: string): Promise<void>;
+  db: PowerSyncDatabase;
 } {
   let connected = false;
   let token: string | undefined;
 
-  // Guard all browser/env access inside the function so this module is safe to
-  // import under vitest (node env) — nothing runs at module top level. The lib
-  // has no DOM types, so probe globals through globalThis instead of window/navigator.
   const g = globalThis as unknown as {
     window?: unknown;
     navigator?: { storage?: unknown };
@@ -39,10 +38,10 @@ export function createPowerSyncClient(): SyncDatabase & {
 
   const endpoint =
     (typeof process !== "undefined" && process.env?.POWERSYNC_ENDPOINT) ||
-    "https://powersync.example.com";
+    "ws://localhost:8080";
 
   const db = new PowerSyncDatabase({
-    schema: undefined as never, // cavetail: schema wired at P4 spike
+    schema: appSchema,
     database: { dbFilename: "funds.db" },
   });
 
@@ -61,7 +60,6 @@ export function createPowerSyncClient(): SyncDatabase & {
 
     async *watch(sql: string, params?: QueryParams): AsyncIterable<QueryResult> {
       const handlers: Array<(result: QueryResult) => void> = [];
-      // cavetail: wraps PowerSync's callback-form watch into an AsyncIterable.
       db.watch(sql, (params ?? []) as never, {
         onResult: (raw) => {
           const normalized = normalize(raw as never);
@@ -88,6 +86,7 @@ export function createPowerSyncClient(): SyncDatabase & {
 
   return {
     ...facade,
+    db,
     connect: async (nextToken: string): Promise<void> => {
       token = nextToken;
       await db.connect({

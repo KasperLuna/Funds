@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { MemorySyncDatabase } from "@/lib/sync";
+import { useSync } from "@/lib/sync/sync-context";
 import { computeBalance } from "@/lib/accounts/accounts-store";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { RowRecord } from "@/lib/sync";
@@ -46,12 +46,7 @@ const CRYPTO_KINDS = new Set(["wallet", "exchange"]);
 function DashboardContent() {
   const searchParams = useSearchParams();
   const captureOpen = searchParams.get("capture") === "1";
-
-  const dbRef = useRef<MemorySyncDatabase | null>(null);
-  if (!dbRef.current) {
-    dbRef.current = new MemorySyncDatabase();
-    dbRef.current.connect();
-  }
+  const { db } = useSync();
 
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [txns, setTxns] = useState<Txn[]>([]);
@@ -59,7 +54,6 @@ function DashboardContent() {
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
-    const db = dbRef.current!;
     const accRows = (await db.query("SELECT * FROM accounts")).rows;
     const txnRows = (await db.query("SELECT * FROM transactions")).rows;
     setAccounts(accRows.map(toAccount));
@@ -119,7 +113,6 @@ function DashboardContent() {
 
   const handleSave = useCallback(
     async (row: Record<string, unknown>) => {
-      const db = dbRef.current!;
       const cols = Object.keys(row);
       const vals = Object.values(row);
       const phs = cols.map(() => "?").join(", ");

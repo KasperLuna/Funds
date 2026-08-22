@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Bitcoin } from "lucide-react";
-import { MemorySyncDatabase, type SyncDatabase } from "@/lib/sync";
+import { useSync } from "@/lib/sync/sync-context";
 import {
   computeHoldings,
   portfolioAllocation,
@@ -38,11 +38,7 @@ function toTokenTxn(row: Record<string, unknown>): TokenTransaction {
 }
 
 export default function CryptoPage() {
-  const [db] = useState<SyncDatabase>(() => {
-    const d = new MemorySyncDatabase();
-    d.connect();
-    return d;
-  });
+  const { db } = useSync();
   const [tokens, setTokens] = useState<Token[]>([]);
   const [txns, setTxns] = useState<TokenTransaction[]>([]);
 
