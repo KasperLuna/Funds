@@ -1,12 +1,62 @@
-# PowerSync minimal placeholder config (architecture.md §4)
-# Refine sync rules and bucket definitions in P4.
+# PowerSync Service config (self-hosted) — Phase 4 (architecture.md §2, §4)
+# Reference: https://docs.powersync.com/configuration/powersync-service/self-hosted-instances
+#
+# cavetail: doc-corrected from the brief. The service has NO top-level `auth` or
+# `sync_rules` keys. Actual v2 keys:
+#   - JWT shared secret -> `client_auth.jwks.keys` (HS256 `oct` key, base64url `k`).
+#   - Sync rules        -> `sync_config.content` (legacy `bucket_definitions`).
+#   - Env substitution  -> `!env NAME`, and ONLY `PS_*`-prefixed vars are substituted,
+#     so raw `${DATABASE_URL}` / `${JWT_SECRET}` are NOT supported here; the compose
+#     service maps them onto `PS_DATABASE_URL` / `PS_JWT_SECRET_B64URL`.
 
-server:
-  port: 8080
+# The port the PowerSync API server listens on (mapped to host 8080:8080).
+port: 8080
 
+# Source database (wal_level=logical set at server start by the postgres compose command).
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_DATABASE_URL
+      # Private compose network only; disable TLS is acceptable on the VPS overlay.
+      sslmode: disable
+
+# Bucket storage DB. Postgres backend sharing the same PG16 server/db as the source
+# (supported on PG>=14; the service auto-creates its own schema as the postgres superuser).
+# cavetail: production may prefer a dedicated storage user + separate DB/schema.
 storage:
-  postgres:
-    uri: ${DATABASE_URL}
+  type: postgresql
+  uri: !env PS_DATABASE_URL
+  sslmode: disable
 
-# cavetail: refine in P4 — one bucket stream per user (user_id = jwt.user_id)
-sync_rules: {}
+# Client JWT auth — shared-secret HS256.
+# cavetail: self-hosted has no separate `issuer` config key; `audience` is the only
+# claim gate configured here (issuer is validated against the token itself). The token
+# must carry a `user_id` claim (PowerSync convention: sub/user_id).
+client_auth:
+  jwks:
+    keys:
+      - kty: oct
+        alg: HS256
+        kid: funds-hs256
+        k: !env PS_JWT_SECRET_B64URL
+  audience:
+    - funds
+
+# Sync rules: one bucket stream per user (architecture.md §4).
+# cavetail: legacy Sync Rules inline. Data queries reference bucket parameters as
+# `bucket.<p>` — the brief's `token.user_id` in the data lines was corrected to
+# `bucket.user_id` per the docs (token claims are only valid in parameter queries).
+sync_config:
+  content: |
+    bucket_definitions:
+      global:
+        parameters: "select id as user_id from users where id = token.user_id"
+        data:
+          - accounts: "select * from accounts where user_id = bucket.user_id"
+          - categories: "select * from categories where user_id = bucket.user_id"
+          - transactions: "select * from transactions where user_id = bucket.user_id"
+          - transfers: "select * from transfers where user_id = bucket.user_id"
+          - trades: "select * from trades where user_id = bucket.user_id"
+          - templates: "select * from templates where user_id = bucket.user_id"
+          - scheduled_transactions: "select * from scheduled_transactions where user_id = bucket.user_id"
+          - push_subscriptions: "select * from push_subscriptions where user_id = bucket.user_id"

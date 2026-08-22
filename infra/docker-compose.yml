@@ -39,11 +39,23 @@ services:
   #     - "3000:3000"
 
   # cavetail: enable in P4
-  # powersync:
-  #   image: powersync/service
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
+  powersync:
+    image: journeyapps/powersync-service:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      # cavetail: config-mount + POWERSYNC_CONFIG_PATH is the documented compose pattern
+      - ./powersync.yaml:/config/powersync.yaml:ro
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
+      # cavetail: service only interpolates `PS_*` vars via `!env` in powersync.yaml,
+      # so the generic .env vars are mapped onto PS_-prefixed names here.
+      PS_DATABASE_URL: ${DATABASE_URL}
+      PS_JWT_SECRET_B64URL: ${POWER_SYNC_JWT_SECRET_B64URL}
 
   # cavetail: enable in P4
   # worker:
