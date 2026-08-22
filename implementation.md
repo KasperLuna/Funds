@@ -1,0 +1,124 @@
+# Funds — Implementation Plan
+
+Execution order for the rewrite. Sources of truth: `logic.md` (domain rules), `architecture.md` (stack/topology), `design.md` (UX). This file defines phases, deliverables, and acceptance gates. Phases are vertical slices — each ends `docker compose up`-deployable and demoable.
+
+---
+
+## 0. Ground Rules
+
+1. **Schema-first**: no feature code before Drizzle schema + migrations are frozen for that slice's entities.
+2. **Capture-first**: the "log a transaction offline" path is built before any analytics/reporting exists.
+3. **Pure logic isolated**: money math, parser, recurrence advancement, cost-basis live in framework-free modules with unit tests (`src/core/*`). UI never reimplements them.
+4. **Every phase ships**: green health check on VPS after merge.
+5. Money = integers only in app code; conversion helpers in `src/core/money.ts`; lint rule banning raw float arithmetic on amounts.
+
+Repo layout target:
+```
+apps/web        Next.js app (+ tRPC, PWA)
+packages/core   pure logic (money, parser, recurrence, lots/cost-basis)
+packages/db     Drizzle schema + migrations + seeds
+infra           docker-compose*, Caddyfile, .env.example, powersync.yaml
+ops             GH Actions workflows, deploy scripts
+```
+
+---
+
+## Phase 1 — Infra Skeleton
+Deliverables:
+- `docker-compose.yml`: caddy, postgres (logical replication ON), powersync, web (Next standalone), worker. Health checks all.
+- Caddy TLS + routing (`/sync/*` → powersync). `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds).
+- GH Actions (self-hosted runner): lint+typecheck+test → build image → migrate → `compose up -d` → smoke check `/api/health`.
+Gate: fresh VPS boots whole stack with one command; rollback tag works.
+
+## Phase 2 — Data Layer
+Deliverables:
+- Full Drizzle schema (architecture.md §3): assets, accounts, categories, transactions, transfers, trades, templates, scheduled_transactions, users/auth tables, push_subscriptions, voice_drafts, rates(+history). ULID PKs, `user_id/created_at/updated_at/deleted_at` conventions, minor-unit bigints.
+- Migration pipeline + seed script (assets incl. fiat set from currencies.json + top cryptos; demo user fixture).
+- `src/core/money.ts` (format/parse/convert w/ asset decimals), `ulid.ts`.
+Tests: schema round-trip, money helpers property tests.
+Gate: `pnpm db:migrate && db:seed` idempotent.
+
+## Phase 3 — Auth
+Better Auth on PG: email/password, Google OAuth, **guest demo** (seeded demo dataset, banner "reset demo", rate-limited). Session cookie config for PWA standalone. Sign-out clears local DB too.
+Gate: three flows work on deployed HTTPS domain; guest→signup upgrades same device cleanly.
+
+## Phase 4 — Sync Backbone
+Deliverables:
+- PowerSync service config (`powersync.yaml`), PG publication/slot bootstrap.
+- Sync rules: single per-user bucket stream (`user_id = token.user_id`) over all replicated tables.
+- Client SDK wiring: OPFS-SQLite adapter, storage-persist request post-first-capture, live-query hook (`useQuery` equivalent over local tables).
+- Write path: SDK upload queue → batched tRPC `applyMutations` endpoint (idempotent by ULID, soft-delete aware, LWW on `updated_at`, server-authoritative).
+- Sync pill component + pending-queue detail sheet (design.md §6).
+Integrity tests (must-pass suite, reused every later phase): write-offline→kill app→relaunch→syncs; concurrent edit two devices (LWW verified); delete vs update race; replay duplicate mutation (no double effect); schema migration while queue non-empty.
+Gate: airplane-mode CRUD round-trip on real phone.
+
+## Phase 5 — Capture Sheet (the product)
+Deliverables:
+- Bottom-sheet/dialog shell (responsive per design.md §4), custom keypad component (haptics, per-asset decimals, disabled-reason states), context strip (account defaulting, Today/Yesterday/date), type toggle.
+- Save path: local insert → optimistic dismiss → undo toast (compensating mutation pre-sync).
+- Suggestions engine v1: due-today scheduled txns (one-tap log + advance recurrence per logic.md §8.3) + recent repeats query.
+- Long-press type menu; desktop dialog variant + sidebar Add + `n` shortcut.
+Unit tests: amount parsing/clamping per decimals; undo correctness.
+Gate: **north-star met** — cold open → logged ≤5s / ≤3 interactions, measured on mid-tier Android, offline.
+
+## Phase 6 — Banks & Transactions List
+Grouped-by-day virtualized list, swipe actions (duplicate/delete/edit via capture sheet), day sticky headers, account pills header, filter row (search/category/month), table view ≥lg. Edit/delete balance semantics free (derived balances — just row mutations).
+Gate: 10k-row scroll 60fps; swipe+undo suite passes.
+
+## Phase 7 — Accounts, Categories, Transfers
+CRUD surfaces for accounts (kind/asset/colors/archive) + categories (budget/hideable); transfer variant of capture sheet (linked legs, fee disclosure); deletion cascades per logic.md §6/§5.5 implemented as server-side transactional logic.
+Gate: transfer renders correctly in both account histories and net worth once.
+
+## Phase 8 — Crypto & Rates
+Worker: CoinGecko refresh loop (batch ids, ~24h cache, 429-aware), rates + history tables. Trade capture variant (legs + rate preview + fee). Holdings view: qty/avg-cost/value/24h/unrealized; realized P/L rows. Cost-basis engine in `core/lots.ts` (average-cost per logic.md §10, now ledger-driven).
+Gate: buy→sell cycle shows correct realized P/L; offline trade queues cleanly.
+
+## Phase 9 — Scheduled Transactions & Reminders
+Templates + scheduled entities UI; advancement/waive flows (already wired in capture suggestions); worker reminder cron (IANA-timezone due-today check, 3h dedupe, VAPID send, batch ack); deep-link prefill; push subscription upsert/remove UI + test-send.
+Gate: reminder arrives on phone at due time in correct timezone; waive advances without creating txn.
+
+## Phase 10 — Voice Pipeline
+Extract parser verbatim into `packages/core/parser` (+ port existing tests if none exist, write golden-file tests first from current behavior). In-PWA path: shortcut/share-target/deep-link → parse against local accounts/categories → prefilled sheet. Webhook path: Bearer hashed-key endpoint reuses same package → ephemeral voice_draft → redemption poller → prefilled sheet. Worker TTL cleanup.
+Gate: same input text produces identical parse output old vs new (diff harness).
+
+## Phase 11 — Analytics & Home Hub
+Local SQL views: monthly aggregates w/ proportional split + exempt-free transfers (logic.md §5), budgets thresholds, trends (% change math §11.2), volatile flagging, net-worth hero w/ freshness stamp. Home hub layout per design.md §8.1. Charts themed centrally.
+Gate: numbers match current production app within rounding tolerance on migrated sample data.
+
+## Phase 12 — PWA Hardening & Onboarding
+Serwist precache/runtime strategy, offline-launch audit checklist, install nudge, storage-persist + low-storage warning, iOS standalone quirks (16px inputs, safe areas), onboarding checklist flow (logic.md §14) + contextual push prompt.
+Gate: Lighthouse PWA ✓; iPhone airplane-mode cold launch usable.
+
+## Phase 13 — Data Migration & Cutover
+One-shot importer script (architecture.md §8): PB → PG transforms (type collapse, sign normalization, hour-offset→IANA mapping, ULID minting, rates backfill, crypto unification into trades/lots). Dry-run report + diff validation vs old app totals. Feature-flagged dual-run optional week.
+Gate: migrated user sees identical balances/net worth both apps.
+
+## Phase 14 — Visual Polish Pass
+Token sweep replacing bespoke gradients (design.md §9), contrast fixes (slate-400 floor), focus rings, motion audit, empty/loading standardization, chart theme unification.
+Gate: design.md a11y checklist green; visual regression screenshots approved.
+
+---
+
+## Dependency Graph
+
+```
+P1 ─ P2 ─ P3 ─ P4 ─ P5 ─ P6 ─ P7 ─ P8 ─ P9 ─ P10
+                      └─ P11 ─────────┘ (views can build on P6 data)
+P12 spans P5→end (shell exists from P1, hardened late)
+P13/P14 last, parallelizable
+```
+
+## Cross-Cutting Test Strategy
+- `packages/core`: Vitest unit + property (money, parser goldens, recurrence, lots).
+- Sync integrity: dedicated Playwright suite running the P4 scenario list against every release.
+- E2E happy paths: signup→onboard→capture→list→trade→reminder.
+- Perf gates: capture-open ≤100ms, list 60fps, launch budget (design.md §11) asserted in CI via traces on runner device profile.
+
+## Risk Register (top items)
+| Risk | Mitigation |
+|---|---|
+| PowerSync self-hosted sharp edges | P4 spike first; fallback = RxDB adapter swap isolated behind sync-interface module |
+| OPFS eviction on iOS | persist() request + low-storage UX (design.md §10); test on real devices early |
+| Parser regressions | golden files frozen from legacy before touching it |
+| BigInt/minor-unit leaks into UI | lint rule + money helper escape hatch review |
+| Scope creep in analytics | views replicate legacy formulas exactly; enhancements post-cutover |
