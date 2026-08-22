@@ -1,0 +1,30 @@
+{
+  "name": "@funds/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "test": "vitest run --no-file-parallelism",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "seed": "tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@funds/core": "workspace:*",
+    "drizzle-orm": "^0.44",
+    "pg": "^8"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8",
+    "drizzle-kit": "^0.31",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

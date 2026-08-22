@@ -1,0 +1,19 @@
+{
+  "name": "@funds/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "devDependencies": {
+    "fast-check": "^4",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

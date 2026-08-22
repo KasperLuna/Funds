@@ -1,0 +1,24 @@
+{
+  "name": "funds",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "db:migrate": "pnpm --filter @funds/db run migrate",
+    "db:seed": "pnpm --filter @funds/db run seed"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "fast-check": "^4",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "vitest": "^3"
+  }
+}

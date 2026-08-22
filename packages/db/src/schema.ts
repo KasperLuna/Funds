@@ -1,0 +1,199 @@
+import { pgTable, text, bigint, integer, boolean, jsonb, timestamp, unique, pgEnum } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { newId } from "./id.js";
+
+// Enums
+export const assetKindEnum = pgEnum("asset_kind", ["fiat", "crypto"]);
+export const accountKindEnum = pgEnum("account_kind", ["bank", "cash", "wallet", "exchange"]);
+export const transactionTypeEnum = pgEnum("transaction_type", ["income", "expense"]);
+
+// Assets
+export const assets = pgTable("assets", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  kind: assetKindEnum("kind").notNull(),
+  code: text("code").notNull(),
+  name: text("name").notNull(),
+  coingeckoId: text("coingecko_id"),
+  decimals: integer("decimals").notNull(),
+}, (table) => ({
+  codeIdx: unique("assets_code_unique").on(table.code),
+}));
+
+// Users (minimal, Better Auth will extend in P3)
+export const users = pgTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  email: text("email").notNull(),
+  username: text("username").notNull(),
+  baseAssetId: text("base_asset_id").references(() => assets.id),
+  timezone: text("timezone"),
+  voiceApiKeyHash: text("voice_api_key_hash"),
+  verified: boolean("verified").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+}, (table) => ({
+  emailIdx: unique("users_email_unique").on(table.email),
+}));
+
+// Accounts
+export const accounts = pgTable("accounts", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  kind: accountKindEnum("kind").notNull(),
+  assetId: text("asset_id").notNull().references(() => assets.id),
+  openingBalanceMinor: bigint("opening_balance_minor", { mode: "bigint" }).notNull().default(sql`0`),
+  colors: jsonb("colors").$type<{ primary_color?: string; secondary_color?: string } | null>(),
+  archived: boolean("archived").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Categories
+export const categories = pgTable("categories", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  hideable: boolean("hideable").notNull().default(false),
+  monthlyBudgetMinor: bigint("monthly_budget_minor", { mode: "bigint" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Transfers
+export const transfers = pgTable("transfers", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  feeTransactionId: text("fee_transaction_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Trades
+export const trades = pgTable("trades", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  sellLegId: text("sell_leg_id").notNull(),
+  buyLegId: text("buy_leg_id").notNull(),
+  feeLegId: text("fee_leg_id"),
+  rate: text("rate"), // cavetail: string to avoid float
+  note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Transactions
+export const transactions = pgTable("transactions", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  accountId: text("account_id").notNull().references(() => accounts.id),
+  assetId: text("asset_id").notNull().references(() => assets.id),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(), // SIGNED: expense<0, income>0
+  type: transactionTypeEnum("type").notNull(),
+  description: text("description").notNull().default(""),
+  categoryIds: jsonb("category_ids").$type<string[]>().notNull().default(sql`'[]'`),
+  date: timestamp("date", { withTimezone: true }).notNull(),
+  valueBaseMinor: bigint("value_base_minor", { mode: "bigint" }),
+  tradeId: text("trade_id"),
+  transferId: text("transfer_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Templates
+export const templates = pgTable("templates", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+  description: text("description").notNull(),
+  accountId: text("account_id").notNull().references(() => accounts.id),
+  categoryIds: jsonb("category_ids").$type<string[]>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Scheduled Transactions
+export const scheduledTransactions = pgTable("scheduled_transactions", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  type: transactionTypeEnum("type").notNull(),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+  accountId: text("account_id").notNull().references(() => accounts.id),
+  categoryIds: jsonb("category_ids").$type<string[]>().notNull(),
+  recurrence: jsonb("recurrence").$type<{
+    frequency: "daily" | "weekly" | "monthly" | "yearly";
+    interval: number;
+  } | null>(),
+  timezone: text("timezone"), // IANA
+  invokeDate: timestamp("invoke_date", { withTimezone: true }),
+  previousDate: timestamp("previous_date", { withTimezone: true }),
+  lastNotifiedAt: timestamp("last_notified_at", { withTimezone: true }),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Push Subscriptions
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  endpoint: text("endpoint").notNull(),
+  keys: jsonb("keys").$type<{ p256dh: string; auth: string }>().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => ({
+  endpointIdx: unique("push_subscriptions_endpoint_unique").on(table.endpoint),
+}));
+
+// Voice Drafts
+export const voiceDrafts = pgTable("voice_drafts", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  token: text("token").notNull(),
+  preview: jsonb("preview").notNull(),
+  source: text("source").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, (table) => ({
+  tokenIdx: unique("voice_drafts_token_unique").on(table.token),
+}));
+
+// Rates
+export const rates = pgTable("rates", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  assetId: text("asset_id").notNull().references(() => assets.id),
+  vsAssetId: text("vs_asset_id").notNull().references(() => assets.id),
+  priceMinorScaled: bigint("price_minor_scaled", { mode: "bigint" }).notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+});
+
+// Rates History
+export const ratesHistory = pgTable("rates_history", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  assetId: text("asset_id").notNull().references(() => assets.id),
+  vsAssetId: text("vs_asset_id").notNull().references(() => assets.id),
+  priceMinorScaled: bigint("price_minor_scaled", { mode: "bigint" }).notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
+});

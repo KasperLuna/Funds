@@ -1,0 +1,12 @@
+# PowerSync minimal placeholder config (architecture.md §4)
+# Refine sync rules and bucket definitions in P4.
+
+server:
+  port: 8080
+
+storage:
+  postgres:
+    uri: ${DATABASE_URL}
+
+# cavetail: refine in P4 — one bucket stream per user (user_id = jwt.user_id)
+sync_rules: {}
