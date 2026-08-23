@@ -16,7 +16,7 @@ export function AllocationBar({
   if (allocation.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex h-2 overflow-hidden rounded-full bg-(--surface-2)">
+      <div className="flex h-1 overflow-hidden rounded-full bg-(--surface-3)">
         {allocation.map((a, i) => (
           <div
             key={a.symbol}
@@ -28,7 +28,7 @@ export function AllocationBar({
       </div>
       <div className="flex flex-wrap gap-3">
         {allocation.map((a, i) => (
-          <span key={a.symbol} className="flex items-center gap-1.5 text-xs text-slate-400">
+          <span key={a.symbol} className="flex items-center gap-1.5 text-xs text-zinc-500">
             <span className={cn("h-2 w-2 rounded-full", COLORS[i % COLORS.length])} />
             {a.symbol} {a.pct.toFixed(1)}%
           </span>

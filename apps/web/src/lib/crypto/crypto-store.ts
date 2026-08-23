@@ -3,6 +3,7 @@ export type Token = {
   symbol: string;
   name: string;
   decimals: number;
+  coingeckoId?: string | null;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number | null;
