@@ -9,6 +9,11 @@ const DEMO_PASSWORD = "demo123456";
 const DEMO_EMAIL = "demo@funds.local";
 
 export const auth = betterAuth({
+  // Deterministic callback URLs. Without this, Better Auth infers the base
+  // from the request origin, so Google's `redirect_uri` (which must match an
+  // Authorized redirect URI exactly) could silently differ from what the
+  // Google Cloud Console allows.
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   database: drizzleAdapter(getDb(), {
     provider: "pg",
     schema: {
@@ -20,6 +25,16 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+  },
+  account: {
+    // Migrated PocketBase users exist in `users` with no password. Enabling
+    // account linking lets a Google sign-in claim the migrated user whose
+    // email matches, so the imported data surfaces on that login instead of
+    // creating a separate empty account.
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+    },
   },
   ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
     ? {
