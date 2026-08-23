@@ -1,5 +1,6 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatMoney } from "@/lib/money";
 
 import type { Account } from "@/lib/accounts/accounts-store";
 
@@ -10,34 +11,49 @@ const KIND_LABEL: Record<Account["kind"], string> = {
   exchange: "Exchange",
 };
 
-function formatMinor(cents: bigint): string {
-  const sign = cents < 0n ? "-" : "";
-  const abs = cents < 0n ? -cents : cents;
-  const major = Number(abs) / 100;
-  return `${sign}$${major.toFixed(2)}`;
-}
-
 export function AccountCard({
   account,
   balance,
+  assetCode,
+  assetDecimals,
   onRename,
   onDelete,
+  onArchive,
 }: {
   account: Account;
   balance: bigint;
+  assetCode?: string;
+  assetDecimals?: number;
   onRename: (account: Account) => void;
   onDelete: (account: Account) => void;
+  onArchive?: (account: Account) => void;
 }) {
+  const isArchived = !!account.deletedAt;
+  const colorStyle = account.primaryColor
+    ? { backgroundColor: account.primaryColor }
+    : undefined;
+
   return (
-    <div className="flex items-center justify-between rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-4 py-3">
+    <div
+      className={`flex items-center justify-between rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-4 py-3 ${isArchived ? "opacity-60" : ""}`}
+    >
       <div className="flex items-center gap-3 min-w-0">
-        <span className="truncate text-sm font-medium">{account.name}</span>
-        <span className="shrink-0 rounded-full bg-(--surface-2) px-2 py-0.5 text-xs text-slate-400">
-          {KIND_LABEL[account.kind]}
-        </span>
+        <span
+          className="h-4 w-4 shrink-0 rounded-full"
+          style={colorStyle}
+          aria-hidden
+        />
+        <div className="flex flex-col min-w-0">
+          <span className="truncate text-sm font-medium">{account.name}</span>
+          <span className="text-xs text-zinc-500">
+            {KIND_LABEL[account.kind]}
+          </span>
+        </div>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm tabular-nums">{formatMinor(balance)}</span>
+        <span className="text-sm font-semibold tabular-nums">
+          {formatMoney(balance, assetDecimals ?? 2, assetCode)}
+        </span>
         <Button
           variant="ghost"
           size="sm"
@@ -46,6 +62,20 @@ export function AccountCard({
         >
           <Pencil className="h-4 w-4" />
         </Button>
+        {onArchive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={isArchived ? `Unarchive ${account.name}` : `Archive ${account.name}`}
+            onClick={() => onArchive(account)}
+          >
+            {isArchived ? (
+              <ArchiveRestore className="h-4 w-4" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

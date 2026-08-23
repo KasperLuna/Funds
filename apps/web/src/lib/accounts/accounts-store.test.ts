@@ -25,6 +25,7 @@ function txn(overrides: Partial<Txn> = {}): Txn {
   return {
     id: "t1",
     accountId: "a1",
+    assetId: "ast-1",
     amountMinor: -500n,
     type: "expense",
     description: "Groceries",

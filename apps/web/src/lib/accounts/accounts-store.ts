@@ -4,6 +4,8 @@ export type Account = {
   kind: "bank" | "cash" | "wallet" | "exchange";
   assetId: string;
   openingBalanceMinor: bigint;
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number | null;
@@ -12,6 +14,7 @@ export type Account = {
 export type Txn = {
   id: string;
   accountId: string;
+  assetId: string;
   amountMinor: bigint;
   type: "income" | "expense";
   description: string;
