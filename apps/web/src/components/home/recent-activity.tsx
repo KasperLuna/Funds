@@ -4,7 +4,7 @@ import type { Txn } from "@/lib/accounts/accounts-store";
 import { TransactionRow } from "@/components/banks/transaction-row";
 import { ReceiptText } from "lucide-react";
 
-type CategoryInfo = { id: string; name: string; color: string };
+type CategoryInfo = { id: string; name: string; color: string; hideable: boolean };
 
 export type AccountDisplay = {
   name: string;
@@ -51,7 +51,6 @@ export function RecentActivity({
     >
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <h2 className="font-display text-base font-bold tracking-tight">Recent activity</h2>
-        <span className="label-micro tabular-nums">{txns.length}</span>
       </div>
       <div className="divide-y divide-(--border)">
         {txns.map((txn) => {

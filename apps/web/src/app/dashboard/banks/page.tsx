@@ -23,7 +23,9 @@ import { TransferSheet } from "@/components/capture/TransferSheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
-import type { VoicePrefill } from "@/components/capture/CaptureSheet";
+import { type VoicePrefill } from "@/components/capture/CaptureSheet";
+
+const PAGE_SIZE = 50;
 
 function toAccount(row: Record<string, unknown>): Account {
   const colors = row.colors;
@@ -139,7 +141,7 @@ function formatDayHeader(day: string): string {
 }
 
 export default function BanksPage() {
-  const { db, userId, isConnected } = useSync();
+  const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(
@@ -156,6 +158,8 @@ export default function BanksPage() {
   const [transferOpen, setTransferOpen] = useState(false);
   const [editTxn, setEditTxn] = useState<Txn | null>(null);
   const undoDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const reload = useCallback(async () => {
     const accRes = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
@@ -169,7 +173,7 @@ export default function BanksPage() {
   // Re-query once the sync engine connects (it swaps the db impl asynchronously).
   useEffect(() => {
     void reload();
-  }, [reload, isConnected]);
+  }, [reload, isConnected, lastSyncedAt]);
 
   useEffect(() => () => {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
@@ -188,7 +192,35 @@ export default function BanksPage() {
     [txns, selectedAccountId],
   );
 
-  const grouped = useMemo(() => groupByDay(visibleTxns), [visibleTxns]);
+  // Newest → oldest; the latest transaction is first, scrolling loads older pages.
+  const sortedDesc = useMemo(
+    () =>
+      [...visibleTxns].sort((a, b) => b.date - a.date || a.id.localeCompare(b.id)),
+    [visibleTxns],
+  );
+
+  const pagedTxns = useMemo(() => sortedDesc.slice(0, visibleCount), [sortedDesc, visibleCount]);
+
+  const grouped = useMemo(() => groupByDay(pagedTxns), [pagedTxns]);
+
+  // Reset pagination when the account filter or data set changes.
+  useEffect(() => setVisibleCount(PAGE_SIZE), [visibleTxns]);
+
+  // Load the next page when the sentinel scrolls into view.
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((c) => Math.min(c + PAGE_SIZE, sortedDesc.length));
+        }
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [sortedDesc.length]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -210,6 +242,7 @@ export default function BanksPage() {
     id: c.id,
     name: c.name,
     color: c.color,
+    hideable: c.hideable,
   }));
 
   const handleAccountSave = useCallback(
@@ -437,7 +470,7 @@ export default function BanksPage() {
         </div>
       </header>
 
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap items-center gap-2 pb-1">
         <button
           onClick={() => setSelectedAccountId(null)}
           className={`shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -524,6 +557,11 @@ export default function BanksPage() {
           </div>
         ) : (
           <>
+            <div className="flex justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2">
+              <Button size="sm" onClick={() => setCaptureOpen(true)}>
+                <Plus className="h-4 w-4" aria-hidden /> Add transaction
+              </Button>
+            </div>
             <div className="border-b border-(--border) bg-(--surface-2) px-4 py-2 text-[11px] text-zinc-500 lg:hidden">
               Tap a transaction to edit · swipe right to duplicate · swipe left to delete
             </div>
@@ -551,11 +589,15 @@ export default function BanksPage() {
                 })}
               </div>
             ))}
-            <div className="flex justify-center py-3">
-              <Button size="sm" onClick={() => setCaptureOpen(true)}>
-                <Plus className="h-4 w-4" aria-hidden /> Add transaction
-              </Button>
-            </div>
+            {sortedDesc.length > visibleCount && (
+              <div
+                ref={loadMoreRef}
+                className="flex justify-center py-3 text-xs text-zinc-500"
+                aria-hidden
+              >
+                Loading more…
+              </div>
+            )}
           </>
         )}
       </section>

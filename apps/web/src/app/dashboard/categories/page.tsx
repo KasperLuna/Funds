@@ -9,6 +9,7 @@ import {
   categoryColor,
   computeBudgetUsage,
   budgetPeriodKey,
+  budgetFor,
   type Category,
   type CategoryBudget,
 } from "@/lib/categories/categories-store";
@@ -113,7 +114,7 @@ function monthOptions(): Array<{ value: string; label: string; year: number; mon
 }
 
 export default function CategoriesPage() {
-  const { db, userId, isConnected } = useSync();
+  const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
@@ -153,7 +154,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     void reload();
-  }, [reload, isConnected]);
+  }, [reload, isConnected, lastSyncedAt]);
 
   const handleSave = useCallback(
     async (c: Category) => {
@@ -269,7 +270,12 @@ export default function CategoriesPage() {
                         className="h-3 w-3 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      {category.name}
+                      <span className="flex flex-col">
+                        <span>{category.name}</span>
+                        <span className="text-xs text-zinc-500">
+                          {formatMoney(budgetMinor, decimals, code)}/mo
+                        </span>
+                      </span>
                     </span>
                     <span className={`tabular-nums ${isOver ? "font-medium text-(--danger)" : isWarning ? "font-medium text-(--warning)" : "text-zinc-500"}`}>
                       {formatMoney(spentMinor, decimals, code)} / {formatMoney(budgetMinor, decimals, code)}
@@ -302,6 +308,7 @@ export default function CategoriesPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {categories.map((c) => {
             const asset = c.assetId ? assetsById.get(c.assetId) : undefined;
+            const budget = budgetFor(c, budgets, viewMonth.year, viewMonth.month);
             return (
               <div
                 key={c.id}
@@ -315,9 +322,9 @@ export default function CategoriesPage() {
                   />
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{c.name}</span>
-                    {c.monthlyBudgetMinor != null && c.monthlyBudgetMinor > 0n && (
+                    {budget && (
                       <span className="text-xs text-zinc-500">
-                        {formatMoney(c.monthlyBudgetMinor, asset?.decimals ?? 2, asset?.code)}/mo
+                        {formatMoney(budget.amountMinor, asset?.decimals ?? 2, asset?.code)}/mo
                       </span>
                     )}
                   </div>
@@ -527,8 +534,8 @@ function CategoryDialog({
               className="h-4 w-4 rounded border-(--border)"
             />
             <div className="flex flex-col">
-              <span className="text-sm font-medium">Hideable</span>
-              <span className="text-xs text-zinc-500">Exclude from category pickers</span>
+              <span className="text-sm font-medium">Hidden</span>
+              <span className="text-xs text-zinc-500">In privacy mode, amounts for its transactions stay hidden</span>
             </div>
           </label>
 

@@ -117,6 +117,9 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
                       {formatMoney(item.spentMinor, itemDecimals, itemCode)} / {formatMoney(item.budgetMinor, itemDecimals, itemCode)}
                     </span>
                   </div>
+                  <div className="mt-0.5 text-xs tabular-nums text-zinc-500">
+                    {formatMoney(item.budgetMinor, itemDecimals, itemCode)}/mo
+                  </div>
                   <div className="mt-1 h-1 overflow-hidden rounded-full bg-(--surface-3)">
                     <div
                       className={`h-full rounded-full ${usageColor(item.pct)}`}

@@ -4,8 +4,9 @@ import { useCallback, useRef, useState } from "react";
 import { Copy, Pencil, Trash2, Tag } from "lucide-react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
 
-type CategoryInfo = { id: string; name: string; color: string };
+type CategoryInfo = { id: string; name: string; color: string; hideable?: boolean };
 
 type SwipeToast = {
   message: string;
@@ -49,6 +50,8 @@ export function TransactionRow({
 
   const isExpense = txn.amountMinor < 0n;
   const decimals = assetDecimals ?? 2;
+  const { masked } = usePrivacy();
+  const maskedAmount = masked && cats.some((c) => c.hideable);
 
   const [offsetX, setOffsetX] = useState(0);
   const [toast, setToast] = useState<SwipeToast | null>(null);
@@ -250,9 +253,10 @@ export function TransactionRow({
           <div className="text-right">
             <span className="text-[11px] tabular-nums text-zinc-500">{formatTime(txn.date)}</span>
             <span
-              className={`block text-sm font-semibold tabular-nums ${isExpense ? "text-(--danger)" : "text-(--accent)"}`}
+              className={`block text-sm font-semibold tabular-nums ${maskedAmount ? "text-zinc-500" : isExpense ? "text-(--danger)" : "text-(--accent)"}`}
+              aria-label={maskedAmount ? "Amount hidden" : undefined}
             >
-              {formatMoney(txn.amountMinor, decimals, assetCode)}
+              {maskedAmount ? "••••" : formatMoney(txn.amountMinor, decimals, assetCode)}
             </span>
           </div>
         </div>
