@@ -18,16 +18,14 @@ export async function GET(request: NextRequest) {
   // (POWER_SYNC_JWT_SECRET_B64URL, base64url-encoded). This must match
   // infra/powersync.yaml's client_auth.jwks key, otherwise PowerSync rejects
   // the token and nothing syncs down.
+  // cavetail: the ".env.example" placeholder is ignored so a copy-paste can't
+  // silently break sync; the dev default matches the docker dev container's
+  // PS_JWT_SECRET_B64URL ("test-secret-key-for-dev-only").
   const b64url = process.env.POWER_SYNC_JWT_SECRET_B64URL;
-  const rawSecret = b64url
-    ? Buffer.from(b64url, "base64url").toString("utf8")
-    : (process.env.JWT_SECRET ??
-      process.env.BETTER_AUTH_SECRET ??
-      // cavetail: dev-only default. Must equal the secret the PowerSync service
-      // validates with (infra/docker-compose PS_JWT_SECRET_B64URL); the running
-      // dev service uses "test-secret-key-for-dev-only", otherwise its JWKS
-      // rejects our HS256 tokens (PSYNC_S2101) and sync stays in local mode.
-      "test-secret-key-for-dev-only");
+  const rawSecret =
+    b64url && b64url !== "change-me"
+      ? Buffer.from(b64url, "base64url").toString("utf8")
+      : "test-secret-key-for-dev-only";
   
   const secretKey = new TextEncoder().encode(rawSecret);
   

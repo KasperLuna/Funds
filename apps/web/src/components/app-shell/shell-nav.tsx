@@ -75,23 +75,26 @@ export function MobileTab({ item, onNavigate }: { item: NavItem; onNavigate?: ()
 }
 
 export function SyncPill() {
-  const { isConnected } = useSync();
+  const { isConnected, lastSyncedAt } = useSync();
   const offline = !isConnected;
+  const syncing = isConnected && lastSyncedAt == null;
   return (
     <span
       role="status"
-      aria-label={offline ? "Sync status: offline" : "Sync status: synced"}
+      aria-label={offline ? "Sync status: offline" : syncing ? "Sync status: syncing" : "Sync status: synced"}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border border-(--border) bg-(--surface-2) px-2.5 py-1 text-xs font-medium",
-        offline ? "text-(--warning)" : "text-(--accent)",
+        offline ? "text-(--warning)" : syncing ? "text-(--warning)" : "text-(--accent)",
       )}
     >
-      {offline ? (
+      {offline || syncing ? (
         <CloudOff className="h-3 w-3" strokeWidth={3} aria-hidden />
       ) : (
         <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
       )}
-      <span className="hidden sm:inline">{offline ? "Offline" : "Synced"}</span>
+      <span className="hidden sm:inline">
+        {offline ? "Offline" : syncing ? "Syncing" : "Synced"}
+      </span>
     </span>
   );
 }
@@ -102,7 +105,7 @@ export function AddButton({ label = "Add", className }: { label?: string; classN
       href="/dashboard?capture=1"
       aria-label={label}
       className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-(--radius-md) bg-(--accent) text-(--accent-foreground) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-[0.98]",
+        "inline-flex items-center justify-center gap-1 rounded-(--radius-md) bg-(--accent) px-3 py-2 text-(--accent-foreground) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-[0.98]",
         className,
       )}
     >

@@ -27,6 +27,7 @@ beforeEach(() => {
       })),
     } as never,
     isConnected: true,
+    lastSyncedAt: Date.now(),
     userId: "dev-user",
   });
   mockQuery.mockResolvedValue({ rows: [] });

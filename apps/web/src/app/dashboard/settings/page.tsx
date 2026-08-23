@@ -102,7 +102,7 @@ function PrivacyToggle() {
 }
 
 export default function SettingsPage() {
-  const { db, isConnected } = useSync();
+  const { db, isConnected, lastSyncedAt } = useSync();
   const [accounts, setAccounts] = useState(0);
   const [transactions, setTransactions] = useState(0);
 
@@ -115,7 +115,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     void reload();
-  }, [reload, isConnected]);
+  }, [reload, isConnected, lastSyncedAt]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
