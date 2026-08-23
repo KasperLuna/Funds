@@ -32,6 +32,11 @@ sync_config:
     config:
       edition: 3
 
+    # IMPORTANT: PowerSync auto-creates the `powersync` publication ONCE from
+    # these streams. Adding a stream for a NEW table after that requires
+    #   ALTER PUBLICATION powersync ADD TABLE <table>;
+    # in Postgres (plus touching existing rows so they replicate), then a
+    # container restart. Otherwise the table silently never syncs.
     streams:
       accounts:
         auto_subscribe: true
@@ -51,6 +56,12 @@ sync_config:
       trades:
         auto_subscribe: true
         query: SELECT * FROM trades WHERE user_id = auth.user_id()
+      tokens:
+        auto_subscribe: true
+        query: SELECT * FROM tokens WHERE user_id = auth.user_id()
+      token_transactions:
+        auto_subscribe: true
+        query: SELECT * FROM token_transactions WHERE user_id = auth.user_id()
       templates:
         auto_subscribe: true
         query: SELECT * FROM templates WHERE user_id = auth.user_id()

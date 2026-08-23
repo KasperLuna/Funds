@@ -45,11 +45,14 @@ function translateSnakeToCamel(
       continue;
     }
     
-    // Convert timestamps from epoch ms to Date
+    // Convert timestamps from epoch ms to Date (covers *At, *Date, and the
+    // few non-conforming names: date, monthStart, timestamp)
     if (
       (camelKey.endsWith("At") ||
+        camelKey.endsWith("Date") ||
         camelKey === "date" ||
-        camelKey === "monthStart") &&
+        camelKey === "monthStart" ||
+        camelKey === "timestamp") &&
       typeof val === "number"
     ) {
       result[camelKey] = new Date(val);
