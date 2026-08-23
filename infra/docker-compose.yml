@@ -32,13 +32,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
-  # cavetail: enable in P3
-  # web:
-  #   build:
-  #     context: ./../apps/web
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:3000"
+  web:
+    build:
+      context: ./..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file: .env
 
   # cavetail: enable in P4
   powersync:
@@ -59,12 +63,10 @@ services:
       PS_DATABASE_URL: ${PS_DATABASE_URL}
       PS_JWT_SECRET_B64URL: ${POWER_SYNC_JWT_SECRET_B64URL}
 
-  # cavetail: enable in P4
-  # worker:
-  #   build:
-  #     context: ./../apps/web
-  #   restart: unless-stopped
-  #   command: ["node", "worker.js"]
+  worker:
+    build:
+      context: ./../ops/worker-stub
+    restart: unless-stopped
 
 volumes:
   pgdata:

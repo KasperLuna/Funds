@@ -16,6 +16,10 @@ storage:
   sslmode: disable
 
 client_auth:
+  # Audiences the JWTs must carry. When set, tokens without a matching `aud`
+  # claim are rejected (PSYNC_S2105).
+  audience:
+    - powersync
   jwks:
     keys:
       - kty: oct
@@ -29,27 +33,30 @@ sync_config:
       edition: 3
 
     streams:
-      user_accounts:
+      accounts:
         auto_subscribe: true
         query: SELECT * FROM accounts WHERE user_id = auth.user_id()
-      user_categories:
+      categories:
         auto_subscribe: true
         query: SELECT * FROM categories WHERE user_id = auth.user_id()
-      user_transactions:
+      category_budgets:
+        auto_subscribe: true
+        query: SELECT * FROM category_budgets WHERE user_id = auth.user_id()
+      transactions:
         auto_subscribe: true
         query: SELECT * FROM transactions WHERE user_id = auth.user_id()
-      user_transfers:
+      transfers:
         auto_subscribe: true
         query: SELECT * FROM transfers WHERE user_id = auth.user_id()
-      user_trades:
+      trades:
         auto_subscribe: true
         query: SELECT * FROM trades WHERE user_id = auth.user_id()
-      user_templates:
+      templates:
         auto_subscribe: true
         query: SELECT * FROM templates WHERE user_id = auth.user_id()
-      user_scheduled_transactions:
+      scheduled_transactions:
         auto_subscribe: true
         query: SELECT * FROM scheduled_transactions WHERE user_id = auth.user_id()
-      user_push_subscriptions:
+      push_subscriptions:
         auto_subscribe: true
         query: SELECT * FROM push_subscriptions WHERE user_id = auth.user_id()
