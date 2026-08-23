@@ -128,6 +128,17 @@ Feedback rules:
 - Freshness stamp under net-worth hero when stale: "updated 2h ago".
 - Launch-offline path verified: precached shell + local SQLite → full function including capture.
 
+### Sync architecture (verified end-to-end 2026-08-23)
+
+Local writes land in PowerSync's client-side SQLite via `db.table(name).upsert(row)` (check-then-write — PowerSync exposes synced tables as views, so `INSERT ... ON CONFLICT` is illegal). PowerSync triggers capture the write into the CRUD queue; `uploadData` drains it into the auth-gated tRPC `applyMutations` endpoint, which stamps `user_id` from the session, resolves idempotently (updated_at LWW), upserts Postgres, and replicates back down the sync stream.
+
+Contract invariants that must hold or sync silently breaks:
+- Stream names in `infra/powersync.yaml` equal client schema table names (accounts/categories/transactions/…).
+- `@powersync/web` resolves to its standard `lib/index.js` entry (next.config aliases it — the `react-native` exports condition resolves to an RN build that never syncs).
+- `/api/sync/token` signs HS256 with the same base64url secret as `client_auth.jwks`, `kid: funds-hs256`, `aud: "powersync"` (matches `client_auth.audience`), and returns an **http(s)** endpoint (the SDK appends `/sync/stream`; a ws:// scheme breaks it).
+- Row mappers use snake_case keys (`asset_id`, `amount_minor`, …) matching the synced columns; jsonb columns are JSON strings on the wire and normalized to arrays/objects in `normalize.ts`.
+- Assets are global (not per-user) and served via tRPC `assets.list`; accounts reference real asset ULIDs, never synthetic `ast-*` ids.
+
 ---
 
 ## 7. Desktop Experience (decided U6a)
@@ -161,18 +172,19 @@ Checklist flow preserved (logic.md §14); add sync-status row + push-permission 
 
 ---
 
-## 9. Visual Language (decided U3 refine / U4 dark-only tokens)
+## 9. Visual Language (Intaglio Plate — replacement world, built & approved 2026-08-23)
 
-Tokens (CSS variables, dark values only in v1):
-- Surfaces: `bg` #020617 (slate-950 base) → `surface-1` slate-900 → `surface-2` slate-800 → `surface-3` slate-700; borders `slate-700/50`.
-- Accent: emerald-500 family — reserved for primary action, positive delta, sync-ok. Never decorative.
+Tokens (CSS variables, dark-only; OLED-optimized):
+- Surfaces: `bg` #000000 (true black — OLED pixels off) → `surface-1` #000000 → `surface-2` #050505 → `surface-3` #0d0d0d; separation via 1px engraved hairlines (`--border: rgba(255,255,255,0.13)`), never elevation.
+- Accent: emerald-500 family — reserved for capture, sync-ok, positive delta. Never decorative.
 - Semantic: red-500 negative/danger · amber-400 warning/pending · sky/blue informational.
-- Type scale: 12/13/15/18/24/36; numerics tabular-nums everywhere; money uses mono-feel weight emphasis not font swap.
-- Radii: sm 6 / md 10 / lg 16 / sheet 20(top). Elevation: shadow scale xs–xl mapped to surfaces, not bespoke per card.
-- **Gradient purge**: existing per-card gradient stacks (BudgetsSummary, AssetSummary, stats) replaced by flat surface-1 + border + optional 1 accent hairline. Charts keep centralized apexcharts theme (carried from chartOptions.ts approach).
-- Motion: 150ms ease-out standard, 250ms sheet spring, nothing longer except celebration micro-animation on save (~400ms, skippable).
+- Type scale: 12/13/15/18/24/36; numerics tabular-nums everywhere.
+  - **Display tier (the two hierarchy peaks):** net-worth hero and capture amount readout — Space Grotesk 700, tracking −0.03em. Hero clamp(2.75rem, 6vw, 4rem); readout clamp(2.25rem, 4vw, 3rem). Body/UI on Inter (self-hosted via next/font). Money renders in the UI sans with tabular-nums — no mono swap.
+- Materials: black plates with engraved hairline borders; faint guilloche crosshatch lattice (repeating 45° 1px lines at ~4.5% white) behind the net-worth hero and capture readout; latent-image microtext labels (`.label-micro`: 10px, weight 600, tracking 0.16em, uppercase, zinc-400) for stat labels, day headers, section eyebrows; the emerald thread is the only saturated accent.
+- Radii: sm 3 / md 5 / lg 8 / sheet 10 — sharp, plate-cut. Elevation: none by elevation; depth reads through hairlines and true-black contrast.
+- No gradients, no glow, no soft shadows on plates. Motion: 150ms ease-out standard, 250ms sheet arrival, nothing longer except the save micro-moment.
 
-Component mapping: shadcn primitives (Dialog→Sheet on mobile, Popover, Command, Toast extended with undo action slot, SegmentedControl for type toggles).
+Component mapping: shadcn primitives (Dialog→Sheet on mobile, Popover, Command, Toast extended with undo action slot, SegmentedControl for type toggles), all rebuilt as plates: hairline-bordered keys/inputs, emerald save key, engraved numerals.
 
 ---
 
