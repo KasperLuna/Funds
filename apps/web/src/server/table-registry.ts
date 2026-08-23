@@ -43,6 +43,20 @@ const categoriesSnakeToCamel: FieldMapper = {
   name: "name",
   hideable: "hideable",
   monthly_budget_minor: "monthlyBudgetMinor",
+  asset_id: "assetId",
+  created_at: "createdAt",
+  updated_at: "updatedAt",
+  deleted_at: "deletedAt",
+};
+
+// Category Budgets (per-month history)
+const categoryBudgetsSnakeToCamel: FieldMapper = {
+  id: "id",
+  user_id: "userId",
+  category_id: "categoryId",
+  asset_id: "assetId",
+  month_start: "monthStart",
+  amount_minor: "amountMinor",
   created_at: "createdAt",
   updated_at: "updatedAt",
   deleted_at: "deletedAt",
@@ -151,6 +165,11 @@ export const TABLE_REGISTRY: Record<string, TableConfig> = {
     table: schema.categories,
     snakeToCamel: categoriesSnakeToCamel,
     camelToSnake: inverse(categoriesSnakeToCamel),
+  },
+  category_budgets: {
+    table: schema.categoryBudgets,
+    snakeToCamel: categoryBudgetsSnakeToCamel,
+    camelToSnake: inverse(categoryBudgetsSnakeToCamel),
   },
   transactions: {
     table: schema.transactions,

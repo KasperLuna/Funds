@@ -30,6 +30,7 @@ export type ApplyResult = {
 export const REPLICATED_TABLES: Record<string, { softDelete: boolean }> = {
   accounts: { softDelete: true },
   categories: { softDelete: true },
+  category_budgets: { softDelete: true },
   transactions: { softDelete: true },
   transfers: { softDelete: true },
   trades: { softDelete: true },

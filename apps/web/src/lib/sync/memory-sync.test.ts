@@ -48,6 +48,20 @@ describe("MemorySyncDatabase", () => {
     expect(res.rows).toHaveLength(0);
   });
 
+  it("query supports IS NULL / IS NOT NULL WHERE terms", async () => {
+    await db.execute(UPSERT_SQL, ["a", "first"]);
+    await db.execute(
+      "INSERT INTO todos (id, title, deleted_at) VALUES (?, ?, ?)",
+      ["b", "second", 123],
+    );
+    const active = await db.query("SELECT * FROM todos WHERE deleted_at IS NULL");
+    expect(active.rows).toHaveLength(1);
+    expect((active.rows[0] as RowRecord).id).toBe("a");
+    const deleted = await db.query("SELECT * FROM todos WHERE deleted_at IS NOT NULL");
+    expect(deleted.rows).toHaveLength(1);
+    expect((deleted.rows[0] as RowRecord).id).toBe("b");
+  });
+
   it("watch yields updates on mutation for matching table", async () => {
     const events: RowRecord[][] = [];
     const consume = (async () => {

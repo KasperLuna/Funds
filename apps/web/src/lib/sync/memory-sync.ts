@@ -5,6 +5,7 @@ import type {
   SyncDatabase,
   SyncTable,
 } from "./types.js";
+import { normalizeRows } from "./normalize.js";
 
 /**
  * In-memory {@link SyncDatabase} for tests and local/dev use.
@@ -30,6 +31,7 @@ const REGEX = {
   columnName: /^[A-Za-z_][\w]*$/,
   valueRef: /^\?$/,
   whereTerm: /^([A-Za-z_][\w]*)\s*=\s*\?$/,
+  whereNull: /^([A-Za-z_][\w]*)\s+(IS\s+NOT\s+NULL|IS\s+NULL)$/i,
 } as const;
 
 type WatchEntry = {
@@ -170,7 +172,7 @@ export class MemorySyncDatabase implements SyncDatabase {
       rows = rows.filter((row) => this.matchWhere(row, whereClause, params));
     }
 
-    return { rows, rowsAffected: rows.length };
+    return { rows: normalizeRows(table, rows), rowsAffected: rows.length };
   }
 
   async *watch(sql: string, params: QueryParams = []): AsyncIterable<QueryResult> {
@@ -241,7 +243,21 @@ export class MemorySyncDatabase implements SyncDatabase {
     const terms = clause.split(/\s+AND\s+/i);
     let paramIndex = 0;
     for (const term of terms) {
-      const match = REGEX.whereTerm.exec(term.trim());
+      const trimmed = term.trim();
+      const nullMatch = REGEX.whereNull.exec(trimmed);
+      if (nullMatch) {
+        const col = nullMatch[1];
+        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
+        const op = nullMatch[2]?.replace(/\s+/g, " ").toUpperCase();
+        const isNull = row[col] === null || row[col] === undefined;
+        if (op === "IS NULL") {
+          if (!isNull) return false;
+        } else if (op === "IS NOT NULL") {
+          if (isNull) return false;
+        }
+        continue;
+      }
+      const match = REGEX.whereTerm.exec(trimmed);
       if (!match) throw new Error(`Unsupported WHERE term: ${term}`);
       const col = match[1];
       if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);

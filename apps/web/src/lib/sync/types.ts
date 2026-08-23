@@ -16,6 +16,7 @@ export interface SyncDatabase {
   execute(sql: string, params?: QueryParams): Promise<QueryResult>;
   query(sql: string, params?: QueryParams): Promise<QueryResult>;
   watch(sql: string, params?: QueryParams): AsyncIterable<QueryResult>;
+  table(name: string): SyncTable;
   disconnect(): Promise<void>;
   readonly isConnected: boolean;
 }

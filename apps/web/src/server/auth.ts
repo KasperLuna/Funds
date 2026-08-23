@@ -66,12 +66,6 @@ export const auth = betterAuth({
   basePath: "/api/auth",
 });
 
-// cavetail: Better Auth handler for Next.js route handlers
-export const { GET, POST } = auth.handler as unknown as {
-  GET: (request: Request) => Promise<Response>;
-  POST: (request: Request) => Promise<Response>;
-};
-
 // cavetail: demo sign-in handler (idempotent). Status-based, no message sniffing.
 async function attemptSignUp(): Promise<Response | null> {
   try {

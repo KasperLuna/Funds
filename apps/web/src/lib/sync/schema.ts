@@ -1,5 +1,11 @@
 import { column, Schema, Table } from "@powersync/web";
 
+/**
+ * Client-side schema for PowerSync. Column names/types must match the server
+ * schema (packages/db/src/schema.ts) so streams replicate cleanly. jsonb
+ * columns are declared `text` (JSON encoded) and normalized in normalize.ts.
+ */
+
 const accounts = new Table({
   id: column.text,
   user_id: column.text,
@@ -20,6 +26,19 @@ const categories = new Table({
   name: column.text,
   hideable: column.integer,
   monthly_budget_minor: column.integer,
+  asset_id: column.text,
+  created_at: column.integer,
+  updated_at: column.integer,
+  deleted_at: column.integer,
+});
+
+const category_budgets = new Table({
+  id: column.text,
+  user_id: column.text,
+  category_id: column.text,
+  asset_id: column.text,
+  month_start: column.integer,
+  amount_minor: column.integer,
   created_at: column.integer,
   updated_at: column.integer,
   deleted_at: column.integer,
@@ -35,6 +54,9 @@ const transactions = new Table({
   description: column.text,
   category_ids: column.text,
   date: column.integer,
+  value_base_minor: column.integer,
+  trade_id: column.text,
+  transfer_id: column.text,
   created_at: column.integer,
   updated_at: column.integer,
   deleted_at: column.integer,
@@ -53,6 +75,10 @@ const trades = new Table({
   id: column.text,
   user_id: column.text,
   sell_leg_id: column.text,
+  buy_leg_id: column.text,
+  fee_leg_id: column.text,
+  rate: column.text,
+  note: column.text,
   created_at: column.integer,
   updated_at: column.integer,
   deleted_at: column.integer,
@@ -61,6 +87,12 @@ const trades = new Table({
 const templates = new Table({
   id: column.text,
   user_id: column.text,
+  name: column.text,
+  type: column.text,
+  amount_minor: column.integer,
+  description: column.text,
+  account_id: column.text,
+  category_ids: column.text,
   created_at: column.integer,
   updated_at: column.integer,
   deleted_at: column.integer,
@@ -69,6 +101,18 @@ const templates = new Table({
 const scheduled_transactions = new Table({
   id: column.text,
   user_id: column.text,
+  name: column.text,
+  description: column.text,
+  type: column.text,
+  amount_minor: column.integer,
+  account_id: column.text,
+  category_ids: column.text,
+  recurrence: column.text,
+  timezone: column.text,
+  invoke_date: column.integer,
+  previous_date: column.integer,
+  last_notified_at: column.integer,
+  active: column.integer,
   created_at: column.integer,
   updated_at: column.integer,
   deleted_at: column.integer,
@@ -87,6 +131,7 @@ const push_subscriptions = new Table({
 export const appSchema = new Schema({
   accounts,
   categories,
+  category_budgets,
   transactions,
   transfers,
   trades,

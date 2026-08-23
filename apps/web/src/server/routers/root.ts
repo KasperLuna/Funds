@@ -1,11 +1,28 @@
 /**
  * Root tRPC router
  */
-import { router, createCallerFactory, createTRPCContext } from "../trpc.js";
+import { router, publicProcedure, createCallerFactory, createTRPCContext } from "../trpc.js";
 import { mutationsRouter } from "./mutations.js";
+import { getDb } from "../db.js";
+import { assets } from "@funds/db/schema";
+
+const assetsRouter = router({
+  list: publicProcedure.query(async () => {
+    const db = getDb();
+    const rows = await db.select().from(assets).orderBy(assets.code);
+    return rows.map((a) => ({
+      id: a.id,
+      code: a.code,
+      name: a.name,
+      kind: a.kind,
+      decimals: a.decimals,
+    }));
+  }),
+});
 
 export const appRouter = router({
   applyMutations: mutationsRouter.applyMutations,
+  assets: assetsRouter,
 });
 
 export type AppRouter = typeof appRouter;
