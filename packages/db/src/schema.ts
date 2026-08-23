@@ -100,10 +100,29 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   hideable: boolean("hideable").notNull().default(false),
   monthlyBudgetMinor: bigint("monthly_budget_minor", { mode: "bigint" }),
+  // Currency the budget is denominated in (display + spent aggregation).
+  assetId: text("asset_id").references(() => assets.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
+
+// Per-month budget history (auditable): editing a budget now only touches the
+// current period; past months keep their own recorded value.
+export const categoryBudgets = pgTable("category_budgets", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  categoryId: text("category_id").notNull().references(() => categories.id),
+  assetId: text("asset_id").notNull().references(() => assets.id),
+  monthStart: timestamp("month_start", { withTimezone: true }).notNull(),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (table) => ({
+  monthIdx: unique("category_budgets_category_month_unique").on(table.categoryId, table.monthStart),
+}));
 
 // Transfers
 export const transfers = pgTable("transfers", {
