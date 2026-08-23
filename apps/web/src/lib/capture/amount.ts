@@ -52,3 +52,19 @@ export function amountToMinor(state: AmountState): bigint {
   const fracPart = fracPadded ? BigInt(fracPadded) : 0n;
   return intPart * scale + fracPart;
 }
+
+/** Coerce free text (physical keyboard / pasted value) to a valid AmountState input. */
+export function sanitizeAmountInput(raw: string, decimals: number): string {
+  let cleaned = raw.replace(/[^\d.]/g, "");
+  const dot = cleaned.indexOf(".");
+  if (dot !== -1) {
+    cleaned = cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, "");
+    const [int, frac] = cleaned.split(".");
+    cleaned = `${int}.${(frac ?? "").slice(0, decimals)}`;
+  }
+  const intPart = cleaned.split(".")[0] ?? "";
+  if (intPart.length > MAX_INT_DIGITS) {
+    cleaned = intPart.slice(intPart.length - MAX_INT_DIGITS) + cleaned.slice(intPart.length);
+  }
+  return cleaned;
+}

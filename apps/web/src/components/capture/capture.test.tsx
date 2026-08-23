@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { MemorySyncDatabase } from "@/lib/sync";
 import { CaptureSheet, type AccountOption, type CategoryOption } from "./CaptureSheet";
+import type { RecentTxn } from "@/lib/capture";
 import { useSaveUndo } from "./use-save-undo";
 
 // cavetail: jsdom lacks ResizeObserver used by radix primitives
@@ -53,6 +54,31 @@ function UndoHarness({ sync }: { sync: MemorySyncDatabase }) {
           Undo
         </button>
       )}
+    </div>
+  );
+}
+
+function HarnessWithSuggestions({
+  sync,
+  recentTxns,
+}: {
+  sync: MemorySyncDatabase;
+  recentTxns: RecentTxn[];
+}) {
+  const [open, setOpen] = useState(true);
+  const { save } = useSaveUndo(sync);
+  return (
+    <div>
+      <CaptureSheet
+        open={open}
+        onOpenChange={setOpen}
+        userId="usr-1"
+        accounts={ACCOUNTS}
+        categories={CATS}
+        recentTxns={recentTxns}
+        onSave={(row) => void save(row)}
+        defaultAccountId="acc-1"
+      />
     </div>
   );
 }
@@ -135,7 +161,7 @@ describe("CaptureSheet", () => {
 
   it("save is disabled when amount is zero", () => {
     render(<Harness sync={sync} />);
-    const save = screen.getByRole("button", { name: "Enter amount" });
+    const save = screen.getByRole("button", { name: "Save" });
     expect(save).toBeDisabled();
   });
 
@@ -149,5 +175,16 @@ describe("CaptureSheet", () => {
     expect(chip).toHaveAttribute("aria-pressed", "true");
     await user.click(chip);
     expect(chip).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("renders suggestion chips from recent repeats", () => {
+    const withSuggestions: RecentTxn[] = [
+      { id: "r1", description: "Coffee", amountMinor: 12000n, categoryIds: [], date: Date.now() },
+    ];
+    render(
+      <HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />,
+    );
+    const list = screen.getByRole("list", { name: "Suggestions" });
+    expect(within(list).getByText(/Coffee/)).toBeInTheDocument();
   });
 });
