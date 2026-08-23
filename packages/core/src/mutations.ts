@@ -34,6 +34,8 @@ export const REPLICATED_TABLES: Record<string, { softDelete: boolean }> = {
   transactions: { softDelete: true },
   transfers: { softDelete: true },
   trades: { softDelete: true },
+  tokens: { softDelete: true },
+  token_transactions: { softDelete: true },
   templates: { softDelete: true },
   scheduled_transactions: { softDelete: true },
   push_subscriptions: { softDelete: true },

@@ -150,6 +150,36 @@ export const trades = pgTable("trades", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
+// Tokens (per-user crypto holdings metadata)
+export const tokens = pgTable("tokens", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  symbol: text("symbol").notNull(),
+  name: text("name").notNull(),
+  coingeckoId: text("coingecko_id"),
+  decimals: integer("decimals").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
+// Token Transactions (crypto trade ledger)
+export const tokenTransactions = pgTable("token_transactions", {
+  id: text("id").primaryKey().$defaultFn(() => newId()),
+  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  userId: text("user_id").notNull().references(() => users.id),
+  tokenId: text("token_id").notNull().references(() => tokens.id),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+  priceAtExecutionMinor: bigint("price_at_execution_minor", { mode: "bigint" }).notNull(),
+  feeMinor: bigint("fee_minor", { mode: "bigint" }).notNull().default(sql`0`),
+  side: text("side").notNull(),
+  timestamp: timestamp("timestamp", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+});
+
 // Transactions
 export const transactions = pgTable("transactions", {
   id: text("id").primaryKey().$defaultFn(() => newId()),
@@ -178,7 +208,7 @@ export const templates = pgTable("templates", {
   name: text("name").notNull(),
   type: transactionTypeEnum("type").notNull(),
   amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
-  description: text("description").notNull(),
+  description: text("description").notNull().default(""),
   accountId: text("account_id").notNull().references(() => accounts.id),
   categoryIds: jsonb("category_ids").$type<string[]>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -192,7 +222,7 @@ export const scheduledTransactions = pgTable("scheduled_transactions", {
   // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
   userId: text("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
-  description: text("description").notNull(),
+  description: text("description").notNull().default(""),
   type: transactionTypeEnum("type").notNull(),
   amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
   accountId: text("account_id").notNull().references(() => accounts.id),

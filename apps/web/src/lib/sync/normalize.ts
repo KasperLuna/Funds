@@ -35,6 +35,8 @@ const TIMESTAMP_COLUMNS: Record<string, string[]> = {
   transactions: ["created_at", "updated_at", "deleted_at", "date"],
   transfers: ["created_at", "updated_at", "deleted_at"],
   trades: ["created_at", "updated_at", "deleted_at"],
+  tokens: ["created_at", "updated_at", "deleted_at"],
+  token_transactions: ["created_at", "updated_at", "deleted_at", "timestamp"],
   templates: ["created_at", "updated_at", "deleted_at"],
   scheduled_transactions: [
     "created_at",
@@ -55,6 +57,8 @@ const NON_TEXT_COLUMNS: Record<string, string[]> = {
   transactions: ["amount_minor", "category_ids", "value_base_minor"],
   transfers: [],
   trades: [],
+  tokens: [],
+  token_transactions: ["amount_minor", "price_at_execution_minor", "fee_minor"],
   templates: ["amount_minor", "category_ids"],
   scheduled_transactions: ["amount_minor", "category_ids", "recurrence", "active"],
   push_subscriptions: ["keys"],

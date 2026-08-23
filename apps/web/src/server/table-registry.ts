@@ -105,6 +105,34 @@ const tradesSnakeToCamel: FieldMapper = {
   deleted_at: "deletedAt",
 };
 
+// Tokens
+const tokensSnakeToCamel: FieldMapper = {
+  id: "id",
+  user_id: "userId",
+  symbol: "symbol",
+  name: "name",
+  coingecko_id: "coingeckoId",
+  decimals: "decimals",
+  created_at: "createdAt",
+  updated_at: "updatedAt",
+  deleted_at: "deletedAt",
+};
+
+// Token Transactions
+const tokenTransactionsSnakeToCamel: FieldMapper = {
+  id: "id",
+  user_id: "userId",
+  token_id: "tokenId",
+  amount_minor: "amountMinor",
+  price_at_execution_minor: "priceAtExecutionMinor",
+  fee_minor: "feeMinor",
+  side: "side",
+  timestamp: "timestamp",
+  created_at: "createdAt",
+  updated_at: "updatedAt",
+  deleted_at: "deletedAt",
+};
+
 // Templates
 const templatesSnakeToCamel: FieldMapper = {
   id: "id",
@@ -185,6 +213,16 @@ export const TABLE_REGISTRY: Record<string, TableConfig> = {
     table: schema.trades,
     snakeToCamel: tradesSnakeToCamel,
     camelToSnake: inverse(tradesSnakeToCamel),
+  },
+  tokens: {
+    table: schema.tokens,
+    snakeToCamel: tokensSnakeToCamel,
+    camelToSnake: inverse(tokensSnakeToCamel),
+  },
+  token_transactions: {
+    table: schema.tokenTransactions,
+    snakeToCamel: tokenTransactionsSnakeToCamel,
+    camelToSnake: inverse(tokenTransactionsSnakeToCamel),
   },
   templates: {
     table: schema.templates,

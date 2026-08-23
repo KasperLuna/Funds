@@ -29,6 +29,20 @@
       "when": 1787488690328,
       "tag": "0003_harsh_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787504335611,
+      "tag": "0004_yummy_hairball",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787505620077,
+      "tag": "0005_mute_human_robot",
+      "breakpoints": true
     }
   ]
 }
