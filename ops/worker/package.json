@@ -1,0 +1,23 @@
+{
+  "name": "@funds/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx src/index.ts",
+    "reminders": "node --import tsx src/reminders.ts",
+    "cleanup": "node --import tsx src/cleanup.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@funds/core": "workspace:*",
+    "pg": "^8",
+    "web-push": "^3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8",
+    "@types/web-push": "^3",
+    "tsx": "^4",
+    "typescript": "^5"
+  }
+}
