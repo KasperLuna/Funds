@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import {
   Dialog,
@@ -23,6 +23,7 @@ import {
   type AmountState,
 } from "@/lib/capture";
 import type { RecentTxn } from "@/lib/capture";
+import type { Template } from "@/lib/templates/templates-store";
 
 export type AccountOption = { id: string; name: string; assetId: string; decimals: number; assetCode?: string };
 export type CategoryOption = { id: string; name: string; color?: string };
@@ -48,11 +49,27 @@ export type CaptureSheetProps = {
   defaultAccountId?: string;
   voicePrefill?: VoicePrefill;
   editing?: boolean;
+  templates?: Template[];
+};
+
+type FormSnapshot = {
+  accountId: string;
+  amount: AmountState;
+  type: "expense" | "income";
+  description: string;
+  categoryIds: string[];
 };
 
 function formatReadout(state: AmountState): string {
   const major = Number(amountToMinor(state)) / 10 ** state.decimals;
   return major.toFixed(state.decimals);
+}
+
+function templateAmount(t: Template, dec: number): AmountState {
+  // cavetail: display-only formatting, not arithmetic
+  // eslint-disable-next-line local/no-money-float
+  const major = Number(t.amountMinor) / 100;
+  return { input: sanitizeAmountInput(major.toFixed(dec), dec), decimals: dec };
 }
 
 export function CaptureSheet({
@@ -66,6 +83,7 @@ export function CaptureSheet({
   defaultAccountId,
   voicePrefill,
   editing,
+  templates = [],
 }: CaptureSheetProps) {
   const first = accounts[0];
   const [accountId, setAccountId] = useState(defaultAccountId ?? first?.id ?? "");
@@ -81,6 +99,8 @@ export function CaptureSheet({
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [datePreset, setDatePreset] = useState<"today" | "yesterday">("today");
   const [dateOverride, setDateOverride] = useState<number | null>(null);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const templateFormRef = useRef<FormSnapshot | null>(null);
 
   const reset = () => {
     setAmount(emptyAmount(decimals));
@@ -94,6 +114,8 @@ export function CaptureSheet({
   // Reset when the sheet opens; apply voice/edit prefill if provided
   useEffect(() => {
     if (open) {
+      setActiveTemplateId(null);
+      templateFormRef.current = null;
       if (voicePrefill) {
         const prefillAccountId = voicePrefill.accountId ?? accounts[0]?.id ?? "";
         const acc = accounts.find((a) => a.id === prefillAccountId);
@@ -142,6 +164,31 @@ export function CaptureSheet({
     setCategoryIds(txn.categoryIds);
   };
 
+  const applyTemplate = (t: Template) => {
+    if (activeTemplateId === t.id) {
+      const prev = templateFormRef.current;
+      setActiveTemplateId(null);
+      templateFormRef.current = null;
+      if (prev) {
+        setAccountId(prev.accountId);
+        setAmount(prev.amount);
+        setType(prev.type);
+        setDescription(prev.description);
+        setCategoryIds(prev.categoryIds);
+      }
+      return;
+    }
+    templateFormRef.current = { accountId, amount, type, description, categoryIds };
+    setActiveTemplateId(t.id);
+    const acc = accounts.find((a) => a.id === t.accountId);
+    const dec = acc?.decimals ?? decimals;
+    if (acc) setAccountId(acc.id);
+    setAmount(templateAmount(t, dec));
+    setType(t.type);
+    setDescription(t.description);
+    setCategoryIds(t.categoryIds);
+  };
+
   const save = () => {
     if (!selected || !canSave) return;
     onSave(
@@ -175,6 +222,34 @@ export function CaptureSheet({
             ? `${recentTxns.length} recent match${recentTxns.length === 1 ? "" : "es"} available`
             : "New entry"}
         </DialogContentDescription>
+
+        {templates.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Templates">
+            {templates.map((t) => {
+              const active = activeTemplateId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => applyTemplate(t)}
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border px-3 text-sm font-medium transition-all ${
+                    active
+                      ? "border-transparent text-white ring-2 ring-(--accent)"
+                      : "border-(--border) hover:opacity-80"
+                  }`}
+                  style={{
+                    backgroundColor: active ? "var(--accent)" : "var(--surface-2)",
+                    color: active ? "#fff" : undefined,
+                  }}
+                >
+                  {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
+                  {t.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-2 flex items-center gap-2">
           <select
