@@ -20,8 +20,14 @@ beforeEach(() => {
     db: {
       query: mockQuery,
       execute: mockExecute,
+      table: vi.fn(() => ({
+        upsert: vi.fn(),
+        update: vi.fn(),
+        deleteById: vi.fn(),
+      })),
     } as never,
     isConnected: true,
+    userId: "dev-user",
   });
   mockQuery.mockResolvedValue({ rows: [] });
 });
