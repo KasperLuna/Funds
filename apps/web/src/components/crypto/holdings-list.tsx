@@ -5,6 +5,8 @@ import type { SyncDatabase } from "@/lib/sync/types";
 import {
   computeHoldings,
   portfolioAllocation,
+  toToken,
+  toTokenTxn,
   type Token,
   type TokenTransaction,
   type Holding,
@@ -18,32 +20,6 @@ import {
   type AccountOption,
 } from "@/components/crypto/trade-capture";
 import { Button } from "@/components/ui/button";
-
-function toToken(row: Record<string, unknown>): Token {
-  return {
-    id: String(row.id),
-    symbol: String(row.symbol),
-    name: String(row.name),
-    decimals: Number(row.decimals),
-    coingeckoId: row.coingecko_id != null ? String(row.coingecko_id) : null,
-    createdAt: Number(row.created_at),
-    updatedAt: Number(row.updated_at),
-    deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
-  };
-}
-
-function toTokenTxn(row: Record<string, unknown>): TokenTransaction {
-  return {
-    id: String(row.id),
-    tokenId: String(row.token_id),
-    amountMinor: BigInt(row.amount_minor as number | string),
-    priceAtExecutionMinor: BigInt(row.price_at_execution_minor as number | string),
-    feeMinor: BigInt(row.fee_minor as number | string),
-    side: String(row.side) as "buy" | "sell",
-    timestamp: Number(row.timestamp),
-    deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
-  };
-}
 
 function computeValueUsd(holding: Holding, prices: Map<string, CoinPrice>): number {
   const qty = Number(holding.qtyMinor) / 10 ** holding.token.decimals;
@@ -142,7 +118,7 @@ export function HoldingsList({
   accounts?: AccountOption[];
   userId?: string;
 }) {
-  const { db, isConnected } = useSync();
+  const { db, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
   const [tokens, setTokens] = useState<Token[]>([]);
   const [txns, setTxns] = useState<TokenTransaction[]>([]);
@@ -159,7 +135,7 @@ export function HoldingsList({
 
   useEffect(() => {
     void reload();
-  }, [reload, isConnected]);
+  }, [reload, isConnected, lastSyncedAt]);
 
   useEffect(() => {
     if (!notice) return;
@@ -208,9 +184,10 @@ export function HoldingsList({
       const qty = Number(h.qtyMinor) / 10 ** h.token.decimals;
       const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined;
       const value = qty * (price?.current_price ?? 0);
-      // cavetail: display-only formatting, not arithmetic
+      // cavetail: totalCostMinor = qty_minor × price_minor = qty×rate×10^(2·decimals);
+      // /10^(2·decimals) recovers dollars. Display-only, not arithmetic.
       // eslint-disable-next-line local/no-money-float
-      const costBasis = Number(h.totalCostMinor) / 100;
+      const costBasis = Number(h.totalCostMinor) / 10 ** (2 * h.token.decimals);
       return sum + (value - costBasis);
     }, 0);
   }, [holdings, prices]);

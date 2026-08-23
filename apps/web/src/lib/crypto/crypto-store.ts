@@ -20,6 +20,34 @@ export type TokenTransaction = {
   deletedAt?: number | null;
 };
 
+/** Map a synced `tokens` row (snake_case) to the app shape. */
+export function toToken(row: Record<string, unknown>): Token {
+  return {
+    id: String(row.id),
+    symbol: String(row.symbol),
+    name: String(row.name),
+    decimals: Number(row.decimals),
+    coingeckoId: row.coingecko_id != null ? String(row.coingecko_id) : null,
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+    deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
+  };
+}
+
+/** Map a synced `token_transactions` row (snake_case) to the app shape. */
+export function toTokenTxn(row: Record<string, unknown>): TokenTransaction {
+  return {
+    id: String(row.id),
+    tokenId: String(row.token_id),
+    amountMinor: BigInt(row.amount_minor as number | string),
+    priceAtExecutionMinor: BigInt(row.price_at_execution_minor as number | string),
+    feeMinor: BigInt(row.fee_minor as number | string ?? 0),
+    side: String(row.side) as "buy" | "sell",
+    timestamp: Number(row.timestamp),
+    deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
+  };
+}
+
 export type Holding = {
   token: Token;
   qtyMinor: bigint;

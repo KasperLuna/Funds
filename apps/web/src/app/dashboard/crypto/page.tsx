@@ -7,7 +7,7 @@ import { useSync } from "@/lib/sync/sync-context";
 import { useAssets } from "@/lib/assets";
 
 export default function CryptoPage() {
-  const { db, userId, isConnected } = useSync();
+  const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(
@@ -31,7 +31,7 @@ export default function CryptoPage() {
 
   useEffect(() => {
     void reloadAccounts();
-  }, [reloadAccounts, isConnected]);
+  }, [reloadAccounts, isConnected, lastSyncedAt]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">

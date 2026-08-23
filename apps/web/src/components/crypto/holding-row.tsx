@@ -2,13 +2,6 @@ import { Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
 import type { Holding } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
 
-function formatUsd(cents: bigint): string {
-  const sign = cents < 0n ? "-" : "";
-  const abs = cents < 0n ? -cents : cents;
-  const major = Number(abs) / 100;
-  return `${sign}$${major.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 function formatUsdFromNumber(value: number): string {
   return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -28,7 +21,9 @@ export function HoldingRow({
 
   const currentPrice = price?.current_price ?? 0;
   const valueUsd = qty * currentPrice;
-  const costBasis = Number(avgCostMinor) / 100;
+  // cavetail: avgCostMinor is the rate scaled to token.decimals, not the
+  // display-capped `decimals` used for qty formatting.
+  const costBasis = Number(avgCostMinor) / 10 ** token.decimals;
   const costBasisTotal = costBasis * qty;
   const unrealizedPL = valueUsd - costBasisTotal;
   const plPct = costBasisTotal > 0 ? (unrealizedPL / costBasisTotal) * 100 : 0;
@@ -96,7 +91,9 @@ export function HoldingRow({
           </div>
         )}
         {!price && (
-          <p className="text-xs text-zinc-500">avg {formatUsd(avgCostMinor)}</p>
+          <p className="text-xs text-zinc-500">
+            avg {formatUsdFromNumber(Number(avgCostMinor) / 10 ** token.decimals)}
+          </p>
         )}
       </div>
     </div>

@@ -17,36 +17,42 @@ type CacheEntry = {
   fetchedAt: number;
 };
 
-let cache: CacheEntry | null = null;
-let inflight: Promise<Map<string, CoinPrice>> | null = null;
+// cavetail: cache is keyed by vs-currency — the dashboard values holdings in
+// the user's fiat while the crypto tab shows USD; one global cache would
+// poison one surface with the other's currency.
+const cache = new Map<string, CacheEntry>();
+const inflight = new Map<string, Promise<Map<string, CoinPrice>>>();
 
 export async function fetchPrices(
   coingeckoIds: string[],
   vsCurrency = "usd",
 ): Promise<Map<string, CoinPrice>> {
   if (coingeckoIds.length === 0) return new Map();
+  const key = vsCurrency.toLowerCase();
 
-  if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
-    const hits = coingeckoIds.every((id) => cache!.data.has(id));
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
+    const hits = coingeckoIds.every((id) => hit.data.has(id));
     if (hits) {
       return new Map<string, CoinPrice>(
-        coingeckoIds.map((id) => [id, cache!.data.get(id)!] as const).filter((e) => e[1]),
+        coingeckoIds.map((id) => [id, hit.data.get(id)!] as const).filter((e) => e[1]),
       );
     }
   }
 
-  if (inflight) return inflight;
+  const running = inflight.get(key);
+  if (running) return running;
 
-  inflight = fetchBatch(coingeckoIds, vsCurrency)
+  const p = fetchBatch(coingeckoIds, vsCurrency)
     .then((result) => {
-      cache = { data: result, fetchedAt: Date.now() };
+      cache.set(key, { data: result, fetchedAt: Date.now() });
       return result;
     })
     .finally(() => {
-      inflight = null;
+      inflight.delete(key);
     });
-
-  return inflight;
+  inflight.set(key, p);
+  return p;
 }
 
 async function fetchBatch(
@@ -95,11 +101,11 @@ async function fetchBatch(
 }
 
 export function invalidateRatesCache(): void {
-  cache = null;
+  cache.clear();
 }
 
 export function getCachedPrice(
   coingeckoId: string,
 ): CoinPrice | undefined {
-  return cache?.data.get(coingeckoId);
+  return cache.get("usd")?.data.get(coingeckoId);
 }
