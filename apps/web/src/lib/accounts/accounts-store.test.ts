@@ -58,6 +58,17 @@ describe("computeBalance", () => {
     ];
     expect(computeBalance(acc, txns)).toBe(1500n);
   });
+
+  it("ignores transactions belonging to other accounts", () => {
+    // Regression: without the accountId filter every account absorbed the
+    // whole ledger, inflating net worth N× by account count.
+    const acc = account({ openingBalanceMinor: 1000n });
+    const txns = [
+      txn({ amountMinor: 500n }),
+      txn({ id: "t2", accountId: "a2", amountMinor: -999999n }),
+    ];
+    expect(computeBalance(acc, txns)).toBe(1500n);
+  });
 });
 
 describe("groupByDay", () => {

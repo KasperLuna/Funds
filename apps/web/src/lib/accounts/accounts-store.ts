@@ -27,6 +27,7 @@ export function computeBalance(account: Account, txns: Txn[]): bigint {
   let sum = account.openingBalanceMinor;
   for (const t of txns) {
     if (t.deletedAt) continue;
+    if (t.accountId !== account.id) continue;
     sum += t.amountMinor;
   }
   return sum;

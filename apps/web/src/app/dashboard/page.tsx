@@ -14,10 +14,14 @@ import { resolvePrefill } from "@/lib/voice/resolve";
 import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
+import { ScheduledCard } from "@/components/scheduled/scheduled-card";
+import { loadTemplates, type Template } from "@/lib/templates/templates-store";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
 import { computeBudgetUsage, categoryColor } from "@/lib/categories/categories-store";
 import { useAssets } from "@/lib/assets";
+import { computeHoldings, toToken, toTokenTxn, type Token, type TokenTransaction } from "@/lib/crypto/crypto-store";
+import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
 
 function toAccount(row: RowRecord): Account {
   return {
@@ -71,7 +75,7 @@ function DashboardContent() {
   const router = useRouter();
   const captureOpen = searchParams.get("capture") === "1";
   const draftToken = searchParams.get("draftToken");
-  const { db, userId, isConnected } = useSync();
+  const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "local";
   const { assets } = useAssets();
   const assetsById = useMemo(
@@ -83,8 +87,10 @@ function DashboardContent() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [tokenTxns, setTokenTxns] = useState<TokenTransaction[]>([]);
   const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
-  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [voicePrefill, setVoicePrefill] = useState<VoicePrefill | undefined>();
   const [editTxn, setEditTxn] = useState<Txn | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -98,6 +104,9 @@ function DashboardContent() {
       setAccounts(accRows.map(toAccount));
       setTxns(txnRows.map(toTxn));
       setCategories(catRows.map(toCategory));
+      setTemplates(await loadTemplates(db));
+      setTokens((await db.query("SELECT * FROM tokens WHERE deleted_at IS NULL")).rows.map(toToken));
+      setTokenTxns((await db.query("SELECT * FROM token_transactions WHERE deleted_at IS NULL")).rows.map(toTokenTxn));
       setBudgets(
         budRows.map((row) => ({
           id: String(row.id),
@@ -110,7 +119,6 @@ function DashboardContent() {
           deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
         })),
       );
-      setLastSyncedAt(Date.now());
     } catch (error) {
       console.error('Sync error:', error);
       setErrorMessage('Failed to load dashboard data. Check your connection.');
@@ -119,7 +127,7 @@ function DashboardContent() {
 
   useEffect(() => {
     void load();
-  }, [load, isConnected]);
+  }, [load, isConnected, lastSyncedAt]);
 
   // Redeem voice draft token when deep-linked
   useEffect(() => {
@@ -155,11 +163,6 @@ function DashboardContent() {
     [txns],
   );
 
-  const totalBalance = useMemo(
-    () => accounts.reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n),
-    [accounts, activeTxns],
-  );
-
   const bankBalance = useMemo(
     () =>
       accounts
@@ -168,7 +171,7 @@ function DashboardContent() {
     [accounts, activeTxns],
   );
 
-  const cryptoBalance = useMemo(
+  const cryptoAccountBalance = useMemo(
     () =>
       accounts
         .filter((a) => CRYPTO_KINDS.has(a.kind))
@@ -176,10 +179,17 @@ function DashboardContent() {
     [accounts, activeTxns],
   );
 
+  // Token holdings (crypto tab model) — not represented as accounts, so they
+  // must be valued separately to count toward net worth.
+  const tokenHoldings = useMemo(
+    () => computeHoldings(tokens, tokenTxns),
+    [tokens, tokenTxns],
+  );
+
   const recentTxns = useMemo(() => {
     return [...activeTxns]
       .sort((a, b) => b.date - a.date)
-      .slice(0, 10);
+      .slice(0, 5);
   }, [activeTxns]);
 
   const recentForCapture: RecentTxn[] = useMemo(
@@ -220,6 +230,42 @@ function DashboardContent() {
   }, [accounts, assetsById]);
 
   const primaryCode = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.code : "USD";
+
+  const coingeckoKey = useMemo(
+    () =>
+      [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
+    [tokenHoldings],
+  );
+  const [prices, setPrices] = useState<Map<string, CoinPrice>>(new Map());
+  useEffect(() => {
+    if (!coingeckoKey) return;
+    let cancelled = false;
+    void fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()).then((map) => {
+      if (!cancelled) setPrices(map);
+    });
+    return () => { cancelled = true; };
+  }, [coingeckoKey, primaryCode]);
+
+  // cavetail: display valuation only (float price × qty → fiat minor)
+  const tokenValueMinor = useMemo(
+    () =>
+      tokenHoldings.reduce((sum, h) => {
+        const qty = Number(h.qtyMinor) / 10 ** h.token.decimals;
+        const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId)?.current_price ?? 0 : 0;
+        return sum + BigInt(Math.round(qty * price * 100));
+      }, 0n),
+    [tokenHoldings, prices],
+  );
+
+  const cryptoBalance = useMemo(
+    () => cryptoAccountBalance + tokenValueMinor,
+    [cryptoAccountBalance, tokenValueMinor],
+  );
+
+  const totalBalance = useMemo(
+    () => bankBalance + cryptoBalance,
+    [bankBalance, cryptoBalance],
+  );
 
   const txnPrefill: VoicePrefill | undefined = editTxn
     ? {
@@ -269,6 +315,16 @@ function DashboardContent() {
 
       <BudgetPulse items={budgetUsage} assetsById={assetsById} />
 
+      <ScheduledCard
+        accounts={accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          assetId: a.assetId,
+          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+        }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+      />
+
       <CaptureSheet
         open={captureOpen || !!draftToken || !!editTxn}
         onOpenChange={() => { setVoicePrefill(undefined); setEditTxn(null); router.replace("/dashboard", { scroll: false }); }}
@@ -282,6 +338,7 @@ function DashboardContent() {
         }))}
         categories={categories}
         recentTxns={recentForCapture}
+        templates={templates}
         onSave={handleSave}
         voicePrefill={voicePrefill ?? txnPrefill}
         editing={!!editTxn}
