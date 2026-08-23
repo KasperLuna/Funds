@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./parser": "./src/parser.ts",
+    "./server": "./src/server.ts"
   },
   "scripts": {
     "test": "vitest run",

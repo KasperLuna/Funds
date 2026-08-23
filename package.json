@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r run typecheck",
     "lint": "pnpm -r run lint",
     "db:migrate": "pnpm --filter @funds/db run migrate",
-    "db:seed": "pnpm --filter @funds/db run seed"
+    "db:seed": "pnpm --filter @funds/db run seed",
+    "db:migrate:pb": "pnpm --filter @funds/web run migrate:pb"
   },
   "devDependencies": {
     "eslint": "^9",
