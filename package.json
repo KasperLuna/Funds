@@ -13,6 +13,7 @@
     "lint": "pnpm -r run lint",
     "db:migrate": "pnpm --filter @funds/db run migrate",
     "db:seed": "pnpm --filter @funds/db run seed",
+    "db:clean": "pnpm --filter @funds/db run clean",
     "db:migrate:pb": "pnpm --filter @funds/web run migrate:pb"
   },
   "devDependencies": {
