@@ -5,7 +5,6 @@ describe("advanceRecurrence", () => {
   it("advances daily by 1", () => {
     const result = advanceRecurrence(
       { frequency: "daily", invokeDate: new Date("2026-01-01"), previousDate: null },
-      new Date("2026-01-01"),
     );
     expect(result.previousDate).toEqual(new Date("2026-01-01"));
     expect(result.invokeDate).toEqual(new Date("2026-01-02"));
@@ -14,7 +13,6 @@ describe("advanceRecurrence", () => {
   it("advances daily by 3 (interval=3)", () => {
     const result = advanceRecurrence(
       { frequency: "daily", interval: 3, invokeDate: new Date("2026-01-01"), previousDate: null },
-      new Date("2026-01-01"),
     );
     expect(result.invokeDate).toEqual(new Date("2026-01-04"));
   });
@@ -22,7 +20,6 @@ describe("advanceRecurrence", () => {
   it("advances weekly by 1", () => {
     const result = advanceRecurrence(
       { frequency: "weekly", invokeDate: new Date("2026-01-01"), previousDate: null },
-      new Date("2026-01-01"),
     );
     expect(result.invokeDate).toEqual(new Date("2026-01-08"));
   });
@@ -30,7 +27,6 @@ describe("advanceRecurrence", () => {
   it("advances monthly by 1", () => {
     const result = advanceRecurrence(
       { frequency: "monthly", invokeDate: new Date("2026-01-15"), previousDate: null },
-      new Date("2026-01-15"),
     );
     expect(result.invokeDate).toEqual(new Date("2026-02-15"));
   });
@@ -38,7 +34,6 @@ describe("advanceRecurrence", () => {
   it("advances monthly by 2 (interval=2)", () => {
     const result = advanceRecurrence(
       { frequency: "monthly", interval: 2, invokeDate: new Date("2026-01-15"), previousDate: null },
-      new Date("2026-01-15"),
     );
     expect(result.invokeDate).toEqual(new Date("2026-03-15"));
   });
@@ -46,7 +41,6 @@ describe("advanceRecurrence", () => {
   it("advances yearly by 1", () => {
     const result = advanceRecurrence(
       { frequency: "yearly", invokeDate: new Date("2026-03-10"), previousDate: null },
-      new Date("2026-03-10"),
     );
     expect(result.invokeDate).toEqual(new Date("2027-03-10"));
   });
@@ -55,7 +49,6 @@ describe("advanceRecurrence", () => {
     expect(() =>
       advanceRecurrence(
         { frequency: "daily", invokeDate: null, previousDate: null },
-        new Date(),
       ),
     ).toThrow("Cannot advance schedule with no invokeDate");
   });
@@ -64,8 +57,7 @@ describe("advanceRecurrence", () => {
 describe("advanceWaive", () => {
   it("advances identically to advanceRecurrence", () => {
     const schedule = { frequency: "monthly" as const, invokeDate: new Date("2026-01-15"), previousDate: null };
-    const now = new Date("2026-01-15");
-    expect(advanceWaive(schedule, now)).toEqual(advanceRecurrence(schedule, now));
+    expect(advanceWaive(schedule)).toEqual(advanceRecurrence(schedule));
   });
 });
 

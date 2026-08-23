@@ -58,7 +58,9 @@ export function convert(
 ): bigint {
   const fromScale = 10n ** BigInt(fromDecimals);
   const toScale = 10n ** BigInt(toDecimals);
-  const baseAmount = Number(amount) / Number(fromScale);
+  // cavetail: rate-based conversion requires float intermediate — bigint can't represent fractional rates
+// eslint-disable-next-line local/no-money-float
+const baseAmount = Number(amount) / Number(fromScale);
   const converted = baseAmount * rate;
   return BigInt(Math.round(converted * Number(toScale)));
 }

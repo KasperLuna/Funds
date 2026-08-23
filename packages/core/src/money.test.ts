@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { parseAmountToMinor, formatMinor } from "./money";
+import { parseAmountToMinor, formatMinor, convert } from "./money";
 
 describe("parseAmountToMinor", () => {
   it("parses a plain amount to minor units", () => {
@@ -98,5 +98,27 @@ describe("parseAmountToMinor / formatMinor property tests", () => {
         },
       ),
     );
+  });
+});
+
+describe("convert", () => {
+  it("converts USD to EUR at rate 0.92", () => {
+    const usd = 10000n; // $100.00
+    const result = convert(usd, 2, 2, 0.92);
+    expect(result).toBe(9200n); // €92.00
+  });
+
+  it("converts USD to BTC (8 decimals)", () => {
+    const usd = 5000000n; // $50,000.00
+    const btc = convert(usd, 2, 8, 0.00002); // 1 BTC = $50,000
+    expect(btc).toBe(100000000n); // 1.00000000 BTC
+  });
+
+  it("handles zero amount", () => {
+    expect(convert(0n, 2, 2, 1.5)).toBe(0n);
+  });
+
+  it("handles same decimals rate 1", () => {
+    expect(convert(500n, 2, 2, 1)).toBe(500n);
   });
 });

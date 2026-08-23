@@ -76,6 +76,35 @@ function splitCamel(name: string): string[] {
   return name.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().split(/\s+/);
 }
 
+function soundex(word: string): string {
+  const a = word.toLowerCase().split("");
+  if (a.length === 0) return "";
+  const f = (c: string): string => {
+    switch (c) {
+      case "b": case "f": case "p": case "v": return "1";
+      case "c": case "g": case "j": case "k": case "q": case "s": case "x": case "z": return "2";
+      case "d": case "t": return "3";
+      case "l": return "4";
+      case "m": case "n": return "5";
+      case "r": return "6";
+      default: return "0";
+    }
+  };
+  let code = a[0]!;
+  let prev = f(code);
+  for (let i = 1; i < a.length && code.length < 4; i++) {
+    const c = f(a[i]!);
+    if (c !== "0" && c !== prev) code += c;
+    if (c !== "0") prev = c;
+  }
+  return (code + "000").slice(0, 4);
+}
+
+function hasPhoneticMatch(rawTokens: string[], candTokens: string[]): boolean {
+  const rawSx = new Set(rawTokens.map(soundex));
+  return candTokens.some((ct) => rawSx.has(soundex(ct)));
+}
+
 function tokenize(s: string): string[] {
   return s.split(/\s+/).filter(Boolean);
 }
@@ -146,11 +175,14 @@ function bestWindowScore(rawTokens: string[], candidate: Candidate): { score: nu
         candTokens.filter((ct) => rawTokens.includes(ct)).length /
         (candTokens.length || 1);
 
+      const phoneticFloored =
+        hasPhoneticMatch(rawTokens, candTokens) && meanSim < 0.7 ? 0.7 : meanSim;
+
       const score =
         windowSim * 0.05 +
         jacc * 0.20 +
         windowSim * 0.20 +
-        Math.max(meanSim, meanSim >= 0.7 ? 0.7 : 0) * 0.20 +
+        phoneticFloored * 0.20 +
         coverage * 0.30 +
         prefix * 0.05 +
         tokenExact * 0.6;

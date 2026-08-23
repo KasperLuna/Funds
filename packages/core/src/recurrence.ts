@@ -41,7 +41,6 @@ function stepSize(freq: Frequency, interval: number): { fn: (d: Date, n: number)
 
 export function advanceRecurrence(
   schedule: Schedule,
-  currentDate: Date,
 ): { previousDate: Date; invokeDate: Date } {
   if (!schedule.invokeDate) {
     throw new Error("Cannot advance schedule with no invokeDate");
@@ -56,9 +55,8 @@ export function advanceRecurrence(
 
 export function advanceWaive(
   schedule: Schedule,
-  currentDate: Date,
 ): { previousDate: Date; invokeDate: Date } {
-  return advanceRecurrence(schedule, currentDate);
+  return advanceRecurrence(schedule);
 }
 
 export function isDueToday(schedule: Schedule, now: Date): boolean {

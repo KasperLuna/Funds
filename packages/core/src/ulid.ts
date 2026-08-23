@@ -1,5 +1,3 @@
-import { randomBytes } from "node:crypto";
-
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 function encodeBigInt(value: bigint, chars: number): string {
@@ -17,7 +15,10 @@ let lastRand = 0n;
 
 export function ulid(): string {
   const now = BigInt(Date.now());
-  const rand = BigInt("0x" + randomBytes(10).toString("hex"));
+  const bytes = new Uint8Array(10);
+  globalThis.crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  const rand = BigInt("0x" + hex);
 
   if (now === lastTime && rand <= lastRand) {
     lastRand += 1n;
