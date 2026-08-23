@@ -13,7 +13,7 @@ export function UserCard() {
         aria-label="Account"
         className="mb-3 flex items-center justify-between gap-2 border-b border-(--border) pb-3"
       >
-        <span className="text-sm text-slate-400">Loading…</span>
+        <span className="text-sm text-zinc-500">Loading…</span>
       </div>
     );
   }
@@ -26,7 +26,7 @@ export function UserCard() {
         aria-label="Account"
         className="mb-3 flex items-center justify-between gap-2 border-b border-(--border) pb-3"
       >
-        <span className="text-sm text-slate-400">Signed out</span>
+        <span className="text-sm text-zinc-500">Signed out</span>
         <Link href="/signin" className="text-sm text-(--accent)">
           Sign in
         </Link>
@@ -42,7 +42,7 @@ export function UserCard() {
     >
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{username || user.name}</p>
-        <p className="truncate text-xs text-slate-400">{user.email}</p>
+        <p className="truncate text-xs text-zinc-500">{user.email}</p>
       </div>
       <SignOutButton />
     </div>

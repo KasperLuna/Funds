@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Landmark, Bitcoin, Tag, Plus, Check, type LucideIcon } from "lucide-react";
+import { Home, Landmark, Bitcoin, Tag, Plus, Check, CloudOff, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSync } from "@/lib/sync/sync-context";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -29,26 +30,68 @@ export function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () =
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm transition-colors",
-        active ? "bg-(--surface-2) text-(--accent)" : "text-slate-400 hover:bg-(--surface-2) hover:text-inherit",
+        "relative flex items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm transition-colors duration-150 ease-out",
+        active
+          ? "bg-(--surface-3) font-semibold text-inherit"
+          : "font-medium text-zinc-500 hover:bg-(--surface-3) hover:text-inherit",
       )}
     >
-      <Icon className="h-5 w-5" aria-hidden />
+      {active && (
+        <span
+          aria-hidden
+          className="absolute top-1/2 -left-1.5 h-4 w-0.5 -translate-y-1/2 rounded-sm bg-(--accent)"
+        />
+      )}
+      <Icon className={cn("h-5 w-5", active && "text-(--accent)")} aria-hidden />
       <span className="hidden md:inline">{item.label}</span>
     </Link>
   );
 }
 
+export function MobileTab({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+  const pathname = usePathname();
+  const active = isActive(item.href, pathname);
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      aria-label={item.label}
+      className={cn(
+        "relative flex h-14 flex-col items-center justify-center",
+        active ? "text-inherit" : "text-zinc-500",
+      )}
+    >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute inset-x-3 top-0 h-0.5 rounded-b-sm bg-(--accent)"
+        />
+      )}
+      <Icon className={cn("h-6 w-6", active && "text-(--accent)")} aria-hidden />
+    </Link>
+  );
+}
+
 export function SyncPill() {
-  // cavetail: real sync state lands with PowerSync (P4 spike); placeholder shows synced
+  const { isConnected } = useSync();
+  const offline = !isConnected;
   return (
     <span
       role="status"
-      aria-label="Sync status: synced"
-      className="inline-flex items-center gap-1 rounded-full bg-(--surface-2) px-2 py-1 text-xs text-(--accent)"
+      aria-label={offline ? "Sync status: offline" : "Sync status: synced"}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border border-(--border) bg-(--surface-2) px-2.5 py-1 text-xs font-medium",
+        offline ? "text-(--warning)" : "text-(--accent)",
+      )}
     >
-      <Check className="h-3 w-3" aria-hidden />
-      <span className="hidden sm:inline">Synced</span>
+      {offline ? (
+        <CloudOff className="h-3 w-3" strokeWidth={3} aria-hidden />
+      ) : (
+        <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
+      )}
+      <span className="hidden sm:inline">{offline ? "Offline" : "Synced"}</span>
     </span>
   );
 }
@@ -59,12 +102,12 @@ export function AddButton({ label = "Add", className }: { label?: string; classN
       href="/dashboard?capture=1"
       aria-label={label}
       className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-(--radius-md) bg-(--accent) text-(--accent-foreground) transition-opacity hover:opacity-90",
+        "inline-flex items-center justify-center gap-1 rounded-(--radius-md) bg-(--accent) text-(--accent-foreground) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-[0.98]",
         className,
       )}
     >
-      <Plus className="h-5 w-5" aria-hidden />
-      <span className="hidden lg:inline">{label}</span>
+      <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+      <span className="hidden text-sm font-semibold lg:inline">{label}</span>
     </Link>
   );
 }

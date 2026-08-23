@@ -1,35 +1,132 @@
 @import "tailwindcss";
 
-/* cavetail: dark-only v1 (design.md §9) */
+@theme inline {
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
+  --color-positive: #10b981;
+  --color-negative: #ef4444;
+}
+
+/* Intaglio Plate — pure-black OLED plates, hairline engraved borders,
+   guilloche lattice behind figures, microtext labels, one emerald thread.
+   (design.md §9 — replacement world, approved 2026-08-23) */
 :root {
-  --bg: #020617;
-  --surface-1: #0f172a;
-  --surface-2: #1e293b;
-  --surface-3: #334155;
-  --border: rgba(51, 65, 85, 0.5);
+  color-scheme: dark;
+  --bg: #000000;
+  --surface-1: #000000;
+  --surface-2: #050505;
+  --surface-3: #0d0d0d;
+  --border: rgba(255, 255, 255, 0.13);
+  --border-strong: rgba(255, 255, 255, 0.26);
   --accent: #10b981;
-  --accent-foreground: #020617;
+  --accent-foreground: #000000;
   --danger: #ef4444;
   --warning: #fbbf24;
-  --info: #0ea5e9;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-sheet: 20px;
+  --info: #38bdf8;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-sheet: 10px;
 }
 
 @layer base {
   body {
     background-color: var(--bg);
-    color: #f1f5f9;
-    font-family:
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      sans-serif;
+    color: #f4f4f5;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
   * {
     border-color: var(--border);
+  }
+  ::selection {
+    background-color: rgb(16 185 129 / 0.35);
+  }
+}
+
+@layer components {
+  /* display tier — engraved numerals for net-worth hero + capture readout */
+  .text-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 6vw, 4rem);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+  }
+  .text-display-sm {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.25rem, 4vw, 3rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  /* latent-image microprint — the plate's etched labels */
+  .label-micro {
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #a1a1aa;
+  }
+  /* engraved guilloche lattice — faint crosshatch, never busy */
+  .guilloche {
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.045) 0 1px,
+        transparent 1px 9px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.045) 0 1px,
+        transparent 1px 9px
+      );
+  }
+}
+
+/* Authored motion (design.md §9): one moment — the sheet arriving */
+@keyframes funds-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* cavetail: animate the `translate`/`scale` properties, not `transform` —
+   Tailwind v4 centering uses the native translate property, so keyframing
+   `transform` would double-offset the dialog (spawn top-left, flicker). */
+@keyframes funds-sheet-in {
+  from {
+    opacity: 0;
+    translate: 0 32px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes funds-dialog-in {
+  from {
+    opacity: 0;
+    translate: -50% calc(-50% + 8px);
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: -50% -50%;
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

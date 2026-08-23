@@ -8,12 +8,13 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-6">
-        <h1 className="text-xl font-semibold">Sign in</h1>
-        <p className="mt-1 mb-4 text-sm text-slate-400">Welcome back</p>
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
+      <div className="guilloche absolute inset-0 opacity-40" aria-hidden />
+      <div className="relative w-full max-w-sm rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-7">
+        <h1 className="font-display text-2xl font-bold tracking-tight">Sign in</h1>
+        <p className="mt-1 mb-5 text-sm text-zinc-500">Welcome back</p>
         <SignInForm />
-        <div className="mt-5 flex items-center gap-3 text-xs text-slate-400">
+        <div className="mt-5 flex items-center gap-3 text-xs text-zinc-500">
           <span className="h-px flex-1 bg-(--border)" aria-hidden />
           or try the demo
           <span className="h-px flex-1 bg-(--border)" aria-hidden />

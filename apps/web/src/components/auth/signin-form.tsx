@@ -6,7 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 
 const inputCls =
-  "h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-(--accent)";
+  "h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none focus-visible:ring-2 focus-visible:ring-(--accent)";
 
 export function SignInForm() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export function SignInForm() {
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-slate-400">Email</span>
+        <span className="text-zinc-500">Email</span>
         <input
           type="email"
           value={email}
@@ -48,7 +48,7 @@ export function SignInForm() {
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-slate-400">Password</span>
+        <span className="text-zinc-500">Password</span>
         <input
           type="password"
           value={password}

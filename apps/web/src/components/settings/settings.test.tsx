@@ -42,7 +42,7 @@ describe("SettingsPage", () => {
   it("renders sync status", () => {
     render(<SettingsPage />);
     expect(screen.getByText("Local mode")).toBeInTheDocument();
-    expect(screen.getByText("Sync not connected")).toBeInTheDocument();
+    expect(screen.getByText("Sign in to sync across devices")).toBeInTheDocument();
   });
 
   it("renders privacy toggle", () => {

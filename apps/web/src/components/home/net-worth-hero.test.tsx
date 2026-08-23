@@ -18,8 +18,8 @@ describe("NetWorthHero", () => {
       />,
     );
     expect(screen.getByText("$1,234.56")).toBeInTheDocument();
-    expect(screen.getByText("Banks: $1,000.00")).toBeInTheDocument();
-    expect(screen.getByText("Crypto: $234.56")).toBeInTheDocument();
+    expect(screen.getByText("$1,000.00")).toBeInTheDocument();
+    expect(screen.getByText("$234.56")).toBeInTheDocument();
   });
 
   it("masks balance when privacy is on", () => {
@@ -33,9 +33,8 @@ describe("NetWorthHero", () => {
         lastSyncedAt={Date.now()}
       />,
     );
-    expect(screen.getByText("••••")).toBeInTheDocument();
-    expect(screen.getByText("Banks: ••••")).toBeInTheDocument();
-    expect(screen.getByText("Crypto: ••••")).toBeInTheDocument();
+    expect(screen.getByText("••••••")).toBeInTheDocument();
+    expect(screen.getAllByText("••••")).toHaveLength(2);
   });
 
   it("calls onTogglePrivacy when eye button clicked", async () => {
@@ -66,6 +65,6 @@ describe("NetWorthHero", () => {
         lastSyncedAt={null}
       />,
     );
-    expect(screen.getByText("-$50.00")).toBeInTheDocument();
+    expect(screen.getByLabelText("Net worth -$50.00")).toBeInTheDocument();
   });
 });

@@ -12,6 +12,7 @@ function makeTxn(overrides: Partial<Txn> = {}): Txn {
   return {
     id: "t1",
     accountId: "a1",
+    assetId: "usd",
     amountMinor: -1500n,
     type: "expense",
     description: "Coffee",
@@ -28,11 +29,14 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
     color: "#6366f1",
     hideable: false,
     monthlyBudgetMinor: 50000n,
+    assetId: null,
     createdAt: Date.now(),
     updatedAt: Date.now(),
     ...overrides,
   };
 }
+
+const USD = new Map([["usd", { code: "USD", decimals: 2 }]]);
 
 describe("RecentActivity", () => {
   it("renders empty state when no transactions", () => {
@@ -55,7 +59,7 @@ describe("RecentActivity", () => {
 describe("BudgetPulse", () => {
   it("renders empty state when no budget items", () => {
     render(
-      <BudgetPulse items={[]} totalBudgetMinor={0n} totalSpentMinor={0n} />,
+      <BudgetPulse items={[]} assetsById={USD} />,
     );
     expect(screen.getByText("Budgets")).toBeInTheDocument();
     expect(screen.getByText("Set category budgets to track spending pulse.")).toBeInTheDocument();
@@ -64,50 +68,51 @@ describe("BudgetPulse", () => {
   it("renders budget usage with total and categories", () => {
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, spentMinor: 45000n, pct: 45 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
     ];
     render(
-      <BudgetPulse items={items} totalBudgetMinor={100000n} totalSpentMinor={45000n} />,
+      <BudgetPulse items={items} assetsById={USD} />,
     );
     expect(screen.getByText("Budget pulse")).toBeInTheDocument();
     expect(screen.getByText("Food")).toBeInTheDocument();
     expect(screen.getByText("$450.00 of $1,000.00 spent")).toBeInTheDocument();
-    expect(screen.getByText("45%")).toBeInTheDocument();
+    const bar = screen.getByRole("progressbar", { name: "Budget usage 45%" });
+    expect(bar).toHaveAttribute("aria-valuenow", "45");
   });
 
   it("applies red color for over 90%", () => {
     const cat = makeCategory({ name: "Rent", monthlyBudgetMinor: 200000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, spentMinor: 200000n, pct: 100 },
+      { category: cat, budgetMinor: 200000n, budgetAssetId: null, spentMinor: 200000n, pct: 100 },
     ];
     const { container } = render(
-      <BudgetPulse items={items} totalBudgetMinor={200000n} totalSpentMinor={200000n} />,
+      <BudgetPulse items={items} assetsById={USD} />,
     );
     const fill = container.querySelector('[role="progressbar"] > div');
-    expect(fill).toHaveClass("bg-red-500");
+    expect(fill).toHaveClass("bg-(--danger)");
   });
 
   it("applies yellow color for 70-90%", () => {
     const cat = makeCategory({ name: "Groceries", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, spentMinor: 80000n, pct: 80 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 80000n, pct: 80 },
     ];
     const { container } = render(
-      <BudgetPulse items={items} totalBudgetMinor={100000n} totalSpentMinor={80000n} />,
+      <BudgetPulse items={items} assetsById={USD} />,
     );
     const fill = container.querySelector('[role="progressbar"] > div');
-    expect(fill).toHaveClass("bg-yellow-500");
+    expect(fill).toHaveClass("bg-(--warning)");
   });
 
   it("applies green color for under 70%", () => {
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, spentMinor: 30000n, pct: 30 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 30000n, pct: 30 },
     ];
     const { container } = render(
-      <BudgetPulse items={items} totalBudgetMinor={100000n} totalSpentMinor={30000n} />,
+      <BudgetPulse items={items} assetsById={USD} />,
     );
     const fill = container.querySelector('[role="progressbar"] > div');
-    expect(fill).toHaveClass("bg-green-500");
+    expect(fill).toHaveClass("bg-(--accent)");
   });
 });
