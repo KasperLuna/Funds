@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import { AccountCard } from "./account-card";
 import { TransactionRow } from "./transaction-row";
@@ -165,8 +166,13 @@ describe("computeBalance", () => {
 });
 
 describe("AccountDialog", () => {
+  function renderDialog(el: React.ReactElement) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(<QueryClientProvider client={qc}>{el}</QueryClientProvider>);
+  }
+
   it("renders empty form for new account", () => {
-    render(
+    renderDialog(
       <AccountDialog
         open={true}
         onOpenChange={vi.fn()}
@@ -179,7 +185,7 @@ describe("AccountDialog", () => {
 
   it("renders pre-filled form for edit", () => {
     const acc = makeAccount({ name: "My Bank", kind: "cash" });
-    render(
+    renderDialog(
       <AccountDialog
         open={true}
         onOpenChange={vi.fn()}
@@ -193,7 +199,7 @@ describe("AccountDialog", () => {
   });
 
   it("shows kind selector with all options", () => {
-    render(
+    renderDialog(
       <AccountDialog open={true} onOpenChange={vi.fn()} onSave={vi.fn()} />,
     );
     const select = screen.getByDisplayValue("Bank");

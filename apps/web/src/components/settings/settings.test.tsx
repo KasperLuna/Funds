@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import SettingsPage from "@/app/dashboard/settings/page";
 
@@ -16,14 +17,26 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("SettingsPage", () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     vi.unstubAllGlobals();
     // Stub Notification for jsdom
     vi.stubGlobal("Notification", { permission: "default" });
   });
 
+  const renderSettings = () =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SettingsPage />
+      </QueryClientProvider>,
+    );
+
   it("renders all sections", () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByRole("heading", { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByText("Onboarding")).toBeInTheDocument();
     expect(screen.getByText("Sync")).toBeInTheDocument();
@@ -33,20 +46,20 @@ describe("SettingsPage", () => {
   });
 
   it("renders checklist items", () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByText("Create first account")).toBeInTheDocument();
     expect(screen.getByText("Log first transaction")).toBeInTheDocument();
     expect(screen.getByText("Connect bank")).toBeInTheDocument();
   });
 
   it("renders sync status", () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByText("Local mode")).toBeInTheDocument();
     expect(screen.getByText("Sign in to sync across devices")).toBeInTheDocument();
   });
 
   it("renders privacy toggle", () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect(screen.getByText("Privacy mode")).toBeInTheDocument();
     expect(screen.getByText("Reveal")).toBeInTheDocument();
   });

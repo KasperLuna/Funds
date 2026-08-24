@@ -12,6 +12,7 @@ import { UserCard } from "@/components/auth/user-card";
 import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicator";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
 import { SyncProvider } from "@/lib/sync/sync-context";
+import { SyncQueryProvider } from "@/lib/sync/sync-query";
 
 function PrivacyToggle({
   className,
@@ -63,6 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <PrivacyProvider>
       <SyncProvider>
+      <SyncQueryProvider>
       <div className="mx-auto max-w-[1920px]">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
@@ -166,6 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </nav>
       </div>
+      </SyncQueryProvider>
       </SyncProvider>
     </PrivacyProvider>
   );

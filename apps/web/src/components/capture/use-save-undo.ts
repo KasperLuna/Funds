@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SyncDatabase } from "@/lib/sync";
 import { buildUndoTombstone } from "@/lib/capture";
+import { queryKeys, useSyncMutation } from "@/lib/sync/sync-query";
 
 const UNDO_WINDOW_MS = 5000;
+
+type SaveUndoVars =
+  | { kind: "save"; row: Record<string, unknown> }
+  | { kind: "undo"; row: Record<string, unknown> };
 
 export function useSaveUndo(sync: SyncDatabase): {
   save: (row: Record<string, unknown>) => Promise<void>;
@@ -23,24 +28,31 @@ export function useSaveUndo(sync: SyncDatabase): {
 
   useEffect(() => clearTimer, [clearTimer]);
 
-  const save = useCallback(
-    async (row: Record<string, unknown>) => {
+  const { mutateAsync } = useSyncMutation<SaveUndoVars>({
+    keys: [queryKeys.transactions],
+    mutationFn: async ({ row }) => {
       // cavetail: local-first write; sync upload queue drains it later
       await sync.table("transactions").upsert(row);
+    },
+  });
+
+  const save = useCallback(
+    async (row: Record<string, unknown>) => {
+      await mutateAsync({ kind: "save", row });
       setLastSaved(row);
       clearTimer();
       timer.current = setTimeout(() => setLastSaved(null), UNDO_WINDOW_MS);
     },
-    [sync, clearTimer],
+    [mutateAsync, clearTimer],
   );
 
   const undo = useCallback(async () => {
     if (!lastSaved) return;
     const tombstone = buildUndoTombstone(lastSaved);
-    await sync.table("transactions").upsert(tombstone);
+    await mutateAsync({ kind: "undo", row: tombstone });
     setLastSaved(null);
     clearTimer();
-  }, [lastSaved, sync, clearTimer]);
+  }, [lastSaved, mutateAsync, clearTimer]);
 
   const dismissUndo = useCallback(() => {
     setLastSaved(null);

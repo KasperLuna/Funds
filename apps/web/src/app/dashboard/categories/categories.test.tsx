@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactElement } from "react";
 import { DEFAULT_CATEGORY_COLORS } from "@/lib/categories/categories-store";
 import { PrivacyProvider } from "@/lib/privacy/privacy-context";
 
@@ -14,6 +16,11 @@ import CategoriesPage from "./page";
 
 const mockQuery = vi.fn();
 const mockExecute = vi.fn();
+
+function renderPage(ui: ReactElement) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -28,6 +35,7 @@ beforeEach(() => {
       })),
     } as never,
     isConnected: true,
+    isReady: true,
     lastSyncedAt: Date.now(),
     userId: "dev-user",
   });
@@ -36,7 +44,7 @@ beforeEach(() => {
 
 describe("CategoriesPage", () => {
   it("renders empty state when no categories", async () => {
-    render(<CategoriesPage />);
+    renderPage(<CategoriesPage />);
     expect(screen.getByText("Categories")).toBeInTheDocument();
     expect(screen.getByText("No categories yet")).toBeInTheDocument();
   });
@@ -67,7 +75,7 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    render(<CategoriesPage />);
+    renderPage(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText("Food")).toBeInTheDocument();
@@ -76,7 +84,7 @@ describe("CategoriesPage", () => {
   });
 
   it("opens new category dialog when clicking New category", async () => {
-    render(<CategoriesPage />);
+    renderPage(<CategoriesPage />);
     const newButton = screen.getByRole("button", { name: /new category/i });
     fireEvent.click(newButton);
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
@@ -84,7 +92,7 @@ describe("CategoriesPage", () => {
   });
 
   it("renders color picker with default colors", async () => {
-    render(<CategoriesPage />);
+    renderPage(<CategoriesPage />);
     fireEvent.click(screen.getByRole("button", { name: /new category/i }));
     
     const colorGroup = screen.getByRole("radiogroup", { name: "Color" });
@@ -129,7 +137,7 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    render(<CategoriesPage />);
+    renderPage(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByRole("combobox", { name: "Budget month" })).toBeInTheDocument();
@@ -188,7 +196,7 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    const { unmount } = render(
+    const { unmount } = renderPage(
       <PrivacyProvider initialMasked>
         <CategoriesPage />
       </PrivacyProvider>,
@@ -246,7 +254,7 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    render(
+    renderPage(
       <PrivacyProvider initialMasked={false}>
         <CategoriesPage />
       </PrivacyProvider>,

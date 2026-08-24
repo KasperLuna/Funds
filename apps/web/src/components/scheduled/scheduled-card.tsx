@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
+import { useSyncQuery, useSyncMutation, queryKeys } from "@/lib/sync/sync-query";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
@@ -68,9 +69,14 @@ export function ScheduledCard({
   accounts: ScheduledCardAccount[];
   categories: ScheduledCardCategory[];
 }) {
-  const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { db, userId } = useSync();
   const uid = userId ?? "local";
-  const [items, setItems] = useState<ScheduledTxn[]>([]);
+  const itemsQuery = useSyncQuery({
+    key: queryKeys.scheduledTransactions,
+    sql: "SELECT * FROM scheduled_transactions WHERE deleted_at IS NULL",
+    select: toScheduledTxn,
+  });
+  const items = itemsQuery.data ?? [];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<ScheduledTxn | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -81,137 +87,129 @@ export function ScheduledCard({
     [accounts],
   );
 
-  const reload = useCallback(async () => {
-    try {
-      const res = await db.query(
-        "SELECT * FROM scheduled_transactions WHERE deleted_at IS NULL",
-      );
-      setItems(res.rows.map(toScheduledTxn));
-    } catch (error) {
-      console.error("Failed to load scheduled transactions:", error);
-      setNotice("Couldn't load scheduled transactions");
-    }
-  }, [db]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
-
   useEffect(() => {
     if (!notice) return;
     const t = window.setTimeout(() => setNotice(null), 4000);
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  const handleConfirm = useCallback(
-    async (row: ScheduledTxn) => {
-      try {
-        const account = accountById.get(row.accountId);
-        if (!account) throw new Error("Account not found");
-        // Pure advance first: if the schedule can't advance (no recurrence),
-        // bail before writing anything so a txn isn't logged without an advance.
-        const advanced = waiveAdvance(row);
-        const now = Date.now();
-        await db.table("transactions").upsert({
-          id: newTxnId(now),
-          user_id: row.userId,
-          account_id: row.accountId,
-          asset_id: account.assetId,
-          // cavetail: converting bigint minor units to the SyncTable number column
-          // eslint-disable-next-line local/no-money-float
-          amount_minor: Number(row.amountMinor),
-          type: row.type,
-          description: row.description || row.name,
-          category_ids: row.categoryIds,
-          date: row.invokeDate ?? now,
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-        });
-        await db.table("scheduled_transactions").update({
-          id: row.id,
-          previous_date: advanced.previousDate,
-          invoke_date: advanced.invokeDate,
-        });
-        await reload();
-      } catch (error) {
-        console.error("Failed to confirm scheduled transaction:", error);
-        setNotice("Couldn't confirm. Please try again.");
-      }
+  const confirmMutation = useSyncMutation<ScheduledTxn>({
+    keys: [queryKeys.transactions, queryKeys.scheduledTransactions],
+    mutationFn: async (row) => {
+      const account = accountById.get(row.accountId);
+      if (!account) throw new Error("Account not found");
+      // Pure advance first: if the schedule can't advance (no recurrence),
+      // bail before writing anything so a txn isn't logged without an advance.
+      const advanced = waiveAdvance(row);
+      const now = Date.now();
+      await db.table("transactions").upsert({
+        id: newTxnId(now),
+        user_id: row.userId,
+        account_id: row.accountId,
+        asset_id: account.assetId,
+        // cavetail: converting bigint minor units to the SyncTable number column
+        // eslint-disable-next-line local/no-money-float
+        amount_minor: Number(row.amountMinor),
+        type: row.type,
+        description: row.description || row.name,
+        category_ids: row.categoryIds,
+        date: row.invokeDate ?? now,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      });
+      await db.table("scheduled_transactions").update({
+        id: row.id,
+        previous_date: advanced.previousDate,
+        invoke_date: advanced.invokeDate,
+      });
     },
-    [db, reload, accountById],
-  );
+    onError: (error) => {
+      console.error("Failed to confirm scheduled transaction:", error);
+      setNotice("Couldn't confirm. Please try again.");
+    },
+  });
 
-  const handleToggle = useCallback(
-    async (row: ScheduledTxn) => {
-      try {
-        await db.table("scheduled_transactions").update({
-          id: row.id,
-          active: row.active ? 0 : 1,
-        });
-        await reload();
-      } catch (error) {
-        console.error("Failed to toggle scheduled transaction:", error);
-        setNotice("Couldn't update schedule");
-      }
-    },
-    [db, reload],
-  );
+  const handleConfirm = (row: ScheduledTxn) => {
+    confirmMutation.mutate(row);
+  };
 
-  const handleDelete = useCallback(
-    async (row: ScheduledTxn) => {
-      try {
-        await db.table("scheduled_transactions").update({
-          id: row.id,
-          deleted_at: Date.now(),
-        });
-        await reload();
-      } catch (error) {
-        console.error("Failed to delete scheduled transaction:", error);
-        setNotice("Couldn't delete schedule");
-      }
+  const toggleMutation = useSyncMutation<ScheduledTxn>({
+    keys: [queryKeys.scheduledTransactions],
+    mutationFn: async (row) => {
+      await db.table("scheduled_transactions").update({
+        id: row.id,
+        active: row.active ? 0 : 1,
+      });
     },
-    [db, reload],
-  );
+    onError: (error) => {
+      console.error("Failed to toggle scheduled transaction:", error);
+      setNotice("Couldn't update schedule");
+    },
+  });
 
-  const handleSave = useCallback(
-    async (item: ScheduledTxn) => {
-      try {
-        const isNew = !items.some((i) => i.id === item.id);
-        await db.table("scheduled_transactions").upsert({
-          id: item.id,
-          user_id: isNew ? uid : item.userId,
-          name: item.name,
-          description: item.description,
-          type: item.type,
-          // cavetail: converting bigint minor units to the SyncTable number column
-          // eslint-disable-next-line local/no-money-float
-          amount_minor: Number(item.amountMinor),
-          account_id: item.accountId,
-          category_ids: item.categoryIds,
-          recurrence: item.recurrence
-            ? {
-                frequency: item.recurrence.frequency,
-                interval: item.recurrence.interval,
-              }
-            : null,
-          timezone: item.timezone,
-          invoke_date: item.invokeDate,
-          previous_date: item.previousDate,
-          last_notified_at: item.lastNotifiedAt,
-          active: item.active ? 1 : 0,
-          created_at: item.createdAt,
-          updated_at: item.updatedAt,
-          deleted_at: item.deletedAt ?? null,
-        });
-        await reload();
-      } catch (error) {
-        console.error("Failed to save scheduled transaction:", error);
-        setNotice("Couldn't save schedule");
-      }
+  const handleToggle = (row: ScheduledTxn) => {
+    toggleMutation.mutate(row);
+  };
+
+  const deleteMutation = useSyncMutation<ScheduledTxn>({
+    keys: [queryKeys.scheduledTransactions],
+    mutationFn: async (row) => {
+      await db.table("scheduled_transactions").update({
+        id: row.id,
+        deleted_at: Date.now(),
+      });
     },
-    [db, reload, uid, items],
-  );
+    onError: (error) => {
+      console.error("Failed to delete scheduled transaction:", error);
+      setNotice("Couldn't delete schedule");
+    },
+  });
+
+  const handleDelete = (row: ScheduledTxn) => {
+    deleteMutation.mutate(row);
+  };
+
+  const saveMutation = useSyncMutation<ScheduledTxn>({
+    keys: [queryKeys.scheduledTransactions],
+    mutationFn: async (item) => {
+      const isNew = !items.some((i) => i.id === item.id);
+      await db.table("scheduled_transactions").upsert({
+        id: item.id,
+        user_id: isNew ? uid : item.userId,
+        name: item.name,
+        description: item.description,
+        type: item.type,
+        // cavetail: converting bigint minor units to the SyncTable number column
+        // eslint-disable-next-line local/no-money-float
+        amount_minor: Number(item.amountMinor),
+        account_id: item.accountId,
+        category_ids: item.categoryIds,
+        recurrence: item.recurrence
+          ? {
+              frequency: item.recurrence.frequency,
+              interval: item.recurrence.interval,
+            }
+          : null,
+        timezone: item.timezone,
+        invoke_date: item.invokeDate,
+        previous_date: item.previousDate,
+        last_notified_at: item.lastNotifiedAt,
+        active: item.active ? 1 : 0,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+        deleted_at: item.deletedAt ?? null,
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to save scheduled transaction:", error);
+      setNotice("Couldn't save schedule");
+    },
+  });
+
+  const handleSave = (item: ScheduledTxn) => {
+    saveMutation.mutate(item);
+  };
 
   const now = new Date();
 

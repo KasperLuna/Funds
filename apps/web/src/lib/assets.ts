@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc/client";
+import { queryKeys } from "@/lib/sync/sync-query";
 
 export type Asset = {
   id: string;
@@ -11,39 +12,14 @@ export type Asset = {
   decimals: number;
 };
 
-let cached: Asset[] | null = null;
-let inflight: Promise<Asset[]> | null = null;
-
-/** Fetch supported assets once (global, not per-user). */
-export function loadAssets(): Promise<Asset[]> {
-  if (cached) return Promise.resolve(cached);
-  const run = () => trpc.assets.list.query();
-  // jsdom/node test environments lack fetch/AbortSignal; degrade to empty.
-  if (typeof globalThis.fetch !== "function") return Promise.resolve([]);
-  inflight ??= run().then((rows) => {
-    cached = rows;
-    inflight = null;
-    return rows;
-  });
-  return inflight;
-}
-
 export function useAssets(): { assets: Asset[]; loading: boolean } {
-  const [assets, setAssets] = useState<Asset[]>(cached ?? []);
-  const [loading, setLoading] = useState(cached === null);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadAssets()
-      .catch(() => [])
-      .then((rows) => {
-        if (!cancelled) {
-          setAssets(rows);
-          setLoading(false);
-        }
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  return { assets, loading };
+  const { data, isPending } = useQuery({
+    queryKey: queryKeys.assets,
+    queryFn: () => trpc.assets.list.query(),
+    staleTime: Infinity,
+    // cavetail: jsdom/node test environments lack fetch/AbortSignal; skip and
+    // let consumers fall back to the empty list.
+    enabled: typeof globalThis.fetch === "function",
+  });
+  return { assets: data ?? [], loading: isPending };
 }

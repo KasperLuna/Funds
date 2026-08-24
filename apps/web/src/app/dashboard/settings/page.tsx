@@ -16,7 +16,7 @@ import { UserCard } from "@/components/auth/user-card";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { SyncStatus } from "@/components/settings/sync-status";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 
 const CHECKLIST_ITEMS = [
   { id: "account", label: "Create first account", icon: CreditCard, href: "/dashboard/banks" },
@@ -102,20 +102,19 @@ function PrivacyToggle() {
 }
 
 export default function SettingsPage() {
-  const { db, isConnected, lastSyncedAt } = useSync();
-  const [accounts, setAccounts] = useState(0);
-  const [transactions, setTransactions] = useState(0);
+  const accountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL",
+    select: (r) => r,
+  });
+  const transactionsQuery = useSyncQuery({
+    key: queryKeys.transactions,
+    sql: "SELECT * FROM transactions WHERE deleted_at IS NULL",
+    select: (r) => r,
+  });
 
-  const reload = useCallback(async () => {
-    const accRes = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
-    setAccounts(accRes.rows.length);
-    const txnRes = await db.query(`SELECT * FROM transactions WHERE deleted_at IS NULL`);
-    setTransactions(txnRes.rows.length);
-  }, [db]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
+  const accounts = accountsQuery.data?.length ?? 0;
+  const transactions = transactionsQuery.data?.length ?? 0;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">

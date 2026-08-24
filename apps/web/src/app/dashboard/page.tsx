@@ -2,7 +2,9 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import { computeBalance } from "@/lib/accounts/accounts-store";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { RowRecord } from "@/lib/sync";
@@ -16,12 +18,12 @@ import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
-import { loadTemplates, type Template } from "@/lib/templates/templates-store";
+import { loadTemplates } from "@/lib/templates/templates-store";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
+import type { Category } from "@/lib/categories/categories-store";
 import { computeBudgetUsage, categoryColor } from "@/lib/categories/categories-store";
 import { useAssets } from "@/lib/assets";
-import { computeHoldings, toToken, toTokenTxn, type Token, type TokenTransaction } from "@/lib/crypto/crypto-store";
+import { computeHoldings, toToken, toTokenTxn } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
 
 function toAccount(row: RowRecord): Account {
@@ -77,59 +79,103 @@ function DashboardContent() {
   const captureOpen = searchParams.get("capture") === "1";
   const typeParam = searchParams.get("type");
   const draftToken = searchParams.get("draftToken");
-  const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { db, userId, isReady, lastSyncedAt } = useSync();
   const uid = userId ?? "local";
   const { assets } = useAssets();
   const assetsById = useMemo(
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
   );
+  const queryClient = useQueryClient();
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [txns, setTxns] = useState<Txn[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [tokenTxns, setTokenTxns] = useState<TokenTransaction[]>([]);
+  const accountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: "SELECT * FROM accounts",
+    select: toAccount,
+  });
+  const accounts = accountsQuery.data ?? [];
+
+  const txnsQuery = useSyncQuery({
+    key: queryKeys.transactions,
+    sql: "SELECT * FROM transactions",
+    select: toTxn,
+  });
+  const txns = txnsQuery.data ?? [];
+
+  const categoriesQuery = useSyncQuery({
+    key: queryKeys.categories,
+    sql: "SELECT * FROM categories",
+    select: toCategory,
+  });
+  const categories = categoriesQuery.data ?? [];
+
+  const budgetsQuery = useSyncQuery({
+    key: queryKeys.categoryBudgets,
+    sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
+    select: (row) => ({
+      id: String(row.id),
+      categoryId: String(row.category_id),
+      assetId: String(row.asset_id),
+      monthStart: Number(row.month_start),
+      amountMinor: BigInt(row.amount_minor as number | string),
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+      deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
+    }),
+  });
+  const budgets = budgetsQuery.data ?? [];
+
+  // cavetail: loadTemplates is not a raw SQL map, so use a plain useQuery that
+  // mirrors useSyncQuery's key + enabled gating instead of an sql/select pair.
+  const templatesQuery = useQuery({
+    queryKey: [...queryKeys.templates, lastSyncedAt],
+    enabled: isReady,
+    queryFn: () => loadTemplates(db),
+  });
+  const templates = templatesQuery.data ?? [];
+
+  const tokensQuery = useSyncQuery({
+    key: queryKeys.tokens,
+    sql: "SELECT * FROM tokens WHERE deleted_at IS NULL",
+    select: toToken,
+  });
+  const tokens = tokensQuery.data ?? [];
+
+  const tokenTxnsQuery = useSyncQuery({
+    key: queryKeys.tokenTransactions,
+    sql: "SELECT * FROM token_transactions WHERE deleted_at IS NULL",
+    select: toTokenTxn,
+  });
+  const tokenTxns = tokenTxnsQuery.data ?? [];
+
   const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
   const [voicePrefill, setVoicePrefill] = useState<VoicePrefill | undefined>();
   const [editTxn, setEditTxn] = useState<Txn | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const accRows = (await db.query("SELECT * FROM accounts")).rows;
-      const txnRows = (await db.query("SELECT * FROM transactions")).rows;
-      const catRows = (await db.query("SELECT * FROM categories")).rows;
-      const budRows = (await db.query("SELECT * FROM category_budgets WHERE deleted_at IS NULL")).rows;
-      setAccounts(accRows.map(toAccount));
-      setTxns(txnRows.map(toTxn));
-      setCategories(catRows.map(toCategory));
-      setTemplates(await loadTemplates(db));
-      setTokens((await db.query("SELECT * FROM tokens WHERE deleted_at IS NULL")).rows.map(toToken));
-      setTokenTxns((await db.query("SELECT * FROM token_transactions WHERE deleted_at IS NULL")).rows.map(toTokenTxn));
-      setBudgets(
-        budRows.map((row) => ({
-          id: String(row.id),
-          categoryId: String(row.category_id),
-          assetId: String(row.asset_id),
-          monthStart: Number(row.month_start),
-          amountMinor: BigInt(row.amount_minor as number | string),
-          createdAt: Number(row.created_at),
-          updatedAt: Number(row.updated_at),
-          deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
-        })),
-      );
-    } catch (error) {
-      console.error('Sync error:', error);
-      setErrorMessage('Failed to load dashboard data. Check your connection.');
-    }
-  }, []);
-
   useEffect(() => {
-    void load();
-  }, [load, isConnected, lastSyncedAt]);
+    const failed = [
+      accountsQuery,
+      txnsQuery,
+      categoriesQuery,
+      budgetsQuery,
+      tokensQuery,
+      tokenTxnsQuery,
+      templatesQuery,
+    ].find((q) => q.isError);
+    if (failed) {
+      console.error("Sync error:", failed.error);
+      setErrorMessage("Failed to load dashboard data. Check your connection.");
+    }
+  }, [
+    accountsQuery.isError,
+    txnsQuery.isError,
+    categoriesQuery.isError,
+    budgetsQuery.isError,
+    tokensQuery.isError,
+    tokenTxnsQuery.isError,
+    templatesQuery.isError,
+  ]);
 
   // Redeem voice draft token when deep-linked
   useEffect(() => {
@@ -212,14 +258,20 @@ function DashboardContent() {
     [categories, budgets, activeTxns, now.getFullYear(), now.getMonth()],
   );
 
-  const handleSave = useCallback(
-    async (row: Record<string, unknown>) => {
+  const saveTxn = useSyncMutation({
+    keys: [queryKeys.transactions],
+    mutationFn: async (row: Record<string, unknown>) => {
       const next = editTxn ? { ...row, id: editTxn.id } : row;
       await db.table("transactions").upsert(next);
       setEditTxn(null);
-      await load();
     },
-    [db, load, editTxn],
+  });
+
+  const handleSave = useCallback(
+    (row: Record<string, unknown>) => {
+      saveTxn.mutate(row);
+    },
+    [saveTxn, editTxn],
   );
 
   const accountInfo = useMemo(() => {
@@ -238,15 +290,12 @@ function DashboardContent() {
       [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
     [tokenHoldings],
   );
-  const [prices, setPrices] = useState<Map<string, CoinPrice>>(new Map());
-  useEffect(() => {
-    if (!coingeckoKey) return;
-    let cancelled = false;
-    void fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()).then((map) => {
-      if (!cancelled) setPrices(map);
-    });
-    return () => { cancelled = true; };
-  }, [coingeckoKey, primaryCode]);
+  const pricesQuery = useQuery({
+    queryKey: ["prices", coingeckoKey, primaryCode],
+    enabled: !!coingeckoKey,
+    queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
+  });
+  const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
 
   // cavetail: display valuation only (float price × qty → fiat minor)
   const tokenValueMinor = useMemo(
@@ -340,7 +389,7 @@ function DashboardContent() {
           assetCode: assetsById.get(a.assetId)?.code,
         }))}
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-        onChanged={load}
+        onChanged={() => void queryClient.invalidateQueries({ queryKey: [...queryKeys.templates] })}
       />
 
       <CaptureSheet

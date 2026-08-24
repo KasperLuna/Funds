@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
+import { useQueryClient } from "@tanstack/react-query";
 import type { TransferRows } from "@/lib/capture";
 import {
   computeBalance,
@@ -157,7 +159,8 @@ export default function BanksPage() {
 }
 
 function BanksContent() {
-  const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { db, userId } = useSync();
+  const queryClient = useQueryClient();
   const { masked: privacy } = usePrivacy();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -167,9 +170,6 @@ function BanksContent() {
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
   );
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [txns, setTxns] = useState<Txn[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
@@ -186,19 +186,25 @@ function BanksContent() {
     date: null,
   });
 
-  const reload = useCallback(async () => {
-    const accRes = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
-    setAccounts(accRes.rows.map(toAccount));
-    const txnRes = await db.query(`SELECT * FROM transactions WHERE deleted_at IS NULL`);
-    setTxns(txnRes.rows.map(toTxn));
-    const catRes = await db.query(`SELECT * FROM categories WHERE deleted_at IS NULL`);
-    setCategories(catRes.rows.map(toCategory));
-  }, [db]);
-
-  // Re-query once the sync engine connects (it swaps the db impl asynchronously).
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
+  const accountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: `SELECT * FROM accounts WHERE deleted_at IS NULL`,
+    select: toAccount,
+  });
+  const txnsQuery = useSyncQuery({
+    key: queryKeys.transactions,
+    sql: `SELECT * FROM transactions WHERE deleted_at IS NULL`,
+    select: toTxn,
+  });
+  const categoriesQuery = useSyncQuery({
+    key: queryKeys.categories,
+    sql: `SELECT * FROM categories WHERE deleted_at IS NULL`,
+    select: toCategory,
+  });
+  const accounts = accountsQuery.data ?? [];
+  const txns = txnsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const dataPending = accountsQuery.isPending || txnsQuery.isPending || categoriesQuery.isPending;
 
   // Deep link from the long-press Add menu: open the transfer sheet once.
   useEffect(() => {
@@ -283,16 +289,17 @@ function BanksContent() {
     hideable: c.hideable,
   }));
 
-  const handleAccountSave = useCallback(
-    async (a: Account) => {
+  const accountSaveMutation = useSyncMutation({
+    keys: [queryKeys.accounts],
+    mutationFn: async (a: Account) => {
       await db.table("accounts").upsert(upsertAccountRow(uid, a));
-      await reload();
     },
-    [db, reload, uid],
-  );
+  });
+  const handleAccountSave = (a: Account) => accountSaveMutation.mutate(a);
 
-  const handleAccountDelete = useCallback(
-    async (a: Account) => {
+  const accountDeleteMutation = useSyncMutation({
+    keys: [queryKeys.accounts, queryKeys.transactions],
+    mutationFn: async (a: Account) => {
       const tomb = { ...a, deletedAt: Date.now(), updatedAt: Date.now() };
       await db.table("accounts").upsert(upsertAccountRow(uid, tomb));
 
@@ -319,13 +326,13 @@ function BanksContent() {
       }
 
       if (selectedAccountId === a.id) setSelectedAccountId(null);
-      await reload();
     },
-    [db, reload, selectedAccountId, txns, uid],
-  );
+  });
+  const handleAccountDelete = (a: Account) => accountDeleteMutation.mutate(a);
 
-  const handleAccountArchive = useCallback(
-    async (a: Account) => {
+  const accountArchiveMutation = useSyncMutation({
+    keys: [queryKeys.accounts],
+    mutationFn: async (a: Account) => {
       const now = Date.now();
       const archived = {
         ...a,
@@ -333,29 +340,31 @@ function BanksContent() {
         updatedAt: now,
       };
       await db.table("accounts").upsert(upsertAccountRow(uid, archived));
-      await reload();
     },
-    [db, reload, uid],
-  );
+  });
+  const handleAccountArchive = (a: Account) => accountArchiveMutation.mutate(a);
 
-  const handleTxnSave = useCallback(
-    async (row: Record<string, unknown>) => {
+  const txnSaveMutation = useSyncMutation({
+    keys: [queryKeys.transactions],
+    mutationFn: async (row: Record<string, unknown>) => {
       // Preserve the original row id when editing, so we update in place.
       const next = editTxn ? { ...row, id: editTxn.id } : row;
       await db.table("transactions").upsert(upsertTxnRow(uid, next));
       setEditTxn(null);
-      await reload();
     },
-    [db, reload, uid, editTxn],
-  );
+  });
+  const handleTxnSave = (row: Record<string, unknown>) => txnSaveMutation.mutate(row);
 
   const handleTxnEdit = useCallback((txn: Txn) => {
     setEditTxn(txn);
     setCaptureOpen(true);
   }, []);
 
-  const handleTxnDelete = useCallback(
-    async (txn: Txn) => {
+  // Delete keeps the row mounted so its Undo toast stays clickable: invalidate
+  // after the undo window (5s) instead of immediately like other mutations.
+  const txnDeleteMutation = useSyncMutation({
+    keys: [],
+    mutationFn: async (txn: Txn) => {
       await db.table("transactions").upsert(upsertTxnRow(uid, {
         id: txn.id,
         user_id: uid,
@@ -372,15 +381,19 @@ function BanksContent() {
         updated_at: Date.now(),
         deleted_at: Date.now(),
       }));
-      // Keep the row mounted so its Undo toast stays clickable, then refresh.
-      if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
-      undoDeleteTimer.current = setTimeout(() => void reload(), 5000);
     },
-    [db, reload, uid, accounts],
-  );
+  });
+  const handleTxnDelete = (txn: Txn) => {
+    txnDeleteMutation.mutate(txn);
+    if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
+    undoDeleteTimer.current = setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: [...queryKeys.transactions] });
+    }, 5000);
+  };
 
-  const handleTxnUndoDelete = useCallback(
-    async (txn: Txn) => {
+  const txnUndoDeleteMutation = useSyncMutation({
+    keys: [queryKeys.transactions],
+    mutationFn: async (txn: Txn) => {
       if (undoDeleteTimer.current) {
         clearTimeout(undoDeleteTimer.current);
         undoDeleteTimer.current = null;
@@ -401,13 +414,13 @@ function BanksContent() {
         updated_at: Date.now(),
         deleted_at: null,
       }));
-      await reload();
     },
-    [db, reload, uid, accounts],
-  );
+  });
+  const handleTxnUndoDelete = (txn: Txn) => txnUndoDeleteMutation.mutate(txn);
 
-  const handleTxnDuplicate = useCallback(
-    async (txn: Txn) => {
+  const txnDuplicateMutation = useSyncMutation({
+    keys: [queryKeys.transactions],
+    mutationFn: async (txn: Txn) => {
       const now = Date.now();
       const copy: Record<string, unknown> = {
         id: `txn-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -426,10 +439,9 @@ function BanksContent() {
         deleted_at: null,
       };
       await db.table("transactions").upsert(upsertTxnRow(uid, copy));
-      await reload();
     },
-    [db, reload, uid, accounts],
-  );
+  });
+  const handleTxnDuplicate = (txn: Txn) => txnDuplicateMutation.mutate(txn);
 
   const accountInfo = useMemo(() => {
     const map: Record<string, { name: string; code: string; decimals: number }> = {};
@@ -464,22 +476,22 @@ function BanksContent() {
       }
     : undefined;
 
-  const handleTransferSave = useCallback(
-    async (rows: TransferRows) => {
+  const transferSaveMutation = useSyncMutation({
+    keys: [queryKeys.transfers, queryKeys.transactions],
+    mutationFn: async (rows: TransferRows) => {
       await insertTransfer(db, rows);
-      await reload();
     },
-    [db, reload],
-  );
+  });
+  const handleTransferSave = (rows: TransferRows) => transferSaveMutation.mutate(rows);
 
-  const handleReconcileSave = useCallback(
-    async (row: Record<string, unknown>) => {
+  const reconcileSaveMutation = useSyncMutation({
+    keys: [queryKeys.transactions],
+    mutationFn: async (row: Record<string, unknown>) => {
       await db.table("transactions").upsert(upsertTxnRow(uid, row));
       setReconcileAccount(null);
-      await reload();
     },
-    [db, reload, uid],
-  );
+  });
+  const handleReconcileSave = (row: Record<string, unknown>) => reconcileSaveMutation.mutate(row);
 
   const openRename = useCallback(
     (a: Account) => {
@@ -618,6 +630,11 @@ function BanksContent() {
 
       <section className="overflow-clip rounded-(--radius-lg) border border-(--border) bg-(--surface-1) divide-y divide-(--border)">
         {grouped.length === 0 ? (
+          dataPending ? (
+            <div className="flex items-center justify-center py-10 text-sm text-zinc-500" aria-label="Loading">
+              Loading…
+            </div>
+          ) : (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             {accounts.length === 0 ? (
               <>
@@ -638,6 +655,7 @@ function BanksContent() {
               </>
             )}
           </div>
+          )
         ) : (
           <>
             <div className="hidden justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2 md:flex">

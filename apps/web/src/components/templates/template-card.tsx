@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation } from "@/lib/sync/sync-query";
 import { loadTemplates, templateRow, type Template } from "@/lib/templates/templates-store";
 import { TemplateDialog } from "@/components/templates/template-dialog";
 import { Button } from "@/components/ui/button";
@@ -29,9 +31,8 @@ export function TemplateCard({
   categories: TemplateCardCategory[];
   onChanged?: () => void;
 }) {
-  const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { db, userId, isReady, lastSyncedAt } = useSync();
   const uid = userId ?? "local";
-  const [items, setItems] = useState<Template[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Template | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -41,18 +42,12 @@ export function TemplateCard({
     [accounts],
   );
 
-  const reload = useCallback(async () => {
-    try {
-      setItems(await loadTemplates(db));
-    } catch (error) {
-      console.error("Failed to load templates:", error);
-      setNotice("Couldn't load templates");
-    }
-  }, [db]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
+  const templatesQuery = useQuery({
+    queryKey: [queryKeys.templates, lastSyncedAt],
+    enabled: isReady,
+    queryFn: () => loadTemplates(db),
+  });
+  const items = templatesQuery.data ?? [];
 
   useEffect(() => {
     if (!notice) return;
@@ -60,34 +55,36 @@ export function TemplateCard({
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  const handleSave = useCallback(
-    async (item: Template) => {
-      try {
-        await db.table("templates").upsert(templateRow(uid, item));
-        await reload();
-        onChanged?.();
-      } catch (error) {
-        console.error("Failed to save template:", error);
-        setNotice("Couldn't save template");
-      }
+  const saveMutation = useSyncMutation({
+    keys: [queryKeys.templates],
+    mutationFn: async (item: Template) => {
+      await db.table("templates").upsert(templateRow(uid, item));
     },
-    [db, reload, uid, onChanged],
+    onError: () => setNotice("Couldn't save template"),
+  });
+
+  const deleteMutation = useSyncMutation({
+    keys: [queryKeys.templates],
+    mutationFn: async (item: Template) => {
+      await db.table("templates").upsert(
+        templateRow(uid, { ...item, deletedAt: Date.now(), updatedAt: Date.now() }),
+      );
+    },
+    onError: () => setNotice("Couldn't delete template"),
+  });
+
+  const handleSave = useCallback(
+    (item: Template) => {
+      saveMutation.mutate(item, { onSuccess: () => onChanged?.() });
+    },
+    [saveMutation, onChanged],
   );
 
   const handleDelete = useCallback(
-    async (item: Template) => {
-      try {
-        await db.table("templates").upsert(
-          templateRow(uid, { ...item, deletedAt: Date.now(), updatedAt: Date.now() }),
-        );
-        await reload();
-        onChanged?.();
-      } catch (error) {
-        console.error("Failed to delete template:", error);
-        setNotice("Couldn't delete template");
-      }
+    (item: Template) => {
+      deleteMutation.mutate(item, { onSuccess: () => onChanged?.() });
     },
-    [db, reload, uid, onChanged],
+    [deleteMutation, onChanged],
   );
 
   if (items.length === 0) return null;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import {
   DEFAULT_CATEGORY_COLORS,
   categoryColor,
@@ -115,16 +116,47 @@ function monthOptions(): Array<{ value: string; label: string; year: number; mon
 }
 
 export default function CategoriesPage() {
-  const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { db, userId } = useSync();
   const { masked: privacy } = usePrivacy();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
 
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [txns, setTxns] = useState<Txn[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const categoriesQuery = useSyncQuery({
+    key: queryKeys.categories,
+    sql: "SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY created_at DESC",
+    select: toCategory,
+  });
+  const txnsQuery = useSyncQuery({
+    key: queryKeys.transactions,
+    sql: "SELECT * FROM transactions WHERE deleted_at IS NULL",
+    select: toTxn,
+  });
+  const accountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL",
+    select: (row) => ({
+      id: String(row.id),
+      name: String(row.name),
+      kind: String(row.kind) as Account["kind"],
+      assetId: String(row.asset_id),
+      openingBalanceMinor: BigInt(row.opening_balance_minor as number | string),
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+      deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
+    }),
+  });
+  const budgetsQuery = useSyncQuery({
+    key: queryKeys.categoryBudgets,
+    sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
+    select: toBudget,
+  });
+
+  const categories = categoriesQuery.data ?? [];
+  const txns = txnsQuery.data ?? [];
+  const accounts = accountsQuery.data ?? [];
+  const budgets = budgetsQuery.data ?? [];
+
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const now = new Date();
@@ -141,32 +173,9 @@ export default function CategoriesPage() {
     });
   }, []);
 
-  const reload = useCallback(async () => {
-    const catRes = await db.query(`SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY created_at DESC`);
-    setCategories(catRes.rows.map(toCategory));
-    const txnRes = await db.query(`SELECT * FROM transactions WHERE deleted_at IS NULL`);
-    setTxns(txnRes.rows.map(toTxn));
-    const accRes = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
-    setAccounts(accRes.rows.map((r) => ({
-      id: String(r.id),
-      name: String(r.name),
-      kind: String(r.kind) as Account["kind"],
-      assetId: String(r.asset_id),
-      openingBalanceMinor: BigInt(r.opening_balance_minor as number | string),
-      createdAt: Number(r.created_at),
-      updatedAt: Number(r.updated_at),
-      deletedAt: r.deleted_at != null ? Number(r.deleted_at) : null,
-    })));
-    const budRes = await db.query(`SELECT * FROM category_budgets WHERE deleted_at IS NULL`);
-    setBudgets(budRes.rows.map(toBudget));
-  }, [db]);
-
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
-
-  const handleSave = useCallback(
-    async (c: Category) => {
+  const saveCategory = useSyncMutation({
+    keys: [queryKeys.categories, queryKeys.categoryBudgets],
+    mutationFn: async (c: Category) => {
       await db.table("categories").upsert(categoryRow(uid, c));
 
       // Record the budget for the current period (auditable history): past
@@ -187,14 +196,19 @@ export default function CategoriesPage() {
         updated_at: ts,
         deleted_at: hasBudget ? null : ts,
       });
-
-      await reload();
     },
-    [db, reload, uid, viewMonth],
+  });
+
+  const handleSave = useCallback(
+    (c: Category) => {
+      void saveCategory.mutate(c);
+    },
+    [saveCategory],
   );
 
-  const handleDelete = useCallback(
-    async (c: Category) => {
+  const deleteCategory = useSyncMutation({
+    keys: [queryKeys.categories, queryKeys.transactions],
+    mutationFn: async (c: Category) => {
       const tomb = { ...c, deletedAt: Date.now(), updatedAt: Date.now() };
       await db.table("categories").upsert(categoryRow(uid, tomb));
 
@@ -204,9 +218,14 @@ export default function CategoriesPage() {
         const assetId = accounts.find((a) => a.id === txn.accountId)?.assetId ?? "ast-1";
         await db.table("transactions").upsert(txnRow(uid, txn, updatedIds, assetId));
       }
-      await reload();
     },
-    [db, reload, txns, uid, accounts],
+  });
+
+  const handleDelete = useCallback(
+    (c: Category) => {
+      void deleteCategory.mutate(c);
+    },
+    [deleteCategory],
   );
 
   const budgetUsages = useMemo(

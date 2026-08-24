@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Bitcoin, Plus } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import type { SyncDatabase } from "@/lib/sync/types";
 import {
   computeHoldings,
@@ -122,24 +124,24 @@ export function HoldingsList({
   autoOpenTrade?: boolean;
   masked?: boolean;
 }) {
-  const { db, isConnected, lastSyncedAt } = useSync();
+  const { db } = useSync();
   const uid = userId ?? "dev-user";
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [txns, setTxns] = useState<TokenTransaction[]>([]);
-  const [prices, setPrices] = useState<Map<string, CoinPrice>>(new Map());
   const [tradeOpen, setTradeOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
-    const tokRes = await db.query("SELECT * FROM tokens WHERE deleted_at IS NULL");
-    setTokens(tokRes.rows.map(toToken));
-    const txnRes = await db.query("SELECT * FROM token_transactions WHERE deleted_at IS NULL");
-    setTxns(txnRes.rows.map(toTokenTxn));
-  }, [db]);
+  const tokensQuery = useSyncQuery<Token>({
+    key: queryKeys.tokens,
+    sql: "SELECT * FROM tokens WHERE deleted_at IS NULL",
+    select: toToken,
+  });
+  const tokens = tokensQuery.data ?? [];
 
-  useEffect(() => {
-    void reload();
-  }, [reload, isConnected, lastSyncedAt]);
+  const txnsQuery = useSyncQuery<TokenTransaction>({
+    key: queryKeys.tokenTransactions,
+    sql: "SELECT * FROM token_transactions WHERE deleted_at IS NULL",
+    select: toTokenTxn,
+  });
+  const txns = txnsQuery.data ?? [];
 
   // Deep link from the long-press Add menu: open the trade sheet once.
   useEffect(() => {
@@ -152,18 +154,24 @@ export function HoldingsList({
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  const handleTradeSave = useCallback(
-    async (trade: TradePayload) => {
-      try {
-        await persistTrade(db, uid, tokens, accounts, trade);
-        await reload();
-        setTradeOpen(false);
-        setNotice(`Trade logged (${trade.side})`);
-      } catch {
-        setNotice("Couldn't log trade");
-      }
+  const tradeMutation = useSyncMutation<TradePayload>({
+    keys: [queryKeys.tokens, queryKeys.tokenTransactions, queryKeys.transactions],
+    mutationFn: async (trade: TradePayload) => {
+      await persistTrade(db, uid, tokens, accounts, trade);
     },
-    [db, uid, tokens, accounts, reload],
+    onError: () => setNotice("Couldn't log trade"),
+  });
+
+  const handleTradeSave = useCallback(
+    (trade: TradePayload) => {
+      tradeMutation.mutate(trade, {
+        onSuccess: () => {
+          setTradeOpen(false);
+          setNotice(`Trade logged (${trade.side})`);
+        },
+      });
+    },
+    [tradeMutation],
   );
 
   const holdings = useMemo(() => computeHoldings(tokens, txns), [tokens, txns]);
@@ -174,14 +182,12 @@ export function HoldingsList({
     [tokens],
   );
 
-  useEffect(() => {
-    if (coingeckoIds.length === 0) return;
-    let cancelled = false;
-    fetchPrices(coingeckoIds).then((map) => {
-      if (!cancelled) setPrices(map);
-    });
-    return () => { cancelled = true; };
-  }, [coingeckoIds]);
+  const pricesQuery = useQuery({
+    queryKey: ["crypto-prices", coingeckoIds.join(",")],
+    enabled: coingeckoIds.length > 0,
+    queryFn: () => fetchPrices(coingeckoIds),
+  });
+  const prices = pricesQuery.data ?? new Map();
 
   const totalValue = useMemo(
     () => holdings.reduce((sum, h) => sum + computeValueUsd(h, prices), 0),

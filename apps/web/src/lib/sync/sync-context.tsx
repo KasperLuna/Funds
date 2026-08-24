@@ -16,6 +16,14 @@ type SyncContextValue = {
   db: SyncDatabase;
   isConnected: boolean;
   /**
+   * True when the data source is settled and safe to query for authoritative
+   * data: PowerSync connected, OR sync is off (session resolved signed-out, so
+   * the local memory db is the source of truth). Pages gate their initial
+   * loads + empty-state rendering on this so they don't flash a false "0 /
+   * empty" state while PowerSync swaps in asynchronously.
+   */
+  isReady: boolean;
+  /**
    * Epoch ms of the last fully-completed sync checkpoint, null until one lands.
    * Changes on EVERY checkpoint delivery — including the first login and user
    * switches — so pages can reload freshly-downloaded data.
@@ -25,9 +33,10 @@ type SyncContextValue = {
   userId: string | null;
 };
 
-const SyncContext = createContext<SyncContextValue>({
+export const SyncContext = createContext<SyncContextValue>({
   db: new MemorySyncDatabase(),
   isConnected: false,
+  isReady: false,
   lastSyncedAt: null,
   userId: null,
 });
@@ -47,12 +56,27 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   });
   const [isConnected, setIsConnected] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+  // cavetail: signed-in + server down keeps isConnected false forever → pages
+  // would load indefinitely. Fall back to ready after a window so the app
+  // still renders (local db) instead of hanging on a spinner. Ceiling: nothing
+  // syncs while offline anyway; upgrade path: surface a real offline state.
+  const [fellBackReady, setFellBackReady] = useState(false);
   const clientRef = useRef<PowerSyncClient | null>(null);
 
   // Only attempt remote sync once the session has fully loaded AND the user is
   // signed in. PowerSync needs a valid session to mint a token; connecting
   // before /get-session resolves (or signed-out) only produces console spam.
   const canSync = !!userId && !isPending;
+
+  // Safe to query authoritative data: connected, or sync off (signed out →
+  // local memory db), or timed out waiting for a connect (server down).
+  const isReady = isConnected || (!isPending && !userId) || fellBackReady;
+
+  useEffect(() => {
+    if (isReady) return;
+    const t = setTimeout(() => setFellBackReady(true), 3000);
+    return () => clearTimeout(t);
+  }, [isReady]);
 
   useEffect(() => {
     if (!canSync) return;
@@ -142,8 +166,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, [db, canSync]);
 
   const value = useMemo(
-    () => ({ db, isConnected, lastSyncedAt, userId }),
-    [db, isConnected, lastSyncedAt, userId],
+    () => ({ db, isConnected, isReady, lastSyncedAt, userId }),
+    [db, isConnected, isReady, lastSyncedAt, userId],
   );
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
 }

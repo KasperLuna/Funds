@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
@@ -23,6 +24,13 @@ const ACCOUNTS: AccountOption[] = [
   { id: "acc-2", name: "Wallet", assetId: "ast-2", decimals: 8 },
 ];
 const CATS: CategoryOption[] = [{ id: "cat-1", name: "Food" }];
+
+function withQueryClient(ui: ReactElement) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
+}
 
 function Harness({ sync }: { sync: MemorySyncDatabase }) {
   const [open, setOpen] = useState(true);
@@ -94,7 +102,7 @@ describe("CaptureSheet", () => {
 
   it("keypad drives the readout", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
     const readout = screen.getByTestId("amount-readout");
 
     for (const k of ["1", "2", "5"]) await user.click(screen.getByRole("button", { name: k }));
@@ -113,7 +121,7 @@ describe("CaptureSheet", () => {
 
   it("save writes a negative expense locally; undo tombstones it", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
 
     for (const k of ["1", "2", "5"]) await user.click(screen.getByRole("button", { name: k }));
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -126,7 +134,7 @@ describe("CaptureSheet", () => {
 
   it("save + undo writes a tombstone via the hook", async () => {
     const user = userEvent.setup();
-    render(<UndoHarness sync={sync} />);
+    render(withQueryClient(<UndoHarness sync={sync} />));
 
     await user.click(screen.getByRole("button", { name: "DoSave" }));
     const undoBtn = await waitFor(() => screen.getByRole("button", { name: "Undo" }));
@@ -139,7 +147,7 @@ describe("CaptureSheet", () => {
 
   it("income toggle signs amount positive", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
 
     await user.click(screen.getByRole("button", { name: "Income" }));
     await user.click(screen.getByRole("button", { name: "5" }));
@@ -152,7 +160,7 @@ describe("CaptureSheet", () => {
 
   it("honors per-asset decimals on account switch", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
 
     const readout = screen.getByTestId("amount-readout");
     // Account selector is a popover chip; open it and pick the 8-decimal account.
@@ -163,14 +171,14 @@ describe("CaptureSheet", () => {
   });
 
   it("save is disabled when amount is zero", () => {
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).toBeDisabled();
   });
 
   it("category chips toggle aria-pressed", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
     const group = screen.getByRole("group", { name: "Categories" });
     const chip = within(group).getByRole("button", { name: "Food" });
     expect(chip).toHaveAttribute("aria-pressed", "false");
@@ -185,7 +193,7 @@ describe("CaptureSheet", () => {
       { id: "r1", description: "Coffee", amountMinor: 12000n, categoryIds: [], date: Date.now() },
     ];
     render(
-      <HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />,
+      withQueryClient(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />),
     );
     const list = screen.getByRole("list", { name: "Suggestions" });
     expect(within(list).getByText(/Coffee/)).toBeInTheDocument();
@@ -196,7 +204,7 @@ describe("CaptureSheet", () => {
     const withSuggestions: RecentTxn[] = [
       { id: "r1", description: "Rent", amountMinor: -150000n, categoryIds: [], date: Date.now() },
     ];
-    render(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />);
+    render(withQueryClient(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />));
 
     const list = screen.getByRole("list", { name: "Suggestions" });
     await user.click(within(list).getByText(/Rent/));
@@ -218,7 +226,7 @@ describe("CaptureSheet", () => {
     const withSuggestions: RecentTxn[] = [
       { id: "r1", description: "Salary", amountMinor: 250000n, categoryIds: [], date: Date.now() },
     ];
-    render(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />);
+    render(withQueryClient(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />));
 
     const list = screen.getByRole("list", { name: "Suggestions" });
     await user.click(within(list).getByText(/Salary/));
@@ -277,7 +285,7 @@ describe("CaptureSheet", () => {
 
   it("selects a custom date from the calendar", async () => {
     const user = userEvent.setup();
-    render(<Harness sync={sync} />);
+    render(withQueryClient(<Harness sync={sync} />));
 
     await user.click(screen.getByRole("button", { name: "Date" }));
     // The calendar renders a grid of day buttons; pick an in-month day (e.g. the 15th).
