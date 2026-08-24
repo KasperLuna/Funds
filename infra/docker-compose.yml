@@ -31,6 +31,12 @@ services:
     build:
       context: ./..
       dockerfile: apps/web/Dockerfile
+      # cavetail: persist buildkit layers across runs -> repeat deploys skip
+      # pnpm install + next build (first run populates cache).
+      cache_from:
+        - type=local,src=web-buildcache
+      cache_to:
+        - type=local,dest=web-buildcache,mode=max
     restart: unless-stopped
     depends_on:
       postgres:
