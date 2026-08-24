@@ -51,6 +51,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <style>{`html,body{background-color:#000}`}</style>
       </head>
       <body>
         <span
