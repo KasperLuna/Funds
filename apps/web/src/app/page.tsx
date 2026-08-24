@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { FundsLogo } from "@/components/brand/funds-logo";
 
 const FACTS = [
   { label: "Multi-currency" },
@@ -13,15 +14,8 @@ export default function LandingPage() {
     <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-8 overflow-hidden px-4 text-center">
       <div className="guilloche absolute inset-0 opacity-40" aria-hidden />
       <div className="relative flex flex-col items-center gap-5">
-        <span
-          className="grid h-16 w-16 place-items-center rounded-(--radius-lg) bg-(--accent) font-display text-3xl font-bold text-(--accent-foreground)"
-          aria-hidden
-        >
-          F
-        </span>
-        <h1 className="font-display text-6xl font-bold tracking-tight text-zinc-50">
-          Funds
-        </h1>
+        <FundsLogo className="h-14 w-auto text-zinc-50" />
+        <h1 className="sr-only">Funds</h1>
       </div>
       <p className="relative max-w-md text-base leading-relaxed text-zinc-400">
         A multi-currency personal finance tracker that captures every transaction fast,

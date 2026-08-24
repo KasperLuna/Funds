@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { NAV_ITEMS, NavLink, MobileTab, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
+import { FundsLogo } from "@/components/brand/funds-logo";
 import { UserCard } from "@/components/auth/user-card";
 import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicator";
 import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
@@ -53,14 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="mx-auto max-w-[1920px]">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
-          <div className="mb-6 flex items-center gap-2.5 px-2">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-(--radius-md) bg-(--accent) font-display text-base font-bold text-(--accent-foreground)"
-              aria-hidden
-            >
-              F
-            </span>
-            <span className="font-display text-lg font-bold tracking-tight">Funds</span>
+          <div className="mb-6 flex items-center px-2">
+            <FundsLogo className="h-7 w-auto text-zinc-50" />
           </div>
           <AddButton label="Add" className="mb-3 w-full" />
           <UserCard />
@@ -80,14 +75,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile top header */}
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:hidden">
-          <span className="flex items-center gap-2">
-            <span
-              className="grid h-6 w-6 place-items-center rounded-(--radius-sm) bg-(--accent) font-display text-sm font-bold text-(--accent-foreground)"
-              aria-hidden
-            >
-              F
-            </span>
-            <span className="font-display text-base font-bold tracking-tight">Funds</span>
+          <span className="flex items-center">
+            <FundsLogo className="h-6 w-auto text-zinc-50" />
           </span>
           <span className="flex items-center gap-2">
             <PrivacyToggle />
