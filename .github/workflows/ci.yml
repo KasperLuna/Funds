@@ -1,7 +1,8 @@
 name: Deploy
-# Bare deploy pipeline only. lint/typecheck/test run in .githooks/pre-commit
-# (git config core.hooksPath .githooks) — keeps the OOM-prone proxy host free
-# for the build; a broken commit is gated locally instead.
+# Bare deploy pipeline. Images are built+published to ghcr.io by
+# .githooks/pre-commit (linux/amd64); this host never builds — it only pulls
+# and runs, which keeps the OOM-prone proxy host stable. lint/typecheck/test
+# also run in pre-commit (git config core.hooksPath .githooks).
 on:
   push:
     branches: [main]
@@ -22,13 +23,19 @@ jobs:
         run: printf '%s\n' "${ENV_FILE}" > infra/.env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
-      # cavetail: OOM-prone host (also a proxy). Free RAM + disk before build.
+      - name: Login to GHCR
+        run: echo "${GHCR_TOKEN}" | docker login ghcr.io -u KasperLuna --password-stdin
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+      # cavetail: pull BEFORE any teardown — a failed pull leaves the running
+      # stack untouched. down+prune afterwards frees RAM and old images; the
+      # host never builds.
+      - run: docker compose -f infra/docker-compose.yml pull
       - run: docker compose -f infra/docker-compose.yml down --remove-orphans
-      - run: docker image prune -af && docker builder prune -af
-      - run: docker compose -f infra/docker-compose.yml build
+      - run: docker image prune -af
       # cavetail: migrate runs on host against localhost:5432, so postgres must
       # be up first (fresh box has nothing running).
-      - run: docker compose -f infra/docker-compose.yml up -d postgres
+      - run: docker compose -f infra/docker-compose.yml up -d --no-build postgres
       - run: |
           for i in $(seq 1 120); do
             docker compose -f infra/docker-compose.yml exec -T postgres pg_isready >/dev/null 2>&1 && break
@@ -44,7 +51,7 @@ jobs:
       - run: pnpm --filter @funds/db run migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - run: docker compose -f infra/docker-compose.yml up -d
+      - run: docker compose -f infra/docker-compose.yml up -d --no-build
       - run: |
           PORT="${WEB_HOST_PORT:-$(sed -n 's/^WEB_HOST_PORT=//p' infra/.env)}"
           PORT="${PORT:-13000}"

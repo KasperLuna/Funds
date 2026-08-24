@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Verification gate moved out of CI (pipeline is deploy-only now).
+# Verification + image build gate, moved out of CI (pipeline is deploy-only:
+# the proxy host never builds, it pulls from ghcr.io).
 # Enable with: git config core.hooksPath .githooks
+# Skip the (slow, qemu) image build+push with: SKIP_DOCKER_PUSH=1 git commit
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
@@ -19,3 +21,16 @@ fi
 pnpm run lint
 pnpm run typecheck
 pnpm run test
+
+# Build + publish linux/amd64 images the host deploys. Only when build-relevant
+# files are staged (else skip: deploy keeps the existing :latest).
+if [ "${SKIP_DOCKER_PUSH:-0}" != "1" ] &&
+   git diff --cached --name-only | rg -q '(^apps/web/|^packages/|Dockerfile$|^ops/worker-stub/|^pnpm-|^package.json$|^infra/docker-compose.yml$)'; then
+  # auth needed once: echo <PAT> | docker login ghcr.io -u KasperLuna --password-stdin
+  docker buildx build --platform linux/amd64 --push \
+    -t ghcr.io/kasperluna/funds-web:latest \
+    -f apps/web/Dockerfile .
+  docker buildx build --platform linux/amd64 --push \
+    -t ghcr.io/kasperluna/funds-worker:latest \
+    ops/worker-stub
+fi

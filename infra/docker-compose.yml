@@ -31,18 +31,12 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   web:
+    # cavetail: image built+published by .githooks/pre-commit (linux/amd64 ->
+    # ghcr.io); the host never builds. build: context kept for local dev only.
+    image: ghcr.io/kasperluna/funds-web:${WEB_IMAGE_TAG:-latest}
     build:
       context: ./..
       dockerfile: apps/web/Dockerfile
-      # cavetail: persist buildkit layers across runs -> repeat deploys skip
-      # pnpm install + next build (first run populates cache). Cache lives
-      # OUTSIDE the checkout (git clean -ffdx wipes ignored files each run),
-      # so set BUILD_CACHE_DIR=/absolute/path on the runner; default relative
-      # to infra/ keeps local dev working.
-      cache_from:
-        - type=local,src=${BUILD_CACHE_DIR:-web-buildcache}
-      cache_to:
-        - type=local,dest=${BUILD_CACHE_DIR:-web-buildcache},mode=min
     restart: unless-stopped
     mem_limit: 1g
     depends_on:
@@ -73,6 +67,7 @@ services:
       PS_JWT_SECRET_B64URL: ${POWER_SYNC_JWT_SECRET_B64URL}
 
   worker:
+    image: ghcr.io/kasperluna/funds-worker:${WORKER_IMAGE_TAG:-latest}
     build:
       context: ./../ops/worker-stub
     restart: unless-stopped
