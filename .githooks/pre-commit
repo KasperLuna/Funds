@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Verification gate moved out of CI (pipeline is deploy-only now).
+# Enable with: git config core.hooksPath .githooks
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+# db + web tests need a throwaway postgres on 127.0.0.1:54329 (funds_test).
+if ! docker exec funds-test-pg pg_isready -U postgres -d funds_test >/dev/null 2>&1; then
+  docker rm -f funds-test-pg >/dev/null 2>&1 || true
+  docker run -d --name funds-test-pg \
+    -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=funds_test \
+    -p 127.0.0.1:54329:5432 postgres:16-alpine >/dev/null
+  for i in $(seq 1 60); do
+    docker exec funds-test-pg pg_isready -U postgres -d funds_test >/dev/null 2>&1 && break
+    sleep 1
+  done
+fi
+
+pnpm run lint
+pnpm run typecheck
+pnpm run test

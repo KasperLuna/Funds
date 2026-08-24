@@ -1,13 +1,14 @@
-name: CI
+name: Deploy
+# Bare deploy pipeline only. lint/typecheck/test run in .githooks/pre-commit
+# (git config core.hooksPath .githooks) — keeps the OOM-prone proxy host free
+# for the build; a broken commit is gated locally instead.
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   workflow_dispatch:
 
 jobs:
-  ci:
+  deploy:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -21,27 +22,7 @@ jobs:
         run: printf '%s\n' "${ENV_FILE}" > infra/.env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
-      # cavetail: db tests target localhost:54329/funds_test (packages/db convention);
-      # throwaway container keeps them off the deployed postgres.
-      - name: Start throwaway test Postgres
-        run: |
-          docker rm -f funds-test-pg >/dev/null 2>&1 || true
-          docker run -d --name funds-test-pg \
-            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=funds_test \
-            -p 127.0.0.1:54329:5432 postgres:16-alpine
-          for i in $(seq 1 120); do
-            docker exec funds-test-pg pg_isready -U postgres -d funds_test >/dev/null 2>&1 && break
-            sleep 1
-          done
-          docker exec funds-test-pg pg_isready -U postgres -d funds_test
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: docker rm -f funds-test-pg
-      # cavetail: OOM-prone host (also a proxy). Free RAM before the heavy build:
-      # stop the running stack + drop unused images/buildkit cache. Build runs
-      # cold-ish afterwards; service memory caps + build heap cap prevent a
-      # runaway from killing the host.
+      # cavetail: OOM-prone host (also a proxy). Free RAM + disk before build.
       - run: docker compose -f infra/docker-compose.yml down --remove-orphans
       - run: docker image prune -af && docker builder prune -af
       - run: docker compose -f infra/docker-compose.yml build
