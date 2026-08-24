@@ -32,11 +32,14 @@ services:
       context: ./..
       dockerfile: apps/web/Dockerfile
       # cavetail: persist buildkit layers across runs -> repeat deploys skip
-      # pnpm install + next build (first run populates cache).
+      # pnpm install + next build (first run populates cache). Cache lives
+      # OUTSIDE the checkout (git clean -ffdx wipes ignored files each run),
+      # so set BUILD_CACHE_DIR=/absolute/path on the runner; default relative
+      # to infra/ keeps local dev working.
       cache_from:
-        - type=local,src=web-buildcache
+        - type=local,src=${BUILD_CACHE_DIR:-web-buildcache}
       cache_to:
-        - type=local,dest=web-buildcache,mode=min
+        - type=local,dest=${BUILD_CACHE_DIR:-web-buildcache},mode=min
     restart: unless-stopped
     depends_on:
       postgres:

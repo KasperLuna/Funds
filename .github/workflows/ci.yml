@@ -37,6 +37,10 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: docker rm -f funds-test-pg
+      # cavetail: runner disk fills across runs (old images + buildkit cache) ->
+      # cold builds die writing blobs. Prune before build; local-dir buildcache
+      # (BUILD_CACHE_DIR) is plain files, unaffected by builder prune.
+      - run: docker image prune -af && docker builder prune -af
       - run: docker compose -f infra/docker-compose.yml build
       # cavetail: migrate runs on host against localhost:5432, so postgres must
       # be up first (fresh box has nothing running).
