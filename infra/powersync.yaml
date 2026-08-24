@@ -32,11 +32,12 @@ sync_config:
     config:
       edition: 3
 
-    # IMPORTANT: PowerSync auto-creates the `powersync` publication ONCE from
-    # these streams. Adding a stream for a NEW table after that requires
-    #   ALTER PUBLICATION powersync ADD TABLE <table>;
-    # in Postgres (plus touching existing rows so they replicate), then a
-    # container restart. Otherwise the table silently never syncs.
+    # IMPORTANT: the `powersync` publication is NOT auto-created by the service.
+    # The deploy (ci.yml / ops/deploy.sh) creates it idempotently:
+    #   CREATE PUBLICATION powersync FOR ALL TABLES;
+    # Streams below filter per-user at sync time; the publication defines what
+    # is replicated from Postgres (FOR ALL TABLES = every current and future
+    # table). Without the publication the stream 500s (PSYNC_S1141/PSYNC_S2302).
     streams:
       accounts:
         auto_subscribe: true

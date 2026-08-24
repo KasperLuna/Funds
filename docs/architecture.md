@@ -33,25 +33,28 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 ## 2. Service Topology (docker-compose)
 
 ```
-cloudflared      host systemd service (not in compose); CF-managed TLS,
-                   ingress rules in Zero Trust dashboard:
-                    /                -> http://localhost:$WEB_HOST_PORT (default 13000; app)
-                    /sync/*          -> http://localhost:$POWERSYNC_HOST_PORT (default 18080; powersync, WebSocket + HTTP)
-app              Next.js standalone build (tRPC routes, webhook endpoints)
-postgres         PG16, logical replication ON, single volume
+cloudflared      host systemd service (not in compose); CF-managed TLS.
+                 Ingress rules in the Zero Trust dashboard:
+                   /                -> http://localhost:$WEB_HOST_PORT (default 13000; app)
+                   /sync/*          -> http://localhost:$POWERSYNC_HOST_PORT (default 18080; powersync)
+                 The /sync/* rule is OPTIONAL since 2026-08: the app now proxies
+                 /sync/stream to powersync internally (apps/web/src/app/sync/stream/route.ts),
+                 so a single catch-all entry suffices.
+app              Next.js standalone build (tRPC routes, webhook endpoints).
+                 Also terminates + proxies /sync/stream -> powersync:8080 inside
+                 the compose network (POWER_SYNC_INTERNAL_URL).
+postgres         PG16, logical replication ON (wal_level=logical), single volume `pgdata`.
+                 `powersync` publication created by the deploy (FOR ALL TABLES).
 powersync        PowerSync service; consumes PG logical replication slot,
-                 serves per-user sync buckets
-worker           long-running node process:
-                   - reminder cron (planned txns -> VAPID push)
-                   - voice-draft TTL cleanup
-                   - CoinGecko price refresh loop
-                   (node-cron inside container; no external scheduler needed)
+                 serves per-user sync buckets.
 ```
 
-Volumes: `pgdata`. Compose host ports bound to 127.0.0.1 only (cloudflared, CI health/migrate, local dev). All config via `.env` composed from a committed `.env.example`.
+Volumes: `pgdata`. Compose host ports bound to `127.0.0.1` only (cloudflared, CI health/migrate, local dev). All config via `.env` (gitignored), built from committed `infra/.env.example`.
 
 ### CI/CD
-Self-hosted runner on the VPS: build images → `docker compose pull/build` → run Drizzle migrations job → `compose up -d` → health checks (`/api/health`). Rollback = previous image tags.
+- **Builds happen on the developer machine, not the host.** `.githooks/pre-commit` (enabled via `git config core.hooksPath .githooks`) runs lint → typecheck → test → builds and publishes `linux/amd64` images to `ghcr.io/kasperluna/funds-web:latest`. The proxy host never builds (it OOMs easily) — it only pulls.
+- `.github/workflows/ci.yml` (self-hosted runner on the VPS, `workflow_dispatch` + push to `main`): write `infra/.env` from the `ENV_FILE` secret → login GHCR → `pull` (before any teardown so a failed pull never downs the stack) → `down` + prune → `up postgres` → wait → Drizzle migrate (host-side, `localhost:5432`) → ensure `powersync` publication → `up -d --no-build` → health checks (web `/api/health` + powersync container running).
+- Rollback = redeploy an earlier commit (its pre-commit build is immutable in the git history).
 
 ---
 

@@ -50,10 +50,10 @@ Confirmed capabilities (from `logic.md` / `architecture.md`, preserved under red
 
 ## Evidence on Hand
 
-- `logic.md` — full domain spec (entities, invariants, calculations, workflows).
-- `architecture.md` — decided stack, data model, sync design, migration notes.
-- `design.md` / `DESIGN.md` — incumbent UX/UI spec and visual language (slate-on-slate world being replaced).
-- `implementation.md` — existing implementation notes.
+- `docs/logic.md` — full domain spec (entities, invariants, calculations, workflows).
+- `docs/architecture.md` — decided stack, data model, sync design, migration notes.
+- `docs/design.md` — incumbent UX/UI spec and visual language (Intaglio Plate world, built & approved 2026-08-23).
+- `docs/implementation.md` — implementation plan + live deploy notes.
 - Working incumbent implementation in `apps/web` (components, tokens, routes) — used as anti-reference for the redesign.
 - No marketing claims, testimonials, pricing, or imagery exist; none should be fabricated.
 

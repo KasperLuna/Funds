@@ -2,6 +2,8 @@
 
 Execution order for the rewrite. Sources of truth: `logic.md` (domain rules), `architecture.md` (stack/topology), `design.md` (UX). This file defines phases, deliverables, and acceptance gates. Phases are vertical slices — each ends `docker compose up`-deployable and demoable.
 
+> **Status 2026-08-24:** Phases 1–4 are live in production (VPS + cloudflared + PowerSync sync working end-to-end). Phases 5–14 are the forward roadmap. Phase 1's deliverable changed mid-flight: the VPS is also a proxy and OOMs under a heavy `next build`, so the build was moved off-host (see Phase 1 notes).
+
 ---
 
 ## 0. Ground Rules
@@ -18,17 +20,27 @@ apps/web        Next.js app (+ tRPC, PWA)
 packages/core   pure logic (money, parser, recurrence, lots/cost-basis)
 packages/db     Drizzle schema + migrations + seeds
 infra           docker-compose*, .env.example, powersync.yaml
-ops             GH Actions workflows, deploy scripts
+ops             deploy scripts, sync bootstrap (worker package: not yet deployed)
+scripts         operational scripts (import-pocketbase.sh)
+docs/           architecture.md, design.md, implementation.md, logic.md, product.md
+.githooks/      pre-commit (verification + image build/push gate)
 ```
 
 ---
 
 ## Phase 1 — Infra Skeleton
 Deliverables:
-- `docker-compose.yml`: postgres (logical replication ON), powersync, web (Next standalone), worker. Health checks all; host ports 127.0.0.1-only.
-- cloudflared on host (systemd, token-managed): TLS + routing (`/sync/*` → :8080, catch-all → :3000). `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds).
-- GH Actions (self-hosted runner): lint+typecheck+test → build image → migrate → `compose up -d` → smoke check `/api/health`.
+- `docker-compose.yml`: postgres (logical replication ON), powersync, web (Next standalone). Host ports `127.0.0.1`-only, memory-capped (`mem_limit`) so a runaway container restarts instead of OOM-ing the proxy host.
+- cloudflared on host (systemd, token-managed): TLS + routing. Catch-all → `$WEB_HOST_PORT` (default 13000); `/sync/*` → `$POWERSYNC_HOST_PORT` (default 18080) optional since the web app proxies `/sync/stream` internally. `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds, internal powersync URL).
+- GH Actions (self-hosted runner) is **deploy-only**: it never builds. Images are built + pushed to GHCR by `.githooks/pre-commit` on the developer machine (linux/amd64). The runner pulls, migrates, ensures the `powersync` publication, and health-checks.
 Gate: fresh VPS boots whole stack with one command; rollback tag works.
+
+## Phase 1b — Deploy plumbing (realized 2026-08-24)
+Hard-won operational knowledge; see README.md §Deploy for the full picture.
+- **Builds off the host**: pre-commit runs lint/typecheck/test + `docker buildx build --platform linux/amd64 --push` to GHCR. Skip the slow build with `SKIP_DOCKER_PUSH=1 git commit`.
+- **The Postgres password must be URL-safe** (alphanumeric). PowerSync's pgwire parser does not decode percent-encoded passwords (`&`, `%` break it); node-postgres does. Change the password with `ALTER USER postgres PASSWORD '...'` inside the running container.
+- **The `powersync` publication is NOT auto-created.** The deploy creates it idempotently: `CREATE PUBLICATION powersync FOR ALL TABLES`. Without it, the stream 500s with `PSYNC_S1141`/`PSYNC_S2302`.
+- **PowerSync has no `/health` endpoint**; the deploy verifies the container is running instead.
 
 ## Phase 2 — Data Layer
 Deliverables:
