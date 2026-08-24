@@ -4,6 +4,8 @@
 # in CF Zero Trust: hostname catch-all -> http://localhost:3000,
 # path /sync/* -> http://localhost:8080.
 # Host ports bound to 127.0.0.1 only (cloudflared + CI migrate/health + local dev).
+# Host-side ports configurable via .env: WEB_HOST_PORT (default 13000),
+# POWERSYNC_HOST_PORT (default 18080) — chosen to avoid common collisions.
 name: funds
 
 services:
@@ -34,7 +36,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${WEB_HOST_PORT:-13000}:3000"
     env_file: .env
 
   # cavetail: enable in P4
@@ -45,7 +47,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${POWERSYNC_HOST_PORT:-18080}:8080"
     volumes:
       # cavetail: config-mount + POWERSYNC_CONFIG_PATH is the documented compose pattern
       - ./powersync.yaml:/config/powersync.yaml:ro

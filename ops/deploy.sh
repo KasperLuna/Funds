@@ -19,7 +19,9 @@ echo "==> Starting services"
 docker compose -f "$COMPOSE_FILE" up -d
 
 # Health check: prefer the public URL, fall back to localhost.
-HEALTH_URL="http://localhost:3000/api/health"
+WEB_PORT="${WEB_HOST_PORT:-$(sed -n 's/^WEB_HOST_PORT=//p' infra/.env 2>/dev/null)}"
+WEB_PORT="${WEB_PORT:-13000}"
+HEALTH_URL="http://localhost:${WEB_PORT}/api/health"
 if [ -n "$DOMAIN" ]; then
   HEALTH_URL="https://${DOMAIN}/api/health"
 fi

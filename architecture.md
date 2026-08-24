@@ -35,8 +35,8 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 ```
 cloudflared      host systemd service (not in compose); CF-managed TLS,
                    ingress rules in Zero Trust dashboard:
-                    /                -> http://localhost:3000 (app)
-                    /sync/*          -> http://localhost:8080 (powersync, WebSocket + HTTP)
+                    /                -> http://localhost:$WEB_HOST_PORT (default 13000; app)
+                    /sync/*          -> http://localhost:$POWERSYNC_HOST_PORT (default 18080; powersync, WebSocket + HTTP)
 app              Next.js standalone build (tRPC routes, webhook endpoints)
 postgres         PG16, logical replication ON, single volume
 powersync        PowerSync service; consumes PG logical replication slot,
