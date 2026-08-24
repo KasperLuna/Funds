@@ -66,15 +66,16 @@ Gate: airplane-mode CRUD round-trip on real phone.
 
 ## Phase 5 — Capture Sheet (the product)
 Deliverables:
-- Bottom-sheet/dialog shell (responsive per design.md §4), custom keypad component (haptics, per-asset decimals, disabled-reason states), context strip (account defaulting, Today/Yesterday/date), type toggle.
+- Bottom-sheet/dialog shell (responsive per design.md §4), custom keypad component (haptics, per-asset decimals, disabled-reason states), context strip (account chip + date chip with Today/Yesterday presets and a full calendar via `react-day-picker`), type toggle.
+- Templates nested behind a `[Templates ▾]` chip (2-tap apply; active template shows a check) instead of an inline chip row; suggestions sit below the hero and set type from the sign (negative → expense, positive → income).
 - Save path: local insert → optimistic dismiss → undo toast (compensating mutation pre-sync).
 - Suggestions engine v1: due-today scheduled txns (one-tap log + advance recurrence per logic.md §8.3) + recent repeats query.
-- Long-press type menu; desktop dialog variant + sidebar Add + `n` shortcut.
+- Add mini-menu via the mobile `＋` caret cap and desktop sidebar split-Add caret (Expense · Income · Transfer · Trade); no long-press.
 Unit tests: amount parsing/clamping per decimals; undo correctness.
 Gate: **north-star met** — cold open → logged ≤5s / ≤3 interactions, measured on mid-tier Android, offline.
 
 ## Phase 6 — Banks & Transactions List
-Grouped-by-day virtualized list, swipe actions (duplicate/delete/edit via capture sheet), day sticky headers, account pills header, filter row (search/category/month), table view ≥lg. Edit/delete balance semantics free (derived balances — just row mutations).
+Grouped-by-day virtualized list, swipe actions (duplicate/delete/edit via capture sheet), day sticky headers, account pills header, "This month" stat strip (labeled, privacy-maskable), **sticky filter bar** (full-text search across description/category/account · category multi-select popover · date-range popover with a calendar), table view ≥lg. Mobile hides the redundant Add-transaction button (footer `＋` covers it). Balance adjustment (reconcile) per logic.md §4.4 lives on the AccountCard as "Adjust balance" → dedicated sheet that posts a single income/expense for the delta.
 Gate: 10k-row scroll 60fps; swipe+undo suite passes.
 
 ## Phase 7 — Accounts, Categories, Transfers
@@ -87,6 +88,7 @@ Gate: buy→sell cycle shows correct realized P/L; offline trade queues cleanly.
 
 ## Phase 9 — Scheduled Transactions & Reminders
 Templates + scheduled entities UI; advancement/waive flows (already wired in capture suggestions); worker reminder cron (IANA-timezone due-today check, 3h dedupe, VAPID send, batch ack); deep-link prefill; push subscription upsert/remove UI + test-send.
+Card is a glance surface: shows only active items coming up within 3 days (nearest first, overdue included); the rest hide behind a "N more scheduled" expander (`partitionSchedules` in `lib/scheduled/compute.ts`). On mobile, Pause/Edit/Delete collapse into a kebab menu; Confirm stays inline. Row = name+meta on the left, amount + status chip + Confirm + actions on the right (all on one line).
 Gate: reminder arrives on phone at due time in correct timezone; waive advances without creating txn.
 
 ## Phase 10 — Voice Pipeline
@@ -107,6 +109,11 @@ Gate: migrated user sees identical balances/net worth both apps.
 
 ## Phase 14 — Visual Polish Pass
 Token sweep replacing bespoke gradients (design.md §9), contrast fixes (slate-400 floor), focus rings, motion audit, empty/loading standardization, chart theme unification.
+Also landed during polish:
+- **Desktop sidebar** redesigned to the §3.2 order: Account → Visibility → Add group → Navigation → (space) → Funds logo (small, centered, links `/`) → Settings → Sign out. `UserCard` no longer embeds its own Sign-out (settings page supplies it separately).
+- **Privacy masking** default-on across all money figures (net worth, Banks total + "This month", budget pulse, categories, crypto) with percentages always visible (§10).
+- **Landing footer**: "by KasperLuna" wordmark link (→ kasperluna.com) mirroring bridge-reborn, bottom-anchored on the base route.
+- New UI primitives: `Popover` (Radix) and `Calendar` (react-day-picker) — hairlined Intaglio plates.
 Gate: design.md a11y checklist green; visual regression screenshots approved.
 
 ---

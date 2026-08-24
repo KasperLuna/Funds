@@ -28,14 +28,26 @@ Bottom bar, 5 slots, raised center action:
 [ Home ]  [ Banks ]  ( ＋ )  [ Crypto ]  [ Privacy ]
 ```
 
-- `＋` — raised circular button, visually dominant, opens Capture Sheet (§4). Long-press opens mini-menu: Expense · Income · Transfer · Trade (jump to sheet with type preselected).
-- `Privacy` slot absorbs the current header toggle (thumb-reachable, was top-right).
+- `＋` — raised circular button, visually dominant, opens Capture Sheet (§4). A small caret cap seated on top opens the mini-menu: Expense · Income · Transfer · Trade (jump to sheet with type preselected). No long-press anywhere — both the capture fast-path and the menu are explicit, discoverable taps.
+- `Privacy` slot absorbs the current header toggle (thumb-reachable, was top-right). On mobile the toggle is icon-only in the top header.
 - Top header slims to: logo (left) · **sync pill** (§6) · avatar→settings/sign-out (right). No actions in header.
 - No floating FAB anywhere; the old banks-page FAB dies.
 
 ### 3.2 Desktop
 
-Sidebar unchanged structurally (Home/Banks/Crypto/Settings/Sign-out) plus a persistent **Add Transaction** button pinned at sidebar top and global ⌘K (§7). Content area keeps card-on-black layout.
+Sidebar, top → bottom:
+1. **Account** (name + email)
+2. **Visibility** (privacy toggle)
+3. **Add group** (split button: main Add → capture, attached caret → Expense · Income · Transfer · Trade)
+4. **Navigation** (Home/Banks/Categories/Crypto)
+
+*(bottom-anchored)*
+
+5. **Funds logo** (small, `mx-auto`, links to base route `/`)
+6. **Settings**
+7. **Sign out**
+
+Global ⌘K (§7) still planned. Content area keeps card-on-black layout.
 
 ### 3.3 Route map (unchanged URLs preserved where possible)
 
@@ -54,8 +66,8 @@ Sidebar unchanged structurally (Home/Banks/Crypto/Settings/Sign-out) plus a pers
 The single most important surface. Bottom sheet on mobile, centered dialog on desktop.
 
 ### 4.1 Entry points
-- Mobile bar `＋` (shortcuts via long-press)
-- Desktop sidebar button, ⌘K "Log transaction", keyboard `n`
+- Mobile bar `＋` (mini-menu via the caret cap), desktop sidebar split-Add caret
+- ⌘K "Log transaction", keyboard `n`
 - PWA home-screen quick action "Log expense" (Android; §10 iOS gap note)
 - Planned-transaction reminder deep link (`?scheduledId=`) — sheet prefilled from schedule
 - Voice draft redemption — sheet prefilled from parsed draft
@@ -64,14 +76,13 @@ The single most important surface. Bottom sheet on mobile, centered dialog on de
 
 ### 4.2 Anatomy (top → bottom)
 
-1. **Context strip**: account selector chip (defaults: last-used account; if opened from an account-filtered view, that account) + date toggle `Today · Yesterday · <date>` (default Today).
+1. **Context strip** — quiet hairline chips: `[Account ▾]` (opens a popover list with a check on the active account) and `[Date ▾]` (Today · Yesterday presets plus a full calendar for custom dates, default Today). Templates are nested behind a third `[Templates ▾]` chip — 2 taps to apply (open picker → tap template); the active template shows a check.
 2. **Amount display**: giant numeric readout (the keypad's mirror), currency symbol of the *account's native asset* (per architecture.md §3.2), sign indicated by Expense/Income state color (red/green).
-3. **Suggestions row** (horizontal chips, when available):
-   - Due-today planned transactions ("Rent ₱15,000 — Log") — tapping logs immediately with defaults, advances recurrence, haptic + undo toast.
-   - Recent repeats: last distinct description+amount+category combos for this account ("Coffee 120 · Food") — tap applies all fields.
+3. **Suggestions row** (horizontal chips, below the hero, when available):
+   - Recent repeats: last distinct description+amount+category combos for this account ("Coffee 120 · Food") — tap applies all fields; the sign sets the type (negative → expense, positive → income).
 4. **Description field**: free text with autocomplete from transaction history (fuzzy); selecting a completion fills category too.
 5. **Category chips**: horizontally scrollable favorites/recents first, then full set via picker; optional (skip-friendly).
-6. **Type toggle**: Expense | Income (segmented, red/green states; Transfer/Trade accessible via long-press menu or overflow, not primary tabs).
+6. **Type toggle**: Expense | Income (segmented, red/green states; Transfer/Trade accessible via the Add caret menu, not primary tabs).
 7. **Custom keypad** (replaces OS keyboard):
 
 ```
@@ -159,12 +170,15 @@ Order:
 1. Net worth hero (compact; total + Banks/Crypto split bars; privacy-maskable; freshness stamp)
 2. **Due today / overdue planned transactions** as one-tap Log cards (empty → hidden)
 3. **Recent activity** (last ~10 txns, swipeable like Banks rows)
-4. Budget pulse (only budgeted categories, thin bars, warn colors)
+4. Budget pulse (only budgeted categories, thin bars, warn colors, per-category usage %) — amounts privacy-maskable, percentages always visible
 5. Collapsed summaries: monthly trend chart, volatile notes — below fold
 Old AssetSummary tab system dissolves into hero + Crypto page link.
 
 ### 8.2 Banks
-Header (account switcher pills incl. All), balance line, stat strip (income/expense/net for month), filter row (search/category/month/view), transaction list grouped by day with sticky day headers. Desktop adds charts sections as today.
+Header (account switcher pills incl. All) + Total (privacy-maskable). When an account is selected, a **"This month" stat strip** (Income/Expense/Net, labeled with the current month, privacy-maskable). A **sticky filter bar** (full-text search across description/category/account name · category multi-select popover · date-range popover with a calendar) sits above the transaction list. Transaction list grouped by day with sticky day headers; on mobile the redundant Add-transaction button is hidden (the footer `＋` covers it). Desktop adds charts sections as today.
+
+### 8.5 Landing page (base route `/`)
+Centered pitch (logo · one-line description · highlight chips · Open app CTA) over the guilloche field, with a bottom-anchored **"by KasperLuna"** link (wordmark SVG → kasperluna.com) mirroring the bridge-reborn footer.
 
 ### 8.3 Crypto
 Holdings list (qty, avg cost, price, value, 24h Δ, realized/unrealized P/L), trade button per holding, portfolio allocation bar. Reuses capture-sheet Trade variant for entry.
@@ -196,6 +210,7 @@ Component mapping: shadcn primitives (Dialog→Sheet on mobile, Popover, Command
 - Contrast floors: text ≥4.5:1, large text/icons ≥3:1 (slate-500-on-900 pair flagged borderline — bump usage to slate-400 minimum for body).
 - Focus-visible rings on all interactive elements; sheet focus trap + return.
 - Screen-reader: capture sheet announces amount readout changes; suggestions row labeled list; sync pill aria-live polite.
+- **Privacy masking** (default-on, session-scoped): masks all money figures — net-worth hero, Banks total + "This month" strip, budget-pulse spent/budget amounts, categories spent/budget and `/mo` lines, and crypto total/P-L/avg-cost. Percentages (budget usage, P/L %, allocation) always stay visible. Masked values carry `aria-label` so screen readers announce the hidden state rather than bullets.
 - Haptics gated by `prefers-reduced-motion` equivalent + device setting.
 - PWA platform realities (documented, designed around):
   - iOS: no share-target, limited/no home-screen shortcuts manifest support → voice webhook remains the iOS fast-path; Android gets share-target + shortcuts.
