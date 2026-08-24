@@ -8,13 +8,14 @@ describe("ulid", () => {
     expect(id).toHaveLength(26);
   });
 
+  // cavetail: 100k calls exceed vitest's 5s default on slow VPS runners
   it("produces unique ids across 100,000 calls", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 100_000; i++) {
       seen.add(ulid());
     }
     expect(seen.size).toBe(100_000);
-  });
+  }, 20_000);
 
   it("is monotonically sortable (time-ordered)", () => {
     const ids = Array.from({ length: 1000 }, () => ulid());
