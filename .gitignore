@@ -15,4 +15,4 @@ apps/web/public/swe-worker-*.js
 apps/web/.agents/
 apps/web/.claude/
 apps/web/agent/
-apps/web/skills-lock.json
+apps/web/skills-lock.json.pnpm-store/

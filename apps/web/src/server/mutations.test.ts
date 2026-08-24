@@ -40,6 +40,8 @@ beforeAll(async () => {
     name: "US Dollar",
     decimals: 2,
   }).onConflictDoNothing();
+  const dbgAssets = await db.select().from(schema.assets);
+  console.log("DEBUG beforeAll url=", process.env.DATABASE_URL, "assets=", dbgAssets.map(a => a.id));
   
   // Sign up test user
   const signUpRes = await auth.api.signUpEmail({
