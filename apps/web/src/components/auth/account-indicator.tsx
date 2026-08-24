@@ -24,7 +24,7 @@ export function AccountChip() {
     return (
       <Link
         href="/signin"
-        className="inline-flex h-8 items-center rounded-(--radius-md) border border-(--accent)/50 px-2.5 text-xs font-semibold text-(--accent)"
+        className="inline-flex min-h-11 items-center rounded-(--radius-md) border border-(--accent)/50 px-2.5 text-xs font-semibold text-(--accent)"
       >
         Sign in
       </Link>
@@ -43,7 +43,7 @@ export function AccountChip() {
     <Link
       href="/dashboard/settings"
       aria-label={`Account: ${label}`}
-      className="grid h-8 w-8 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-inherit"
+      className="grid min-h-11 min-w-11 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-inherit"
     >
       {initial}
     </Link>

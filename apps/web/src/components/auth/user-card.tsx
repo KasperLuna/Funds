@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { SignOutButton } from "./sign-out-button";
 
 export function UserCard() {
   const { data: session, isPending } = authClient.useSession();
@@ -44,7 +43,6 @@ export function UserCard() {
         <p className="truncate text-sm font-medium">{username || user.name}</p>
         <p className="truncate text-xs text-zinc-500">{user.email}</p>
       </div>
-      <SignOutButton />
     </div>
   );
 }

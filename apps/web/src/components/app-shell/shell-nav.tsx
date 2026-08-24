@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Landmark, Bitcoin, Tag, Plus, Check, CloudOff, type LucideIcon } from "lucide-react";
+import { Home, Landmark, Bitcoin, Tag, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
+import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -30,7 +31,7 @@ export function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () =
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm transition-colors duration-150 ease-out",
+        "relative flex min-h-11 items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm transition-colors duration-150 ease-out",
         active
           ? "bg-(--surface-3) font-semibold text-inherit"
           : "font-medium text-zinc-500 hover:bg-(--surface-3) hover:text-inherit",
@@ -101,16 +102,39 @@ export function SyncPill() {
 
 export function AddButton({ label = "Add", className }: { label?: string; className?: string }) {
   return (
-    <Link
-      href="/dashboard?capture=1"
-      aria-label={label}
-      className={cn(
-        "inline-flex items-center justify-center gap-1 rounded-(--radius-md) bg-(--accent) px-3 py-2 text-(--accent-foreground) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-[0.98]",
-        className,
-      )}
+    <AddMenu
+      defaultHref="/dashboard?capture=1"
+      menuLabel="Log transaction"
+      items={ADD_MENU_TARGETS}
+      className={className}
+      menuClassName="left-0 top-full mt-2"
     >
-      <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-      <span className="hidden text-sm font-semibold lg:inline">{label}</span>
-    </Link>
+      {({ open, onMain, onToggle }) => (
+        <div className="flex w-full items-stretch overflow-hidden rounded-(--radius-md) bg-(--accent) text-(--accent-foreground)">
+          <button
+            type="button"
+            onClick={onMain}
+            className="flex min-h-11 flex-1 items-center justify-center gap-1 px-3 transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
+          >
+            <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
+            <span className="hidden text-sm font-semibold lg:inline">{label}</span>
+          </button>
+          <span aria-hidden className="w-px bg-(--accent-foreground)/25" />
+          <button
+            type="button"
+            aria-label="More transaction types"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={onToggle}
+            className="flex min-h-11 w-9 shrink-0 items-center justify-center transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
+          >
+            <ChevronDown
+              className={cn("h-4 w-4 transition-transform duration-150 ease-out", open && "rotate-180")}
+              aria-hidden
+            />
+          </button>
+        </div>
+      )}
+    </AddMenu>
   );
 }
