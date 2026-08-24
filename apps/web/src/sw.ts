@@ -1,8 +1,8 @@
-// @ts-expect-error -- serwist exports PrecacheRoute, not precacheAndRoute
-import { precacheAndRoute } from "serwist";
+// serwist 9 main entry dropped precacheAndRoute; legacy keeps the classic API.
+import { precacheAndRoute } from "serwist/legacy";
 
 // @ts-expect-error -- injected by @serwist/webpack-plugin
-const manifest: unknown[] = self.__SW_MANIFEST;
+const manifest: (string | { url: string; revision?: string })[] = self.__SW_MANIFEST;
 if (manifest) {
   precacheAndRoute(manifest);
 }
