@@ -30,7 +30,4 @@ if [ "${SKIP_DOCKER_PUSH:-0}" != "1" ] &&
   docker buildx build --platform linux/amd64 --push \
     -t ghcr.io/kasperluna/funds-web:latest \
     -f apps/web/Dockerfile .
-  docker buildx build --platform linux/amd64 --push \
-    -t ghcr.io/kasperluna/funds-worker:latest \
-    ops/worker-stub
 fi

@@ -66,12 +66,5 @@ services:
       PS_DATABASE_URL: ${PS_DATABASE_URL}
       PS_JWT_SECRET_B64URL: ${POWER_SYNC_JWT_SECRET_B64URL}
 
-  worker:
-    image: ghcr.io/kasperluna/funds-worker:${WORKER_IMAGE_TAG:-latest}
-    build:
-      context: ./../ops/worker-stub
-    restart: unless-stopped
-    mem_limit: 256m
-
 volumes:
   pgdata:
