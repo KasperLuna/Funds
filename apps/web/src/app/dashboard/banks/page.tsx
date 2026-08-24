@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
@@ -17,12 +18,19 @@ import { type Category, categoryColor } from "@/lib/categories/categories-store"
 
 import { AccountCard } from "@/components/banks/account-card";
 import { AccountDialog } from "@/components/banks/account-dialog";
+import { ReconcileSheet } from "@/components/banks/reconcile-sheet";
 import { TransactionRow } from "@/components/banks/transaction-row";
+import {
+  TransactionFilters,
+  filterTxns,
+  type TxnFilters,
+} from "@/components/banks/transaction-filters";
 import { CaptureSheet } from "@/components/capture/CaptureSheet";
 import { TransferSheet } from "@/components/capture/TransferSheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { type VoicePrefill } from "@/components/capture/CaptureSheet";
 
 const PAGE_SIZE = 50;
@@ -141,7 +149,18 @@ function formatDayHeader(day: string): string {
 }
 
 export default function BanksPage() {
+  return (
+    <Suspense>
+      <BanksContent />
+    </Suspense>
+  );
+}
+
+function BanksContent() {
   const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { masked: privacy } = usePrivacy();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(
@@ -156,10 +175,16 @@ export default function BanksPage() {
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
   const [editTxn, setEditTxn] = useState<Txn | null>(null);
   const undoDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [filters, setFilters] = useState<TxnFilters>({
+    query: "",
+    categoryIds: [],
+    date: null,
+  });
 
   const reload = useCallback(async () => {
     const accRes = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
@@ -175,6 +200,14 @@ export default function BanksPage() {
     void reload();
   }, [reload, isConnected, lastSyncedAt]);
 
+  // Deep link from the long-press Add menu: open the transfer sheet once.
+  useEffect(() => {
+    if (searchParams.get("transfer") === "1") {
+      setTransferOpen(true);
+      router.replace("/dashboard/banks", { scroll: false });
+    }
+  }, [searchParams, router]);
+
   useEffect(() => () => {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
   }, []);
@@ -185,11 +218,16 @@ export default function BanksPage() {
   );
 
   const visibleTxns = useMemo(
-    () =>
-      selectedAccountId
+    () => {
+      const byAccount = selectedAccountId
         ? txns.filter((t) => t.accountId === selectedAccountId)
-        : txns,
-    [txns, selectedAccountId],
+        : txns;
+      return filterTxns(byAccount, filters, {
+        categories,
+        accounts: accounts.map((a) => ({ id: a.id, name: a.name })),
+      });
+    },
+    [txns, selectedAccountId, filters, categories, accounts],
   );
 
   // Newest → oldest; the latest transaction is first, scrolling loads older pages.
@@ -434,6 +472,15 @@ export default function BanksPage() {
     [db, reload],
   );
 
+  const handleReconcileSave = useCallback(
+    async (row: Record<string, unknown>) => {
+      await db.table("transactions").upsert(upsertTxnRow(uid, row));
+      setReconcileAccount(null);
+      await reload();
+    },
+    [db, reload, uid],
+  );
+
   const openRename = useCallback(
     (a: Account) => {
       setEditAccount(a);
@@ -458,22 +505,19 @@ export default function BanksPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">Banks</h1>
         <div className="flex items-center gap-3">
           <span className="text-sm text-zinc-500">Total</span>
-          <span className="font-display text-xl font-bold tabular-nums">
-            {fmt(totalBalance)}
+          <span
+            className="font-display text-xl font-bold tabular-nums"
+            aria-label={privacy ? "Total masked" : `Total ${fmt(totalBalance)}`}
+          >
+            {privacy ? "••••" : fmt(totalBalance)}
           </span>
-          <Button size="sm" variant="outline" onClick={() => setTransferOpen(true)}>
-            Transfer
-          </Button>
-          <Button size="sm" onClick={() => { setEditAccount(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4" aria-hidden /> New account
-          </Button>
         </div>
       </header>
 
       <div className="flex flex-wrap items-center gap-2 pb-1">
         <button
           onClick={() => setSelectedAccountId(null)}
-          className={`shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+          className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
             selectedAccountId === null
               ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
               : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
@@ -487,7 +531,7 @@ export default function BanksPage() {
             <button
               key={a.id}
               onClick={() => setSelectedAccountId(a.id)}
-              className={`shrink-0 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
                 selectedAccountId === a.id
                   ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
                   : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
@@ -496,26 +540,41 @@ export default function BanksPage() {
               {a.name}
             </button>
           ))}
+        <button
+          onClick={() => { setEditAccount(null); setDialogOpen(true); }}
+          aria-label="New account"
+          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border border-dashed border-(--border-strong) px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:text-inherit"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          New
+        </button>
       </div>
 
       {selectedAccountId && (
-        <div className="flex items-center gap-6 rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-5 py-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-5 py-4">
+          <div className="min-w-0">
+            <p className="label-micro">This month</p>
+            <p className="mt-0.5 truncate text-sm font-medium text-zinc-400">
+              {new Date().toLocaleDateString(undefined, { month: "long" })}
+            </p>
+          </div>
+          <span aria-hidden className="hidden h-8 w-px shrink-0 bg-(--border) sm:block" />
           <div>
             <p className="label-micro">Income</p>
-            <p className="mt-0.5 font-display text-lg font-bold tabular-nums text-(--accent)">
-              {fmt(stats.income)}
+            <p className="mt-0.5 font-display text-lg font-bold tabular-nums text-(--accent)" aria-label={privacy ? "Income masked" : undefined}>
+              {privacy ? "••••" : fmt(stats.income)}
             </p>
           </div>
           <div>
             <p className="label-micro">Expense</p>
-            <p className="mt-0.5 font-display text-lg font-bold tabular-nums text-(--danger)">
-              {fmt(stats.expense)}
+            <p className="mt-0.5 font-display text-lg font-bold tabular-nums text-(--danger)" aria-label={privacy ? "Expense masked" : undefined}>
+              {privacy ? "••••" : fmt(stats.expense)}
             </p>
           </div>
           <div>
             <p className="label-micro">Net</p>
-            <p className={`mt-0.5 font-display text-lg font-bold tabular-nums ${stats.net >= 0n ? "text-zinc-50" : "text-(--danger)"}`}>
-              {fmt(stats.net)}
+            <p className={`mt-0.5 font-display text-lg font-bold tabular-nums ${stats.net >= 0n ? "text-zinc-50" : "text-(--danger)"}`} aria-label={privacy ? "Net masked" : undefined}>
+              {privacy ? "••••" : fmt(stats.net)}
             </p>
           </div>
         </div>
@@ -530,6 +589,7 @@ export default function BanksPage() {
           onRename={openRename}
           onDelete={handleAccountDelete}
           onArchive={handleAccountArchive}
+          onAdjust={setReconcileAccount}
         />
       )}
 
@@ -547,27 +607,50 @@ export default function BanksPage() {
         </div>
       )}
 
-      <section className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) divide-y divide-(--border)">
+      <div className="sticky top-[65px] z-20 -mx-4 border-y border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
+        <TransactionFilters
+          filters={filters}
+          onChange={setFilters}
+          categories={categories}
+          accounts={accounts}
+        />
+      </div>
+
+      <section className="overflow-clip rounded-(--radius-lg) border border-(--border) bg-(--surface-1) divide-y divide-(--border)">
         {grouped.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <p className="text-sm text-zinc-500">No transactions yet</p>
-            <Button size="sm" onClick={() => setCaptureOpen(true)}>
-              <Plus className="h-4 w-4" aria-hidden /> Add transaction
-            </Button>
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            {accounts.length === 0 ? (
+              <>
+                <p className="text-sm font-semibold text-zinc-200">Add your first account</p>
+                <p className="max-w-xs text-sm text-zinc-400">
+                  Create a bank, cash, wallet, or exchange account to start tracking.
+                </p>
+                <Button onClick={() => { setEditAccount(null); setDialogOpen(true); }}>
+                  <Plus className="h-4 w-4" aria-hidden /> New account
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-zinc-500">No transactions yet</p>
+                <Button size="sm" className="hidden md:inline-flex" onClick={() => setCaptureOpen(true)}>
+                  <Plus className="h-4 w-4" aria-hidden /> Add transaction
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <>
-            <div className="flex justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2">
+            <div className="hidden justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2 md:flex">
               <Button size="sm" onClick={() => setCaptureOpen(true)}>
                 <Plus className="h-4 w-4" aria-hidden /> Add transaction
               </Button>
             </div>
-            <div className="border-b border-(--border) bg-(--surface-2) px-4 py-2 text-[11px] text-zinc-500 lg:hidden">
+            <div className="border-b border-(--border) bg-(--surface-2) px-4 py-2 text-[11px] text-zinc-400 lg:hidden">
               Tap a transaction to edit · swipe right to duplicate · swipe left to delete
             </div>
             {grouped.map((g) => (
               <div key={g.day}>
-                <p className="sticky top-0 z-10 bg-(--surface-2) px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                <p className="label-micro sticky top-[182px] z-10 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
                   {formatDayHeader(g.day)}
                 </p>
                 {g.items.map((t) => {
@@ -635,6 +718,17 @@ export default function BanksPage() {
         accounts={accountOptions}
         onSave={(rows) => void handleTransferSave(rows)}
         defaultFromAccountId={selectedAccountId ?? undefined}
+      />
+
+      <ReconcileSheet
+        open={reconcileAccount !== null}
+        onOpenChange={(open) => { if (!open) setReconcileAccount(null); }}
+        account={reconcileAccount ?? (accounts[0] as Account)}
+        currentBalance={reconcileAccount ? computeBalance(reconcileAccount, txns) : 0n}
+        assetCode={reconcileAccount ? accountInfo[reconcileAccount.id]?.code : undefined}
+        assetDecimals={reconcileAccount ? accountInfo[reconcileAccount.id]?.decimals : undefined}
+        userId={uid}
+        onSave={handleReconcileSave}
       />
     </div>
   );

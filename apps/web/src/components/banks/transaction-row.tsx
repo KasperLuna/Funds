@@ -175,7 +175,7 @@ export function TransactionRow({
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             {accountName && (
-              <span className="truncate text-[11px] text-zinc-500">{accountName}</span>
+              <span className="truncate text-[11px] text-zinc-400">{accountName}</span>
             )}
             {cats.length > 0 ? (
               cats.map((cat, i) => (
@@ -189,7 +189,7 @@ export function TransactionRow({
                 </span>
               ))
             ) : (
-              <span className="inline-flex items-center text-[11px] text-zinc-600">
+              <span className="inline-flex items-center text-[11px] text-zinc-400">
                 Uncategorized
                 {onEdit && (
                   <button
@@ -251,7 +251,7 @@ export function TransactionRow({
             )}
           </div>
           <div className="text-right">
-            <span className="text-[11px] tabular-nums text-zinc-500">{formatTime(txn.date)}</span>
+            <span className="text-[11px] tabular-nums text-zinc-400">{formatTime(txn.date)}</span>
             <span
               className={`block text-sm font-semibold tabular-nums ${maskedAmount ? "text-zinc-500" : isExpense ? "text-(--danger)" : "text-(--accent)"}`}
               aria-label={maskedAmount ? "Amount hidden" : undefined}

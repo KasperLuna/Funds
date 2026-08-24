@@ -78,6 +78,24 @@ describe("AccountCard", () => {
     expect(screen.getByRole("button", { name: "Delete Wallet" })).toBeInTheDocument();
   });
 
+  it("renders an adjust-balance action when onAdjust is provided", () => {
+    const acc = makeAccount({ name: "Savings" });
+    const onAdjust = vi.fn();
+    render(
+      <AccountCard
+        account={acc}
+        balance={1000n}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+        onAdjust={onAdjust}
+      />,
+    );
+    const btn = screen.getByRole("button", { name: "Adjust Savings balance" });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(onAdjust).toHaveBeenCalledWith(acc);
+  });
+
   it("displays primary color indicator when set", () => {
     const acc = makeAccount({ primaryColor: "#ef4444" });
     const { container } = render(

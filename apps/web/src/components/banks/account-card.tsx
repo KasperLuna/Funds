@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Archive, ArchiveRestore } from "lucide-react";
+import { Pencil, Trash2, Archive, ArchiveRestore, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
 
@@ -19,6 +19,7 @@ export function AccountCard({
   onRename,
   onDelete,
   onArchive,
+  onAdjust,
 }: {
   account: Account;
   balance: bigint;
@@ -27,6 +28,7 @@ export function AccountCard({
   onRename: (account: Account) => void;
   onDelete: (account: Account) => void;
   onArchive?: (account: Account) => void;
+  onAdjust?: (account: Account) => void;
 }) {
   const isArchived = !!account.deletedAt;
   const colorStyle = account.primaryColor
@@ -54,6 +56,16 @@ export function AccountCard({
         <span className="text-sm font-semibold tabular-nums">
           {formatMoney(balance, assetDecimals ?? 2, assetCode)}
         </span>
+        {onAdjust && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Adjust ${account.name} balance`}
+            onClick={() => onAdjust(account)}
+          >
+            <Scale className="h-4 w-4" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"
