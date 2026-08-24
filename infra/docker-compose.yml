@@ -12,6 +12,9 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    # cavetail: cap so a runaway container restarts instead of OOM-ing the host
+    # (host is also a proxy; must stay up).
+    mem_limit: 512m
     ports:
       - "127.0.0.1:5432:5432"
     environment:
@@ -41,6 +44,7 @@ services:
       cache_to:
         - type=local,dest=${BUILD_CACHE_DIR:-web-buildcache},mode=min
     restart: unless-stopped
+    mem_limit: 1g
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,6 +56,7 @@ services:
   powersync:
     image: journeyapps/powersync-service:latest
     restart: unless-stopped
+    mem_limit: 512m
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,6 +76,7 @@ services:
     build:
       context: ./../ops/worker-stub
     restart: unless-stopped
+    mem_limit: 256m
 
 volumes:
   pgdata:

@@ -10,6 +10,10 @@ COPY packages/db/package.json packages/db/
 RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
+# cavetail: cap next build heap so a slow OOM-prone host doesn't die; if the
+# build OOMs, raise this rather than removing it.
+ENV NODE_OPTIONS=--max-old-space-size=3072
+ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules

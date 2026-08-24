@@ -8,9 +8,9 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "test": "pnpm -r run test",
-    "typecheck": "pnpm -r run typecheck",
-    "lint": "pnpm -r run lint",
+    "test": "pnpm -r --workspace-concurrency=1 run test",
+    "typecheck": "pnpm -r --workspace-concurrency=1 run typecheck",
+    "lint": "pnpm -r --workspace-concurrency=1 run lint",
     "db:migrate": "pnpm --filter @funds/db run migrate",
     "db:seed": "pnpm --filter @funds/db run seed",
     "db:clean": "pnpm --filter @funds/db run clean",
