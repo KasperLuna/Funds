@@ -20,12 +20,20 @@ export async function POST(req: NextRequest) {
   headers.delete("connection");
   headers.delete("content-length");
 
-  const res = await fetch(upstream, {
-    method: "POST",
-    headers,
-    body: req.body,
-    duplex: "half",
-  } as RequestInit);
+  let res: Response;
+  try {
+    res = await fetch(upstream, {
+      method: "POST",
+      headers,
+      body: req.body,
+      duplex: "half",
+    } as RequestInit);
+  } catch (err) {
+    console.error("[sync/stream] upstream fetch failed:", err);
+    return new Response("upstream error: " + (err as Error).message, {
+      status: 502,
+    });
+  }
 
   return new Response(res.body, {
     status: res.status,
