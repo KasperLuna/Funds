@@ -20,9 +20,25 @@ jobs:
         run: printf '%s\n' "${ENV_FILE}" > infra/.env
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
+      # cavetail: db tests target localhost:54329/funds_test (packages/db convention);
+      # throwaway container keeps them off the deployed postgres.
+      - name: Start throwaway test Postgres
+        run: |
+          docker rm -f funds-test-pg >/dev/null 2>&1 || true
+          docker run -d --name funds-test-pg \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=funds_test \
+            -p 127.0.0.1:54329:5432 postgres:16-alpine
+          for i in $(seq 1 30); do
+            docker exec funds-test-pg pg_isready -U postgres -d funds_test >/dev/null 2>&1 && break
+            sleep 1
+          done
+          docker exec funds-test-pg pg_isready -U postgres -d funds_test
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Cleanup test Postgres
+        if: always()
+        run: docker rm -f funds-test-pg
       - run: docker compose -f infra/docker-compose.yml build
       # cavetail: host-side migrate needs localhost; web container needs
       # postgres: (service DNS). Same var, two scopes -> own secret.
