@@ -46,7 +46,11 @@ jobs:
             docker compose -f infra/docker-compose.yml exec -T postgres pg_isready >/dev/null 2>&1 && break
             sleep 2
           done
-          docker compose -f infra/docker-compose.yml exec -T postgres pg_isready
+          docker compose -f infra/docker-compose.yml exec -T postgres pg_isready || {
+            docker ps -a
+            docker compose -f infra/docker-compose.yml logs postgres | tail -40
+            exit 1
+          }
       # cavetail: host-side migrate needs localhost; web container needs
       # postgres: (service DNS). Same var, two scopes -> own secret.
       - run: pnpm --filter @funds/db run migrate
