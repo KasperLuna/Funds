@@ -38,6 +38,15 @@ jobs:
       - run: pnpm test
       - run: docker rm -f funds-test-pg
       - run: docker compose -f infra/docker-compose.yml build
+      # cavetail: migrate runs on host against localhost:5432, so postgres must
+      # be up first (fresh box has nothing running).
+      - run: docker compose -f infra/docker-compose.yml up -d postgres
+      - run: |
+          for i in $(seq 1 120); do
+            docker compose -f infra/docker-compose.yml exec -T postgres pg_isready >/dev/null 2>&1 && break
+            sleep 2
+          done
+          docker compose -f infra/docker-compose.yml exec -T postgres pg_isready
       # cavetail: host-side migrate needs localhost; web container needs
       # postgres: (service DNS). Same var, two scopes -> own secret.
       - run: pnpm --filter @funds/db run migrate
