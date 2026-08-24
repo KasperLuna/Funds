@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Check,
+  ChevronDown,
+  ChevronUp,
+  Ellipsis,
   Pause,
   Pencil,
   Play,
@@ -11,9 +14,11 @@ import {
 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
-  nextOccurrence,
+  partitionSchedules,
   waiveAdvance,
+  SOON_WINDOW_DAYS,
   type ScheduledTxn,
 } from "@/lib/scheduled/compute";
 import { ScheduledDialog } from "@/components/scheduled/scheduled-dialog";
@@ -32,6 +37,7 @@ export type ScheduledCardCategory = {
   name: string;
 };
 
+/** Days until the next occurrence; negative when due/overdue. */
 function formatLocalDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   if (!y || !m || !d) return isoDate;
@@ -43,6 +49,16 @@ function formatLocalDate(isoDate: string): string {
 
 function newTxnId(now: number): string {
   return `txn-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Controlled popover exposing open state to its trigger (for caret/icon). */
+function RowPopover({
+  children,
+}: {
+  children: (controls: { open: boolean; setOpen: (open: boolean) => void }) => React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return <Popover open={open} onOpenChange={setOpen}>{children({ open, setOpen })}</Popover>;
 }
 
 export function ScheduledCard({
@@ -58,6 +74,7 @@ export function ScheduledCard({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<ScheduledTxn | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const accountById = useMemo(
     () => new Map(accounts.map((a) => [a.id, a])),
@@ -196,9 +213,19 @@ export function ScheduledCard({
     [db, reload, uid, items],
   );
 
+  const now = new Date();
+
+  // Everything the user must see now: due, overdue, or coming up within 3 days.
+  // Everything else hides behind an expander so the card stays a glance surface.
+  const { soon: soonItems, rest: restItems } = useMemo(
+    () => partitionSchedules(items, now, SOON_WINDOW_DAYS),
+    [items, now],
+  );
+
   if (items.length === 0) return null;
 
-  const now = new Date();
+  const visible = expanded ? [...soonItems, ...restItems] : soonItems;
+  const hiddenCount = restItems.length;
 
   return (
     <section
@@ -227,8 +254,7 @@ export function ScheduledCard({
       )}
 
       <div className="divide-y divide-(--border)">
-        {items.map((row) => {
-          const occ = nextOccurrence(row, now);
+        {visible.map(({ row, occ }) => {
           const account = accountById.get(row.accountId);
           const decimals = account?.decimals ?? 2;
           const needsConfirm =
@@ -243,16 +269,11 @@ export function ScheduledCard({
           return (
             <div
               key={row.id}
-              className={`flex items-center gap-3 px-4 py-3 transition-opacity ${row.active ? "" : "opacity-50"}`}
+              className={`flex items-center gap-x-3 gap-y-2 px-4 py-3 transition-opacity ${row.active ? "" : "opacity-50"}`}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-sm font-medium">{row.name}</span>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums text-zinc-500">
-                    {formatMoney(row.amountMinor, decimals)}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500">
+                <span className="block truncate text-sm font-medium">{row.name}</span>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
                   <span className="truncate">
                     {account?.name ?? "Unknown"}
                   </span>
@@ -260,14 +281,21 @@ export function ScheduledCard({
                   <span>
                     {occ.localDate ? formatLocalDate(occ.localDate) : "—"}
                   </span>
-                  {occ.status !== "none" && (
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${chip.cls}`}
-                    >
-                      {chip.label}
-                    </span>
-                  )}
                 </div>
+              </div>
+
+              {/* Amount + status, Confirm, and actions stay on one line with the name. */}
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-sm font-semibold tabular-nums text-zinc-500">
+                  {formatMoney(row.amountMinor, decimals)}
+                </span>
+                {occ.status !== "none" && (
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${chip.cls}`}
+                  >
+                    {chip.label}
+                  </span>
+                )}
               </div>
 
               <div className="flex shrink-0 items-center gap-1">
@@ -281,41 +309,125 @@ export function ScheduledCard({
                     Confirm
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void handleToggle(row)}
-                  aria-label={row.active ? "Pause" : "Resume"}
-                >
-                  {row.active ? (
-                    <Pause className="h-4 w-4" />
-                  ) : (
-                    <Play className="h-4 w-4" />
+                {/* Desktop: inline actions. Mobile: a kebab menu keeps rows clean. */}
+                <div className="hidden items-center gap-1 sm:flex">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleToggle(row)}
+                    aria-label={row.active ? "Pause" : "Resume"}
+                  >
+                    {row.active ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditItem(row);
+                      setDialogOpen(true);
+                    }}
+                    aria-label="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void handleDelete(row)}
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4 text-(--danger)" />
+                  </Button>
+                </div>
+
+                <RowPopover>
+                  {({ open, setOpen }) => (
+                    <>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Schedule actions"
+                          aria-expanded={open}
+                          className="sm:hidden"
+                        >
+                          <Ellipsis className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-44 p-1 sm:hidden">
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleToggle(row);
+                              setOpen(false);
+                            }}
+                            className="flex min-h-11 items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit"
+                          >
+                            {row.active ? (
+                              <Pause className="h-4 w-4 text-zinc-500" aria-hidden />
+                            ) : (
+                              <Play className="h-4 w-4 text-zinc-500" aria-hidden />
+                            )}
+                            {row.active ? "Pause" : "Resume"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditItem(row);
+                              setDialogOpen(true);
+                              setOpen(false);
+                            }}
+                            className="flex min-h-11 items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit"
+                          >
+                            <Pencil className="h-4 w-4 text-zinc-500" aria-hidden />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleDelete(row);
+                              setOpen(false);
+                            }}
+                            className="flex min-h-11 items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm text-(--danger) transition-colors hover:bg-(--surface-2)"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                            Delete
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </>
                   )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditItem(row);
-                    setDialogOpen(true);
-                  }}
-                  aria-label="Edit"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void handleDelete(row)}
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-4 w-4 text-(--danger)" />
-                </Button>
+                </RowPopover>
               </div>
             </div>
           );
         })}
+
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            aria-expanded={expanded}
+            className="flex w-full min-h-11 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium text-zinc-500 transition-colors hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" aria-hidden />
+                Show fewer
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" aria-hidden />
+                {hiddenCount} more scheduled
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       <ScheduledDialog

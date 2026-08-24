@@ -4,6 +4,8 @@ import {
   nextOccurrence,
   waiveAdvance,
   shouldNotify,
+  daysUntil,
+  partitionSchedules,
   type ScheduledTxn,
 } from "./compute";
 
@@ -195,5 +197,61 @@ describe("shouldNotify", () => {
         new Date(NOW),
       ),
     ).toBe(false);
+  });
+});
+
+describe("daysUntil", () => {
+  const now = new Date(NOW); // 2026-08-23
+
+  it("returns 0 for today, positive for future, negative for past", () => {
+    expect(daysUntil("2026-08-23", now)).toBe(0);
+    expect(daysUntil("2026-08-26", now)).toBe(3);
+    expect(daysUntil("2026-08-20", now)).toBe(-3);
+  });
+
+  it("returns null for a missing date", () => {
+    expect(daysUntil(null, now)).toBeNull();
+  });
+});
+
+describe("partitionSchedules", () => {
+  const now = new Date(NOW);
+  const mk = (id: string, daysOut: number, active = true) =>
+    row({
+      id,
+      name: id,
+      invokeDate: Date.UTC(2026, 7, 23, 9, 0, 0) + daysOut * 86_400_000,
+      active,
+    });
+
+  it("keeps active items within the window in 'soon', sorted nearest first", () => {
+    const { soon, rest } = partitionSchedules(
+      [mk("far", 10), mk("near", 1), mk("tomorrow", 2)],
+      now,
+      3,
+    );
+    expect(soon.map((s) => s.row.id)).toEqual(["near", "tomorrow"]);
+    expect(rest.map((s) => s.row.id)).toEqual(["far"]);
+  });
+
+  it("includes overdue items in 'soon' (negative days)", () => {
+    const { soon } = partitionSchedules([mk("overdue", -2)], now, 3);
+    expect(soon.map((s) => s.row.id)).toEqual(["overdue"]);
+  });
+
+  it("hides paused schedules behind 'rest'", () => {
+    const { soon, rest } = partitionSchedules(
+      [mk("paused", 1, false), mk("active", 1, true)],
+      now,
+      3,
+    );
+    expect(soon.map((s) => s.row.id)).toEqual(["active"]);
+    expect(rest.map((s) => s.row.id)).toEqual(["paused"]);
+  });
+
+  it("defaults the window to 3 days", () => {
+    const { soon, rest } = partitionSchedules([mk("day4", 4)], now);
+    expect(soon).toHaveLength(0);
+    expect(rest.map((s) => s.row.id)).toEqual(["day4"]);
   });
 });

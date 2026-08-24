@@ -109,6 +109,55 @@ export function nextOccurrence(
 }
 
 /**
+ * Days until the next occurrence; negative when due/overdue. Null when the
+ * schedule has no invoke date.
+ */
+export function daysUntil(localDate: string | null, now: Date): number | null {
+  if (!localDate) return null;
+  const [y, m, d] = localDate.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const target = new Date(y, m - 1, d);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
+}
+
+/** Default glance surface: show only items coming up within this many days. */
+export const SOON_WINDOW_DAYS = 3;
+
+export type ScheduledOccurrence = {
+  row: ScheduledTxn;
+  occ: { status: OccurrenceStatus; localDate: string | null };
+};
+
+/**
+ * Split schedules into the "soon" glance set (active + within the window,
+ * nearest first) and everything else, so a card can surface what needs
+ * attention now and tuck the rest behind an expander.
+ */
+export function partitionSchedules(
+  rows: ScheduledTxn[],
+  now: Date,
+  windowDays: number = SOON_WINDOW_DAYS,
+): { soon: ScheduledOccurrence[]; rest: ScheduledOccurrence[] } {
+  const upcoming = rows
+    .map((row) => ({ row, occ: nextOccurrence(row, now) }))
+    .sort((a, b) => {
+      const da = daysUntil(a.occ.localDate, now) ?? 365;
+      const db = daysUntil(b.occ.localDate, now) ?? 365;
+      return da - db;
+    });
+  const soon = upcoming.filter(
+    ({ row, occ }) =>
+      row.active && (daysUntil(occ.localDate, now) ?? 365) <= windowDays,
+  );
+  const rest = upcoming.filter(({ row, occ }) => {
+    if (!row.active) return true;
+    return (daysUntil(occ.localDate, now) ?? 365) > windowDays;
+  });
+  return { soon, rest };
+}
+
+/**
  * Waive = advance the schedule without creating a transaction (logic.md §8.3).
  * Returns patched invoke/previous dates; caller persists.
  */
