@@ -13,7 +13,7 @@ const variantCls: Record<Variant, string> = {
 };
 
 const sizeCls: Record<Size, string> = {
-  sm: "h-9 px-3 text-sm rounded-(--radius-sm)",
+  sm: "h-11 px-3 text-sm rounded-(--radius-sm)",
   default: "h-11 px-4 text-sm rounded-(--radius-md)",
   lg: "h-12 px-6 text-base rounded-(--radius-md)",
 };

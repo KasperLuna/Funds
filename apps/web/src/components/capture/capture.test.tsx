@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useState } from "react";
 import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -7,6 +7,7 @@ import "@testing-library/jest-dom/vitest";
 import { MemorySyncDatabase } from "@/lib/sync";
 import { CaptureSheet, type AccountOption, type CategoryOption } from "./CaptureSheet";
 import type { RecentTxn } from "@/lib/capture";
+import type { Template } from "@/lib/templates/templates-store";
 import { useSaveUndo } from "./use-save-undo";
 
 // cavetail: jsdom lacks ResizeObserver used by radix primitives
@@ -154,7 +155,9 @@ describe("CaptureSheet", () => {
     render(<Harness sync={sync} />);
 
     const readout = screen.getByTestId("amount-readout");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Account" }), "acc-2");
+    // Account selector is a popover chip; open it and pick the 8-decimal account.
+    await user.click(screen.getByRole("button", { name: "Account" }));
+    await user.click(screen.getByRole("option", { name: "Wallet" }));
     await user.click(screen.getByRole("button", { name: "1" }));
     expect(readout).toHaveTextContent("1.00000000");
   });
@@ -186,5 +189,105 @@ describe("CaptureSheet", () => {
     );
     const list = screen.getByRole("list", { name: "Suggestions" });
     expect(within(list).getByText(/Coffee/)).toBeInTheDocument();
+  });
+
+  it("negative suggestion fills a positive amount and saves as expense", async () => {
+    const user = userEvent.setup();
+    const withSuggestions: RecentTxn[] = [
+      { id: "r1", description: "Rent", amountMinor: -150000n, categoryIds: [], date: Date.now() },
+    ];
+    render(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />);
+
+    const list = screen.getByRole("list", { name: "Suggestions" });
+    await user.click(within(list).getByText(/Rent/));
+    // Readout shows the unsigned magnitude; save becomes enabled.
+    const readout = screen.getByTestId("amount-readout");
+    expect(readout).toHaveTextContent("1500.00");
+    expect(screen.getByRole("button", { name: "Expense" })).toHaveAttribute("aria-pressed", "true");
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).not.toBeDisabled();
+
+    await user.click(save);
+    const rows = (await sync.query("select * from transactions")).rows;
+    expect(rows[0]!.amount_minor).toBe(-150000);
+    expect(rows[0]!.type).toBe("expense");
+  });
+
+  it("positive suggestion fills a positive amount and saves as income", async () => {
+    const user = userEvent.setup();
+    const withSuggestions: RecentTxn[] = [
+      { id: "r1", description: "Salary", amountMinor: 250000n, categoryIds: [], date: Date.now() },
+    ];
+    render(<HarnessWithSuggestions sync={sync} recentTxns={withSuggestions} />);
+
+    const list = screen.getByRole("list", { name: "Suggestions" });
+    await user.click(within(list).getByText(/Salary/));
+    const readout = screen.getByTestId("amount-readout");
+    expect(readout).toHaveTextContent("2500.00");
+    expect(screen.getByRole("button", { name: "Income" })).toHaveAttribute("aria-pressed", "true");
+    const save = screen.getByRole("button", { name: "Save" });
+    expect(save).not.toBeDisabled();
+
+    await user.click(save);
+    const rows = (await sync.query("select * from transactions")).rows;
+    expect(rows[0]!.amount_minor).toBe(250000);
+    expect(rows[0]!.type).toBe("income");
+  });
+
+  it("nests templates behind a picker and applies one in two taps", async () => {
+    const user = userEvent.setup();
+    const templates = [
+      {
+        id: "tmpl-1",
+        name: "Rent",
+        accountId: "acc-1",
+        amountMinor: 1500000n,
+        type: "expense" as const,
+        description: "Rent",
+        categoryIds: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        deletedAt: null,
+      },
+    ] satisfies Template[];
+    render(
+      <CaptureSheet
+        open
+        onOpenChange={() => {}}
+        userId="usr-1"
+        accounts={ACCOUNTS}
+        categories={CATS}
+        recentTxns={[]}
+        onSave={vi.fn()}
+        defaultAccountId="acc-1"
+        templates={templates}
+      />,
+    );
+
+    // No inline template chips; a single quiet trigger chip is shown.
+    expect(screen.queryByRole("group", { name: "Templates" })).not.toBeInTheDocument();
+    const trigger = screen.getByRole("button", { name: "Templates" });
+    await user.click(trigger);
+
+    // Popover lists the template; tap it to apply.
+    await user.click(screen.getByRole("button", { name: /Rent/ }));
+    expect(screen.getByRole("button", { name: "Templates" })).toHaveTextContent("Rent");
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("15000.00");
+  });
+
+  it("selects a custom date from the calendar", async () => {
+    const user = userEvent.setup();
+    render(<Harness sync={sync} />);
+
+    await user.click(screen.getByRole("button", { name: "Date" }));
+    // The calendar renders a grid of day buttons; pick an in-month day (e.g. the 15th).
+    const cells = await screen.findAllByRole("gridcell");
+    const inMonth = cells.find(
+      (c) => c.getAttribute("data-outside") !== "true" && c.getAttribute("data-hidden") !== "true",
+    );
+    const dayBtn = inMonth?.querySelector("button");
+    expect(dayBtn).toBeTruthy();
+    await user.click(dayBtn!);
+    expect(screen.getByRole("button", { name: "Date" })).not.toHaveTextContent("Today");
   });
 });
