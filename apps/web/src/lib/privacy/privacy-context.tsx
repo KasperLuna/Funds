@@ -12,8 +12,14 @@ const PrivacyContext = createContext<PrivacyContextValue>({
   toggle: () => {},
 });
 
-export function PrivacyProvider({ children }: { children: React.ReactNode }) {
-  const [masked, setMasked] = useState(true);
+export function PrivacyProvider({
+  children,
+  initialMasked = true,
+}: {
+  children: React.ReactNode;
+  initialMasked?: boolean;
+}) {
+  const [masked, setMasked] = useState(initialMasked);
   const toggle = useCallback(() => setMasked((m) => !m), []);
   const value = useMemo(() => ({ masked, toggle }), [masked, toggle]);
   return (

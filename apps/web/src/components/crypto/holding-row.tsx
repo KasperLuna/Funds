@@ -10,10 +10,12 @@ export function HoldingRow({
   holding,
   price,
   allocationPct,
+  masked = false,
 }: {
   holding: Holding;
   price?: CoinPrice;
   allocationPct?: number;
+  masked?: boolean;
 }) {
   const { token, qtyMinor, avgCostMinor } = holding;
   const qty = Number(qtyMinor) / 10 ** token.decimals;
@@ -78,21 +80,22 @@ export function HoldingRow({
         </p>
         {price && (
           <div className="flex flex-col items-end gap-0.5">
-            <p className="text-sm font-semibold tabular-nums text-zinc-100">
-              {formatUsdFromNumber(valueUsd)}
+            <p className="text-sm font-semibold tabular-nums text-zinc-100" aria-label={masked ? "Value masked" : undefined}>
+              {masked ? "••••" : formatUsdFromNumber(valueUsd)}
             </p>
             <p
-              className={`text-[10px] font-medium tabular-nums ${unrealizedPL >= 0 ? "text-(--accent)" : "text-(--danger)"}`}
+              className={`text-[10px] font-medium tabular-nums ${masked ? "text-zinc-500" : unrealizedPL >= 0 ? "text-(--accent)" : "text-(--danger)"}`}
+              aria-label={masked ? "Profit or loss masked" : undefined}
             >
-              {unrealizedPL >= 0 ? "+" : ""}
-              {formatUsdFromNumber(unrealizedPL)} ({plPct >= 0 ? "+" : ""}
-              {plPct.toFixed(1)}%)
+              {masked
+                ? `(${plPct >= 0 ? "+" : ""}${plPct.toFixed(1)}%)`
+                : `${unrealizedPL >= 0 ? "+" : ""}${formatUsdFromNumber(unrealizedPL)} (${plPct >= 0 ? "+" : ""}${plPct.toFixed(1)}%)`}
             </p>
           </div>
         )}
         {!price && (
-          <p className="text-xs text-zinc-500">
-            avg {formatUsdFromNumber(Number(avgCostMinor) / 10 ** token.decimals)}
+          <p className="text-xs text-zinc-500" aria-label={masked ? "Average cost masked" : undefined}>
+            {masked ? "avg ••••" : `avg ${formatUsdFromNumber(Number(avgCostMinor) / 10 ** token.decimals)}`}
           </p>
         )}
       </div>

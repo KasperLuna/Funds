@@ -114,9 +114,13 @@ async function persistTrade(
 export function HoldingsList({
   accounts = [],
   userId,
+  autoOpenTrade = false,
+  masked = false,
 }: {
   accounts?: AccountOption[];
   userId?: string;
+  autoOpenTrade?: boolean;
+  masked?: boolean;
 }) {
   const { db, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
@@ -136,6 +140,11 @@ export function HoldingsList({
   useEffect(() => {
     void reload();
   }, [reload, isConnected, lastSyncedAt]);
+
+  // Deep link from the long-press Add menu: open the trade sheet once.
+  useEffect(() => {
+    if (autoOpenTrade) setTradeOpen(true);
+  }, [autoOpenTrade]);
 
   useEffect(() => {
     if (!notice) return;
@@ -204,14 +213,22 @@ export function HoldingsList({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-zinc-500">Total value</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            ${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <p
+            className="text-2xl font-semibold tabular-nums"
+            aria-label={masked ? "Total value masked" : undefined}
+          >
+            {masked
+              ? "••••••"
+              : `$${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </p>
           {totalPL !== 0 && (
             <p
-              className={`text-xs tabular-nums ${totalPL >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+              className={`text-xs tabular-nums ${masked ? "text-zinc-500" : totalPL >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+              aria-label={masked ? "Profit or loss masked" : undefined}
             >
-              {totalPL >= 0 ? "+" : ""}${totalPL.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {masked
+                ? "••••"
+                : `${totalPL >= 0 ? "+" : ""}$${totalPL.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </p>
           )}
         </div>
@@ -253,6 +270,7 @@ export function HoldingsList({
               holding={h}
               price={h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined}
               allocationPct={h.allocationPct}
+              masked={masked}
             />
           ))
         )}

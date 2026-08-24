@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
 import {
@@ -16,6 +16,7 @@ import {
 import type { Txn, Account } from "@/lib/accounts/accounts-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney, assetSymbol } from "@/lib/money";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
 import {
   Dialog,
   DialogContent,
@@ -115,6 +116,7 @@ function monthOptions(): Array<{ value: string; label: string; year: number; mon
 
 export default function CategoriesPage() {
   const { db, userId, isConnected, lastSyncedAt } = useSync();
+  const { masked: privacy } = usePrivacy();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
   const assetsById = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
@@ -131,6 +133,13 @@ export default function CategoriesPage() {
     month: now.getMonth(),
   }));
   const monthOpts = useMemo(monthOptions, []);
+
+  const shiftMonth = useCallback((delta: number) => {
+    setViewMonth(({ year, month }) => {
+      const d = new Date(year, month + delta, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  }, []);
 
   const reload = useCallback(async () => {
     const catRes = await db.query(`SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY created_at DESC`);
@@ -237,21 +246,39 @@ export default function CategoriesPage() {
         <div className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="label-micro">Budget progress</h2>
-            <select
-              aria-label="Budget month"
-              value={budgetPeriodKey(viewMonth.year, viewMonth.month)}
-              onChange={(e) => {
-                const opt = monthOpts.find((o) => o.value === e.target.value);
-                if (opt) setViewMonth({ year: opt.year, month: opt.month });
-              }}
-              className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-200 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-            >
-              {monthOpts.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="Previous month"
+                onClick={() => shiftMonth(-1)}
+                className="grid h-9 w-9 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden />
+              </button>
+              <select
+                aria-label="Budget month"
+                value={budgetPeriodKey(viewMonth.year, viewMonth.month)}
+                onChange={(e) => {
+                  const opt = monthOpts.find((o) => o.value === e.target.value);
+                  if (opt) setViewMonth({ year: opt.year, month: opt.month });
+                }}
+                className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-200 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              >
+                {monthOpts.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                aria-label="Next month"
+                onClick={() => shiftMonth(1)}
+                className="grid h-9 w-9 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              >
+                <ChevronRight className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
           </div>
           <div className="flex flex-col gap-3">
             {budgetUsages.map(({ category, spentMinor, budgetMinor, budgetAssetId }) => {
@@ -264,21 +291,23 @@ export default function CategoriesPage() {
               const isOver = pct > 100;
               return (
                 <div key={category.id} className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="flex min-w-0 items-center gap-2">
                       <span
-                        className="h-3 w-3 rounded-full"
+                        className="h-3 w-3 shrink-0 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      <span className="flex flex-col">
-                        <span>{category.name}</span>
-                        <span className="text-xs text-zinc-500">
-                          {formatMoney(budgetMinor, decimals, code)}/mo
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate">{category.name}</span>
+                        <span className="text-xs text-zinc-500" aria-label={privacy ? "Budget masked" : undefined}>
+                          {privacy ? "••••" : `${formatMoney(budgetMinor, decimals, code)}/mo`}
                         </span>
                       </span>
                     </span>
-                    <span className={`tabular-nums ${isOver ? "font-medium text-(--danger)" : isWarning ? "font-medium text-(--warning)" : "text-zinc-500"}`}>
-                      {formatMoney(spentMinor, decimals, code)} / {formatMoney(budgetMinor, decimals, code)}
+                    <span className={`shrink-0 tabular-nums ${isOver ? "font-medium text-(--danger)" : isWarning ? "font-medium text-(--warning)" : "text-zinc-500"}`} aria-label={privacy ? "Spent masked" : undefined}>
+                      {privacy
+                        ? `${Math.round(pct)}%`
+                        : `${formatMoney(spentMinor, decimals, code)} / ${formatMoney(budgetMinor, decimals, code)} · ${Math.round(pct)}%`}
                     </span>
                   </div>
                   <div className="h-1 w-full rounded-full bg-(--surface-3) overflow-hidden">
@@ -305,36 +334,36 @@ export default function CategoriesPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:grid-cols-3">
           {categories.map((c) => {
             const asset = c.assetId ? assetsById.get(c.assetId) : undefined;
             const budget = budgetFor(c, budgets, viewMonth.year, viewMonth.month);
             return (
               <div
                 key={c.id}
-                className="flex items-center justify-between rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-4"
+                className="flex min-w-0 items-center justify-between gap-2 rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-4"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="h-4 w-4 rounded-full"
+                    className="h-4 w-4 shrink-0 rounded-full"
                     style={{ backgroundColor: c.color }}
                     aria-hidden
                   />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{c.name}</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm font-medium">{c.name}</span>
                     {budget && (
-                      <span className="text-xs text-zinc-500">
-                        {formatMoney(budget.amountMinor, asset?.decimals ?? 2, asset?.code)}/mo
+                      <span className="truncate text-xs text-zinc-500" aria-label={privacy ? "Budget masked" : undefined}>
+                        {privacy ? "••••/mo" : `${formatMoney(budget.amountMinor, asset?.decimals ?? 2, asset?.code)}/mo`}
+                      </span>
+                    )}
+                    {c.hideable && (
+                      <span className="mt-0.5 w-fit rounded-full border border-(--border) bg-(--surface-2) px-2 py-0.5 text-xs text-zinc-500">
+                        hidden
                       </span>
                     )}
                   </div>
-                  {c.hideable && (
-                    <span className="rounded-full border border-(--border) bg-(--surface-2) px-2 py-0.5 text-xs text-zinc-500">
-                      hidden
-                    </span>
-                  )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     aria-label={`Edit ${c.name}`}

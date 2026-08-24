@@ -15,6 +15,7 @@ import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
+import { TemplateCard } from "@/components/templates/template-card";
 import { loadTemplates, type Template } from "@/lib/templates/templates-store";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
@@ -74,6 +75,7 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const captureOpen = searchParams.get("capture") === "1";
+  const typeParam = searchParams.get("type");
   const draftToken = searchParams.get("draftToken");
   const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "local";
@@ -267,6 +269,11 @@ function DashboardContent() {
     [bankBalance, cryptoBalance],
   );
 
+  const typePrefill: VoicePrefill | undefined =
+    typeParam === "income" || typeParam === "expense"
+      ? { accountId: null, amountInput: null, categoryIds: [], description: "", type: typeParam }
+      : undefined;
+
   const txnPrefill: VoicePrefill | undefined = editTxn
     ? {
         accountId: editTxn.accountId,
@@ -325,6 +332,17 @@ function DashboardContent() {
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
       />
 
+      <TemplateCard
+        accounts={accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+          assetCode: assetsById.get(a.assetId)?.code,
+        }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        onChanged={load}
+      />
+
       <CaptureSheet
         open={captureOpen || !!draftToken || !!editTxn}
         onOpenChange={() => { setVoicePrefill(undefined); setEditTxn(null); router.replace("/dashboard", { scroll: false }); }}
@@ -340,7 +358,7 @@ function DashboardContent() {
         recentTxns={recentForCapture}
         templates={templates}
         onSave={handleSave}
-        voicePrefill={voicePrefill ?? txnPrefill}
+        voicePrefill={voicePrefill ?? typePrefill ?? txnPrefill}
         editing={!!editTxn}
       />
     </div>

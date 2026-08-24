@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { RecentActivity } from "./recent-activity";
 import { BudgetPulse } from "./budget-pulse";
+import { PrivacyProvider } from "@/lib/privacy/privacy-context";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import type { BudgetUsageItem } from "./budget-pulse";
 import type { Category } from "@/lib/categories/categories-store";
@@ -38,6 +39,14 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
 
 const USD = new Map([["usd", { code: "USD", decimals: 2 }]]);
 
+function renderPulse(items: BudgetUsageItem[]) {
+  return render(
+    <PrivacyProvider initialMasked={false}>
+      <BudgetPulse items={items} assetsById={USD} />
+    </PrivacyProvider>,
+  );
+}
+
 describe("RecentActivity", () => {
   it("renders empty state when no transactions", () => {
     render(<RecentActivity txns={[]} categories={[]} />);
@@ -70,14 +79,36 @@ describe("BudgetPulse", () => {
     const items: BudgetUsageItem[] = [
       { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
     ];
-    render(
-      <BudgetPulse items={items} assetsById={USD} />,
-    );
+    renderPulse(items);
     expect(screen.getByText("Budget pulse")).toBeInTheDocument();
     expect(screen.getByText("Food")).toBeInTheDocument();
     expect(screen.getByText("$450.00 of $1,000.00 spent")).toBeInTheDocument();
     const bar = screen.getByRole("progressbar", { name: "Budget usage 45%" });
     expect(bar).toHaveAttribute("aria-valuenow", "45");
+  });
+
+  it("shows percentage per category", () => {
+    const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
+    const items: BudgetUsageItem[] = [
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
+    ];
+    renderPulse(items);
+    expect(screen.getByText("45%")).toBeInTheDocument();
+  });
+
+  it("masks amounts but keeps percentages in privacy mode", () => {
+    const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
+    const items: BudgetUsageItem[] = [
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
+    ];
+    render(
+      <PrivacyProvider initialMasked>
+        <BudgetPulse items={items} assetsById={USD} />
+      </PrivacyProvider>,
+    );
+    expect(screen.getByText("45% of budget used")).toBeInTheDocument();
+    expect(screen.getByText("45%")).toBeInTheDocument();
+    expect(screen.queryByText("$450.00")).not.toBeInTheDocument();
   });
 
   it("applies red color for over 90%", () => {

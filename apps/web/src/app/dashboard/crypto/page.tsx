@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { HoldingsList } from "@/components/crypto/holdings-list";
 import type { AccountOption } from "@/components/crypto/trade-capture";
 import { useSync } from "@/lib/sync/sync-context";
 import { useAssets } from "@/lib/assets";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
 
-export default function CryptoPage() {
+function CryptoContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tradeParam = searchParams.get("trade") === "1";
+  const { masked: privacy } = usePrivacy();
   const { db, userId, isConnected, lastSyncedAt } = useSync();
   const uid = userId ?? "dev-user";
   const { assets } = useAssets();
@@ -15,6 +21,10 @@ export default function CryptoPage() {
     [assets],
   );
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
+
+  useEffect(() => {
+    if (tradeParam) router.replace("/dashboard/crypto", { scroll: false });
+  }, [tradeParam, router]);
 
   const reloadAccounts = useCallback(async () => {
     const res = await db.query(`SELECT * FROM accounts WHERE deleted_at IS NULL`);
@@ -39,7 +49,15 @@ export default function CryptoPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">Crypto</h1>
       </header>
 
-      <HoldingsList accounts={accounts} userId={uid} />
+      <HoldingsList accounts={accounts} userId={uid} autoOpenTrade={tradeParam} masked={privacy} />
     </div>
+  );
+}
+
+export default function CryptoPage() {
+  return (
+    <Suspense>
+      <CryptoContent />
+    </Suspense>
   );
 }
