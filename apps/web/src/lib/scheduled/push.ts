@@ -87,6 +87,8 @@ export function encryptPayload(
   ]);
   const cipher = createCipheriv("aes-128-gcm", cek, nonce);
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+  // RFC 8291 aes128gcm: body = header || ciphertext || 16-byte auth tag
+  const tag = cipher.getAuthTag();
   const serverPubRaw = rawPublicKey(createPublicKey(serverKeys.privateKey));
   const header = Buffer.concat([
     salt,
@@ -95,7 +97,7 @@ export function encryptPayload(
     Buffer.from([serverPubRaw.length]),
     serverPubRaw,
   ]);
-  return Buffer.concat([header, ciphertext]);
+  return Buffer.concat([header, ciphertext, tag]);
 }
 
 /** Inverse of encryptPayload, for round-trip tests. */
@@ -108,6 +110,8 @@ export function decryptPayload(
   const idLen = body[20]!;
   const serverPubRaw = body.subarray(21, 21 + idLen);
   const ciphertext = body.subarray(21 + idLen);
+  const tag = ciphertext.subarray(-16);
+  const data = ciphertext.subarray(0, -16);
   const clientPubRaw = rawPublicKey(clientKeys.publicKey);
   const ikm = Buffer.from(diffieHellman({ privateKey: clientKeys.privateKey, publicKey: createPublicKey({
     key: { kty: "EC", crv: "P-256", x: bufToB64url(serverPubRaw.subarray(1, 33)), y: bufToB64url(serverPubRaw.subarray(33, 65)) },
@@ -122,7 +126,8 @@ export function decryptPayload(
   const cek = hkdf(prk, salt, Buffer.from("Content-Encoding: aes128gcm\0"), 16);
   const nonce = hkdf(prk, salt, Buffer.from("Content-Encoding: nonce\0"), 12);
   const decipher = createDecipheriv("aes-128-gcm", cek, nonce);
-  const plaintext = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  decipher.setAuthTag(tag);
+  const plaintext = Buffer.concat([decipher.update(data), decipher.final()]);
   // strip trailing 0x02-delimiter padding
   let end = plaintext.length;
   while (end > 0 && plaintext[end - 1] === 0) end--;

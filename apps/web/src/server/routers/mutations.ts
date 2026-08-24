@@ -135,14 +135,12 @@ export const mutationsRouter = router({
         for (const batch of orderedBatches) {
           const tableConfig = TABLE_REGISTRY[batch.table];
 
-          // Enforce per-user isolation: rows are stamped with the authenticated
-          // user's id regardless of what the client sent.
-          const upserts = batch.upserts.map(
-            (row) => ({ ...row, user_id: user.id }) as MutationRow,
-          );
-          const deletes = batch.deletes.map(
-            (row) => ({ ...row, user_id: user.id }) as MutationRow,
-          );
+          // No user_id restamping: core resolver (resolveRow) skips any row
+          // whose user_id != session user ("other-user"), which also blocks
+          // cross-user overwrites by id conflict. Stamping here would defeat
+          // that check and re-attribute foreign rows to the caller.
+          const upserts = batch.upserts as MutationRow[];
+          const deletes = batch.deletes as MutationRow[];
 
           // Unknown table -> skip all
           if (!tableConfig) {
