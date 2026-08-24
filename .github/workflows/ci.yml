@@ -28,7 +28,7 @@ jobs:
           docker run -d --name funds-test-pg \
             -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=funds_test \
             -p 127.0.0.1:54329:5432 postgres:16-alpine
-          for i in $(seq 1 30); do
+          for i in $(seq 1 120); do
             docker exec funds-test-pg pg_isready -U postgres -d funds_test >/dev/null 2>&1 && break
             sleep 1
           done
