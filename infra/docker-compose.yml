@@ -1,24 +1,17 @@
 # Fund s — service topology (architecture.md §2)
 # Env supplied via .env (see .env.example). All services on default compose network.
+# Ingress: cloudflared runs ON THE HOST (systemd), token-managed, ingress rules
+# in CF Zero Trust: hostname catch-all -> http://localhost:3000,
+# path /sync/* -> http://localhost:8080.
+# Host ports bound to 127.0.0.1 only (cloudflared + CI migrate/health + local dev).
 name: funds
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -41,7 +34,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file: .env
 
   # cavetail: enable in P4
@@ -52,7 +45,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       # cavetail: config-mount + POWERSYNC_CONFIG_PATH is the documented compose pattern
       - ./powersync.yaml:/config/powersync.yaml:ro
@@ -70,5 +63,3 @@ services:
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:

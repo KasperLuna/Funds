@@ -4,6 +4,8 @@ dist/
 *.tsbuildinfo
 .env
 .env.local
+infra/.env
+infra/.env.prod
 .DS_Store
 infra/caddy_data/
 infra/caddy_config/

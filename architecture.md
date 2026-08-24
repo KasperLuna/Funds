@@ -18,7 +18,7 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 | Auth | Better Auth on Postgres | Google OAuth + email/password + guest demo account |
 | PWA shell | Serwist service worker | precached app shell; offline launch on iOS/Android/desktop |
 | Push | Web Push (VAPID), server cron trigger | iOS cannot schedule background pushes locally |
-| Deployment | Single VPS, `docker compose up`, TLS via Caddy | CI via GitHub Actions self-hosted runner |
+| Deployment | Single VPS, `docker compose up`, ingress via cloudflared tunnel (host systemd) | CI via GitHub Actions self-hosted runner |
 
 ### Non-negotiable data-integrity contract
 1. Client generates all IDs (ULID, text PK) — offline creates never collide.
@@ -33,9 +33,10 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 ## 2. Service Topology (docker-compose)
 
 ```
-caddy            TLS termination, reverse proxy, routes:
-                   /                -> app:3000
-                   /sync/*          -> powersync (WebSocket + HTTP)
+cloudflared      host systemd service (not in compose); CF-managed TLS,
+                   ingress rules in Zero Trust dashboard:
+                    /                -> http://localhost:3000 (app)
+                    /sync/*          -> http://localhost:8080 (powersync, WebSocket + HTTP)
 app              Next.js standalone build (tRPC routes, webhook endpoints)
 postgres         PG16, logical replication ON, single volume
 powersync        PowerSync service; consumes PG logical replication slot,
@@ -47,7 +48,7 @@ worker           long-running node process:
                    (node-cron inside container; no external scheduler needed)
 ```
 
-Volumes: `pgdata`, Caddy certs. All config via `.env` composed from a committed `.env.example`.
+Volumes: `pgdata`. Compose host ports bound to 127.0.0.1 only (cloudflared, CI health/migrate, local dev). All config via `.env` composed from a committed `.env.example`.
 
 ### CI/CD
 Self-hosted runner on the VPS: build images → `docker compose pull/build` → run Drizzle migrations job → `compose up -d` → health checks (`/api/health`). Rollback = previous image tags.

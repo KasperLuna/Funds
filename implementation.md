@@ -17,7 +17,7 @@ Repo layout target:
 apps/web        Next.js app (+ tRPC, PWA)
 packages/core   pure logic (money, parser, recurrence, lots/cost-basis)
 packages/db     Drizzle schema + migrations + seeds
-infra           docker-compose*, Caddyfile, .env.example, powersync.yaml
+infra           docker-compose*, .env.example, powersync.yaml
 ops             GH Actions workflows, deploy scripts
 ```
 
@@ -25,8 +25,8 @@ ops             GH Actions workflows, deploy scripts
 
 ## Phase 1 — Infra Skeleton
 Deliverables:
-- `docker-compose.yml`: caddy, postgres (logical replication ON), powersync, web (Next standalone), worker. Health checks all.
-- Caddy TLS + routing (`/sync/*` → powersync). `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds).
+- `docker-compose.yml`: postgres (logical replication ON), powersync, web (Next standalone), worker. Health checks all; host ports 127.0.0.1-only.
+- cloudflared on host (systemd, token-managed): TLS + routing (`/sync/*` → :8080, catch-all → :3000). `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds).
 - GH Actions (self-hosted runner): lint+typecheck+test → build image → migrate → `compose up -d` → smoke check `/api/health`.
 Gate: fresh VPS boots whole stack with one command; rollback tag works.
 
