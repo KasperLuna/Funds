@@ -224,7 +224,7 @@ export function CaptureSheet({
         </DialogContentDescription>
 
         {templates.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Templates">
+          <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Templates">
             {templates.map((t) => {
               const active = activeTemplateId === t.id;
               return (
@@ -233,15 +233,9 @@ export function CaptureSheet({
                   type="button"
                   aria-pressed={active}
                   onClick={() => applyTemplate(t)}
-                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border px-3 text-sm font-medium transition-all ${
-                    active
-                      ? "border-transparent text-white ring-2 ring-(--accent)"
-                      : "border-(--border) hover:opacity-80"
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none ${
+                    active ? "text-(--accent)" : "text-zinc-400 hover:text-inherit"
                   }`}
-                  style={{
-                    backgroundColor: active ? "var(--accent)" : "var(--surface-2)",
-                    color: active ? "#fff" : undefined,
-                  }}
                 >
                   {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
                   {t.name}
@@ -251,7 +245,7 @@ export function CaptureSheet({
           </div>
         )}
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-1.5">
           <select
             aria-label="Account"
             className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 transition-colors focus-visible:outline-2 focus-visible:outline-(--accent)"
@@ -275,17 +269,17 @@ export function CaptureSheet({
         </div>
 
         {suggestions.length > 0 && (
-          <div className="mt-2 flex gap-2 overflow-x-auto" role="list" aria-label="Suggestions">
+          <div className="mt-3 flex gap-1.5 overflow-x-auto" role="list" aria-label="Suggestions">
             {suggestions.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 role="listitem"
                 onClick={() => applySuggestion(s)}
-                className="flex-shrink-0 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-1.5 text-sm font-medium transition-[background-color,transform] duration-150 ease-out hover:bg-(--surface-3) active:scale-[0.97]"
+                className="flex-shrink-0 rounded-(--radius-sm) px-2.5 py-1.5 text-sm font-medium text-zinc-400 transition-colors duration-150 ease-out hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               >
                 {s.description}{" "}
-                <span className="font-semibold tabular-nums text-zinc-100">
+                <span className="font-semibold tabular-nums text-zinc-200">
                   {/* cavetail: display-only formatting, not arithmetic */}
                   {/* eslint-disable-next-line local/no-money-float */}
                   {(Number(s.amountMinor) / 10 ** decimals).toFixed(decimals)}
@@ -295,7 +289,7 @@ export function CaptureSheet({
           </div>
         )}
 
-        <div className="guilloche relative mt-3 rounded-(--radius-md) border border-(--border) px-3 py-3">
+        <div className="guilloche relative mt-4 rounded-(--radius-md) border border-(--border) px-4 py-4">
           <div className="flex items-baseline justify-end gap-2">
           {selected?.assetCode && (
             <span
@@ -330,32 +324,25 @@ export function CaptureSheet({
 
         <input
           aria-label="Description"
-          className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors focus-visible:outline-2 focus-visible:outline-(--accent)"
+          className="mt-4 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors focus-visible:outline-2 focus-visible:outline-(--accent)"
           placeholder="Description (optional)"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
 
         {categories.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Categories">
+          <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Categories">
             {categories.map((c) => {
               const active = categoryIds.includes(c.id);
-              const color = c.color;
               return (
                 <button
                   key={c.id}
                   type="button"
                   aria-pressed={active}
                   onClick={() => toggleCategory(c.id)}
-                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border px-3 text-sm font-medium transition-all ${
-                    active
-                      ? "border-transparent text-white ring-2 ring-(--accent)"
-                      : "border-(--border) hover:opacity-80"
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none ${
+                    active ? "text-(--accent)" : "text-zinc-400 hover:text-inherit"
                   }`}
-                  style={{
-                    backgroundColor: active ? color : "var(--surface-2)",
-                    color: active ? "#fff" : undefined,
-                  }}
                 >
                   {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
                   {c.name}
@@ -365,7 +352,7 @@ export function CaptureSheet({
           </div>
         )}
 
-        <div className="mt-2 flex justify-center">
+        <div className="mt-4 flex justify-center">
           <SegmentedControl
             options={[
               { value: "expense", label: "Expense" },
@@ -376,7 +363,7 @@ export function CaptureSheet({
           />
         </div>
 
-        <div className="sm:hidden">
+        <div className="mt-5 sm:hidden">
           <Keypad
             onKey={handleKey}
             onBackspace={() => setAmount(backspace)}
@@ -390,7 +377,7 @@ export function CaptureSheet({
         <div className="hidden sm:block">
           <Button
             size="lg"
-            className="mt-3 w-full"
+            className="mt-5 w-full"
             disabled={!canSave}
             onClick={save}
             aria-label="Save transaction"

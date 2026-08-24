@@ -138,7 +138,7 @@ export function TransferSheet({
           Moves money between two accounts
         </DialogContentDescription>
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-1.5">
           {accountSelect("From account", fromId, (id) => {
             setFromId(id);
             setAmount(emptyAmount(accounts.find((a) => a.id === id)?.decimals ?? 2));
@@ -149,7 +149,7 @@ export function TransferSheet({
           {accountSelect("To account", toId, setToId)}
         </div>
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-4 flex items-center gap-1.5">
           <input
             aria-label="Description"
             className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
@@ -194,7 +194,7 @@ export function TransferSheet({
         <input
           aria-label="Fee"
           inputMode="decimal"
-          className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+          className="mt-4 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
           placeholder="Fee (optional)"
           value={feeInput}
           onChange={(e) => setFeeInput(e.target.value)}
@@ -211,7 +211,7 @@ export function TransferSheet({
           </p>
         )}
 
-        <div className="sm:hidden">
+        <div className="mt-5 sm:hidden">
           <Keypad
             onKey={handleKey}
             onBackspace={() => setAmount(backspace)}
@@ -221,7 +221,7 @@ export function TransferSheet({
           />
         </div>
 
-        <Button size="lg" className="mt-3 w-full" disabled={!canSave} onClick={save}>
+        <Button size="lg" className="mt-5 w-full" disabled={!canSave} onClick={save}>
           {canSave ? "Transfer" : fromId === toId ? validation : "Enter amount"}
         </Button>
       </DialogContent>
