@@ -36,11 +36,6 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm --filter @funds/web exec vitest run src/server/mutations.test.ts || true
-      - name: Debug DB state
-        if: always()
-        run: |
-          docker exec funds-test-pg psql -U postgres -d funds_test -c "select id from assets" -c "\dt" || true
       - run: docker rm -f funds-test-pg
       - run: docker compose -f infra/docker-compose.yml build
       # cavetail: host-side migrate needs localhost; web container needs

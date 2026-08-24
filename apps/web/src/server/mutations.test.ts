@@ -32,16 +32,15 @@ beforeAll(async () => {
   // Apply migrations
   await migrate(db, { migrationsFolder: "../../packages/db/drizzle" });
   
-  // Seed test asset
+  // Seed test asset. code must not collide with seed assets (seed.test seeds
+  // USD; onConflictDoNothing would silently skip a code-unique violation).
   await db.insert(schema.assets).values({
     id: "test-asset-usd",
     kind: "fiat",
-    code: "USD",
+    code: "MUT",
     name: "US Dollar",
     decimals: 2,
   }).onConflictDoNothing();
-  const dbgAssets = await db.select().from(schema.assets);
-  console.log("DEBUG beforeAll url=", process.env.DATABASE_URL, "assets=", dbgAssets.map(a => a.id));
   
   // Sign up test user
   const signUpRes = await auth.api.signUpEmail({
