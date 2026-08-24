@@ -12,6 +12,20 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
+      # cavetail: fail fast with a real signal instead of silently hanging when
+      # the VPS is out of disk/RAM. A self-hosted runner that stalls is usually
+      # a full disk or OOM — surface it before any build work.
+      - name: Host health check
+        run: |
+          set -euo pipefail
+          df -h / | tail -1
+          printf 'DISK_FREE_PCT='; df / | tail -1 | awk '{print 100-$5}'
+          D=$(df / | tail -1 | awk '{print $5}' | tr -d '%')
+          if [ "$D" -ge 90 ]; then
+            echo "ERROR: / is ${D}% full; run docker system prune + clear pnpm store" >&2
+            exit 1
+          fi
+          free -m 2>/dev/null | head -2 || true
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -77,3 +91,18 @@ jobs:
           done
           docker compose -f infra/docker-compose.yml logs powersync | tail -40
           exit 1
+      # cavetail: the silent killer on a long-lived self-hosted VPS is disk
+      # growth that survives `image prune -af`: pnpm store, the runner's _work
+      # checkouts, and docker build cache. image prune only frees unused images,
+      # not these. Clean them every run so the host never accumulates to the
+      # point of stalling mid-build. (No --volumes: pgdata must persist.)
+      - name: Post-run host cleanup
+        if: always()
+        run: |
+          set -euo pipefail
+          docker image prune -af
+          docker builder prune -af 2>/dev/null || true
+          docker system prune -af 2>/dev/null || true
+          pnpm store prune 2>/dev/null || true
+          find "$RUNNER_WORKSPACE/.." -maxdepth 2 -type d -name node_modules -prune -exec rm -rf {} + 2>/dev/null || true
+          df -h / | tail -1

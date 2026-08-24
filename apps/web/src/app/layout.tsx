@@ -32,6 +32,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // Extend into the iOS safe area so env(safe-area-inset-bottom) reports a
+  // real value; without it the standalone PWA's bottom nav and sheets sit
+  // under the home indicator. (layout.tsx header + dashboard/layout.tsx nav
+  // + dialog.tsx already consume the inset.)
+  viewportFit: "cover",
 };
 
 const DIRECTION_CONTRACT = `THESIS: Funds is an intaglio plate — money as engraved hairline numerals on a pure-black OLED ground; it refuses the gray-on-gray card dashboard for a banknote's black, ink, and one emerald thread.
