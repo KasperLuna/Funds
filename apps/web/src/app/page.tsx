@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { FundsLogo } from "@/components/brand/funds-logo";
+import { KasperLunaLogo } from "@/components/brand/kasper-luna-logo";
 
 const FACTS = [
   { label: "Multi-currency" },
@@ -37,6 +38,20 @@ export default function LandingPage() {
       >
         Open app <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
       </Link>
+
+      <footer className="absolute inset-x-0 bottom-5 flex justify-center">
+        <a
+          href="https://kasperluna.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 text-zinc-600 transition-colors hover:text-zinc-400"
+        >
+          <span className="text-[10px] font-semibold tracking-[0.4em] uppercase">
+            by
+          </span>
+          <KasperLunaLogo className="h-3.5 w-auto text-inherit" />
+        </a>
+      </footer>
     </main>
   );
 }
