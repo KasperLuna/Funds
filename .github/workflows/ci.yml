@@ -51,6 +51,13 @@ jobs:
       - run: pnpm --filter @funds/db run migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Ensure PowerSync publication
+        run: |
+          PUSER="${POSTGRES_USER:-$(sed -n 's/^POSTGRES_USER=//p' infra/.env)}"
+          PDB="${POSTGRES_DB:-$(sed -n 's/^POSTGRES_DB=//p' infra/.env)}"
+          docker compose -f infra/docker-compose.yml exec -T postgres \
+            psql -U "${PUSER}" -d "${PDB}" -c \
+            "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname='powersync') THEN CREATE PUBLICATION powersync FOR ALL TABLES; END IF; END \$\$;"
       - run: docker compose -f infra/docker-compose.yml up -d --no-build
       - run: |
           PORT="${WEB_HOST_PORT:-$(sed -n 's/^WEB_HOST_PORT=//p' infra/.env)}"
@@ -62,12 +69,10 @@ jobs:
             sleep 2
             ELAPSED=$((ELAPSED + 2))
           done
-      - name: Check PowerSync health
+      - name: Check PowerSync up
         run: |
-          PS_PORT="${POWERSYNC_HOST_PORT:-$(sed -n 's/^POWERSYNC_HOST_PORT=//p' infra/.env)}"
-          PS_PORT="${PS_PORT:-18080}"
           for i in $(seq 1 30); do
-            curl -fsS "http://localhost:${PS_PORT}/health" >/dev/null 2>&1 && exit 0
+            [ "$(docker inspect -f '{{.State.Running}}' funds-powersync-1 2>/dev/null)" = "true" ] && exit 0
             sleep 2
           done
           docker compose -f infra/docker-compose.yml logs powersync | tail -40
