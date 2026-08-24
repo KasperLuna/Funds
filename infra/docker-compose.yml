@@ -1,8 +1,9 @@
 # Fund s — service topology (architecture.md §2)
 # Env supplied via .env (see .env.example). All services on default compose network.
 # Ingress: cloudflared runs ON THE HOST (systemd), token-managed, ingress rules
-# in CF Zero Trust: hostname catch-all -> http://localhost:3000,
-# path /sync/* -> http://localhost:8080.
+# in CF Zero Trust: hostname catch-all -> http://localhost:$WEB_HOST_PORT (13000),
+# optional path /sync/* -> http://localhost:$POWERSYNC_HOST_PORT (18080).
+# The web app proxies /sync/stream to powersync internally, so catch-all alone works.
 # Host ports bound to 127.0.0.1 only (cloudflared + CI migrate/health + local dev).
 # Host-side ports configurable via .env: WEB_HOST_PORT (default 13000),
 # POWERSYNC_HOST_PORT (default 18080) — chosen to avoid common collisions.
