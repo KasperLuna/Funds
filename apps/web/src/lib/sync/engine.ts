@@ -232,7 +232,11 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   function scheduleTick(): void {
     if (interval) clearInterval(interval);
     interval = setInterval(() => {
-      if (state.online && visible) void syncNow();
+      // Probe even when online:false so a transient failure (that fired no
+      // browser `online` event) self-recovers on the visible-tab tick instead
+      // of wedging until reload. doSync backoffs on failure, so this stays
+      // throttled; success re-flips online back to true.
+      if (visible) void syncNow();
       scheduleTick();
     }, intervalDelay());
   }
@@ -240,10 +244,6 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   async function doSync(): Promise<void> {
     const userId = getUserId();
     if (!userId) return;
-    if (!state.online) {
-      setState({ online: false });
-      return;
-    }
     if (state.syncing) return;
     setState({ syncing: true });
     try {

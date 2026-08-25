@@ -104,6 +104,24 @@ describe("sync engine", () => {
     engine.stop();
   });
 
+  it("self-recovers on a later syncNow after transient failure (no online event)", async () => {
+    engine.start();
+    await store.table("accounts").upsert({ id: "a1", name: "Checking" });
+    await tick();
+
+    pushMock.mockRejectedValueOnce(new Error("transient"));
+    await engine.syncNow();
+    expect(engine.getState().online).toBe(false);
+    expect(await outboxCount()).toBe(1);
+
+    // A subsequent syncNow probe (no browser `online` event) must recover.
+    pushMock.mockResolvedValue({});
+    await engine.syncNow();
+    expect(engine.getState().online).toBe(true);
+    expect(await outboxCount()).toBe(0);
+    engine.stop();
+  });
+
   it("pull applies rows and persists watermark", async () => {
     engine.start();
     fetchMock.mockResolvedValueOnce({
