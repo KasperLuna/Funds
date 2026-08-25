@@ -45,7 +45,14 @@ jobs:
       # stack untouched. down+prune afterwards frees RAM and old images; the
       # host never builds.
       - run: docker compose -f infra/docker-compose.yml pull
-      - run: docker compose -f infra/docker-compose.yml down --remove-orphans
+      # cavetail: down --remove-orphans errors when an orphan is already
+      # stopped ("cannot stop container ... is not running"), which aborts the
+      # whole deploy before migrate/check. Force-remove any leftover project
+      # containers first (docker rm -f works on stopped containers too) so a
+      # stale container (e.g. the old powersync) can never block a deploy.
+      - run: |
+          docker rm -f $(docker ps -aq --filter "label=com.docker.compose.project=funds") 2>/dev/null || true
+          docker compose -f infra/docker-compose.yml down --remove-orphans
       - run: docker image prune -af
       # cavetail: migrate runs on host against localhost:5432, so postgres must
       # be up first (fresh box has nothing running).
