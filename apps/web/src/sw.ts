@@ -12,8 +12,21 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("activate", (event) => {
+  // Drop outdated precache versions AND the ad-hoc `runtime`/navigation caches
+  // the old cache-first handler left behind. On activate, no stale chunk or
+  // shell may survive — otherwise a device mid-transition keeps serving the
+  // pre-fix bundle (dead buttons + hydration #418). The network-first fetch
+  // handler below then rebuilds caches from the current build only.
   (event as unknown as { waitUntil(p: Promise<unknown>): void }).waitUntil(
-    (self as unknown as { clients: { claim(): Promise<unknown> } }).clients.claim(),
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => k === "runtime" || k === "navigation")
+          .map((k) => caches.delete(k).catch(() => {})),
+      );
+      await (self as unknown as { clients: { claim(): Promise<unknown> } }).clients.claim();
+    })(),
   );
 });
 
