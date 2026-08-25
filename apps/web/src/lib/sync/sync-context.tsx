@@ -72,10 +72,13 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, [engine]);
 
   useEffect(() => {
-    // Only a *confirmed* sign-out (session resolved to null) wipes the store.
-    // An unresolved session (offline, isPending true) must NOT wipe — the
-    // hooks keep capturing offline writes to the outbox until they sync.
-    if (!isPending && !userId) {
+    // Only a *definitive* sign-out wipes the store: better-auth resolves a 401
+    // (server says no session) with error.status === 401, while an OFFLINE
+    // session fetch fails with a network error (no 401) and leaves data null on
+    // a fresh load. We must NOT wipe on the latter — the user may be signed in
+    // but offline, and the outbox hooks keep capturing writes until they sync.
+    const confirmedSignOut = !isPending && (session as { error?: { status?: number } | null } | null)?.error?.status === 401;
+    if (confirmedSignOut) {
       void engine.wipe();
       engine.stop();
       return;
@@ -84,7 +87,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       engine.start();
     }
     return () => engine.stop();
-  }, [engine, userId, isPending]);
+  }, [engine, userId, isPending, session]);
 
   const value = useMemo(
     () => ({ db: store, syncStatus, isReady, userId }),
