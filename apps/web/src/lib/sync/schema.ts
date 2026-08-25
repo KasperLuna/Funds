@@ -18,7 +18,6 @@ import { column, Schema, Table } from "@powersync/web";
  */
 
 const accounts = new Table({
-  id: column.text,
   user_id: column.text,
   name: column.text,
   kind: column.text,
@@ -32,7 +31,6 @@ const accounts = new Table({
 });
 
 const categories = new Table({
-  id: column.text,
   user_id: column.text,
   name: column.text,
   color: column.text,
@@ -45,7 +43,6 @@ const categories = new Table({
 });
 
 const category_budgets = new Table({
-  id: column.text,
   user_id: column.text,
   category_id: column.text,
   asset_id: column.text,
@@ -57,7 +54,6 @@ const category_budgets = new Table({
 });
 
 const transactions = new Table({
-  id: column.text,
   user_id: column.text,
   account_id: column.text,
   asset_id: column.text,
@@ -75,7 +71,6 @@ const transactions = new Table({
 });
 
 const transfers = new Table({
-  id: column.text,
   user_id: column.text,
   fee_transaction_id: column.text,
   created_at: column.text,
@@ -84,7 +79,6 @@ const transfers = new Table({
 });
 
 const trades = new Table({
-  id: column.text,
   user_id: column.text,
   sell_leg_id: column.text,
   buy_leg_id: column.text,
@@ -97,7 +91,6 @@ const trades = new Table({
 });
 
 const tokens = new Table({
-  id: column.text,
   user_id: column.text,
   symbol: column.text,
   name: column.text,
@@ -109,7 +102,6 @@ const tokens = new Table({
 });
 
 const token_transactions = new Table({
-  id: column.text,
   user_id: column.text,
   token_id: column.text,
   amount_minor: column.integer,
@@ -123,7 +115,6 @@ const token_transactions = new Table({
 });
 
 const templates = new Table({
-  id: column.text,
   user_id: column.text,
   name: column.text,
   type: column.text,
@@ -137,7 +128,6 @@ const templates = new Table({
 });
 
 const scheduled_transactions = new Table({
-  id: column.text,
   user_id: column.text,
   name: column.text,
   description: column.text,
@@ -157,7 +147,6 @@ const scheduled_transactions = new Table({
 });
 
 const push_subscriptions = new Table({
-  id: column.text,
   user_id: column.text,
   endpoint: column.text,
   keys: column.text,
