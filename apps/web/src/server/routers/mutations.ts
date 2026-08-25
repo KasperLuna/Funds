@@ -58,9 +58,9 @@ function translateSnakeToCamel(
       result[camelKey] = new Date(val);
     } else if (
       (camelKey.includes("Minor") || camelKey === "openingBalanceMinor") &&
-      typeof val === "number"
+      (typeof val === "number" || typeof val === "string")
     ) {
-      // Convert numeric amounts to bigint
+      // Convert numeric amounts to bigint (accepts precision-safe string money)
       result[camelKey] = BigInt(val);
     } else {
       result[camelKey] = val;
