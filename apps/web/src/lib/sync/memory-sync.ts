@@ -5,7 +5,9 @@ import type {
   SyncDatabase,
   SyncTable,
 } from "./types.js";
-import { normalizeRows } from "./normalize.js";
+import { denormalizeRow, normalizeRows, upsertRow } from "./normalize.js";
+import { filterRows, parseSelect, projectRows, sortRows } from "./sql.js";
+import { PushChannel } from "./push-channel.js";
 
 /**
  * In-memory {@link SyncDatabase} for tests and local/dev use.
@@ -14,10 +16,14 @@ import { normalizeRows } from "./normalize.js";
  * statement shapes the sync layer needs. It is NOT a general SQL engine. Keep it
  * this way; extend only when a new consumer actually requires another shape.
  * Supported shapes:
- *   - `INSERT INTO t (cols) VALUES (?,?,...) ON CONFLICT (id) DO UPDATE ...` (upsert)
+ *   - `INSERT INTO t (cols) VALUES (?,?,...) [ON CONFLICT ...]` (upsert)
  *   - `UPDATE t SET col = ?, ... WHERE id = ?`
  *   - `DELETE FROM t WHERE id = ?`
- *   - `SELECT * FROM t [WHERE col = ? [AND ...]]`
+ *   - `SELECT [* | id] FROM t [WHERE ...] [ORDER BY col ASC|DESC]`
+ *
+ * Money columns are stored as BigInt (in-memory BigInt is fine) and normalized
+ * back to BigInt on every read; `table().upsert` writes via the shared
+ * `upsertRow`/`denormalizeRow` path (string-encoded at the write boundary).
  */
 
 type TableMap = Map<string, RowRecord>;
@@ -27,12 +33,8 @@ const REGEX = {
     /^INSERT\s+INTO\s+([A-Za-z_][\w]*)\s*\(([^)]*)\)\s*VALUES\s*\(([^)]*)\)/i,
   update: /^UPDATE\s+([A-Za-z_][\w]*)\s+SET\s+(.+)\s+WHERE\s+id\s*=\s*\?/i,
   delete: /^DELETE\s+FROM\s+([A-Za-z_][\w]*)\s+WHERE\s+id\s*=\s*\?/i,
-  select: /^SELECT\s+\*\s+FROM\s+([A-Za-z_][\w]*)(?:\s+WHERE\s+(.+))?$/i,
   columnName: /^[A-Za-z_][\w]*$/,
   valueRef: /^\?$/,
-  whereTerm: /^([A-Za-z_][\w]*)\s*=\s*\?$/,
-  whereLiteral: /^([A-Za-z_][\w]*)\s*=\s*(-?\d+)$/,
-  whereNull: /^([A-Za-z_][\w]*)\s+(IS\s+NOT\s+NULL|IS\s+NULL)$/i,
 } as const;
 
 type WatchEntry = {
@@ -41,38 +43,6 @@ type WatchEntry = {
   params?: QueryParams;
   push: (value: QueryResult) => void;
 };
-
-/**
- * Minimal push channel feeding an async generator.
- */
-class PushChannel<T> {
-  private queue: T[] = [];
-  private resolvers: Array<(r: IteratorResult<T>) => void> = [];
-  private done = false;
-
-  push(value: T): void {
-    const resolver = this.resolvers.shift();
-    if (resolver) resolver({ value, done: false });
-    else this.queue.push(value);
-  }
-
-  next(): Promise<IteratorResult<T>> {
-    const value = this.queue.shift();
-    if (value !== undefined) {
-      return Promise.resolve({ value, done: false });
-    }
-    if (this.done) {
-      return Promise.resolve({ value: undefined as T, done: true });
-    }
-    return new Promise((resolve) => this.resolvers.push(resolve));
-  }
-
-  close(): void {
-    this.done = true;
-    const resolvers = this.resolvers.splice(0);
-    for (const resolve of resolvers) resolve({ value: undefined as T, done: true });
-  }
-}
 
 export class MemorySyncDatabase implements SyncDatabase {
   private tables = new Map<string, TableMap>();
@@ -162,28 +132,25 @@ export class MemorySyncDatabase implements SyncDatabase {
   }
 
   async query(sql: string, params: QueryParams = []): Promise<QueryResult> {
-    const match = REGEX.select.exec(sql.trimStart());
-    if (!match) throw new Error(`Unsupported SELECT: ${sql}`);
-    const table = match[1] as string;
-    const whereClause = match[2];
-    const tableMap = this.tables.get(table) ?? new Map<string, RowRecord>();
-    let rows = [...tableMap.values()].map((r) => ({ ...r }));
-
-    if (whereClause !== undefined) {
-      rows = rows.filter((row) => this.matchWhere(row, whereClause, params));
-    }
-
-    return { rows: normalizeRows(table, rows), rowsAffected: rows.length };
+    const parsed = parseSelect(sql);
+    const tableMap = this.tables.get(parsed.table) ?? new Map<string, RowRecord>();
+    const rows = projectRows(
+      sortRows(
+        filterRows([...tableMap.values()], parsed.where, params),
+        parsed.orderBy,
+      ),
+      parsed.columns,
+    );
+    return { rows: normalizeRows(parsed.table, rows), rowsAffected: rows.length };
   }
 
   async *watch(sql: string, params: QueryParams = []): AsyncIterable<QueryResult> {
-    const match = REGEX.select.exec(sql.trimStart());
-    if (!match) throw new Error(`Unsupported SELECT in watch: ${sql}`);
-    const table = match[1] as string;
+    const parsed = parseSelect(sql);
+    if (parsed.columns !== "*") throw new Error(`Unsupported SELECT in watch: ${sql}`);
 
     const channel = new PushChannel<QueryResult>();
     const entry: WatchEntry = {
-      table,
+      table: parsed.table,
       sql,
       params,
       push: (value) => channel.push(value),
@@ -207,22 +174,18 @@ export class MemorySyncDatabase implements SyncDatabase {
   table(name: string): SyncTable {
     return {
       upsert: async (row) => {
-        const columns = Object.keys(row);
-        const placeholders = columns.map(() => "?").join(", ");
-        const values = columns.map((c) => row[c]);
-        const conflictSet = columns
-          .filter((c) => c !== "id")
-          .map((c) => `${c} = excluded.${c}`)
-          .join(", ");
-        await this.execute(
-          `INSERT INTO ${name} (${columns.join(", ")}) VALUES (${placeholders}) ON CONFLICT (id) DO UPDATE SET ${conflictSet}`,
-          values,
+        await upsertRow(
+          (sql, params) => this.execute(sql, params),
+          (sql, params) => this.query(sql, params),
+          name,
+          row,
         );
       },
       update: async (row) => {
-        const columns = Object.keys(row).filter((c) => c !== "id");
+        const data = denormalizeRow(name, row);
+        const columns = Object.keys(data).filter((c) => c !== "id");
         const set = columns.map((c) => `${c} = ?`).join(", ");
-        const values = [...columns.map((c) => row[c]), row["id"]];
+        const values = [...columns.map((c) => data[c]), row["id"]];
         await this.execute(`UPDATE ${name} SET ${set} WHERE id = ?`, values);
       },
       deleteById: async (id) => {
@@ -238,45 +201,6 @@ export class MemorySyncDatabase implements SyncDatabase {
       this.tables.set(name, map);
     }
     return map;
-  }
-
-  private matchWhere(row: RowRecord, clause: string, params: QueryParams): boolean {
-    const terms = clause.split(/\s+AND\s+/i);
-    let paramIndex = 0;
-    for (const term of terms) {
-      const trimmed = term.trim();
-      const nullMatch = REGEX.whereNull.exec(trimmed);
-      if (nullMatch) {
-        const col = nullMatch[1];
-        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
-        const op = nullMatch[2]?.replace(/\s+/g, " ").toUpperCase();
-        const isNull = row[col] === null || row[col] === undefined;
-        if (op === "IS NULL") {
-          if (!isNull) return false;
-        } else if (op === "IS NOT NULL") {
-          if (isNull) return false;
-        }
-        continue;
-      }
-      const match = REGEX.whereTerm.exec(trimmed);
-      if (match) {
-        const col = match[1];
-        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
-        if (row[col] !== params[paramIndex]) return false;
-        paramIndex++;
-        continue;
-      }
-      const literalMatch = REGEX.whereLiteral.exec(trimmed);
-      if (literalMatch) {
-        const col = literalMatch[1];
-        const expected = Number(literalMatch[2]);
-        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
-        if (Number(row[col]) !== expected) return false;
-        continue;
-      }
-      throw new Error(`Unsupported WHERE term: ${term}`);
-    }
-    return true;
   }
 
   private emitChange(table: string): void {

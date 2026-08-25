@@ -95,6 +95,22 @@ describe("MemorySyncDatabase", () => {
     expect(events[1]).toHaveLength(2);
   });
 
+  it("money columns round-trip as BigInt via table().upsert", async () => {
+    await db.table("accounts").upsert({
+      id: "a1",
+      name: "Checking",
+      opening_balance_minor: 12345n,
+      archived: 0,
+    });
+    const res = await db.query("SELECT * FROM accounts");
+    expect(res.rows).toHaveLength(1);
+    expect((res.rows[0] as RowRecord).opening_balance_minor).toBe(12345n);
+
+    await db.table("accounts").upsert({ id: "a2", opening_balance_minor: 500 });
+    const res2 = await db.query("SELECT * FROM accounts WHERE id = ?", ["a2"]);
+    expect((res2.rows[0] as RowRecord).opening_balance_minor).toBe(500n);
+  });
+
   it("isConnected toggles via connect", async () => {
     const d = new MemorySyncDatabase();
     expect(d.isConnected).toBe(false);

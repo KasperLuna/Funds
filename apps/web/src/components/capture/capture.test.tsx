@@ -128,7 +128,7 @@ describe("CaptureSheet", () => {
 
     const rows = (await sync.query("select * from transactions")).rows;
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.amount_minor).toBe(-12500);
+    expect(rows[0]!.amount_minor).toBe(-12500n);
     expect(rows[0]!.type).toBe("expense");
   });
 
@@ -154,7 +154,7 @@ describe("CaptureSheet", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     const rows = (await sync.query("select * from transactions")).rows;
-    expect(rows[0]!.amount_minor).toBe(500);
+    expect(rows[0]!.amount_minor).toBe(500n);
     expect(rows[0]!.type).toBe("income");
   });
 
@@ -217,7 +217,7 @@ describe("CaptureSheet", () => {
 
     await user.click(save);
     const rows = (await sync.query("select * from transactions")).rows;
-    expect(rows[0]!.amount_minor).toBe(-150000);
+    expect(rows[0]!.amount_minor).toBe(-150000n);
     expect(rows[0]!.type).toBe("expense");
   });
 
@@ -238,7 +238,7 @@ describe("CaptureSheet", () => {
 
     await user.click(save);
     const rows = (await sync.query("select * from transactions")).rows;
-    expect(rows[0]!.amount_minor).toBe(250000);
+    expect(rows[0]!.amount_minor).toBe(250000n);
     expect(rows[0]!.type).toBe("income");
   });
 

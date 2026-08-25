@@ -91,11 +91,11 @@ describe("TransferSheet", () => {
 
     const txns = (await sync.query("select * from transactions")).rows;
     expect(txns).toHaveLength(3);
-    const from = txns.find((t) => t.account_id === "acc-1" && t.amount_minor === -5000);
-    const fee = txns.find((t) => t.amount_minor === -150);
+    const from = txns.find((t) => t.account_id === "acc-1" && t.amount_minor === -5000n);
+    const fee = txns.find((t) => t.amount_minor === -150n);
     const to = txns.find((t) => t.account_id === "acc-2");
     expect(from).toBeTruthy();
-    expect(to!.amount_minor).toBe(5000);
+    expect(to!.amount_minor).toBe(5000n);
     expect(to!.type).toBe("income");
     expect(fee).toBeTruthy();
 

@@ -49,6 +49,27 @@ const TIMESTAMP_COLUMNS: Record<string, string[]> = {
   push_subscriptions: ["created_at", "updated_at", "deleted_at"],
 };
 
+/**
+ * Money columns (bigint minor units) per replicated table.
+ *
+ * cavetail: IndexedDB cannot structured-clone BigInt and JSON numbers lose
+ * precision above 2^53, so money is persisted as STRINGS and materialized as
+ * BigInt at the read boundary. Keep in sync with packages/db/src/schema.ts.
+ */
+export const MONEY_COLUMNS: Record<string, string[]> = {
+  accounts: ["opening_balance_minor"],
+  categories: ["monthly_budget_minor"],
+  category_budgets: ["amount_minor"],
+  token_transactions: ["amount_minor", "price_at_execution_minor", "fee_minor"],
+  transactions: ["amount_minor", "value_base_minor"],
+  templates: ["amount_minor"],
+  scheduled_transactions: ["amount_minor"],
+  trades: [],
+  transfers: [],
+  tokens: [],
+  push_subscriptions: [],
+};
+
 /** Non-text columns that PowerSync may return as "" when NULL. */
 const NON_TEXT_COLUMNS: Record<string, string[]> = {
   accounts: ["archived", "colors"],
@@ -111,6 +132,11 @@ export function normalizeRow(table: string, row: RowRecord): RowRecord {
   for (const col of NON_TEXT_COLUMNS[table] ?? []) {
     if (out[col] === "") out[col] = null;
   }
+  for (const col of MONEY_COLUMNS[table] ?? []) {
+    if (col in out && out[col] != null && out[col] !== "") {
+      out[col] = BigInt(out[col] as string | number | bigint);
+    }
+  }
   return out;
 }
 
@@ -131,6 +157,9 @@ export function denormalizeRow(table: string, row: RowRecord): RowRecord {
       const ms = toEpochMs(out[col]);
       if (typeof ms === "number") out[col] = ms;
     }
+  }
+  for (const col of MONEY_COLUMNS[table] ?? []) {
+    if (col in out && out[col] != null) out[col] = String(out[col]);
   }
   return out;
 }
