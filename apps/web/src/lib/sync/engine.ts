@@ -210,8 +210,20 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     // rows.
     applyingPull = true;
     try {
-      for (const { table, row } of data.rows) {
-        await store.db.table(table).put(denormalizeRow(table, row));
+      // cavetail: one transaction for the whole batch — per-row puts each
+      // commit separately and fire a liveQuery emission (full React re-render)
+      // per row, so a first-sync snapshot visibly pours in row by row.
+      if (data.rows.length > 0) {
+        const tables = [...new Set(data.rows.map((r) => r.table))];
+        await store.db.transaction(
+          "rw",
+          tables.map((t) => store.db.table(t)),
+          async () => {
+            for (const { table, row } of data.rows) {
+              await store.db.table(table).put(denormalizeRow(table, row));
+            }
+          },
+        );
       }
     } finally {
       applyingPull = false;
@@ -226,6 +238,10 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     backoffCount++;
   }
   function intervalDelay(): number {
+    // cavetail: steady-state cadence is 30s on a visible tab. Failures pull
+    // the probe IN exponentially (2s, 4s, … capped at 30s); a plain
+    // min(30s, 1s * 2^n) makes healthy tabs poll every second.
+    if (backoffCount === 0) return 30_000;
     return Math.min(30_000, 1000 * 2 ** backoffCount);
   }
 
@@ -234,10 +250,12 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     interval = setInterval(() => {
       // Probe even when online:false so a transient failure (that fired no
       // browser `online` event) self-recovers on the visible-tab tick instead
-      // of wedging until reload. doSync backoffs on failure, so this stays
-      // throttled; success re-flips online back to true.
-      if (visible) void syncNow();
-      scheduleTick();
+      // of wedging until reload. Re-arm AFTER the sync settles so the delay
+      // reflects the updated backoff count.
+      void (async () => {
+        if (visible) await syncNow();
+        scheduleTick();
+      })();
     }, intervalDelay());
   }
 

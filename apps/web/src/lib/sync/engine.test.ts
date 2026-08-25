@@ -251,4 +251,64 @@ describe("sync engine", () => {
     expect(await outboxCount()).toBe(0);
     engine.stop();
   });
+
+  it("steady-state tick re-arms at 30s; failed tick probes at 2s", async () => {
+    const delays: number[] = [];
+    let lastFn: () => void = () => {};
+    const si = vi
+      .spyOn(globalThis, "setInterval")
+      .mockImplementation(((fn: () => void, delay?: number) => {
+        delays.push(Number(delay));
+        lastFn = fn;
+        return 0;
+      }) as unknown as typeof setInterval);
+    const ci = vi.spyOn(globalThis, "clearInterval").mockImplementation(() => {});
+    const settle = async (pred: () => boolean): Promise<void> => {
+      for (let i = 0; i < 100 && !pred(); i++) {
+        await new Promise((r) => setTimeout(r, 2));
+      }
+    };
+    try {
+      engine.start();
+      await settle(() => engine.getState().lastSyncedAt !== null);
+      expect(delays).toEqual([30_000]);
+
+      lastFn();
+      await settle(() => delays.length >= 2);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(delays[1]).toBe(30_000);
+
+      fetchMock.mockRejectedValueOnce(new Error("down"));
+      lastFn();
+      await settle(() => engine.getState().online === false && delays.length >= 3);
+      expect(delays[2]).toBe(2_000);
+
+      engine.stop();
+    } finally {
+      si.mockRestore();
+      ci.mockRestore();
+    }
+  });
+
+  it("applies pulled rows in one transaction (single liveQuery emission)", async () => {
+    const txSpy = vi.spyOn(store.db, "transaction");
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        since: 5000,
+        rows: [
+          { table: "accounts", row: { id: "a1", name: "A", updated_at: 5000 } },
+          { table: "categories", row: { id: "c1", name: "Food", updated_at: 5000 } },
+        ],
+      }),
+    } as Response);
+    await engine.syncNow();
+
+    expect(txSpy).toHaveBeenCalledTimes(1);
+    const accounts = await store.query("SELECT * FROM accounts");
+    const categories = await store.query("SELECT * FROM categories");
+    expect(accounts.rows.map((r) => r.id)).toEqual(["a1"]);
+    expect(categories.rows.map((r) => r.id)).toEqual(["c1"]);
+    engine.stop();
+  });
 });
