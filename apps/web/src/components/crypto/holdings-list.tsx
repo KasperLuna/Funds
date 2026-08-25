@@ -24,7 +24,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 function computeValueUsd(holding: Holding, prices: Map<string, CoinPrice>): number {
-  const qty = Number(holding.qtyMinor) / 10 ** holding.token.decimals;
+  const dec = Number(holding.token.decimals) || 0;
+  const qty = Number(holding.qtyMinor) / 10 ** dec;
   const price = holding.token.coingeckoId ? prices.get(holding.token.coingeckoId) : undefined;
   return qty * (price?.current_price ?? 0);
 }
@@ -196,13 +197,14 @@ export function HoldingsList({
 
   const totalPL = useMemo(() => {
     return holdings.reduce((sum, h) => {
-      const qty = Number(h.qtyMinor) / 10 ** h.token.decimals;
+      const dec = Number(h.token.decimals) || 0;
+      const qty = Number(h.qtyMinor) / 10 ** dec;
       const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined;
       const value = qty * (price?.current_price ?? 0);
       // cavetail: totalCostMinor = qty_minor × price_minor = qty×rate×10^(2·decimals);
       // /10^(2·decimals) recovers dollars. Display-only, not arithmetic.
       // eslint-disable-next-line local/no-money-float
-      const costBasis = Number(h.totalCostMinor) / 10 ** (2 * h.token.decimals);
+      const costBasis = Number(h.totalCostMinor) / 10 ** (2 * dec);
       return sum + (value - costBasis);
     }, 0);
   }, [holdings, prices]);

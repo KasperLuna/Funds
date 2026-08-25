@@ -41,7 +41,7 @@ export function toTokenTxn(row: Record<string, unknown>): TokenTransaction {
     tokenId: String(row.token_id),
     amountMinor: BigInt(row.amount_minor as number | string),
     priceAtExecutionMinor: BigInt(row.price_at_execution_minor as number | string),
-    feeMinor: BigInt(row.fee_minor as number | string ?? 0),
+    feeMinor: BigInt((row.fee_minor as number | string | null | undefined) ?? 0),
     side: String(row.side) as "buy" | "sell",
     timestamp: Number(row.timestamp),
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,

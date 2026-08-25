@@ -95,7 +95,7 @@ export function computeBudgetUsage(
       // Only count spending in the budget's own currency; other-currency
       // transactions are excluded rather than silently mixed.
       if (budget.assetId && t.assetId && t.assetId !== budget.assetId) continue;
-      const d = new Date(t.date);
+      const d = new Date(Number(t.date));
       if (d.getFullYear() === year && d.getMonth() === month) {
         spent += -t.amountMinor;
       }

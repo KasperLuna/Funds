@@ -301,8 +301,9 @@ function DashboardContent() {
   const tokenValueMinor = useMemo(
     () =>
       tokenHoldings.reduce((sum, h) => {
-        const qty = Number(h.qtyMinor) / 10 ** h.token.decimals;
-        const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId)?.current_price ?? 0 : 0;
+        const dec = Number(h.token.decimals) || 0;
+        const qty = Number(h.qtyMinor) / 10 ** dec;
+        const price = Number(h.token.coingeckoId ? prices.get(h.token.coingeckoId)?.current_price ?? 0 : 0);
         return sum + BigInt(Math.round(qty * price * 100));
       }, 0n),
     [tokenHoldings, prices],

@@ -21,6 +21,9 @@ fi
 pnpm run lint
 pnpm run typecheck
 pnpm run test
+# db:check catches schema drift (a migration generated but never applied)
+# against the freshly-migrated throwaway postgres before anything ships.
+pnpm run db:check
 
 # Build + publish linux/amd64 images the host deploys. Only when build-relevant
 # files are staged (else skip: deploy keeps the existing :latest).

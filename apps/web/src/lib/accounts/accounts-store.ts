@@ -47,7 +47,7 @@ export function groupByDay(
   });
   for (const t of txns) {
     if (t.deletedAt) continue;
-    const key = fmt.format(new Date(t.date));
+    const key = fmt.format(new Date(Number(t.date)));
     let bucket = map.get(key);
     if (!bucket) {
       bucket = [];
@@ -69,7 +69,7 @@ export function monthStats(
   let expense = 0n;
   for (const t of txns) {
     if (t.deletedAt) continue;
-    const d = new Date(t.date);
+    const d = new Date(Number(t.date));
     if (d.getFullYear() === year && d.getMonth() === month) {
       if (t.amountMinor >= 0n) {
         income += t.amountMinor;

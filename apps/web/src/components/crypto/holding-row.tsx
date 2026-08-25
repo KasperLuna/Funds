@@ -18,14 +18,15 @@ export function HoldingRow({
   masked?: boolean;
 }) {
   const { token, qtyMinor, avgCostMinor } = holding;
-  const qty = Number(qtyMinor) / 10 ** token.decimals;
-  const decimals = token.decimals > 4 ? 4 : token.decimals;
+  const dec = Number(token.decimals) || 0;
+  const qty = Number(qtyMinor) / 10 ** dec;
+  const decimals = dec > 4 ? 4 : dec;
 
   const currentPrice = price?.current_price ?? 0;
   const valueUsd = qty * currentPrice;
   // cavetail: avgCostMinor is the rate scaled to token.decimals, not the
   // display-capped `decimals` used for qty formatting.
-  const costBasis = Number(avgCostMinor) / 10 ** token.decimals;
+  const costBasis = Number(avgCostMinor) / 10 ** dec;
   const costBasisTotal = costBasis * qty;
   const unrealizedPL = valueUsd - costBasisTotal;
   const plPct = costBasisTotal > 0 ? (unrealizedPL / costBasisTotal) * 100 : 0;
@@ -95,7 +96,7 @@ export function HoldingRow({
         )}
         {!price && (
           <p className="text-xs text-zinc-500" aria-label={masked ? "Average cost masked" : undefined}>
-            {masked ? "avg ••••" : `avg ${formatUsdFromNumber(Number(avgCostMinor) / 10 ** token.decimals)}`}
+            {masked ? "avg ••••" : `avg ${formatUsdFromNumber(Number(avgCostMinor) / 10 ** dec)}`}
           </p>
         )}
       </div>

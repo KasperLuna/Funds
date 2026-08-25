@@ -65,6 +65,12 @@ jobs:
       - run: pnpm --filter @funds/db run migrate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # Schema drift check: fail the deploy loudly if a migration was generated
+      # but never applied (e.g. out-of-band DB with no drizzle tracking), instead
+      # of shipping code that writes columns the DB lacks.
+      - run: pnpm --filter @funds/db run check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
       - name: Ensure PowerSync publication
         run: |
           PUSER="${POSTGRES_USER:-$(sed -n 's/^POSTGRES_USER=//p' infra/.env)}"

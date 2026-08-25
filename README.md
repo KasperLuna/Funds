@@ -7,6 +7,8 @@ Local-first, multi-currency personal finance tracker. Next.js (App Router) PWA +
 - **Implementation plan + live operational notes:** `docs/implementation.md`
 
 > This README is the operations manual: how to rebuild the whole stack from scratch, how a deploy works, and how to operate the running system. It is written to be verbose on purpose — follow it top to bottom on a fresh box.
+>
+> AI agents: read **`AGENTS.md`** first — it holds the operational gotchas (migrations, BigInt, sync schema, deploy flow) that trip up agents with no prior context.
 
 ---
 

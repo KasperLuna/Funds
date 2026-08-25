@@ -27,11 +27,12 @@ export function formatMoney(
   decimals = 2,
   code?: string,
 ): string {
+  const dec = Number(decimals) || 0;
   const sign = minor < 0n ? "-" : "";
   const abs = minor < 0n ? -minor : minor;
-  const major = Number(abs) / 10 ** decimals;
+  const major = Number(abs) / 10 ** dec;
   return `${sign}${assetSymbol(code)}${major.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+    minimumFractionDigits: dec,
+    maximumFractionDigits: dec,
   })}`;
 }

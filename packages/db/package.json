@@ -13,7 +13,8 @@
     "lint": "eslint src",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
-    "clean": "tsx src/clean.ts"
+    "clean": "tsx src/clean.ts",
+    "check": "tsx src/check.ts"
   },
   "dependencies": {
     "@funds/core": "workspace:*",

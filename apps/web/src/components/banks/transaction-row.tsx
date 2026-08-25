@@ -17,7 +17,7 @@ const SWIPE_THRESHOLD = 80;
 const UNDO_WINDOW_MS = 5000;
 
 function formatTime(ts: number): string {
-  return new Date(ts).toLocaleTimeString(undefined, {
+  return new Date(Number(ts)).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   });
