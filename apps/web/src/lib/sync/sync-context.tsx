@@ -54,34 +54,37 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   const [store] = useState<DexieStore>(() => createDexieStore());
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(DEFAULT_STATUS);
-  const engineRef = useRef<SyncEngine | null>(null);
+  const userIdRef = useRef(userId);
+  userIdRef.current = userId;
+  // cavetail: one engine per provider instance. Hooks attach at creation so
+  // local writes are captured into the outbox even while the session is
+  // unresolved (e.g. navigating to the app offline); they are flushed once a
+  // user id is known. `start()`/`stop()` only toggle the sync listeners.
+  const [engine] = useState<SyncEngine>(() =>
+    createSyncEngine({ store, getUserId: () => userIdRef.current }),
+  );
 
   const isReady = !isPending;
 
   useEffect(() => {
-    // Per signed-in user we own one store + engine. On sign-in start the
-    // engine; on sign-out (or user switch) wipe and restart.
-    const prevEngine = engineRef.current;
-    if (prevEngine) {
-      engineRef.current = null;
-      void prevEngine.wipe().finally(() => prevEngine.stop());
-    }
-    if (!userId) return;
-
-    const engine = createSyncEngine({
-      store,
-      getUserId: () => userId,
-    });
-    engineRef.current = engine;
-    setSyncStatus(engine.getState());
     const unsub = engine.onStateChange((s) => setSyncStatus(s));
-    engine.start();
-    return () => {
-      unsub();
-      if (engineRef.current === engine) engineRef.current = null;
-      void engine.wipe().finally(() => engine.stop());
-    };
-  }, [store, userId]);
+    return () => unsub();
+  }, [engine]);
+
+  useEffect(() => {
+    // Only a *confirmed* sign-out (session resolved to null) wipes the store.
+    // An unresolved session (offline, isPending true) must NOT wipe — the
+    // hooks keep capturing offline writes to the outbox until they sync.
+    if (!isPending && !userId) {
+      void engine.wipe();
+      engine.stop();
+      return;
+    }
+    if (userId) {
+      engine.start();
+    }
+    return () => engine.stop();
+  }, [engine, userId, isPending]);
 
   const value = useMemo(
     () => ({ db: store, syncStatus, isReady, userId }),

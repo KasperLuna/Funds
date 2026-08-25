@@ -205,4 +205,32 @@ describe("sync engine", () => {
     expect((await store.query("SELECT * FROM accounts")).rows).toHaveLength(0);
     engine.stop();
   });
+
+  it("captures writes even before start (session unresolved/offline)", async () => {
+    // Hooks attach at engine creation, not on start(), so a write made while
+    // the session is unresolved (offline) is still captured to the outbox.
+    await store.table("accounts").upsert({ id: "a1", name: "Checking" });
+    await tick();
+    expect(await outboxCount()).toBe(1);
+    engine.stop();
+  });
+
+  it("flush restamps user_id from resolved session (fixes offline 'local' stamp)", async () => {
+    engine.start();
+    // Simulate an offline write that carried a placeholder user_id.
+    await store.table("accounts").upsert({
+      id: "a1",
+      user_id: "local",
+      name: "Checking",
+      opening_balance_minor: 100n,
+    });
+    await tick();
+    await engine.syncNow();
+    const batches = pushMock.mock.calls[0]![0] as Batch[];
+    const upsert = batches.flatMap((b) => b.upserts).find((r) => r.id === "a1");
+    expect(upsert).toBeTruthy();
+    expect(upsert!.user_id).toBe("user1");
+    expect(await outboxCount()).toBe(0);
+    engine.stop();
+  });
 });

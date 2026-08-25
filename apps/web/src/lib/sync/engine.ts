@@ -81,7 +81,6 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   let backoffCount = 0;
   let interval: ReturnType<typeof setInterval> | null = null;
   let inFlight: Promise<void> | null = null;
-  const unsubscribes: Array<() => void> = [];
 
   let state: SyncEngineState = {
     online: true,
@@ -140,20 +139,12 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
       t.hook("creating").subscribe(onCreating);
       t.hook("updating").subscribe(onUpdating);
       t.hook("deleting").subscribe(onDeleting);
-      unsubscribes.push(() => {
-        t.hook("creating").unsubscribe(onCreating);
-        t.hook("updating").unsubscribe(onUpdating);
-        t.hook("deleting").unsubscribe(onDeleting);
-      });
     }
   }
 
-  function detachHooks(): void {
-    for (const unsub of unsubscribes) unsub();
-    unsubscribes.length = 0;
-  }
-
   async function flushPush(): Promise<void> {
+    const userId = getUserId();
+    if (!userId) return;
     const pending = (await store.db.table("_outbox").toArray()) as OutboxEntry[];
     const active = pending.filter((e) => !e.failed);
     if (active.length === 0) return;
@@ -162,12 +153,15 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     for (const entry of active) {
       const slot = byTable.get(entry.table) ?? { upserts: [], deletes: [] };
       if (entry.op === "delete") {
-        slot.deletes.push(entry.row);
+        // Tombstone rows captured while the session was unresolved may carry a
+        // placeholder user_id; restamp from the resolved session so the server
+        // (which refuses to re-attribute rows) accepts the delete.
+        slot.deletes.push({ ...entry.row, user_id: userId });
       } else {
         // Re-read the full current row so the server sees complete state
         // (created_at / updated_at / user_id) for idempotent conflict resolution.
         const full = await store.db.table(entry.table).get(entry.id);
-        if (full) slot.upserts.push(full as RowRecord);
+        if (full) slot.upserts.push({ ...(full as RowRecord), user_id: userId });
       }
       byTable.set(entry.table, slot);
     }
@@ -293,7 +287,6 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     if (started) return;
     if (!getUserId()) return;
     started = true;
-    attachHooks();
     visible = typeof document !== "undefined" ? !document.hidden : true;
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
@@ -306,7 +299,6 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   function stop(): void {
     if (!started) return;
     started = false;
-    detachHooks();
     if (interval) {
       clearInterval(interval);
       interval = null;
@@ -339,6 +331,13 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     listeners.add(cb);
     return () => listeners.delete(cb);
   }
+
+  // cavetail: attach outbox hooks at creation so local writes are captured even
+  // while the session is unresolved (e.g. navigating to the app offline). The
+  // engine only *pushes* once a user id is available; offline writes wait in the
+  // outbox and are restamped/flushed when the session resolves. Hooks persist
+  // for the engine's lifetime (stop() only pauses the sync listeners/interval).
+  attachHooks();
 
   return { start, stop, syncNow, setOnline, getState, wipe, onStateChange };
 }
