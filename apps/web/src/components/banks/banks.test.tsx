@@ -126,8 +126,22 @@ describe("AccountCard", () => {
     expect(screen.getByRole("button", { name: "Archive Test" })).toBeInTheDocument();
   });
 
-  it("shows archived state with reduced opacity", () => {
-    const acc = makeAccount({ deletedAt: Date.now() });
+  it("shows unarchive (restore) button for an archived account", () => {
+    const acc = makeAccount({ name: "Test", archived: true });
+    render(
+      <AccountCard
+        account={acc}
+        balance={0n}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+        onArchive={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Unarchive Test" })).toBeInTheDocument();
+  });
+
+  it("shows archived state with reduced opacity based on archived flag", () => {
+    const acc = makeAccount({ archived: true });
     const { container } = render(
       <AccountCard
         account={acc}

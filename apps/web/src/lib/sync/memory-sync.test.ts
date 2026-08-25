@@ -62,6 +62,23 @@ describe("MemorySyncDatabase", () => {
     expect((deleted.rows[0] as RowRecord).id).toBe("b");
   });
 
+  it("query supports literal numeric equality WHERE terms", async () => {
+    await db.execute(
+      "INSERT INTO todos (id, title, archived) VALUES (?, ?, ?)",
+      ["a", "one", 0],
+    );
+    await db.execute(
+      "INSERT INTO todos (id, title, archived) VALUES (?, ?, ?)",
+      ["b", "two", 1],
+    );
+    const active = await db.query("SELECT * FROM todos WHERE deleted_at IS NULL AND archived = 0");
+    expect(active.rows).toHaveLength(1);
+    expect((active.rows[0] as RowRecord).id).toBe("a");
+    const archived = await db.query("SELECT * FROM todos WHERE deleted_at IS NULL AND archived = 1");
+    expect(archived.rows).toHaveLength(1);
+    expect((archived.rows[0] as RowRecord).id).toBe("b");
+  });
+
   it("watch yields updates on mutation for matching table", async () => {
     const events: RowRecord[][] = [];
     const consume = (async () => {

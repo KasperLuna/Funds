@@ -31,6 +31,7 @@ const REGEX = {
   columnName: /^[A-Za-z_][\w]*$/,
   valueRef: /^\?$/,
   whereTerm: /^([A-Za-z_][\w]*)\s*=\s*\?$/,
+  whereLiteral: /^([A-Za-z_][\w]*)\s*=\s*(-?\d+)$/,
   whereNull: /^([A-Za-z_][\w]*)\s+(IS\s+NOT\s+NULL|IS\s+NULL)$/i,
 } as const;
 
@@ -258,11 +259,22 @@ export class MemorySyncDatabase implements SyncDatabase {
         continue;
       }
       const match = REGEX.whereTerm.exec(trimmed);
-      if (!match) throw new Error(`Unsupported WHERE term: ${term}`);
-      const col = match[1];
-      if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
-      if (row[col] !== params[paramIndex]) return false;
-      paramIndex++;
+      if (match) {
+        const col = match[1];
+        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
+        if (row[col] !== params[paramIndex]) return false;
+        paramIndex++;
+        continue;
+      }
+      const literalMatch = REGEX.whereLiteral.exec(trimmed);
+      if (literalMatch) {
+        const col = literalMatch[1];
+        const expected = Number(literalMatch[2]);
+        if (col === undefined) throw new Error(`Unsupported WHERE term: ${term}`);
+        if (Number(row[col]) !== expected) return false;
+        continue;
+      }
+      throw new Error(`Unsupported WHERE term: ${term}`);
     }
     return true;
   }

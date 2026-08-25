@@ -220,8 +220,6 @@ export function ScheduledCard({
     [items, now],
   );
 
-  if (items.length === 0) return null;
-
   const visible = expanded ? [...soonItems, ...restItems] : soonItems;
   const hiddenCount = restItems.length;
 
@@ -252,6 +250,12 @@ export function ScheduledCard({
       )}
 
       <div className="divide-y divide-(--border)">
+        {visible.length === 0 && (
+          <div className="px-4 pb-4">
+            <p className="text-sm text-zinc-500">No scheduled transactions yet</p>
+            <p className="text-xs text-zinc-500">Set up recurring entries.</p>
+          </div>
+        )}
         {visible.map(({ row, occ }) => {
           const account = accountById.get(row.accountId);
           const decimals = account?.decimals ?? 2;

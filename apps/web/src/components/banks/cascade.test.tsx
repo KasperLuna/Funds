@@ -4,7 +4,7 @@ import { MemorySyncDatabase } from "@/lib/sync";
 
 const CATEGORY_COLS = "id,name,color,hideable,monthly_budget_minor,created_at,updated_at,deleted_at";
 const TXN_COLS = "id,account_id,amount_minor,type,description,category_ids,date,deleted_at";
-const ACCOUNT_COLS = "id,user_id,name,kind,asset_id,opening_balance_minor,primary_color,secondary_color,created_at,updated_at,deleted_at";
+const ACCOUNT_COLS = "id,user_id,name,kind,asset_id,opening_balance_minor,primary_color,secondary_color,archived,created_at,updated_at,deleted_at";
 
 function upsertCategory(c: Record<string, unknown>, db: MemorySyncDatabase) {
   const cols = CATEGORY_COLS.split(",");
@@ -111,7 +111,7 @@ describe("Account cascade deletion", () => {
     upsertAccount({
       id: "acc-1", user_id: "u1", name: "Checking", kind: "bank",
       asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
-      secondary_color: null, created_at: now, updated_at: now, deleted_at: null,
+      secondary_color: null, archived: 0, created_at: now, updated_at: now, deleted_at: null,
     }, db);
 
     upsertTxn({
@@ -134,7 +134,7 @@ describe("Account cascade deletion", () => {
     upsertAccount({
       id: "acc-1", user_id: "u1", name: "Checking", kind: "bank",
       asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
-      secondary_color: null, created_at: now, updated_at: now, deleted_at: now,
+      secondary_color: null, archived: 0, created_at: now, updated_at: now, deleted_at: now,
     }, db);
 
     // Cascade: soft-delete all transactions belonging to acc-1
@@ -176,5 +176,67 @@ describe("Account cascade deletion", () => {
     expect(after).toHaveLength(2);
     expect(after[0]!.category_ids).toEqual([]);
     expect(after[1]!.category_ids).toEqual([]);
+  });
+});
+
+describe("Account archive (soft, recoverable)", () => {
+  let db: MemorySyncDatabase;
+
+  beforeEach(() => {
+    db = new MemorySyncDatabase();
+    db.connect();
+  });
+
+  it("archiving an account does NOT tombstone its transactions", async () => {
+    const now = Date.now();
+    upsertAccount({
+      id: "acc-1", user_id: "u1", name: "Checking", kind: "bank",
+      asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
+      secondary_color: null, archived: 0, created_at: now, updated_at: now, deleted_at: null,
+    }, db);
+    upsertTxn({
+      id: "t1", account_id: "acc-1", amount_minor: -1000, type: "expense",
+      description: "A", category_ids: "[]", date: now, deleted_at: null,
+    }, db);
+    upsertTxn({
+      id: "t2", account_id: "acc-1", amount_minor: 500, type: "income",
+      description: "B", category_ids: "[]", date: now, deleted_at: null,
+    }, db);
+
+    const before = await allTxns(db);
+    expect(before).toHaveLength(2);
+
+    // Archive (toggle archived=1); deleted_at stays NULL
+    upsertAccount({
+      id: "acc-1", user_id: "u1", name: "Checking", kind: "bank",
+      asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
+      secondary_color: null, archived: 1, created_at: now, updated_at: now, deleted_at: null,
+    }, db);
+
+    const after = await allTxns(db);
+    expect(after).toHaveLength(2);
+    for (const row of after) {
+      expect(row.deleted_at).toBeNull();
+    }
+  });
+
+  it("excludes archived accounts from the active accounts query", async () => {
+    const now = Date.now();
+    upsertAccount({
+      id: "acc-1", user_id: "u1", name: "Active", kind: "bank",
+      asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
+      secondary_color: null, archived: 0, created_at: now, updated_at: now, deleted_at: null,
+    }, db);
+    upsertAccount({
+      id: "acc-2", user_id: "u1", name: "Hidden", kind: "bank",
+      asset_id: "ast-1", opening_balance_minor: 0, primary_color: null,
+      secondary_color: null, archived: 1, created_at: now, updated_at: now, deleted_at: null,
+    }, db);
+
+    const result = await db.query(
+      "SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0",
+    );
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]!.id).toBe("acc-1");
   });
 });

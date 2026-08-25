@@ -90,7 +90,7 @@ function DashboardContent() {
 
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
-    sql: "SELECT * FROM accounts",
+    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0",
     select: toAccount,
   });
   const accounts = accountsQuery.data ?? [];

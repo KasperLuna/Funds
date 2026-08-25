@@ -87,8 +87,6 @@ export function TemplateCard({
     [deleteMutation, onChanged],
   );
 
-  if (items.length === 0) return null;
-
   return (
     <section
       aria-label="Templates"
@@ -116,6 +114,12 @@ export function TemplateCard({
       )}
 
       <div className="divide-y divide-(--border)">
+        {items.length === 0 && (
+          <div className="px-4 pb-4">
+            <p className="text-sm text-zinc-500">No templates yet</p>
+            <p className="text-xs text-zinc-500">Create reusable transaction templates.</p>
+          </div>
+        )}
         {items.map((row) => {
           const account = accountById.get(row.accountId);
           const decimals = account?.decimals ?? 2;

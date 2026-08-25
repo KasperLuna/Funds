@@ -61,6 +61,7 @@ function toAccount(row: Record<string, unknown>): Account {
     secondaryColor: parsed?.secondary_color ?? null,
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
+    archived: Boolean(row.archived),
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
   };
 }
@@ -95,7 +96,7 @@ function upsertAccountRow(userId: string, a: Account): Record<string, unknown> {
     asset_id: a.assetId,
     opening_balance_minor: Number(a.openingBalanceMinor),
     colors,
-    archived: 0,
+    archived: a.archived ? 1 : 0,
     created_at: a.createdAt,
     updated_at: a.updatedAt,
     deleted_at: a.deletedAt ?? null,
@@ -185,10 +186,11 @@ function BanksContent() {
     categoryIds: [],
     date: null,
   });
+  const [showArchived, setShowArchived] = useState(false);
 
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
-    sql: `SELECT * FROM accounts WHERE deleted_at IS NULL`,
+    sql: `SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0`,
     select: toAccount,
   });
   const txnsQuery = useSyncQuery({
@@ -201,9 +203,15 @@ function BanksContent() {
     sql: `SELECT * FROM categories WHERE deleted_at IS NULL`,
     select: toCategory,
   });
+  const archivedAccountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: `SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 1`,
+    select: toAccount,
+  });
   const accounts = accountsQuery.data ?? [];
   const txns = txnsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
+  const archivedAccounts = archivedAccountsQuery.data ?? [];
   const dataPending = accountsQuery.isPending || txnsQuery.isPending || categoriesQuery.isPending;
 
   // Deep link from the long-press Add menu: open the transfer sheet once.
@@ -336,7 +344,7 @@ function BanksContent() {
       const now = Date.now();
       const archived = {
         ...a,
-        deletedAt: a.deletedAt ? null : now,
+        archived: !a.archived,
         updatedAt: now,
       };
       await db.table("accounts").upsert(upsertAccountRow(uid, archived));
@@ -560,7 +568,38 @@ function BanksContent() {
           <Plus className="h-4 w-4" aria-hidden />
           New
         </button>
+        {archivedAccounts.length > 0 && (
+          <button
+            onClick={() => setShowArchived((s) => !s)}
+            aria-label={showArchived ? "Hide archived accounts" : "Show archived accounts"}
+            aria-pressed={showArchived}
+            className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
+              showArchived
+                ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
+                : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
+            }`}
+          >
+            Archived ({archivedAccounts.length})
+          </button>
+        )}
       </div>
+
+      {showArchived && (
+        <section className="flex flex-col gap-2">
+          {archivedAccounts.map((a) => (
+            <AccountCard
+              key={a.id}
+              account={a}
+              balance={computeBalance(a, txns)}
+              assetCode={accountInfo[a.id]?.code}
+              assetDecimals={accountInfo[a.id]?.decimals}
+              onRename={openRename}
+              onDelete={handleAccountDelete}
+              onArchive={handleAccountArchive}
+            />
+          ))}
+        </section>
+      )}
 
       {selectedAccountId && (
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-5 py-4">

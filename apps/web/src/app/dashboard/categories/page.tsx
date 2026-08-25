@@ -134,7 +134,7 @@ export default function CategoriesPage() {
   });
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
-    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL",
+    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0",
     select: (row) => ({
       id: String(row.id),
       name: String(row.name),

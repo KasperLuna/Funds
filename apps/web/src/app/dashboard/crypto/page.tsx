@@ -28,7 +28,7 @@ function CryptoContent() {
 
   const accountsQuery = useSyncQuery<AccountOption>({
     key: queryKeys.accounts,
-    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL",
+    sql: "SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0",
     select: (r) => ({
       id: String(r.id),
       name: String(r.name),

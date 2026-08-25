@@ -30,7 +30,7 @@ export function AccountCard({
   onArchive?: (account: Account) => void;
   onAdjust?: (account: Account) => void;
 }) {
-  const isArchived = !!account.deletedAt;
+  const isArchived = !!account.archived;
   const colorStyle = account.primaryColor
     ? { backgroundColor: account.primaryColor }
     : undefined;

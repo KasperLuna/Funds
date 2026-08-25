@@ -8,6 +8,7 @@ export type Account = {
   secondaryColor?: string | null;
   createdAt: number;
   updatedAt: number;
+  archived?: boolean;
   deletedAt?: number | null;
 };
 
