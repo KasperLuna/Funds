@@ -216,6 +216,7 @@ function BanksContent() {
   });
   const archivedAccountsQuery = useSyncQuery({
     key: queryKeys.accounts,
+    scope: "archived",
     sql: `SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 1`,
     select: toAccount,
   });

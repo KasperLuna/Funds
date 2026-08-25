@@ -125,6 +125,7 @@ export default function CategoriesPage() {
 
   const categoriesQuery = useSyncQuery({
     key: queryKeys.categories,
+    scope: "ordered",
     sql: "SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY created_at DESC",
     select: toCategory,
   });

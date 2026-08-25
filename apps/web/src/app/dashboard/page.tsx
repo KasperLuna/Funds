@@ -97,6 +97,7 @@ function DashboardContent() {
 
   const txnsQuery = useSyncQuery({
     key: queryKeys.transactions,
+    scope: "all",
     sql: "SELECT * FROM transactions",
     select: toTxn,
   });
@@ -104,6 +105,7 @@ function DashboardContent() {
 
   const categoriesQuery = useSyncQuery({
     key: queryKeys.categories,
+    scope: "all",
     sql: "SELECT * FROM categories",
     select: toCategory,
   });

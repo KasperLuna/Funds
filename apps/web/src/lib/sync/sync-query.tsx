@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useSync } from "./sync-context";
 import type { QueryParams, QueryResult, RowRecord } from "./types";
 
@@ -54,22 +54,30 @@ export function SyncQueryProvider({ children }: { children: ReactNode }) {
 /**
  * Read one collection from the sync db as a TanStack Query.
  *
- * Reactivity comes from a mounted {@link SyncDatabase.watch} watcher that
- * re-seeds the query cache on every local write and sync pull — so the query key
- * no longer needs a `lastSyncedAt` version suffix. The watcher yields the current
- * result immediately and again on change; writes land in the cache via
- * {@link QueryClient.setQueryData}, making the UI react to local writes AND pulls.
+ * The cache stores RAW (normalized) rows under `[...key, scope]`. `select` is
+ * passed through to useQuery's native per-render select, so each consumer can
+ * derive its own view WITHOUT writing a different shape into the shared cache.
+ *
+ * cavetail: in a previous design every consumer's watcher re-seeded the cache
+ * with its OWN mapped shape, so navigating between pages that share an entity
+ * key (crypto's slim account options vs banks' full accounts) served one
+ * page's rows to another's mapper — undefined money fields hit BigInt math and
+ * crashed the app. Raw-in-cache + native select removes the class. Consumers
+ * sharing a key but querying different row sets (e.g. archived vs active
+ * accounts) MUST pass distinct `scope` values.
  */
 export function useSyncQuery<T>({
   key,
   sql,
   params,
+  scope,
   select,
 }: {
   key: readonly unknown[];
   sql: string;
   params?: QueryParams;
-  select: (row: RowRecord) => T;
+  scope?: string;
+  select?: (row: RowRecord) => T;
 }) {
   const { db, isReady } = useSync();
   const queryClient = useQueryClient();
@@ -79,6 +87,7 @@ export function useSyncQuery<T>({
   paramsRef.current = params;
   const selectRef = useRef(select);
   selectRef.current = select;
+  const cacheKey = useMemo(() => [...key, scope ?? "default"], [key, scope]);
   const paramsKey = params ? JSON.stringify(params) : "";
 
   useEffect(() => {
@@ -91,7 +100,7 @@ export function useSyncQuery<T>({
       try {
         for await (const result of watcher) {
           if (cancelled) return;
-          queryClient.setQueryData([...keyRef.current], result.rows.map(selectRef.current));
+          queryClient.setQueryData(cacheKey, result.rows);
         }
       } catch {
         // watcher closed; ignore
@@ -101,15 +110,18 @@ export function useSyncQuery<T>({
       cancelled = true;
       void watcher.return(undefined);
     };
-  }, [db, isReady, sql, paramsKey, queryClient]);
+  }, [db, isReady, sql, paramsKey, cacheKey, queryClient]);
 
   return useQuery({
-    queryKey: key,
+    queryKey: cacheKey,
     enabled: isReady,
     queryFn: async () => {
       const res = await db.query(sql, paramsRef.current);
-      return res.rows.map(selectRef.current);
+      return res.rows;
     },
+    ...(select
+      ? { select: (rows: RowRecord[]) => rows.map((r) => selectRef.current!(r)) }
+      : {}),
   });
 }
 

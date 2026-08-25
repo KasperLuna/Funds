@@ -25,11 +25,15 @@ export type Txn = {
 };
 
 export function computeBalance(account: Account, txns: Txn[]): bigint {
+  // cavetail: boundary armor — a mis-shaped row (e.g. a stale cache entry from
+  // a different consumer) must degrade to 0n, not throw "Cannot mix BigInt".
   let sum = account.openingBalanceMinor;
+  if (typeof sum !== "bigint") sum = BigInt((sum as unknown as number | string) ?? 0);
   for (const t of txns) {
     if (t.deletedAt) continue;
     if (t.accountId !== account.id) continue;
-    sum += t.amountMinor;
+    const amt = t.amountMinor;
+    sum += typeof amt === "bigint" ? amt : BigInt((amt as unknown as number | string) ?? 0);
   }
   return sum;
 }
