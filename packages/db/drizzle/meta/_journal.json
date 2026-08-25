@@ -43,6 +43,13 @@
       "when": 1787505620077,
       "tag": "0005_mute_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787648652913,
+      "tag": "0006_pale_madripoor",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import "@testing-library/jest-dom/vitest";
 import { AccountCard } from "./account-card";
 import { TransactionRow } from "./transaction-row";
 import { AccountDialog } from "./account-dialog";
+import { AccountConfirmDialog } from "./bank-confirm-dialogs";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import { computeBalance } from "@/lib/accounts/accounts-store";
 
@@ -65,7 +66,7 @@ describe("AccountCard", () => {
     expect(screen.getByText("-$5.00")).toBeInTheDocument();
   });
 
-  it("has rename and delete buttons with accessible labels", () => {
+  it("has a rename button and hides delete for a non-archived account", () => {
     const acc = makeAccount({ name: "Wallet" });
     render(
       <AccountCard
@@ -76,6 +77,19 @@ describe("AccountCard", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Rename Wallet" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete Wallet" })).not.toBeInTheDocument();
+  });
+
+  it("renders a delete button for an archived account", () => {
+    const acc = makeAccount({ name: "Wallet", archived: true });
+    render(
+      <AccountCard
+        account={acc}
+        balance={0n}
+        onRename={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
     expect(screen.getByRole("button", { name: "Delete Wallet" })).toBeInTheDocument();
   });
 
@@ -153,6 +167,81 @@ describe("AccountCard", () => {
     );
     const card = container.firstElementChild;
     expect(card?.className).toContain("opacity-60");
+  });
+});
+
+describe("AccountConfirmDialog", () => {
+  it("archive action opens a confirmation dialog and confirm invokes onConfirm", () => {
+    const acc = makeAccount({ name: "Test" });
+    const onConfirm = vi.fn();
+    render(
+      <AccountConfirmDialog
+        account={acc}
+        action="archive"
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(screen.getByText("Archive account?")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "This account and its transactions will be hidden from all views and excluded from your net worth. You can unarchive it later.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
+    expect(onConfirm).toHaveBeenCalledWith(acc);
+  });
+
+  it("unarchive action opens a confirmation dialog and confirm invokes onConfirm", () => {
+    const acc = makeAccount({ name: "Test", archived: true });
+    const onConfirm = vi.fn();
+    render(
+      <AccountConfirmDialog
+        account={acc}
+        action="unarchive"
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(screen.getByText("Unarchive account?")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "This restores the account and its transactions to your active views and net worth.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Unarchive" }));
+    expect(onConfirm).toHaveBeenCalledWith(acc);
+  });
+
+  it("delete dialog keeps the delete button disabled until the account name is typed", () => {
+    const acc = makeAccount({ name: "Main Checking" });
+    const onConfirm = vi.fn();
+    render(
+      <AccountConfirmDialog
+        account={acc}
+        action="delete"
+        onOpenChange={vi.fn()}
+        onConfirm={onConfirm}
+      />,
+    );
+    expect(
+      screen.getByText(
+        "This permanently hides the account and its transactions. This cannot be undone.",
+      ),
+    ).toBeInTheDocument();
+
+    const confirm = screen.getByRole("button", { name: "Delete" });
+    expect(confirm).toBeDisabled();
+
+    const input = screen.getByPlaceholderText("Main Checking");
+    fireEvent.change(input, { target: { value: "Main Check" } });
+    expect(confirm).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: "Main Checking" } });
+    expect(confirm).toBeEnabled();
+
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledWith(acc);
   });
 });
 

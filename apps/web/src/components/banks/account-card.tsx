@@ -88,14 +88,16 @@ export function AccountCard({
             )}
           </Button>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Delete ${account.name}`}
-          onClick={() => onDelete(account)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {isArchived && (
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Delete ${account.name}`}
+            onClick={() => onDelete(account)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

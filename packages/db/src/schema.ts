@@ -98,6 +98,7 @@ export const categories = pgTable("categories", {
   // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
   userId: text("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
+  color: text("color"),
   hideable: boolean("hideable").notNull().default(false),
   monthlyBudgetMinor: bigint("monthly_budget_minor", { mode: "bigint" }),
   // Currency the budget is denominated in (display + spent aggregation).

@@ -137,3 +137,15 @@ export function categoryColor(name: string): string {
   }
   return palette[hash % palette.length]!;
 }
+
+/**
+ * Resolve a category's display color: use the persisted `color` when present,
+ * otherwise fall back to the deterministic name-derived color.
+ */
+export function resolveCategoryColor(row: Record<string, unknown>): string {
+  const color = row.color;
+  if (typeof color === "string" && color.trim() !== "") {
+    return color;
+  }
+  return categoryColor(String(row.name ?? ""));
+}

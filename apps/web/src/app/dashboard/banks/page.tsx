@@ -20,6 +20,10 @@ import { type Category, categoryColor } from "@/lib/categories/categories-store"
 
 import { AccountCard } from "@/components/banks/account-card";
 import { AccountDialog } from "@/components/banks/account-dialog";
+import {
+  AccountConfirmDialog,
+  type AccountConfirmAction,
+} from "@/components/banks/bank-confirm-dialogs";
 import { ReconcileSheet } from "@/components/banks/reconcile-sheet";
 import { TransactionRow } from "@/components/banks/transaction-row";
 import {
@@ -126,7 +130,10 @@ function toCategory(row: Record<string, unknown>): Category {
   return {
     id: String(row.id),
     name: String(row.name),
-    color: categoryColor(String(row.name)),
+    color:
+      typeof row.color === "string" && row.color
+        ? row.color
+        : categoryColor(String(row.name)),
     hideable: Boolean(row.hideable),
     monthlyBudgetMinor: row.monthly_budget_minor != null ? BigInt(row.monthly_budget_minor as number | string) : null,
     assetId: row.asset_id != null ? String(row.asset_id) : null,
@@ -187,6 +194,10 @@ function BanksContent() {
     date: null,
   });
   const [showArchived, setShowArchived] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    account: Account;
+    action: AccountConfirmAction;
+  } | null>(null);
 
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
@@ -351,6 +362,18 @@ function BanksContent() {
     },
   });
   const handleAccountArchive = (a: Account) => accountArchiveMutation.mutate(a);
+
+  const handleAccountActionRequest = (a: Account, action: AccountConfirmAction) =>
+    setConfirmAction({ account: a, action });
+
+  const handleAccountActionConfirm = (a: Account) => {
+    if (confirmAction?.action === "delete") {
+      handleAccountDelete(a);
+    } else {
+      handleAccountArchive(a);
+    }
+    setConfirmAction(null);
+  };
 
   const txnSaveMutation = useSyncMutation({
     keys: [queryKeys.transactions],
@@ -594,8 +617,8 @@ function BanksContent() {
               assetCode={accountInfo[a.id]?.code}
               assetDecimals={accountInfo[a.id]?.decimals}
               onRename={openRename}
-              onDelete={handleAccountDelete}
-              onArchive={handleAccountArchive}
+              onDelete={(a) => handleAccountActionRequest(a, "delete")}
+              onArchive={(a) => handleAccountActionRequest(a, "unarchive")}
             />
           ))}
         </section>
@@ -638,8 +661,8 @@ function BanksContent() {
           assetCode={accountInfo[selectedAccount.id]?.code}
           assetDecimals={accountInfo[selectedAccount.id]?.decimals}
           onRename={openRename}
-          onDelete={handleAccountDelete}
-          onArchive={handleAccountArchive}
+          onDelete={(a) => handleAccountActionRequest(a, "delete")}
+          onArchive={(a) => handleAccountActionRequest(a, "archive")}
           onAdjust={setReconcileAccount}
         />
       )}
@@ -750,6 +773,15 @@ function BanksContent() {
         }}
         onSave={handleAccountSave}
         editAccount={editAccount}
+      />
+
+      <AccountConfirmDialog
+        account={confirmAction?.account ?? null}
+        action={confirmAction?.action ?? null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmAction(null);
+        }}
+        onConfirm={handleAccountActionConfirm}
       />
 
       <CaptureSheet

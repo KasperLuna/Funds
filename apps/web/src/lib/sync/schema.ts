@@ -35,6 +35,7 @@ const categories = new Table({
   id: column.text,
   user_id: column.text,
   name: column.text,
+  color: column.text,
   hideable: column.integer,
   monthly_budget_minor: column.integer,
   asset_id: column.text,

@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <PrivacyProvider>
       <SyncProvider>
       <SyncQueryProvider>
-      <div className="mx-auto max-w-[1920px]">
+      <div className="mx-auto min-h-dvh max-w-[1920px] bg-(--bg)">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
           {/* 1 · Account */}
@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Main content */}
-        <main className="pb-24 pt-4 md:ml-56 md:pb-8">
+        <main className="min-h-dvh bg-(--bg) pb-24 pt-4 md:ml-56 md:pb-8">
           <div className="mx-auto max-w-3xl px-4 md:px-6">
             <SignedOutBanner />
           </div>

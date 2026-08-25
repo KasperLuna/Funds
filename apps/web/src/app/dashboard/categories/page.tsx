@@ -7,7 +7,7 @@ import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import {
   DEFAULT_CATEGORY_COLORS,
-  categoryColor,
+  resolveCategoryColor,
   computeBudgetUsage,
   budgetPeriodKey,
   budgetFor,
@@ -30,7 +30,7 @@ function toCategory(row: Record<string, unknown>): Category {
   return {
     id: String(row.id),
     name,
-    color: categoryColor(name),
+    color: resolveCategoryColor(row),
     hideable: Boolean(row.hideable),
     monthlyBudgetMinor: row.monthly_budget_minor != null ? BigInt(row.monthly_budget_minor as number | string) : null,
     assetId: row.asset_id != null ? String(row.asset_id) : null,
@@ -72,6 +72,7 @@ function categoryRow(userId: string, c: Category): Record<string, unknown> {
     id: c.id,
     user_id: userId,
     name: c.name,
+    color: c.color ?? null,
     hideable: c.hideable ? 1 : 0,
     monthly_budget_minor: c.monthlyBudgetMinor != null ? Number(c.monthlyBudgetMinor) : null,
     asset_id: c.assetId ?? null,
@@ -159,6 +160,7 @@ export default function CategoriesPage() {
 
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const now = new Date();
   const [viewMonth, setViewMonth] = useState(() => ({
     year: now.getFullYear(),
@@ -223,10 +225,16 @@ export default function CategoriesPage() {
 
   const handleDelete = useCallback(
     (c: Category) => {
-      void deleteCategory.mutate(c);
+      setPendingDelete(c);
     },
-    [deleteCategory],
+    [],
   );
+
+  const confirmDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    void deleteCategory.mutate(pendingDelete);
+    setPendingDelete(null);
+  }, [pendingDelete, deleteCategory]);
 
   const budgetUsages = useMemo(
     () => computeBudgetUsage(categories, budgets, txns, viewMonth.year, viewMonth.month),
@@ -416,6 +424,24 @@ export default function CategoriesPage() {
           defaultAssetId={defaultBudgetAssetId}
         />
       )}
+
+      <Dialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+        <DialogContent>
+          <DialogContentTitle>Delete category?</DialogContentTitle>
+          <DialogContentDescription>
+            This deletes the category and removes it from all tagged transactions.
+            Past transactions keep their amounts but lose this category tag.
+          </DialogContentDescription>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

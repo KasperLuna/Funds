@@ -21,7 +21,7 @@ import { TemplateCard } from "@/components/templates/template-card";
 import { loadTemplates } from "@/lib/templates/templates-store";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import type { Category } from "@/lib/categories/categories-store";
-import { computeBudgetUsage, categoryColor } from "@/lib/categories/categories-store";
+import { computeBudgetUsage, resolveCategoryColor } from "@/lib/categories/categories-store";
 import { useAssets } from "@/lib/assets";
 import { computeHoldings, toToken, toTokenTxn } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
@@ -59,7 +59,7 @@ function toCategory(row: RowRecord): Category {
   return {
     id: String(row.id),
     name: String(row.name),
-    color: categoryColor(String(row.name)),
+    color: resolveCategoryColor(row),
     hideable: Boolean(row.hideable),
     monthlyBudgetMinor: row.monthly_budget_minor != null
       ? BigInt(row.monthly_budget_minor as string | bigint)

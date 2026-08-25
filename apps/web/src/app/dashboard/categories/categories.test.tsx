@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement } from "react";
-import { DEFAULT_CATEGORY_COLORS } from "@/lib/categories/categories-store";
+import { DEFAULT_CATEGORY_COLORS, categoryColor } from "@/lib/categories/categories-store";
 import { PrivacyProvider } from "@/lib/privacy/privacy-context";
 
 vi.mock("@/lib/sync/sync-context", () => ({
@@ -16,6 +16,7 @@ import CategoriesPage from "./page";
 
 const mockQuery = vi.fn();
 const mockExecute = vi.fn();
+const mockCategoryUpsert = vi.fn();
 
 function renderPage(ui: ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -28,8 +29,8 @@ beforeEach(() => {
     db: {
       query: mockQuery,
       execute: mockExecute,
-      table: vi.fn(() => ({
-        upsert: vi.fn(),
+      table: vi.fn((name: string) => ({
+        upsert: name === "categories" ? mockCategoryUpsert : vi.fn(),
         update: vi.fn(),
         deleteById: vi.fn(),
       })),
@@ -262,5 +263,122 @@ describe("CategoriesPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/· 45%/)).toBeInTheDocument();
     });
+  });
+
+  it("reads persisted color from the row and falls back to the name-derived color", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "cat-1",
+          name: "Food",
+          color: "#ec4899",
+          hideable: false,
+          monthly_budget_minor: null,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          deleted_at: null,
+        },
+        {
+          id: "cat-2",
+          name: "Transport",
+          color: null,
+          hideable: false,
+          monthly_budget_minor: null,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          deleted_at: null,
+        },
+      ],
+    });
+
+    renderPage(<CategoriesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Food")).toBeInTheDocument();
+    });
+    const dotFor = (name: string) => {
+      const container = screen.getByText(name).closest("div")!.parentElement!;
+      return container.querySelector("span[aria-hidden='true']")! as HTMLElement;
+    };
+    expect(dotFor("Food")).toHaveStyle({ backgroundColor: "#ec4899" });
+    expect(dotFor("Transport")).toHaveStyle({
+      backgroundColor: categoryColor("Transport"),
+    });
+  });
+
+  it("saves the persisted color via categoryRow when editing", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "cat-1",
+          name: "Food",
+          color: "#6366f1",
+          hideable: false,
+          monthly_budget_minor: null,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          deleted_at: null,
+        },
+      ],
+    });
+
+    renderPage(<CategoriesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Food")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit Food" }));
+    fireEvent.click(screen.getByRole("radio", { name: "#ec4899" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(mockCategoryUpsert).toHaveBeenCalled();
+    });
+    const row = mockCategoryUpsert.mock.calls[0]![0];
+    expect(row.id).toBe("cat-1");
+    expect(row.color).toBe("#ec4899");
+    expect(row.name).toBe("Food");
+  });
+
+  it("opens a confirmation dialog before deleting a category", async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          id: "cat-1",
+          name: "Food",
+          color: "#6366f1",
+          hideable: false,
+          monthly_budget_minor: null,
+          created_at: Date.now(),
+          updated_at: Date.now(),
+          deleted_at: null,
+        },
+      ],
+    });
+
+    renderPage(<CategoriesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Food")).toBeInTheDocument();
+    });
+    expect(mockCategoryUpsert).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Food" }));
+    expect(
+      screen.getByText("This deletes the category and removes it from all tagged transactions. Past transactions keep their amounts but lose this category tag."),
+    ).toBeInTheDocument();
+    expect(mockCategoryUpsert).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(mockCategoryUpsert).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete Food" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await waitFor(() => {
+      expect(mockCategoryUpsert).toHaveBeenCalled();
+    });
+    const row = mockCategoryUpsert.mock.calls[0]![0];
+    expect(row.id).toBe("cat-1");
+    expect(row.deleted_at).not.toBeNull();
   });
 });

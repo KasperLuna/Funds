@@ -41,6 +41,7 @@ const categoriesSnakeToCamel: FieldMapper = {
   id: "id",
   user_id: "userId",
   name: "name",
+  color: "color",
   hideable: "hideable",
   monthly_budget_minor: "monthlyBudgetMinor",
   asset_id: "assetId",
