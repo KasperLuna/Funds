@@ -71,13 +71,6 @@ jobs:
       - run: pnpm --filter @funds/db run check
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      - name: Ensure PowerSync publication
-        run: |
-          PUSER="${POSTGRES_USER:-$(sed -n 's/^POSTGRES_USER=//p' infra/.env)}"
-          PDB="${POSTGRES_DB:-$(sed -n 's/^POSTGRES_DB=//p' infra/.env)}"
-          docker compose -f infra/docker-compose.yml exec -T postgres \
-            psql -U "${PUSER}" -d "${PDB}" -c \
-            "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname='powersync') THEN CREATE PUBLICATION powersync FOR ALL TABLES; END IF; END \$\$;"
       - run: docker compose -f infra/docker-compose.yml up -d --no-build
       - run: |
           PORT="${WEB_HOST_PORT:-$(sed -n 's/^WEB_HOST_PORT=//p' infra/.env)}"
@@ -89,14 +82,6 @@ jobs:
             sleep 2
             ELAPSED=$((ELAPSED + 2))
           done
-      - name: Check PowerSync up
-        run: |
-          for i in $(seq 1 30); do
-            [ "$(docker inspect -f '{{.State.Running}}' funds-powersync-1 2>/dev/null)" = "true" ] && exit 0
-            sleep 2
-          done
-          docker compose -f infra/docker-compose.yml logs powersync | tail -40
-          exit 1
       # cavetail: the silent killer on a long-lived self-hosted VPS is disk
       # growth that survives `image prune -af`: pnpm store, the runner's _work
       # checkouts, and docker build cache. image prune only frees unused images,

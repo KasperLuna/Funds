@@ -195,7 +195,7 @@ export const mutationsRouter = router({
 
           // Apply resolved rows, each inside its own savepoint so one
           // constraint-failing row (orphaned FK, unknown asset) is skipped
-          // instead of 500ing the whole batch — otherwise PowerSync retries
+          // instead of 500ing the whole batch — otherwise the client retries
           // the same batch forever and real sync is blocked.
           for (const appliedRow of resolution.applied) {
             const camelRow = translateSnakeToCamel(appliedRow, snakeToCamel);

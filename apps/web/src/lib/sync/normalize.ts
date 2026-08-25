@@ -4,15 +4,15 @@ import type { RowRecord, QueryParams } from "./types.js";
  * Column-type knowledge shared by every SyncDatabase backend.
  *
  * The server schema stores money as bigint minor units, timestamps as
- * timestamptz, and lists/objects as jsonb. PowerSync streams those values down
- * as JSON and SQLite stores what the client schema declares. To keep every
+ * timestamptz, and lists/objects as jsonb. The wire format is snake_case JSON;
+ * money travels as strings and timestamps as epoch ms. To keep every
  * backend reading and writing the same shape:
  *   - jsonb columns arrive/stored as JSON strings; normalize to arrays/objects
  *     on read and stringify on write.
  *   - timestamp columns arrive as ISO strings or epoch numbers; normalize to
  *     epoch ms on read and write numbers.
- *   - PowerSync returns NULL columns as `""` for integer/boolean/jsonb columns;
- *     normalize those back to null on read.
+ *   - NULL integer/boolean/jsonb columns may arrive as `""`; normalize those
+ *     back to null on read.
  *
  * Keep this list in sync with packages/db/src/schema.ts.
  */
@@ -70,7 +70,7 @@ export const MONEY_COLUMNS: Record<string, string[]> = {
   push_subscriptions: [],
 };
 
-/** Non-text columns that PowerSync may return as "" when NULL. */
+/** Non-text columns that may arrive as "" when NULL. */
 const NON_TEXT_COLUMNS: Record<string, string[]> = {
   accounts: ["archived", "colors"],
   categories: ["hideable", "monthly_budget_minor"],
@@ -110,7 +110,7 @@ function toEpochMs(anyValue: unknown): unknown {
 function parseJson(value: unknown): unknown {
   if (value == null) return null;
   if (typeof value !== "string") return value;
-  // PowerSync stores NULL jsonb columns as ""; treat as null so Postgres jsonb
+  // NULL jsonb columns may arrive as ""; treat as null so Postgres jsonb
   // does not reject the empty string on upload.
   if (value.trim() === "") return null;
   try {
@@ -165,11 +165,11 @@ export function denormalizeRow(table: string, row: RowRecord): RowRecord {
 }
 
 /**
- * PowerSync-safe upsert against a synced view.
+ * Upsert that works against any SyncDatabase backend.
  *
- * PowerSync exposes synced tables as SQLite views; `INSERT ... ON CONFLICT`
- * (UPSERT) is illegal on views. Replace it with a check-then-write so the same
- * facade works on PowerSync and the in-memory backend.
+ * Both backends (Dexie store and in-memory) expose plain keyed tables; a
+ * check-then-write keeps the same facade uniform instead of relying on
+ * backend-specific UPSERT semantics.
  */
 export async function upsertRow(
   execute: (sql: string, params?: QueryParams) => Promise<unknown>,

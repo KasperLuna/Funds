@@ -1,10 +1,10 @@
 /**
  * Wipe all app data from Postgres.
  *
- * Uses DELETE (not TRUNCATE) because PowerSync replicates DELETEs to clients
- * via logical replication; TRUNCATE is not captured and would leave clients
- * with stale local rows. The `drizzle` migration table and the `powersync`
- * internal schema are left untouched.
+ * Uses DELETE (not TRUNCATE) so rows are actually removed through the normal
+ * write path; the client's delta pull is driven by `updated_at`/`deleted_at`,
+ * and wiping via DELETE keeps this consistent with how app deletes behave. The
+ * `drizzle` migration table and any internal schemas are left untouched.
  *
  * Usage:
  *   DATABASE_URL=postgres://... tsx src/clean.ts          # wipe all data

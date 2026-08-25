@@ -1,6 +1,6 @@
 # Funds
 
-Local-first, multi-currency personal finance tracker. Next.js (App Router) PWA + PowerSync for offline-first sync, Postgres behind it, deployed on a single VPS behind a Cloudflare tunnel.
+Local-first, multi-currency personal finance tracker. Next.js (App Router) PWA + Dexie local-first store with delta sync, Postgres behind it, deployed on a single VPS behind a Cloudflare tunnel.
 
 - **Product/UX/domain specs:** `docs/design.md`, `docs/product.md`, `docs/logic.md`
 - **Architecture + stack decisions:** `docs/architecture.md`
@@ -15,11 +15,11 @@ Local-first, multi-currency personal finance tracker. Next.js (App Router) PWA +
 ## 1. Repo layout
 
 ```
-apps/web          Next.js app (tRPC routes, PWA, sync client, auth)
+apps/web          Next.js app (tRPC routes, PWA, sync engine + Dexie store, auth)
 packages/core     pure logic: money, parser, recurrence, lots/cost-basis (framework-free, unit-tested)
 packages/db       Drizzle schema + migrations + seeds
-infra/            docker-compose.yml, powersync.yaml, .env.example (template)
-ops/              deploy.sh (manual deploy), setup-sync.{sh,sql}, worker/ (not yet deployed)
+infra/            docker-compose.yml, .env.example (template)
+ops/              deploy.sh (manual deploy), worker/ (not yet deployed)
 scripts/          import-pocketbase.sh (PocketBase backup → Postgres)
 docs/             architecture, design, implementation, logic, product
 .githooks/        pre-commit: verification + image build/push gate
@@ -29,23 +29,21 @@ docs/             architecture, design, implementation, logic, product
 ## 2. Architecture at a glance
 
 ```
-Browser (PWA, offline-first SQLite over OPFS)
-   │  tRPC (/api/trpc, /api/auth, /api/sync/token, /api/voice, /api/health)
-   │  PowerSync SDK → POST /sync/stream (proxied by the web app → powersync:8080)
+Browser (PWA, offline-first Dexie/IndexedDB store)
+   │  tRPC (/api/trpc, /api/auth, /api/voice, /api/health)
+   │  push: trpc.applyMutations   pull: GET /api/sync/data?since=
    ▼
 Cloudflare tunnel (cloudflared systemd service on the VPS) ── TLS, DNS
    ▼
 VPS (Debian) — Docker Compose, 127.0.0.1-bound ports only:
    web        Next.js standalone (linux/amd64 image pulled from ghcr.io)
-   postgres   PG16, wal_level=logical, volume `pgdata`
-   powersync  PowerSync service, per-user sync buckets
+   postgres   PG16, volume `pgdata`
 ```
 
 Details in `docs/architecture.md`. Key topology facts:
 
-- All host ports bind to `127.0.0.1` only. Nothing is exposed to the internet except through cloudflared. Defaults: web `13000`, powersync `18080`, postgres `5432` (configurable via `WEB_HOST_PORT` / `POWERSYNC_HOST_PORT` in `infra/.env`).
-- The web app **proxies `/sync/stream` to powersync internally** (`apps/web/src/app/sync/stream/route.ts`, target `POWER_SYNC_INTERNAL_URL` default `http://powersync:8080`). A single Cloudflare catch-all ingress rule is therefore sufficient; a `/sync/*` rule is optional.
-- The deploy creates the Postgres `powersync` publication (`FOR ALL TABLES`) idempotently — the service does **not** auto-create it.
+- All host ports bind to `127.0.0.1` only. Nothing is exposed to the internet except through cloudflared. Default: web `13000`, postgres `5432` (configurable via `WEB_HOST_PORT` in `infra/.env`).
+- The app syncs through the web app itself: local Dexie store pushes writes via `trpc.applyMutations` and pulls deltas via `GET /api/sync/data?since=<ms>`. A single Cloudflare catch-all ingress rule is sufficient.
 - Containers are memory-capped (`mem_limit`) so a runaway restarts instead of OOM-ing the host, which also runs other proxy workloads.
 
 ## 3. The deploy model (read this first)
@@ -59,8 +57,8 @@ The VPS is also a proxy and **OOMs under a heavy `next build`**. The whole pipel
 3. You push to main.
 4. .github/workflows/ci.yml on the self-hosted runner:
    write infra/.env (from ENV_FILE secret) → login GHCR → pull (before teardown) →
-   down + prune → up postgres → wait → migrate (host-side) → ensure powersync
-   publication → up -d --no-build → health checks (web + powersync).
+   down + prune → up postgres → wait → migrate (host-side) → up -d --no-build →
+   health checks (web).
 5. Done. The host never compiles anything.
 ```
 
@@ -111,7 +109,7 @@ pnpm typecheck
 pnpm lint
 ```
 
-Local sync (optional): `docker compose -f infra/docker-compose.yml up -d postgres powersync` then point dev `.env` at `http://localhost:18080`.
+Local sync (optional): `docker compose -f infra/docker-compose.yml up -d postgres` then point dev `.env` at the local stack.
 
 ---
 
@@ -172,10 +170,9 @@ Zero Trust → Networks → Tunnels → your tunnel → **Public Hostname**:
 
 | Hostname | Path | Service |
 |---|---|---|
-| `funds.kasperluna.com` | `/sync/*` (optional) | `http://localhost:18080` |
 | `funds.kasperluna.com` | *(empty, catch-all)* | `http://localhost:13000` |
 
-Cloudflare auto-creates the DNS record. Most-specific rules win; the `/sync/*` rule is optional because the web app proxies the sync stream (§2).
+Cloudflare auto-creates the DNS record. A single catch-all rule suffices — the app syncs through the web app itself.
 
 ### 5.5 Google OAuth
 
@@ -210,30 +207,19 @@ Source of truth: `infra/.env.example`. `infra/.env` is written by CI from the `E
 
 | Var | Consumed by | Notes |
 |---|---|---|
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | postgres container | Password **must be URL-safe (alphanumeric)** — see §9.3 |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | postgres container | |
 | `DATABASE_URL` | web container (env_file) | Container-style: `postgres://…@postgres:5432/funds` |
-| `PS_DATABASE_URL` | powersync (via compose) | Same as DATABASE_URL; powersync replication + storage |
-| `WEB_HOST_PORT` / `POWERSYNC_HOST_PORT` | compose bindings | Defaults 13000 / 18080 |
+| `WEB_HOST_PORT` | compose binding | Default 13000 |
 | `DOMAIN` | (ops scripts) | `funds.kasperluna.com` |
 | `PUBLIC_APP_URL` | auth.ts trustedOrigins | Full origin, e.g. `https://funds.kasperluna.com` |
 | `BETTER_AUTH_URL` | auth.ts baseURL | Full origin; drives OAuth `redirect_uri` |
 | `BETTER_AUTH_SECRET` | auth.ts | ≥32 chars |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | auth.ts | Google provider enabled only when both set |
-| `POWER_SYNC_URL` | `/api/sync/token` | Public base the SDK streams to; must be `https://…` (SDK appends `/sync/stream`) |
-| `POWER_SYNC_INTERNAL_URL` | `app/sync/stream/route.ts` | Default `http://powersync:8080` (compose DNS) |
-| `POWER_SYNC_JWT_SECRET_B64URL` | token route + powersync jwks | base64url of the HS256 secret; MUST match between web and powersync |
-| `POWER_SYNC_SECRET` | (reserved) | |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | push | |
 | `CRON_SECRET` | cron/webhook endpoints | |
 | `COINGECKO_API_KEY` | rates refresh (future worker) | |
 | `BACKEND_BASE_URL` | (unused — dead) | Kept in template |
 | `APP_URL` / `CRON_AUTH` | `ops/worker` (not yet deployed) | |
-
-Generate `POWER_SYNC_JWT_SECRET_B64URL` from `JWT_SECRET`:
-
-```bash
-printf '%s' "$JWT_SECRET" | base64 | tr '+/' '-_' | tr -d '=\n'
-```
 
 ---
 
@@ -257,8 +243,6 @@ bash ops/deploy.sh
 
 ```bash
 docker compose -f infra/docker-compose.yml logs -f web          # app
-docker compose -f infra/docker-compose.yml logs -f powersync    # sync service
-docker compose -f infra/docker-compose.yml restart powersync
 docker exec -it funds-postgres-1 psql -U postgres -d funds      # SQL shell (no pw needed inside container)
 ```
 
@@ -278,7 +262,6 @@ Restore (wipes current data — confirm first):
 ```bash
 docker exec funds-postgres-1 psql -U postgres -d postgres -c "DROP DATABASE funds WITH (FORCE); CREATE DATABASE funds OWNER postgres;"
 gunzip -c funds-$(date +%F).sql.gz | docker exec -i funds-postgres-1 psql -U postgres -d funds
-# recreate the powersync publication (the deploy does this; or run the SQL below)
 ```
 
 ---
@@ -324,55 +307,44 @@ Requires `unzip` on the VPS (`sudo apt-get install -y unzip`).
 
 The proxy host cannot run `next build`. That's why builds happen in pre-commit and the host only pulls. If you must build on the host anyway, free RAM first (`docker compose down`), keep `mem_limit`s, and give the build a bounded heap (`NODE_OPTIONS=--max-old-space-size=3072` in the Dockerfile). Add swap (§5.2).
 
-### 9.2 `/sync/stream` 404
+### 9.2 Sync not updating
 
-Old symptom: Cloudflare catch-all sent `/sync/stream` to the web app. Now the web app proxies it to powersync, so a single catch-all rule is enough. If you still see a 404/500, check powersync is actually running:
-
-```bash
-docker compose -f infra/docker-compose.yml logs powersync | tail -40
-```
-
-### 9.3 `password authentication failed for user "postgres"` (PowerSync)
-
-PowerSync's pgwire parser does **not** percent-decode passwords. A password containing `&` or `%` (even URL-encoded) fails auth for powersync while node-postgres (the web app) works fine. Fix: set a URL-safe password (alphanumeric):
+If pushes or pulls stop working, check the web app is healthy and reachable:
 
 ```bash
-docker exec -it funds-postgres-1 psql -U postgres -c "ALTER USER postgres PASSWORD '<new-url-safe-pw>'"
+docker compose -f infra/docker-compose.yml logs -f web
+curl -fsS http://localhost:13000/api/health
 ```
 
-then update `POSTGRES_PASSWORD`, `DATABASE_URL`, `PS_DATABASE_URL` in `infra/.env.prod`, re-set the `ENV_FILE` + `DATABASE_URL` secrets, redeploy.
+The sync path goes through the web app itself (`trpc.applyMutations` for pushes, `GET /api/sync/data` for pulls) — there is no separate sync service.
 
-### 9.4 `/sync/stream` 500 with `PSYNC_S1141` / `PSYNC_S2302`
+### 9.3 `password authentication failed for user "postgres"`
 
-The `powersync` publication doesn't exist. The deploy creates it `FOR ALL TABLES` idempotently; for a running stack:
+The password in `infra/.env`/`apps/web/.env` no longer matches the container. Reset it and update the config:
 
 ```bash
-docker exec funds-postgres-1 psql -U postgres -d funds -c "CREATE PUBLICATION powersync FOR ALL TABLES"
+docker exec -it funds-postgres-1 psql -U postgres -c "ALTER USER postgres PASSWORD '<new-pw>'"
 ```
 
-powersync retries replication automatically afterwards.
+then update `POSTGRES_PASSWORD` and `DATABASE_URL` in `infra/.env.prod`, re-set the `ENV_FILE` + `DATABASE_URL` secrets, redeploy.
 
-### 9.5 PowerSync health check fails in CI
-
-PowerSync has **no `/health` endpoint** (404). The deploy checks the container's running state instead. Don't reintroduce a curl-to-`/health` probe.
-
-### 9.6 `sw.js` throws during script evaluation
+### 9.4 `sw.js` throws during script evaluation
 
 Serwist 9's main entry dropped `precacheAndRoute`; `src/sw.ts` imports it from `serwist/legacy`. Symptom in browser console: "ServiceWorker script at …/sw.js threw an exception". The fix is already in `src/sw.ts`. Hard-refresh / unregister the old SW once after deploy.
 
-### 9.7 `redirect_uri_mismatch` on Google sign-in
+### 9.5 `redirect_uri_mismatch` on Google sign-in
 
 Google OAuth redirect URI must equal `{BETTER_AUTH_URL}/api/auth/callback/google` exactly (§5.5).
 
-### 9.8 `error: cannot perform an interactive login from a non-TTY device` (deploy step)
+### 9.6 `error: cannot perform an interactive login from a non-TTY device` (deploy step)
 
 `GHCR_TOKEN` secret is empty at runtime (e.g. run started before the secret was set). Re-trigger the workflow.
 
-### 9.9 `unable to find user nodejs` / `user not found`
+### 9.7 `unable to find user nodejs` / `user not found`
 
 Old worker-stub image; removed from the stack. `docker image rm` the stale `funds-worker` image if it lingers.
 
-### 9.10 Tests fail on a fresh machine
+### 9.8 Tests fail on a fresh machine
 
 DB tests need a throwaway Postgres on `127.0.0.1:54329` (`funds_test`). The pre-commit hook starts it automatically; standalone: `docker run -d --name funds-test-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=funds_test -p 127.0.0.1:54329:5432 postgres:16-alpine`. Test files assume seed assets exist — never run `db:clean` against a DB shared with the deployed app.
 

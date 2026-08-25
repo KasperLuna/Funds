@@ -10,11 +10,11 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 |---|---|---|
 | Framework | Next.js (App Router) + shadcn/ui | carried over from current stack |
 | Language | TypeScript end-to-end | |
-| Server DB | PostgreSQL 16+, self-hosted in Docker | `wal_level = logical` for PowerSync |
+| Server DB | PostgreSQL 16+, self-hosted in Docker | |
 | ORM / migrations | Drizzle | SQL-native, pairs with Better Auth + tRPC ecosystem |
-| API | tRPC v11 | app queries/mutations; sync transport is PowerSync's own WebSocket |
-| Local client store | SQLite via WASM over OPFS (PowerSync storage adapter) | NOT raw IndexedDB (evictable on iOS) |
-| Sync engine | **PowerSync, self-hosted** (open core) | buckets scoped per user; read sync automatic; writes via SDK upload queue → tRPC |
+| API | tRPC v11 | app queries/mutations; sync pull is `GET /api/sync/data`, push is `trpc.applyMutations` |
+| Local client store | Dexie (IndexedDB) | offline-first; money stored as strings, materialized as BigInt at read boundary |
+| Sync engine | custom lightweight engine | outbox push via `applyMutations`; delta pull via `GET /api/sync/data?since=` |
 | Auth | Better Auth on Postgres | Google OAuth + email/password + guest demo account |
 | PWA shell | Serwist service worker | precached app shell; offline launch on iOS/Android/desktop |
 | Push | Web Push (VAPID), server cron trigger | iOS cannot schedule background pushes locally |
@@ -22,7 +22,7 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 
 ### Non-negotiable data-integrity contract
 1. Client generates all IDs (ULID, text PK) — offline creates never collide.
-2. Writes land in local SQLite first, queued durably by PowerSync's CRUD upload queue until server acks.
+2. Writes land in the local Dexie store first, queued durably in the outbox until the server acks.
 3. Server mutations idempotent: keyed by client ULID; replay-safe.
 4. Deletes are soft (`deleted_at`) on replicated tables — tombstones propagate.
 5. Conflicts: per-row last-write-wins on `updated_at`, server is final authority; balance-type derived values are recomputed, never merged.
@@ -36,24 +36,17 @@ Companion to `logic.md` (domain rules). This document fixes the technology decis
 cloudflared      host systemd service (not in compose); CF-managed TLS.
                  Ingress rules in the Zero Trust dashboard:
                    /                -> http://localhost:$WEB_HOST_PORT (default 13000; app)
-                   /sync/*          -> http://localhost:$POWERSYNC_HOST_PORT (default 18080; powersync)
-                 The /sync/* rule is OPTIONAL since 2026-08: the app now proxies
-                 /sync/stream to powersync internally (apps/web/src/app/sync/stream/route.ts),
-                 so a single catch-all entry suffices.
+                 A single catch-all entry suffices — the app syncs through the web app itself.
 app              Next.js standalone build (tRPC routes, webhook endpoints).
-                 Also terminates + proxies /sync/stream -> powersync:8080 inside
-                 the compose network (POWER_SYNC_INTERNAL_URL).
-postgres         PG16, logical replication ON (wal_level=logical), single volume `pgdata`.
-                 `powersync` publication created by the deploy (FOR ALL TABLES).
-powersync        PowerSync service; consumes PG logical replication slot,
-                 serves per-user sync buckets.
+                 Sync: push via trpc.applyMutations, delta pull via GET /api/sync/data.
+postgres         PG16, single volume `pgdata`.
 ```
 
 Volumes: `pgdata`. Compose host ports bound to `127.0.0.1` only (cloudflared, CI health/migrate, local dev). All config via `.env` (gitignored), built from committed `infra/.env.example`.
 
 ### CI/CD
 - **Builds happen on the developer machine, not the host.** `.githooks/pre-commit` (enabled via `git config core.hooksPath .githooks`) runs lint → typecheck → test → builds and publishes `linux/amd64` images to `ghcr.io/kasperluna/funds-web:latest`. The proxy host never builds (it OOMs easily) — it only pulls.
-- `.github/workflows/ci.yml` (self-hosted runner on the VPS, `workflow_dispatch` + push to `main`): write `infra/.env` from the `ENV_FILE` secret → login GHCR → `pull` (before any teardown so a failed pull never downs the stack) → `down` + prune → `up postgres` → wait → Drizzle migrate (host-side, `localhost:5432`) → ensure `powersync` publication → `up -d --no-build` → health checks (web `/api/health` + powersync container running).
+- `.github/workflows/ci.yml` (self-hosted runner on the VPS, `workflow_dispatch` + push to `main`): write `infra/.env` from the `ENV_FILE` secret → login GHCR → `pull` (before any teardown so a failed pull never downs the stack) → `down` + prune → `up postgres` → wait → Drizzle migrate (host-side, `localhost:5432`) → `up -d --no-build` → web health check (`/api/health`).
 - Rollback = redeploy an earlier commit (its pre-commit build is immutable in the git history).
 
 ---
@@ -153,11 +146,13 @@ asset_id, vs_base_asset_id, price_minor_scaled, fetched_at
 
 ## 4. Sync Design
 
-- Sync rules: one bucket stream per user containing all rows where `user_id = jwt.user_id`. Small dataset — full-user replication, no pagination complexity.
-- Reads: tRPC bypassed for replicated data; components query local SQLite directly (live queries). tRPC reserved for: uploads, auth, voice webhook, price refresh triggers, push test, non-replicated concerns.
-- Upload path: PowerSync client upload queue → batched tRPC mutation endpoint → Postgres → logical replication → fan-out to devices.
-- Offline behavior: full CRUD works locally forever; queue drains when online. App launches offline from precached shell + local DB.
-- Analytics (budgets, trends, monthly breakdowns, net worth): SQL views / live queries over local SQLite only — zero network dependency (per D9).
+- Client store: Dexie (IndexedDB) local store (`apps/web/src/lib/sync/store.ts`) + sync engine (`apps/web/src/lib/sync/engine.ts`). Money is stored as strings and materialized as BigInt at the read boundary (normalize.ts).
+- Push path: writes land in the Dexie store's outbox; the engine drains it via `trpc.applyMutations` (idempotent, per-row savepoints, LWW on `updated_at`, server-authoritative).
+- Pull path: `GET /api/sync/data?since=<ms>` returns deltas since the last server-echoed watermark; the engine applies them locally and advances the watermark. Soft-deletes propagate via a monotonic watermark.
+- Sync cadence: pull every 30s on a visible tab, plus on `online` / `pageshow` / `visibilitychange`. Offline CRUD works fully; the outbox drains when online.
+- Signed-out: renders from an in-memory store; signed-out state wipes the Dexie store (leak-safety).
+- Reads: tRPC bypassed for replicated data; components query the local Dexie store directly (live queries). tRPC reserved for: uploads, auth, voice webhook, price refresh triggers, push test, non-replicated concerns.
+- Analytics (budgets, trends, monthly breakdowns, net worth): a mini SQL engine (`sql.ts`) supports only the query shapes in use, over the local Dexie store — zero network dependency (per D9).
 
 ---
 

@@ -29,13 +29,6 @@ docker compose -f "$COMPOSE_FILE" exec -T postgres pg_isready
 echo "==> Running DB migrations (host-side, localhost:5432)"
 pnpm --filter @funds/db run migrate
 
-echo "==> Ensuring PowerSync publication (FOR ALL TABLES, idempotent)"
-PUSER="${POSTGRES_USER:-$(sed -n 's/^POSTGRES_USER=//p' infra/.env)}"
-PDB="${POSTGRES_DB:-$(sed -n 's/^POSTGRES_DB=//p' infra/.env)}"
-docker compose -f "$COMPOSE_FILE" exec -T postgres \
-  psql -U "$PUSER" -d "$PDB" -c \
-  "DO \$\$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname='powersync') THEN CREATE PUBLICATION powersync FOR ALL TABLES; END IF; END \$\$;"
-
 echo "==> Starting services"
 docker compose -f "$COMPOSE_FILE" up -d --no-build
 
@@ -53,11 +46,4 @@ until curl -fsS "http://localhost:${WEB_PORT}/api/health" >/dev/null 2>&1; do
   ELAPSED=$((ELAPSED + 2))
 done
 
-echo "==> Checking PowerSync is running"
-for i in $(seq 1 30); do
-  [ "$(docker inspect -f '{{.State.Running}}' funds-powersync-1 2>/dev/null)" = "true" ] && { echo "==> Healthy"; exit 0; }
-  sleep 2
-done
-echo "ERROR: powersync did not start" >&2
-docker compose -f "$COMPOSE_FILE" logs powersync | tail -40
-exit 1
+echo "==> Web healthy"

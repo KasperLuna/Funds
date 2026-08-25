@@ -137,20 +137,15 @@ Feedback rules:
   - `⚠ Conflict` (red; tap resolves — see below)
 - Conflicts resolve server-authoritative silently (architecture.md §1); pill escalates to red only when a user-visible value changed against their intent; resolution UI = side-by-side "Yours / Now on server" pick.
 - Freshness stamp under net-worth hero when stale: "updated 2h ago".
-- Launch-offline path verified: precached shell + local SQLite → full function including capture.
+- Launch-offline path verified: precached shell + local Dexie store → full function including capture.
 
 ### Sync architecture (verified end-to-end 2026-08-23)
 
-Local writes land in PowerSync's client-side SQLite via `db.table(name).upsert(row)` (check-then-write — PowerSync exposes synced tables as views, so `INSERT ... ON CONFLICT` is illegal). PowerSync triggers capture the write into the CRUD queue; `uploadData` drains it into the auth-gated tRPC `applyMutations` endpoint, which stamps `user_id` from the session, resolves idempotently (updated_at LWW), upserts Postgres, and replicates back down the sync stream.
+Local writes land in the Dexie (IndexedDB) store via `store.ts`; money is stored as strings and materialized as BigInt at the read boundary. The engine (`engine.ts`) pushes the outbox through the auth-gated tRPC `applyMutations` endpoint, which stamps `user_id` from the session, resolves idempotently (updated_at LWW), and upserts Postgres. Deltas pull back via `GET /api/sync/data?since=<ms>` and advance a server-echoed watermark; soft-deletes propagate on the monotonic watermark. Sync runs every 30s on a visible tab plus on `online`/`pageshow`/`visibility`. Signed-out renders an in-memory store and wipes the Dexie store.
 
 Contract invariants that must hold or sync silently breaks:
-- Stream names in `infra/powersync.yaml` equal client schema table names (accounts/categories/transactions/…). The `powersync` publication must exist in Postgres — the deploy creates it `FOR ALL TABLES` (it is not auto-created by the service; without it the stream 500s `PSYNC_S1141`/`PSYNC_S2302`).
-- `@powersync/web` resolves to its standard `lib/index.js` entry (next.config aliases it — the `react-native` exports condition resolves to an RN build that never syncs).
-- `/api/sync/token` signs HS256 with the same base64url secret as `client_auth.jwks`, `kid: funds-hs256`, `aud: "powersync"` (matches `client_auth.audience`), and returns an **http(s)** endpoint (the SDK appends `/sync/stream`; a ws:// scheme breaks it).
-- The SDK posts the stream to `<endpoint>/sync/stream`. In production the web app terminates that path (`apps/web/src/app/sync/stream/route.ts`) and proxies it to the internal service (`POWER_SYNC_INTERNAL_URL`, default `http://powersync:8080`), so a single Cloudflare catch-all ingress is enough — a `/sync/*` tunnel rule is optional.
-- Row mappers use snake_case keys (`asset_id`, `amount_minor`, …) matching the synced columns; jsonb columns are JSON strings on the wire and normalized to arrays/objects in `normalize.ts`.
+- Row mappers use snake_case keys (`asset_id`, `amount_minor`, …) matching the server columns; jsonb columns are JSON strings on the wire and normalized to arrays/objects in `normalize.ts`.
 - Assets are global (not per-user) and served via tRPC `assets.list`; accounts reference real asset ULIDs, never synthetic `ast-*` ids.
-- The Postgres password must be URL-safe (alphanumeric). PowerSync's pgwire parser does not percent-decode passwords; `&`/`%` in a password break replication auth.
 
 ---
 

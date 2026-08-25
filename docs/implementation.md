@@ -2,7 +2,7 @@
 
 Execution order for the rewrite. Sources of truth: `logic.md` (domain rules), `architecture.md` (stack/topology), `design.md` (UX). This file defines phases, deliverables, and acceptance gates. Phases are vertical slices — each ends `docker compose up`-deployable and demoable.
 
-> **Status 2026-08-24:** Phases 1–4 are live in production (VPS + cloudflared + PowerSync sync working end-to-end). Phases 5–14 are the forward roadmap. Phase 1's deliverable changed mid-flight: the VPS is also a proxy and OOMs under a heavy `next build`, so the build was moved off-host (see Phase 1 notes).
+> **Status 2026-08-24:** Phases 1–4 are live in production (VPS + cloudflared + sync working end-to-end). Phases 5–14 are the forward roadmap. Phase 1's deliverable changed mid-flight: the VPS is also a proxy and OOMs under a heavy `next build`, so the build was moved off-host (see Phase 1 notes). PowerSync was since removed in favor of a Dexie local-first store + custom delta-sync engine.
 
 ---
 
@@ -19,8 +19,8 @@ Repo layout target:
 apps/web        Next.js app (+ tRPC, PWA)
 packages/core   pure logic (money, parser, recurrence, lots/cost-basis)
 packages/db     Drizzle schema + migrations + seeds
-infra           docker-compose*, .env.example, powersync.yaml
-ops             deploy scripts, sync bootstrap (worker package: not yet deployed)
+infra           docker-compose*, .env.example
+ops             deploy scripts (worker package: not yet deployed)
 scripts         operational scripts (import-pocketbase.sh)
 docs/           architecture.md, design.md, implementation.md, logic.md, product.md
 .githooks/      pre-commit (verification + image build/push gate)
@@ -30,17 +30,15 @@ docs/           architecture.md, design.md, implementation.md, logic.md, product
 
 ## Phase 1 — Infra Skeleton
 Deliverables:
-- `docker-compose.yml`: postgres (logical replication ON), powersync, web (Next standalone). Host ports `127.0.0.1`-only, memory-capped (`mem_limit`) so a runaway container restarts instead of OOM-ing the proxy host.
-- cloudflared on host (systemd, token-managed): TLS + routing. Catch-all → `$WEB_HOST_PORT` (default 13000); `/sync/*` → `$POWERSYNC_HOST_PORT` (default 18080) optional since the web app proxies `/sync/stream` internally. `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds, internal powersync URL).
-- GH Actions (self-hosted runner) is **deploy-only**: it never builds. Images are built + pushed to GHCR by `.githooks/pre-commit` on the developer machine (linux/amd64). The runner pulls, migrates, ensures the `powersync` publication, and health-checks.
+- `docker-compose.yml`: postgres, web (Next standalone). Host ports `127.0.0.1`-only, memory-capped (`mem_limit`) so a runaway container restarts instead of OOM-ing the proxy host.
+- cloudflared on host (systemd, token-managed): TLS + routing. Catch-all → `$WEB_HOST_PORT` (default 13000). `.env.example` complete (VAPID keys, secrets, DB URL, OAuth creds).
+- GH Actions (self-hosted runner) is **deploy-only**: it never builds. Images are built + pushed to GHCR by `.githooks/pre-commit` on the developer machine (linux/amd64). The runner pulls, migrates, and health-checks.
 Gate: fresh VPS boots whole stack with one command; rollback tag works.
 
 ## Phase 1b — Deploy plumbing (realized 2026-08-24)
 Hard-won operational knowledge; see README.md §Deploy for the full picture.
 - **Builds off the host**: pre-commit runs lint/typecheck/test + `docker buildx build --platform linux/amd64 --push` to GHCR. Skip the slow build with `SKIP_DOCKER_PUSH=1 git commit`.
-- **The Postgres password must be URL-safe** (alphanumeric). PowerSync's pgwire parser does not decode percent-encoded passwords (`&`, `%` break it); node-postgres does. Change the password with `ALTER USER postgres PASSWORD '...'` inside the running container.
-- **The `powersync` publication is NOT auto-created.** The deploy creates it idempotently: `CREATE PUBLICATION powersync FOR ALL TABLES`. Without it, the stream 500s with `PSYNC_S1141`/`PSYNC_S2302`.
-- **PowerSync has no `/health` endpoint**; the deploy verifies the container is running instead.
+- **The Postgres password must be URL-safe** (alphanumeric) when it is embedded in a connection URL; keep it alphanumeric so `DATABASE_URL` works everywhere.
 
 ## Phase 2 — Data Layer
 Deliverables:
@@ -56,10 +54,10 @@ Gate: three flows work on deployed HTTPS domain; guest→signup upgrades same de
 
 ## Phase 4 — Sync Backbone
 Deliverables:
-- PowerSync service config (`powersync.yaml`), PG publication/slot bootstrap.
-- Sync rules: single per-user bucket stream (`user_id = token.user_id`) over all replicated tables.
-- Client SDK wiring: OPFS-SQLite adapter, storage-persist request post-first-capture, live-query hook (`useQuery` equivalent over local tables).
-- Write path: SDK upload queue → batched tRPC `applyMutations` endpoint (idempotent by ULID, soft-delete aware, LWW on `updated_at`, server-authoritative).
+- Dexie (IndexedDB) local store (`lib/sync/store.ts`) + sync engine (`lib/sync/engine.ts`); money stored as strings, materialized as BigInt at read boundary.
+- Sync rules: per-user rows over all replicated tables; full-user delta sync, no pagination complexity.
+- Pull: `GET /api/sync/data?since=<ms>` (server `apps/web/src/server/sync-data.ts` + `sync-serialize.ts`) returns deltas since the server-echoed watermark; 30s visible-tab pull + `online`/`pageshow`/`visibility` triggers.
+- Push: outbox drain via batched tRPC `applyMutations` endpoint (idempotent by ULID, soft-delete aware, LWW on `updated_at`, server-authoritative). Signed-out wipes the Dexie store.
 - Sync pill component + pending-queue detail sheet (design.md §6).
 Integrity tests (must-pass suite, reused every later phase): write-offline→kill app→relaunch→syncs; concurrent edit two devices (LWW verified); delete vs update race; replay duplicate mutation (no double effect); schema migration while queue non-empty.
 Gate: airplane-mode CRUD round-trip on real phone.
@@ -136,8 +134,8 @@ P13/P14 last, parallelizable
 ## Risk Register (top items)
 | Risk | Mitigation |
 |---|---|
-| PowerSync self-hosted sharp edges | P4 spike first; fallback = RxDB adapter swap isolated behind sync-interface module |
-| OPFS eviction on iOS | persist() request + low-storage UX (design.md §10); test on real devices early |
+| Custom sync engine edge cases | P4 integrity suite first; keep sync isolated behind the engine/store modules |
+| IndexedDB eviction on iOS | persist() request + low-storage UX (design.md §10); test on real devices early |
 | Parser regressions | golden files frozen from legacy before touching it |
 | BigInt/minor-unit leaks into UI | lint rule + money helper escape hatch review |
 | Scope creep in analytics | views replicate legacy formulas exactly; enhancements post-cutover |

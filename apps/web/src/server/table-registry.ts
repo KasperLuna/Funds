@@ -1,6 +1,6 @@
 /**
  * Table registry: maps replicated table names to drizzle tables + field name translation
- * Wire format (PowerSync/mutations) uses snake_case; drizzle uses camelCase
+ * Wire format (sync/mutations) uses snake_case; drizzle uses camelCase
  */
 import * as schema from "@funds/db/schema";
 import type { AnyPgTable, AnyPgColumn } from "drizzle-orm/pg-core";

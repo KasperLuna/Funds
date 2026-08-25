@@ -1,12 +1,9 @@
 # Fund s — service topology (architecture.md §2)
 # Env supplied via .env (see .env.example). All services on default compose network.
 # Ingress: cloudflared runs ON THE HOST (systemd), token-managed, ingress rules
-# in CF Zero Trust: hostname catch-all -> http://localhost:$WEB_HOST_PORT (13000),
-# optional path /sync/* -> http://localhost:$POWERSYNC_HOST_PORT (18080).
-# The web app proxies /sync/stream to powersync internally, so catch-all alone works.
+# in CF Zero Trust: hostname catch-all -> http://localhost:$WEB_HOST_PORT (13000).
 # Host ports bound to 127.0.0.1 only (cloudflared + CI migrate/health + local dev).
-# Host-side ports configurable via .env: WEB_HOST_PORT (default 13000),
-# POWERSYNC_HOST_PORT (default 18080) — chosen to avoid common collisions.
+# Host-side port configurable via .env: WEB_HOST_PORT (default 13000).
 name: funds
 
 services:
@@ -22,7 +19,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    command: ["postgres", "-c", "wal_level=logical"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -46,26 +42,6 @@ services:
     ports:
       - "127.0.0.1:${WEB_HOST_PORT:-13000}:3000"
     env_file: .env
-
-  # cavetail: enable in P4
-  powersync:
-    image: journeyapps/powersync-service:latest
-    restart: unless-stopped
-    mem_limit: 512m
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "127.0.0.1:${POWERSYNC_HOST_PORT:-18080}:8080"
-    volumes:
-      # cavetail: config-mount + POWERSYNC_CONFIG_PATH is the documented compose pattern
-      - ./powersync.yaml:/config/powersync.yaml:ro
-    environment:
-      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
-      # cavetail: service only interpolates `PS_*` vars via `!env` in powersync.yaml,
-      # so the generic .env vars are mapped onto PS_-prefixed names here.
-      PS_DATABASE_URL: ${PS_DATABASE_URL}
-      PS_JWT_SECRET_B64URL: ${POWER_SYNC_JWT_SECRET_B64URL}
 
 volumes:
   pgdata:

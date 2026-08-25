@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Existing monorepo (pnpm workspaces): Next.js App Router + shadcn/ui in `apps/web`; shared `packages/core` (pure logic) and `packages/db` (Drizzle schema). Tailwind v4, tRPC, PowerSync local-first sync (SQLite WASM over OPFS), Better Auth, Serwist PWA. User-answered during interview: not part of this redesign.
+Existing monorepo (pnpm workspaces): Next.js App Router + shadcn/ui in `apps/web`; shared `packages/core` (pure logic) and `packages/db` (Drizzle schema). Tailwind v4, tRPC, Dexie local-first sync (IndexedDB) with delta sync, Better Auth, Serwist PWA. User-answered during interview: not part of this redesign.
 
 ## Users
 
@@ -27,7 +27,7 @@ Local-first and private-first finance tracking where capture is the product: eve
 - Mobile is the primary capture surface: bottom-bar navigation, thumb-reachable primary actions, bottom-sheet capture with a custom keypad.
 - Desktop is the review surface: sidebar navigation, ⌘K command palette, keyboard-first.
 - The app must work on low-mid-tier Android OLED phones (the performance budget is written for them) and on desktop.
-- Background sync (PowerSync) keeps the local SQLite store in sync; sync state is surfaced honestly but never blocks input.
+- Background sync keeps the local Dexie store in sync; sync state is surfaced honestly but never blocks input.
 - Voice/webhook capture pipeline (phone shortcut posts text, parsed draft prefills the capture sheet).
 - Deep links: `?capture=1` opens the sheet, `?scheduledId=` prefills from a reminder, `?draftToken=` redeems a voice draft.
 - Privacy toggle (session-scoped, defaults on) masks all money values.

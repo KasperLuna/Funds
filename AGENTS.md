@@ -43,10 +43,9 @@ Never merge a schema change without running `db:check` against a migrated DB.
   requires ALL of these in sync, or sync/uploads break:
   1. `packages/db/src/schema.ts` (Drizzle) — the source of truth.
   2. `pnpm --filter @funds/db exec drizzle-kit generate` → new `packages/db/drizzle/000X_*.sql`.
-  3. `apps/web/src/lib/sync/schema.ts` (client PowerSync schema) — same column names/types.
+  3. `apps/web/src/lib/sync/normalize.ts` — only if the column is jsonb / timestamp /
+     non-text, or a money column (MONEY_COLUMNS) whose string→BigInt read boundary must change.
   4. `apps/web/src/server/table-registry.ts` — snake_case↔camelCase field mappers.
-  5. `apps/web/src/lib/sync/normalize.ts` — only if the column is jsonb / timestamp /
-     non-text (PowerSync NULL-integer-returns-"" handling).
 - Then apply: `pnpm run db:migrate` and verify with `pnpm run db:check`.
 - Never ship code that writes a column the DB lacks: a category write with an
   unknown `color` aborts the whole `applyMutations` transaction and deadlocks
@@ -57,8 +56,10 @@ Never merge a schema change without running `db:check` against a migrated DB.
 - `amount_minor` / `*_minor` columns are **signed BigInt** (minor units, not floats).
   Expense < 0, income > 0. There is an eslint rule `local/no-money-float`; display
   formatting only, never float arithmetic.
-- **PowerSync returns a JS `BigInt` for any `column.integer` value outside ±2^53**
-  (≈9.0e15). BigInts reaching `Math.*`, `new Date(bigint)`, `10 ** bigint`,
+- **In the Dexie store money is stored as strings** and materialized as JS `BigInt`
+  at the read boundary (`apps/web/src/lib/sync/normalize.ts`). The read boundary
+  (`BigInt(...)` on the string, wrapped in `Number(...)` where math is needed) is
+  where you harden: BigInts reaching `Math.*`, `new Date(bigint)`, `10 ** bigint`,
   `.toFixed`, or `+bigint` throw `can't convert BigInt to number` and crash the page.
 - Harden boundaries: `new Date(Number(ts))`, `10 ** Number(decimals)`, wrap
   `BigInt(Math.round(Number(x) * Number(y)))`. `formatMoney` already does this —
@@ -98,14 +99,32 @@ Never merge a schema change without running `db:check` against a migrated DB.
 
 - Local Postgres: docker `funds-postgres-1` (127.0.0.1:5432, db `funds`). Real user
   data lives here (it's a working mirror) — don't truncate.
-- PowerSync: docker `funds-powersync-1` (127.0.0.1:18080).
 - Test PG: docker `funds-test-pg` (127.0.0.1:54329, db `funds_test`).
 - `apps/web/.env` drives the dev server; `DATABASE_URL` points at the local stack.
 - Guest/demo account: `demo@funds.local`.
+
+## Custom sync architecture (no PowerSync)
+
+- The client uses a **Dexie (IndexedDB) local store** (`apps/web/src/lib/sync/store.ts`)
+  + a lightweight sync engine (`apps/web/src/lib/sync/engine.ts`). There is NO
+  PowerSync service, NO `/api/sync/token`, NO `/sync/stream` proxy, and NO
+  `POWER_SYNC_*` / `PS_*` env vars. Do not reintroduce them.
+- **Push**: writes land in the Dexie outbox; the engine drains it via
+  `trpc.applyMutations` (idempotent, per-row savepoints). **Pull**: `GET
+  /api/sync/data?since=<ms>` returns deltas since the server-echoed watermark,
+  applied locally and advancing the watermark.
+- Sync cadence: every 30s on a visible tab plus `online`/`pageshow`/`visibility`
+  triggers. Soft-deletes propagate on a monotonic watermark.
+- Money is a **string in the store**, materialized as **BigInt at the read
+  boundary** (`normalize.ts`). Harden the boundary (see Money section).
+- Signed-out renders an in-memory store; signed-out wipes the Dexie store
+  (leak-safety).
+- Analytics run over a **mini SQL engine** (`sql.ts`) supporting only the query
+  shapes in use — keep new queries within those shapes.
 
 ## Repo conventions
 
 - No comments unless they encode a `cavetail:` decision or a lint-exemption reason.
 - Client generates all IDs (ULID, text PK) — offline creates never collide.
-- Keep the PWA offline-first contract: writes land in local SQLite first, sync
+- Keep the PWA offline-first contract: writes land in the local Dexie store first, sync
   uploads after. Never gate writes on the server.
