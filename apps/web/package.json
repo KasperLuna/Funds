@@ -15,8 +15,6 @@
   "dependencies": {
     "@funds/core": "workspace:*",
     "@funds/db": "workspace:*",
-    "@powersync/react": "^2",
-    "@powersync/web": "^2",
     "@radix-ui/react-dialog": "^1",
     "@radix-ui/react-popover": "^1.1.23",
     "@serwist/next": "^9.5.12",

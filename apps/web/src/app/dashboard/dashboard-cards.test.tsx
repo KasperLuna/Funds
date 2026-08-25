@@ -33,14 +33,19 @@ beforeEach(() => {
   vi.mocked(useSync).mockReturnValue({
     db: {
       query: mockQuery,
+      watch: vi.fn(() => (async function* () {})()),
       table: vi.fn(() => ({
         upsert: vi.fn(),
         update: vi.fn(),
       })),
     } as never,
-    isConnected: true,
+    syncStatus: {
+      online: true,
+      syncing: false,
+      lastSyncedAt: Date.now(),
+      failedCount: 0,
+    },
     isReady: true,
-    lastSyncedAt: Date.now(),
     userId: "dev-user",
   });
   mockQuery.mockResolvedValue({ rows: [] });

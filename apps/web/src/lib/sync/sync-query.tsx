@@ -7,14 +7,12 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useSync } from "./sync-context";
-import type { QueryParams, RowRecord } from "./types";
+import type { QueryParams, QueryResult, RowRecord } from "./types";
 
 /**
- * Entity query-key roots. Mutations invalidate by prefix, so each key here is
- * matched regardless of the `lastSyncedAt` version suffix appended by
- * {@link useSyncQuery}.
+ * Entity query-key roots. Mutations invalidate by prefix.
  */
 export const queryKeys = {
   accounts: ["accounts"] as const,
@@ -31,8 +29,8 @@ export const queryKeys = {
 
 /**
  * QueryClient mounted once per SyncQueryProvider. Local-first reads are cheap
- * and refresh on every sync checkpoint, so keep staleness short and disable
- * window-focus refetch (data freshness is driven by `lastSyncedAt` in the key).
+ * and refresh reactively via {@link useSyncQuery}'s watcher, so keep staleness
+ * short and disable window-focus refetch (the watcher drives freshness).
  */
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -56,10 +54,11 @@ export function SyncQueryProvider({ children }: { children: ReactNode }) {
 /**
  * Read one collection from the sync db as a TanStack Query.
  *
- * The query is disabled until sync is ready (so it never runs against the empty
- * memory db before PowerSync swaps in) and its key carries `lastSyncedAt`, so
- * it re-runs against freshly-downloaded data on every checkpoint. Both effects
- * together remove the "0 state → flicker to populated" flash.
+ * Reactivity comes from a mounted {@link SyncDatabase.watch} watcher that
+ * re-seeds the query cache on every local write and sync pull — so the query key
+ * no longer needs a `lastSyncedAt` version suffix. The watcher yields the current
+ * result immediately and again on change; writes land in the cache via
+ * {@link QueryClient.setQueryData}, making the UI react to local writes AND pulls.
  */
 export function useSyncQuery<T>({
   key,
@@ -72,21 +71,51 @@ export function useSyncQuery<T>({
   params?: QueryParams;
   select: (row: RowRecord) => T;
 }) {
-  const { db, isReady, lastSyncedAt } = useSync();
+  const { db, isReady } = useSync();
+  const queryClient = useQueryClient();
+  const keyRef = useRef(key);
+  keyRef.current = key;
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
+  const selectRef = useRef(select);
+  selectRef.current = select;
+  const paramsKey = params ? JSON.stringify(params) : "";
+
+  useEffect(() => {
+    if (!isReady) return;
+    let cancelled = false;
+    // cavetail: db.watch is typed AsyncIterable but both impls are async
+    // generators; cast so we can .return() to tear down the watcher on cleanup.
+    const watcher = db.watch(sql, paramsRef.current) as AsyncGenerator<QueryResult>;
+    (async () => {
+      try {
+        for await (const result of watcher) {
+          if (cancelled) return;
+          queryClient.setQueryData([...keyRef.current], result.rows.map(selectRef.current));
+        }
+      } catch {
+        // watcher closed; ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+      void watcher.return(undefined);
+    };
+  }, [db, isReady, sql, paramsKey, queryClient]);
+
   return useQuery({
-    queryKey: [...key, lastSyncedAt],
+    queryKey: key,
     enabled: isReady,
     queryFn: async () => {
-      const res = await db.query(sql, params);
-      return res.rows.map(select);
+      const res = await db.query(sql, paramsRef.current);
+      return res.rows.map(selectRef.current);
     },
   });
 }
 
 /**
  * Write to the sync db and invalidate the affected entity queries on success.
- * Invalidation matches by key prefix, so the `lastSyncedAt`-suffixed queries
- * are refreshed automatically.
+ * Invalidation matches by key prefix, so the affected queries refresh.
  */
 export function useSyncMutation<TVariables>({
   keys,

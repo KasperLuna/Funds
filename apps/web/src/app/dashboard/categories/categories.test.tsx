@@ -29,15 +29,20 @@ beforeEach(() => {
     db: {
       query: mockQuery,
       execute: mockExecute,
+      watch: vi.fn(() => (async function* () {})()),
       table: vi.fn((name: string) => ({
         upsert: name === "categories" ? mockCategoryUpsert : vi.fn(),
         update: vi.fn(),
         deleteById: vi.fn(),
       })),
     } as never,
-    isConnected: true,
+    syncStatus: {
+      online: true,
+      syncing: false,
+      lastSyncedAt: Date.now(),
+      failedCount: 0,
+    },
     isReady: true,
-    lastSyncedAt: Date.now(),
     userId: "dev-user",
   });
   mockQuery.mockResolvedValue({ rows: [] });

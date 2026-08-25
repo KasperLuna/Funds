@@ -4,7 +4,8 @@ import { Cloud, CloudOff } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 
 export function SyncStatus() {
-  const { isConnected, userId } = useSync();
+  const { syncStatus, userId } = useSync();
+  const isConnected = syncStatus.online;
 
   if (isConnected) {
     return (

@@ -1,8 +1,8 @@
 import type { SyncDatabase } from "@/lib/sync";
 import { buildUndoTombstone, type TransferRows } from "@/lib/capture";
 
-// cavetail: local-first writes; PowerSync upload queue drains them later via
-// the tRPC applyMutations endpoint (see powersync-client.ts uploadData).
+// cavetail: local-first writes; the sync engine drains the outbox later via
+// the tRPC applyMutations endpoint.
 
 export async function insertTransfer(
   db: SyncDatabase,

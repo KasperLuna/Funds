@@ -30,9 +30,13 @@ export function TestProviders({
       <SyncContext.Provider
         value={{
           db: syncDb,
-          isConnected: true,
+          syncStatus: {
+            online: true,
+            syncing: false,
+            lastSyncedAt: null,
+            failedCount: 0,
+          },
           isReady: true,
-          lastSyncedAt: null,
           userId: null,
         }}
       >

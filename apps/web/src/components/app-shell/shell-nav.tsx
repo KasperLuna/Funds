@@ -76,9 +76,9 @@ export function MobileTab({ item, onNavigate }: { item: NavItem; onNavigate?: ()
 }
 
 export function SyncPill() {
-  const { isConnected, lastSyncedAt } = useSync();
-  const offline = !isConnected;
-  const syncing = isConnected && lastSyncedAt == null;
+  const { syncStatus } = useSync();
+  const offline = !syncStatus.online;
+  const syncing = syncStatus.online && syncStatus.lastSyncedAt == null;
   return (
     <span
       role="status"

@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
-import { queryKeys, useSyncMutation } from "@/lib/sync/sync-query";
-import { loadTemplates, templateRow, type Template } from "@/lib/templates/templates-store";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
+import { templateRow, toTemplate, type Template } from "@/lib/templates/templates-store";
 import { TemplateDialog } from "@/components/templates/template-dialog";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
@@ -31,7 +30,7 @@ export function TemplateCard({
   categories: TemplateCardCategory[];
   onChanged?: () => void;
 }) {
-  const { db, userId, isReady, lastSyncedAt } = useSync();
+  const { db, userId } = useSync();
   const uid = userId ?? "local";
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<Template | null>(null);
@@ -42,10 +41,10 @@ export function TemplateCard({
     [accounts],
   );
 
-  const templatesQuery = useQuery({
-    queryKey: [queryKeys.templates, lastSyncedAt],
-    enabled: isReady,
-    queryFn: () => loadTemplates(db),
+  const templatesQuery = useSyncQuery({
+    key: queryKeys.templates,
+    sql: "SELECT * FROM templates WHERE deleted_at IS NULL",
+    select: toTemplate,
   });
   const items = templatesQuery.data ?? [];
 

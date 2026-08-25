@@ -18,7 +18,7 @@ import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
-import { loadTemplates } from "@/lib/templates/templates-store";
+import { toTemplate } from "@/lib/templates/templates-store";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import type { Category } from "@/lib/categories/categories-store";
 import { computeBudgetUsage, resolveCategoryColor } from "@/lib/categories/categories-store";
@@ -79,7 +79,7 @@ function DashboardContent() {
   const captureOpen = searchParams.get("capture") === "1";
   const typeParam = searchParams.get("type");
   const draftToken = searchParams.get("draftToken");
-  const { db, userId, isReady, lastSyncedAt } = useSync();
+  const { db, userId, syncStatus } = useSync();
   const uid = userId ?? "local";
   const { assets } = useAssets();
   const assetsById = useMemo(
@@ -125,12 +125,12 @@ function DashboardContent() {
   });
   const budgets = budgetsQuery.data ?? [];
 
-  // cavetail: loadTemplates is not a raw SQL map, so use a plain useQuery that
-  // mirrors useSyncQuery's key + enabled gating instead of an sql/select pair.
-  const templatesQuery = useQuery({
-    queryKey: [...queryKeys.templates, lastSyncedAt],
-    enabled: isReady,
-    queryFn: () => loadTemplates(db),
+  // cavetail: templates load via a raw select map (useSyncQuery) rather than
+  // the store helper so they stay reactive like every other entity collection.
+  const templatesQuery = useSyncQuery({
+    key: queryKeys.templates,
+    sql: "SELECT * FROM templates WHERE deleted_at IS NULL",
+    select: toTemplate,
   });
   const templates = templatesQuery.data ?? [];
 
@@ -359,7 +359,7 @@ function DashboardContent() {
         cryptoBalance={cryptoBalance}
         privacy={privacy}
         onTogglePrivacy={togglePrivacy}
-        lastSyncedAt={lastSyncedAt}
+        lastSyncedAt={syncStatus.lastSyncedAt}
         currencyCode={primaryCode}
       />
 
