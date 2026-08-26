@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import type { Txn } from "@/lib/accounts/accounts-store";
-import { TransactionRow } from "@/components/banks/transaction-row";
+import { TransactionRowReadonly } from "@/components/banks/transaction-row-readonly";
 import { ReceiptText } from "lucide-react";
 
 type CategoryInfo = { id: string; name: string; color: string; hideable: boolean };
@@ -16,14 +17,12 @@ export type RecentActivityProps = {
   txns: Txn[];
   categories: CategoryInfo[];
   accounts?: Record<string, AccountDisplay>;
-  onEdit?: (txn: Txn) => void;
 };
 
 export function RecentActivity({
   txns,
   categories,
   accounts,
-  onEdit,
 }: RecentActivityProps) {
   if (txns.length === 0) {
     return (
@@ -56,15 +55,19 @@ export function RecentActivity({
         {txns.map((txn) => {
           const acc = accounts?.[txn.accountId];
           return (
-            <TransactionRow
+            <Link
               key={txn.id}
-              txn={txn}
-              categories={categories}
-              accountName={acc?.name}
-              assetCode={acc?.code}
-              assetDecimals={acc?.decimals}
-              onEdit={onEdit}
-            />
+              href={`/dashboard/banks?txn=${txn.id}`}
+              className="block transition-colors hover:bg-(--surface-3)/40"
+            >
+              <TransactionRowReadonly
+                txn={txn}
+                categories={categories}
+                accountName={acc?.name}
+                assetCode={acc?.code}
+                assetDecimals={acc?.decimals}
+              />
+            </Link>
           );
         })}
       </div>

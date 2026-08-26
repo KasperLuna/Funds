@@ -378,7 +378,6 @@ function DashboardContent() {
         txns={recentTxns}
         categories={categories}
         accounts={accountInfo}
-        onEdit={setEditTxn}
       />
 
       <BudgetPulse items={budgetUsage} assetsById={assetsById} />

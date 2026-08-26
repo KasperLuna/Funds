@@ -141,6 +141,15 @@
   }
 }
 
+/* Transaction highlight — triggered by deep-link scroll-to */
+@keyframes highlight-txn-pulse {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(16, 185, 129, 0.12); }
+}
+.highlight-txn {
+  animation: highlight-txn-pulse 2s ease-in-out;
+}
+
 /* Recharts — engraved Intaglio Plate overrides */
 .recharts-cartesian-grid line {
   stroke: rgba(255, 255, 255, 0.06);

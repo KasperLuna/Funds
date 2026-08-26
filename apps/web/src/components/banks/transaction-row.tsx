@@ -134,7 +134,7 @@ export function TransactionRow({
   }, []);
 
   return (
-    <div className="relative overflow-hidden">
+    <div id={`txn-${txn.id}`} className="relative overflow-hidden">
       {offsetX > 0 && (
         <div
           className="absolute inset-y-0 left-0 flex items-center bg-(--accent)/15 px-4"

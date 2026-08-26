@@ -234,6 +234,31 @@ function BanksContent() {
     }
   }, [searchParams, router]);
 
+  // Deep link: filter by category from budget pulse / categories page.
+  useEffect(() => {
+    const catId = searchParams.get("category");
+    if (catId) {
+      setFilters((f) => ({ ...f, categoryIds: [catId] }));
+      router.replace("/dashboard/banks", { scroll: false });
+    }
+  }, [searchParams, router]);
+
+  // Deep link: scroll to and highlight a specific transaction.
+  useEffect(() => {
+    const txnId = searchParams.get("txn");
+    if (txnId) {
+      router.replace("/dashboard/banks", { scroll: false });
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`txn-${txnId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.classList.add("highlight-txn");
+          setTimeout(() => el.classList.remove("highlight-txn"), 2000);
+        }
+      });
+    }
+  }, [searchParams, router]);
+
   useEffect(() => () => {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
   }, []);
@@ -725,9 +750,6 @@ function BanksContent() {
               <Button size="sm" onClick={() => setCaptureOpen(true)}>
                 <Plus className="h-4 w-4" aria-hidden /> Add transaction
               </Button>
-            </div>
-            <div className="border-b border-(--border) bg-(--surface-2) px-4 py-2 text-[11px] text-zinc-400 lg:hidden">
-              Tap a transaction to edit · swipe right to duplicate · swipe left to delete
             </div>
             {grouped.map((g) => (
               <div key={g.day}>

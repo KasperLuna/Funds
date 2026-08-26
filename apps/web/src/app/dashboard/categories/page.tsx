@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
@@ -318,7 +319,11 @@ export default function CategoriesPage() {
               const isWarning = pct >= 80 && pct <= 100;
               const isOver = pct > 100;
               return (
-                <div key={category.id} className="flex flex-col gap-1">
+                <Link
+                  key={category.id}
+                  href={`/dashboard/banks?category=${category.id}`}
+                  className="flex flex-col gap-1 rounded-(--radius-md) p-2 -m-2 transition-colors hover:bg-(--surface-3)/40"
+                >
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="flex min-w-0 items-center gap-2">
                       <span
@@ -344,7 +349,7 @@ export default function CategoriesPage() {
                       style={{ width: `${clampedPct}%` }}
                     />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

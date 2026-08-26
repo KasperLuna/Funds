@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PiggyBank } from "lucide-react";
 import type { Category } from "@/lib/categories/categories-store";
 import { formatMoney } from "@/lib/money";
@@ -115,7 +116,11 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
             const itemDecimals = itemAsset?.decimals ?? 2;
             const itemCode = itemAsset?.code;
             return (
-              <div key={item.category.id} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
+              <Link
+                key={item.category.id}
+                href={`/dashboard/banks?category=${item.category.id}`}
+                className="flex items-center justify-between py-2 first:pt-0 last:pb-0 transition-colors hover:bg-(--surface-3)/40 -mx-6 px-6"
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
                     <span className="truncate text-sm">{item.category.name}</span>
@@ -137,7 +142,7 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
       </div>
