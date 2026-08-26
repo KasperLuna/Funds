@@ -43,5 +43,19 @@ services:
       - "127.0.0.1:${WEB_HOST_PORT:-13000}:3000"
     env_file: .env
 
+  worker:
+    # cavetail: image built+published by .githooks/pre-commit like web; hourly
+    # reminder/cleanup loop (ops/worker). No ports, DB + push only.
+    image: ghcr.io/kasperluna/funds-worker:${WEB_IMAGE_TAG:-latest}
+    build:
+      context: ./..
+      dockerfile: ops/worker/Dockerfile
+    restart: unless-stopped
+    mem_limit: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file: .env
+
 volumes:
   pgdata:

@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/*"
+  - "ops/worker"
 
 allowBuilds:
   esbuild: true

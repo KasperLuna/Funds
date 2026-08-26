@@ -10,7 +10,8 @@ const DATABASE_URL =
 const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY ?? "";
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY ?? "";
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT ?? "mailto:admin@funds.app";
-const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
+const APP_URL =
+  process.env.APP_URL ?? process.env.PUBLIC_APP_URL ?? "http://localhost:3000";
 const CRON_SECRET = process.env.CRON_SECRET ?? "";
 const DEDUP_WINDOW_MS = 3 * 60 * 60 * 1000; // 3 hours (logic.md §8.4)
 

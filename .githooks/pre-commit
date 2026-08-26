@@ -28,9 +28,12 @@ pnpm run db:check
 # Build + publish linux/amd64 images the host deploys. Only when build-relevant
 # files are staged (else skip: deploy keeps the existing :latest).
 if [ "${SKIP_DOCKER_PUSH:-0}" != "1" ] &&
-   git diff --cached --name-only | rg -q '(^apps/web/|^packages/|Dockerfile$|^ops/worker-stub/|^pnpm-|^package.json$|^infra/docker-compose.yml$)'; then
+   git diff --cached --name-only | rg -q '(^apps/web/|^packages/|Dockerfile$|^ops/worker|^pnpm-|^package.json$|^infra/docker-compose.yml$)'; then
   # auth needed once: echo <PAT> | docker login ghcr.io -u KasperLuna --password-stdin
   docker buildx build --platform linux/amd64 --push \
     -t ghcr.io/kasperluna/funds-web:latest \
     -f apps/web/Dockerfile .
+  docker buildx build --platform linux/amd64 --push \
+    -t ghcr.io/kasperluna/funds-worker:latest \
+    -f ops/worker/Dockerfile .
 fi
