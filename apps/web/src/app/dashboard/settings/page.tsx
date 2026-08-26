@@ -17,6 +17,11 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { SyncStatus } from "@/components/settings/sync-status";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
+import { useSync } from "@/lib/sync/sync-context";
+import {
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/lib/push/notifications";
 
 const CHECKLIST_ITEMS = [
   { id: "account", label: "Create first account", icon: CreditCard, href: "/dashboard/banks" },
@@ -41,6 +46,8 @@ function Section({
 
 function NotificationPermission() {
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [busy, setBusy] = useState(false);
+  const { db, userId } = useSync();
 
   useEffect(() => {
     if (typeof Notification !== "undefined") {
@@ -52,7 +59,33 @@ function NotificationPermission() {
     if (typeof Notification === "undefined") return;
     const result = await Notification.requestPermission();
     setPermission(result);
-  }, []);
+    if (result === "granted" && userId) {
+      setBusy(true);
+      try {
+        const res = await fetch("/api/push/config");
+        const { vapidPublicKey } = (await res.json()) as { vapidPublicKey: string };
+        if (vapidPublicKey) {
+          await subscribeToPush(db, userId, vapidPublicKey);
+        }
+      } catch (err) {
+        console.error("Failed to enable reminders:", err);
+      } finally {
+        setBusy(false);
+      }
+    }
+  }, [db, userId]);
+
+  const disable = useCallback(async () => {
+    setBusy(true);
+    try {
+      await unsubscribeFromPush(db);
+      setPermission("default");
+    } catch (err) {
+      console.error("Failed to disable reminders:", err);
+    } finally {
+      setBusy(false);
+    }
+  }, [db]);
 
   const label =
     permission === "granted"
@@ -72,11 +105,15 @@ function NotificationPermission() {
           </p>
         </div>
       </div>
-      {permission !== "granted" && permission !== "denied" && (
-        <Button variant="outline" size="sm" onClick={request}>
+      {permission === "granted" ? (
+        <Button variant="outline" size="sm" onClick={() => void disable()} disabled={busy}>
+          Disable
+        </Button>
+      ) : permission !== "denied" ? (
+        <Button variant="outline" size="sm" onClick={() => void request()} disabled={busy}>
           Enable
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
