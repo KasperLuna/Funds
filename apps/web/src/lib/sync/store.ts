@@ -16,8 +16,8 @@ import { filterRows, parseSelect, projectRows, sortRows } from "./sql.js";
  * cavetail: IndexedDB cannot structured-clone BigInt and JSON numbers lose
  * precision above 2^53, so money is persisted as STRINGS (via
  * {@link denormalizeRow}) and materialized as BigInt at the read boundary (via
- * {@link normalizeRows}). The store is constructed per user and wiped on
- * sign-out through {@link wipe}.
+ * {@link normalizeRows}). One shared named DB backs every session on the
+ * device; it is wiped on sign-out and on account switch ({@link wipeLocalStore}).
  */
 
 export const ENTITY_TABLES = [
@@ -66,6 +66,36 @@ export type DexieStore = SyncDatabase & {
   wipe(): Promise<void>;
   setIsConnected(connected: boolean): void;
 };
+
+let wipeChannel: BroadcastChannel | null = null;
+
+function channel(): BroadcastChannel | null {
+  if (typeof BroadcastChannel === "undefined") return null;
+  if (!wipeChannel) wipeChannel = new BroadcastChannel("funds-sync-wipe");
+  return wipeChannel;
+}
+
+export function broadcastWipe(): void {
+  channel()?.postMessage("wiped");
+}
+
+export function onRemoteWipe(cb: () => void): () => void {
+  const ch = channel();
+  if (!ch) return () => {};
+  const handler = (): void => cb();
+  ch.addEventListener("message", handler);
+  return () => ch.removeEventListener("message", handler);
+}
+
+/**
+ * Wipes the shared local store from outside any engine/provider (sign-out
+ * click handlers). cavetail: a throwaway store instance has no engine hooks
+ * attached, so clear() cannot re-enqueue tombstones into the outbox.
+ */
+export async function wipeLocalStore(name = "funds"): Promise<void> {
+  await createDexieStore(name).wipe();
+  broadcastWipe();
+}
 
 export function createDexieStore(name = "funds"): DexieStore {
   const db = new Dexie(name);

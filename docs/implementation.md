@@ -57,7 +57,7 @@ Deliverables:
 - Dexie (IndexedDB) local store (`lib/sync/store.ts`) + sync engine (`lib/sync/engine.ts`); money stored as strings, materialized as BigInt at read boundary.
 - Sync rules: per-user rows over all replicated tables; full-user delta sync, no pagination complexity.
 - Pull: `GET /api/sync/data?since=<ms>` (server `apps/web/src/server/sync-data.ts` + `sync-serialize.ts`) returns deltas since the server-echoed watermark; 30s visible-tab pull + `online`/`pageshow`/`visibility` triggers.
-- Push: outbox drain via batched tRPC `applyMutations` endpoint (idempotent by ULID, soft-delete aware, LWW on `updated_at`, server-authoritative). Signed-out wipes the Dexie store.
+- Push: outbox drain via batched tRPC `applyMutations` endpoint (idempotent by ULID, soft-delete aware, LWW on `updated_at`, server-authoritative). Signed-out wipes the Dexie store (confirmed 401, explicit handler wipe for offline sign-out, and account-switch isolation).
 - Sync pill component + pending-queue detail sheet (design.md §6).
 Integrity tests (must-pass suite, reused every later phase): write-offline→kill app→relaunch→syncs; concurrent edit two devices (LWW verified); delete vs update race; replay duplicate mutation (no double effect); schema migration while queue non-empty.
 Gate: airplane-mode CRUD round-trip on real phone.

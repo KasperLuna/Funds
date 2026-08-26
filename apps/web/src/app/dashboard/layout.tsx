@@ -3,7 +3,7 @@
 import { Settings, LogOut, Plus, Eye, EyeOff, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { signOutAndWipe } from "@/lib/sync/sign-out";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NavLink, MobileTab, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
 import { AddMenu, ADD_MENU_TARGETS } from "@/components/app-shell/add-menu";
@@ -43,7 +43,7 @@ function SidebarSignOut() {
   const router = useRouter();
 
   async function handleSignOut() {
-    await authClient.signOut();
+    await signOutAndWipe();
     router.push("/");
     router.refresh();
   }

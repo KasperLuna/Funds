@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { createDexieStore, type DexieStore } from "./store.js";
+import { createDexieStore, onRemoteWipe, type DexieStore } from "./store.js";
 import { createSyncEngine, type Batch, type SyncEngine } from "./engine.js";
 
 let seq = 0;
@@ -25,6 +25,7 @@ beforeEach(() => {
     fetch: fetchMock as typeof fetch,
     getUserId: () => "user1",
     push: pushMock,
+    autoSync: false,
   });
 });
 
@@ -97,7 +98,8 @@ describe("sync engine", () => {
 
     pushMock.mockResolvedValue({});
     engine.setOnline(true);
-    await tick();
+    // Retry is fired via an unawaited syncNow; poll until the drain lands.
+    for (let i = 0; i < 200 && (await outboxCount()) > 0; i++) await tick();
     expect(pushMock).toHaveBeenCalled();
     expect(await outboxCount()).toBe(0);
     expect(engine.getState().online).toBe(true);
@@ -269,7 +271,15 @@ describe("sync engine", () => {
       }
     };
     try {
-      engine.start();
+      // This test exercises the real auto-sync arming path.
+      const ticking = createSyncEngine({
+        store,
+        fetch: fetchMock as typeof fetch,
+        getUserId: () => "user1",
+        push: pushMock,
+      });
+      engine = ticking;
+      ticking.start();
       await settle(() => engine.getState().lastSyncedAt !== null);
       expect(delays).toEqual([30_000]);
 
@@ -310,5 +320,89 @@ describe("sync engine", () => {
     expect(accounts.rows.map((r) => r.id)).toEqual(["a1"]);
     expect(categories.rows.map((r) => r.id)).toEqual(["c1"]);
     engine.stop();
+  });
+
+  it("account switch (A -> B) wipes previous user's local data before syncing B", async () => {
+    engine.start();
+    await store.table("accounts").upsert({ id: "a1", name: "A data" });
+    await tick();
+    engine.stop();
+    expect(await outboxCount()).toBe(1);
+
+    // cavetail: sibling engine gets its OWN store instance over the same
+    // physical DB (mirrors a second tab / fresh provider). Sharing one Dexie
+    // object would stack a second unguarded hook set and self-disturb.
+    const storeB = createDexieStore(store.db.name);
+    const engineB = createSyncEngine({
+      store: storeB,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user2",
+      push: pushMock,
+    });
+    engineB.start();
+    for (let i = 0; i < 200; i++) {
+      if ((await storeB.db.table("_meta").get("lastUserId"))?.value === "user2") break;
+      await tick();
+    }
+    expect((await storeB.query("SELECT * FROM accounts")).rows).toHaveLength(0);
+    expect(await storeB.db.table("_outbox").count()).toBe(0);
+    expect(await storeB.db.table("_meta").get("lastUserId")).toMatchObject({ value: "user2" });
+    engineB.stop();
+  });
+
+  it("first sign-in (null -> user) keeps pending guest writes and uploads them", async () => {
+    // Guest wrote while signed out: hooks captured it, nothing wiped yet.
+    await store.table("accounts").upsert({ id: "g1", name: "Guest entry" });
+    await tick();
+    engine.start();
+    await engine.syncNow();
+    const batches = pushMock.mock.calls[0]?.[0] as Batch[] | undefined;
+    const upsert = batches?.flatMap((b) => b.upserts).find((r) => r.id === "g1");
+    expect(upsert).toBeTruthy();
+    expect(upsert!.user_id).toBe("user1");
+    expect((await store.query("SELECT * FROM accounts")).rows).toHaveLength(1);
+    engine.stop();
+  });
+
+  it("same user re-start does not wipe", async () => {
+    engine.start();
+    await store.table("accounts").upsert({ id: "a1", name: "Keep me" });
+    await tick();
+    engine.stop();
+
+    const again = createSyncEngine({
+      store,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user1",
+      push: pushMock,
+    });
+    again.start();
+    for (let i = 0; i < 50; i++) {
+      if ((await store.db.table("_meta").get("lastUserId"))?.value === "user1") break;
+      await tick();
+    }
+    expect((await store.query("SELECT * FROM accounts")).rows).toHaveLength(1);
+    again.stop();
+  });
+
+  it("broadcastWipe notifies onRemoteWipe listeners (multi-tab stop signal)", async () => {
+    if (typeof BroadcastChannel === "undefined") {
+      // jsdom without BroadcastChannel: feature degrades silently in prod too.
+      return;
+    }
+    const seen = vi.fn();
+    const unsub = onRemoteWipe(seen);
+    // A sibling tab owns its own channel instance; a channel never receives
+    // its own messages (spec), which is what prevents same-tab loops.
+    const sibling = new BroadcastChannel("funds-sync-wipe");
+    sibling.postMessage("wiped");
+    // Delivery is async and load-dependent; poll instead of one tick.
+    for (let i = 0; i < 200 && seen.mock.calls.length === 0; i++) await tick();
+    expect(seen).toHaveBeenCalledTimes(1);
+    unsub();
+    sibling.postMessage("wiped");
+    await tick();
+    expect(seen).toHaveBeenCalledTimes(1);
+    sibling.close();
   });
 });

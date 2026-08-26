@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { MemorySyncDatabase } from "./memory-sync.js";
-import { createDexieStore, type DexieStore } from "./store.js";
+import { createDexieStore, onRemoteWipe, type DexieStore } from "./store.js";
 import { createSyncEngine, type SyncEngine } from "./engine.js";
 import type { SyncDatabase } from "./types.js";
 import { useSession } from "@/lib/auth-client";
@@ -69,6 +69,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = engine.onStateChange((s) => setSyncStatus(s));
     return () => unsub();
+  }, [engine]);
+
+  useEffect(() => {
+    // Another tab wiped the shared store (sign-out / account switch): stop
+    // this tab's engine so a pull cannot resurrect the wiped rows.
+    return onRemoteWipe(() => engine.stop());
   }, [engine]);
 
   useEffect(() => {

@@ -141,7 +141,7 @@ Feedback rules:
 
 ### Sync architecture (verified end-to-end 2026-08-23)
 
-Local writes land in the Dexie (IndexedDB) store via `store.ts`; money is stored as strings and materialized as BigInt at the read boundary. The engine (`engine.ts`) pushes the outbox through the auth-gated tRPC `applyMutations` endpoint, which stamps `user_id` from the session, resolves idempotently (updated_at LWW), and upserts Postgres. Deltas pull back via `GET /api/sync/data?since=<ms>` and advance a server-echoed watermark; soft-deletes propagate on the monotonic watermark. Sync runs every 30s on a visible tab plus on `online`/`pageshow`/`visibility`. Signed-out renders an in-memory store and wipes the Dexie store.
+Local writes land in the Dexie (IndexedDB) store via `store.ts`; money is stored as strings and materialized as BigInt at the read boundary. The engine (`engine.ts`) pushes the outbox through the auth-gated tRPC `applyMutations` endpoint, which stamps `user_id` from the session, resolves idempotently (updated_at LWW), and upserts Postgres. Deltas pull back via `GET /api/sync/data?since=<ms>` and advance a server-echoed watermark; soft-deletes propagate on the monotonic watermark. Sync runs every 30s on a visible tab plus on `online`/`pageshow`/`visibility`. A confirmed sign-out (401) or an account switch wipes the Dexie store.
 
 Contract invariants that must hold or sync silently breaks:
 - Row mappers use snake_case keys (`asset_id`, `amount_minor`, …) matching the server columns; jsonb columns are JSON strings on the wire and normalized to arrays/objects in `normalize.ts`.

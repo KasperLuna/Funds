@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { signOutAndWipe } from "@/lib/sync/sign-out";
 import { Button } from "@/components/ui/button";
 
 export function SignOutButton() {
   const router = useRouter();
 
   async function handleSignOut() {
-    await authClient.signOut();
+    await signOutAndWipe();
     router.push("/");
     router.refresh();
   }

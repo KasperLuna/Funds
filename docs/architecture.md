@@ -150,7 +150,7 @@ asset_id, vs_base_asset_id, price_minor_scaled, fetched_at
 - Push path: writes land in the Dexie store's outbox; the engine drains it via `trpc.applyMutations` (idempotent, per-row savepoints, LWW on `updated_at`, server-authoritative).
 - Pull path: `GET /api/sync/data?since=<ms>` returns deltas since the last server-echoed watermark; the engine applies them locally and advances the watermark. Soft-deletes propagate via a monotonic watermark.
 - Sync cadence: pull every 30s on a visible tab, plus on `online` / `pageshow` / `visibilitychange`. Offline CRUD works fully; the outbox drains when online.
-- Signed-out: renders from an in-memory store; signed-out state wipes the Dexie store (leak-safety).
+- Signed-out: keeps rendering from the persistent Dexie store (banner discloses "stays on this device"); a confirmed sign-out or an account switch wipes the store (leak-safety).
 - Reads: tRPC bypassed for replicated data; components query the local Dexie store directly (live queries). tRPC reserved for: uploads, auth, voice webhook, price refresh triggers, push test, non-replicated concerns.
 - Analytics (budgets, trends, monthly breakdowns, net worth): a mini SQL engine (`sql.ts`) supports only the query shapes in use, over the local Dexie store — zero network dependency (per D9).
 

@@ -1,4 +1,4 @@
-import { ENTITY_TABLES, type DexieStore } from "./store.js";
+import { ENTITY_TABLES, broadcastWipe, type DexieStore } from "./store.js";
 import { trpc } from "@/lib/trpc/client";
 import { denormalizeRow } from "./normalize.js";
 
@@ -57,6 +57,8 @@ type EngineOptions = {
   fetch?: typeof fetch;
   getUserId: () => string | null;
   push?: (batches: Batch[]) => Promise<unknown>;
+  /** cavetail: false = tests drive every sync manually; default true. */
+  autoSync?: boolean;
 };
 
 const PULL_ENDPOINT = "/api/sync/data";
@@ -77,6 +79,7 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
 
   let started = false;
   let applyingPull = false;
+  let isolationRun: Promise<void> | null = null;
   let visible = true;
   let backoffCount = 0;
   let interval: ReturnType<typeof setInterval> | null = null;
@@ -106,6 +109,28 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
 
   async function setWatermark(userId: string, value: number): Promise<void> {
     await store.db.table("_meta").put({ key: watermarkKey(userId), value });
+  }
+
+  async function getLastUser(): Promise<string | null> {
+    const rec = await store.db.table("_meta").get("lastUserId");
+    return (rec?.value as string | undefined) ?? null;
+  }
+
+  /**
+   * cavetail: wipe ONLY on an actual account switch (previous user recorded,
+   * different from the incoming one). A missing previous id means first
+   * sign-in or an unresolved-offline session returning — wiping there would
+   * destroy legit offline/guest work waiting in the outbox.
+   */
+  async function isolate(userId: string): Promise<void> {
+    try {
+      if (getUserId() !== userId) return;
+      const prev = await getLastUser();
+      if (prev && prev !== userId) await wipe();
+      await store.db.table("_meta").put({ key: "lastUserId", value: userId });
+    } catch {
+      // cavetail: isolation is a safety net, never a sync blocker.
+    }
   }
 
   function enqueue(table: string, id: string, op: "upsert" | "delete", row: RowRecord): void {
@@ -263,6 +288,9 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     const userId = getUserId();
     if (!userId) return;
     if (state.syncing) return;
+    // Never sync ahead of the switch-wipe: a pull could resurrect rows that
+    // isolation is about to destroy.
+    await isolationRun;
     setState({ syncing: true });
     try {
       await flushPush();
@@ -310,8 +338,14 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     window.addEventListener("offline", onOffline);
     window.addEventListener("pageshow", onPageshow);
     document.addEventListener("visibilitychange", onVisibility);
-    scheduleTick();
-    void syncNow();
+    // cavetail: isolation (switch-wipe) completes before the first sync so a
+    // wipe can never race a pull; doSync awaits isolationRun.
+    isolationRun = isolate(getUserId()!);
+    void isolationRun.then(() => {
+      if (options.autoSync === false) return;
+      scheduleTick();
+      void syncNow();
+    });
   }
 
   function stop(): void {
@@ -339,6 +373,9 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     }
     resetBackoff();
     setState({ online: state.online, syncing: false, lastSyncedAt: null, failedCount: 0 });
+    // Tell sibling tabs: their engines must stop or a pull would resurrect
+    // the wiped rows in the shared IndexedDB.
+    broadcastWipe();
   }
 
   function getState(): SyncEngineState {
