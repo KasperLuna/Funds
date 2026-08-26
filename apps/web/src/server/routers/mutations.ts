@@ -20,6 +20,28 @@ const inputSchema = z.object({
   batches: z.array(batchSchema),
 });
 
+// jsonb columns per replicated table. The sync outbox ships jsonb values as
+// JSON strings (denormalizeRow), but drizzle/pg re-encodes a JS string into a
+// jsonb *string* rather than an object — so parse them back to objects before
+// insert. Keep in sync with packages/db/src/schema.ts.
+const JSONB_COLUMNS: Record<string, string[]> = {
+  accounts: ["colors"],
+  transactions: ["category_ids"],
+  templates: ["category_ids"],
+  scheduled_transactions: ["category_ids", "recurrence"],
+  push_subscriptions: ["keys"],
+};
+
+function parseJsonb(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  if (value.trim() === "") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 /**
  * Convert snake_case row to camelCase for drizzle.
  *
@@ -29,22 +51,24 @@ const inputSchema = z.object({
  */
 function translateSnakeToCamel(
   row: MutationRow,
-  mapper: Record<string, string>
+  mapper: Record<string, string>,
+  table: string
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  
+  const jsonbCols = new Set(JSONB_COLUMNS[table] ?? []);
+
   for (const [snakeKey, val] of Object.entries(row)) {
     const camelKey = mapper[snakeKey];
     if (!camelKey) {
       // Skip unknown fields (forward compatibility)
       continue;
     }
-    
+
     // Drop null/empty so DB defaults apply and NOT NULL columns stay valid
     if (val == null || val === "") {
       continue;
     }
-    
+
     // Convert timestamps from epoch ms to Date (covers *At, *Date, and the
     // few non-conforming names: date, monthStart, timestamp)
     if (
@@ -62,11 +86,14 @@ function translateSnakeToCamel(
     ) {
       // Convert numeric amounts to bigint (accepts precision-safe string money)
       result[camelKey] = BigInt(val);
+    } else if (jsonbCols.has(snakeKey)) {
+      // Parse JSON strings back to objects so jsonb stores the right shape
+      result[camelKey] = parseJsonb(val);
     } else {
       result[camelKey] = val;
     }
   }
-  
+
   return result;
 }
 
@@ -198,7 +225,7 @@ export const mutationsRouter = router({
           // instead of 500ing the whole batch — otherwise the client retries
           // the same batch forever and real sync is blocked.
           for (const appliedRow of resolution.applied) {
-            const camelRow = translateSnakeToCamel(appliedRow, snakeToCamel);
+            const camelRow = translateSnakeToCamel(appliedRow, snakeToCamel, batch.table);
             // Strip id from SET (conflict target); created_at preserved per contract
             const setFields = { ...camelRow };
             delete setFields.id;

@@ -475,4 +475,36 @@ describe("applyMutations", () => {
     expect(result[0]!.skipped).toHaveLength(1);
     expect(result[0]!.skipped[0]!.reason).toBe("unknown-table");
   });
+
+  it("push_subscriptions keys jsonb string -> stored as object", async () => {
+    const db = getDb();
+    const caller = createCaller({ headers: new Headers({ cookie: authCookie }) });
+
+    const now = Date.now();
+    const keysJson = JSON.stringify({ p256dh: "p256", auth: "auth" });
+    // The sync outbox ships jsonb values as JSON strings; assert the server
+    // parses them back to objects so the reminder worker sees keys.p256dh.
+    const result = await caller.applyMutations({
+      batches: [{
+        table: "push_subscriptions",
+        upserts: [{
+          id: "sub-jsonb-test",
+          user_id: testUserId,
+          endpoint: "https://push.example/test",
+          keys: keysJson,
+          created_at: now,
+          updated_at: now,
+        }],
+        deletes: [],
+      }],
+    });
+
+    expect(result[0]!.applied).toBe(1);
+
+    const stored = first(await db
+      .select()
+      .from(schema.pushSubscriptions)
+      .where(eq(schema.pushSubscriptions.id, "sub-jsonb-test")));
+    expect(stored.keys).toEqual({ p256dh: "p256", auth: "auth" });
+  });
 });
