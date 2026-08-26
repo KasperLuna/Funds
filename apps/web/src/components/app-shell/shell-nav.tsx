@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Landmark, Bitcoin, Tag, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
+import { Home, Landmark, Bitcoin, Tag, BarChart3, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
 import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
@@ -14,6 +14,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/banks", label: "Banks", icon: Landmark },
   { href: "/dashboard/categories", label: "Categories", icon: Tag },
   { href: "/dashboard/crypto", label: "Crypto", icon: Bitcoin },
+  { href: "/dashboard/analytics", label: "Insights", icon: BarChart3 },
 ];
 
 function isActive(href: string, pathname: string): boolean {

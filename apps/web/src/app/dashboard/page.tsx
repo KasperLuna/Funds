@@ -25,6 +25,9 @@ import { computeBudgetUsage, resolveCategoryColor } from "@/lib/categories/categ
 import { useAssets } from "@/lib/assets";
 import { computeHoldings, toToken, toTokenTxn } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
+import { spendingByMonth } from "@/lib/analytics/compute";
+import { SparkLine } from "@/components/charts";
+import Link from "next/link";
 
 function toAccount(row: RowRecord): Account {
   return {
@@ -287,6 +290,12 @@ function DashboardContent() {
 
   const primaryCode = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.code : "USD";
 
+  const monthlySpending = useMemo(() => spendingByMonth(activeTxns, 12), [activeTxns]);
+  const sparkData = useMemo(
+    () => monthlySpending.map((m) => ({ month: m.month, expense: privacy ? 0 : Number(m.expense) })),
+    [monthlySpending, privacy],
+  );
+
   const coingeckoKey = useMemo(
     () =>
       [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
@@ -374,12 +383,32 @@ function DashboardContent() {
 
       <BudgetPulse items={budgetUsage} assetsById={assetsById} />
 
+      <section className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-6">
+        <div className="flex items-center justify-between">
+          <p className="label-micro">Monthly trend</p>
+          <Link
+            href="/dashboard/analytics"
+            className="text-xs text-zinc-500 transition-colors hover:text-zinc-300"
+          >
+            View all
+          </Link>
+        </div>
+        <div className="mt-3">
+          {privacy ? (
+            <p className="py-6 text-center text-sm text-zinc-500">••••</p>
+          ) : (
+            <SparkLine data={sparkData} dataKey="expense" height={48} />
+          )}
+        </div>
+      </section>
+
       <ScheduledCard
         accounts={accounts.map((a) => ({
           id: a.id,
           name: a.name,
           assetId: a.assetId,
           decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+          code: assetsById.get(a.assetId)?.code ?? "",
         }))}
         categories={categories.map((c) => ({ id: c.id, name: c.name }))}
       />

@@ -31,6 +31,7 @@ export type ScheduledCardAccount = {
   name: string;
   assetId: string;
   decimals: number;
+  code: string;
 };
 
 export type ScheduledCardCategory = {
@@ -259,6 +260,7 @@ export function ScheduledCard({
         {visible.map(({ row, occ }) => {
           const account = accountById.get(row.accountId);
           const decimals = account?.decimals ?? 2;
+          const code = account?.code;
           const needsConfirm =
             occ.status === "due" || occ.status === "overdue";
           const chip =
@@ -288,8 +290,8 @@ export function ScheduledCard({
 
               {/* Amount + status, Confirm, and actions stay on one line with the name. */}
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className="text-sm font-semibold tabular-nums text-zinc-500">
-                  {formatMoney(row.amountMinor, decimals)}
+                <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-zinc-500">
+                  {formatMoney(row.amountMinor, decimals, code)}
                 </span>
                 {occ.status !== "none" && (
                   <span
