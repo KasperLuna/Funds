@@ -23,6 +23,13 @@ Never merge a schema change without running `db:check` against a migrated DB.
   is the real build gate: lint → typecheck → test → `db:check` → docker buildx
   `--push` to `ghcr.io/kasperluna/funds-web:latest`. Skip the slow image build with
   `SKIP_DOCKER_PUSH=1 git commit` (still runs lint/typecheck/test/check).
+- **When to skip the image build** (commit/push convention):
+  - Single commit → never skip; let the hook build+push.
+  - Multiple commits → `SKIP_DOCKER_PUSH=1` on intermediates, and make the LAST
+    commit without the flag so exactly one image build+push covers the batch,
+    then push to trigger the deploy CI.
+  - Never end a work session with unpushed commits that skipped the build —
+    prod pulls `:latest` only from the hook's push or a manual equivalent.
 - `.github/workflows/ci.yml` (self-hosted runner) is deploy-only: pulls the image,
   runs `migrate` then `db:check` against prod Postgres, restarts the stack.
 - **If the pre-commit image build or a CI step fails, production is silently
