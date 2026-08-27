@@ -43,7 +43,7 @@ export function AccountChip() {
     <Link
       href="/dashboard/settings"
       aria-label={`Account: ${label}`}
-      className="grid min-h-11 min-w-11 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-inherit"
+      className="grid min-h-11 min-w-11 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-zinc-100"
     >
       {initial}
     </Link>

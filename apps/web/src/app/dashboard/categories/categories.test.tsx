@@ -208,7 +208,7 @@ describe("CategoriesPage", () => {
       </PrivacyProvider>,
     );
     await waitFor(() => {
-      expect(screen.getByText("45%")).toBeInTheDocument();
+      expect(screen.getAllByText("45%").length).toBeGreaterThanOrEqual(1);
     });
     // Masked: percentage shown, money amounts hidden.
     expect(screen.queryByText(/450\.00/)).not.toBeInTheDocument();

@@ -310,6 +310,30 @@ export default function CategoriesPage() {
             </div>
           </div>
           <div className="flex flex-col gap-3">
+            {(() => {
+              const totalSpent = budgetUsages.reduce((s, u) => s + u.spentMinor, 0n);
+              const totalBudget = budgetUsages.reduce((s, u) => s + u.budgetMinor, 0n);
+              const totalPct = totalBudget > 0n ? Number((totalSpent * 10000n) / totalBudget) / 100 : 0;
+              const totalClamped = Math.min(totalPct, 100);
+              const isTotalWarning = totalPct >= 80 && totalPct <= 100;
+              const isTotalOver = totalPct > 100;
+              return (
+                <div className="rounded-(--radius-md) bg-(--surface-2) p-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400">Overall</span>
+                    <span className={`tabular-nums ${isTotalOver ? "font-medium text-(--danger)" : isTotalWarning ? "font-medium text-(--warning)" : "text-zinc-400"}`}>
+                      {Math.round(totalPct)}%
+                    </span>
+                  </div>
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-(--surface-3)">
+                    <div
+                      className={`h-full rounded-full transition-all ${isTotalOver ? "bg-(--danger)" : isTotalWarning ? "bg-(--warning)" : "bg-(--accent)"}`}
+                      style={{ width: `${totalClamped}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
             {budgetUsages.map(({ category, spentMinor, budgetMinor, budgetAssetId }) => {
               const asset = budgetAssetId ? assetsById.get(budgetAssetId) : undefined;
               const decimals = asset?.decimals ?? 2;
@@ -330,12 +354,7 @@ export default function CategoriesPage() {
                         className="h-3 w-3 shrink-0 rounded-full"
                         style={{ backgroundColor: category.color }}
                       />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="truncate">{category.name}</span>
-                        <span className="text-xs text-zinc-500" aria-label={privacy ? "Budget masked" : undefined}>
-                          {privacy ? "••••" : `${formatMoney(budgetMinor, decimals, code)}/mo`}
-                        </span>
-                      </span>
+                      <span className="truncate">{category.name}</span>
                     </span>
                     <span className={`shrink-0 tabular-nums ${isOver ? "font-medium text-(--danger)" : isWarning ? "font-medium text-(--warning)" : "text-zinc-500"}`} aria-label={privacy ? "Spent masked" : undefined}>
                       {privacy
@@ -386,7 +405,7 @@ export default function CategoriesPage() {
                     <span className="truncate text-sm font-medium">{c.name}</span>
                     {budget && (
                       <span className="truncate text-xs text-zinc-500" aria-label={privacy ? "Budget masked" : undefined}>
-                        {privacy ? "••••/mo" : `${formatMoney(budget.amountMinor, asset?.decimals ?? 2, asset?.code)}/mo`}
+                        {privacy ? "••••" : formatMoney(budget.amountMinor, asset?.decimals ?? 2, asset?.code)}
                       </span>
                     )}
                     {c.hideable && (

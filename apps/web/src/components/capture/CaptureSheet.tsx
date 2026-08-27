@@ -260,6 +260,7 @@ export function CaptureSheet({
       }),
     );
     reset();
+    onOpenChange(false);
   };
 
   const toggleCategory = (id: string) =>
