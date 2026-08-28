@@ -312,7 +312,7 @@ export function CaptureSheet({
                 </PopoverTrigger>
                 <PopoverContent align="start">
                   <div role="listbox" aria-label="Account" className="flex flex-col gap-0.5">
-                    {accounts.map((a) => (
+                    {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
                       <button
                         key={a.id}
                         type="button"
@@ -502,7 +502,7 @@ export function CaptureSheet({
 
         {categories.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Categories">
-            {categories.map((c) => {
+            {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
               const active = categoryIds.includes(c.id);
               return (
                 <button

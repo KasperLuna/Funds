@@ -14,6 +14,7 @@ import type { RecentTxn } from "@/lib/capture";
 import { redeemDraft } from "@/lib/voice/redeem";
 import { resolvePrefill } from "@/lib/voice/resolve";
 import { NetWorthHero } from "@/components/home/net-worth-hero";
+import { BankProportionCard, FALLBACK_COLORS } from "@/components/home/bank-proportion-card";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
@@ -232,6 +233,24 @@ function DashboardContent() {
     [accounts, activeTxns],
   );
 
+  const bankAccountSlices = useMemo(() => {
+    const bankAccounts = accounts
+      .filter((a) => !CRYPTO_KINDS.has(a.kind))
+      .map((a) => ({
+        name: a.name,
+        color: a.primaryColor || FALLBACK_COLORS[0]!,
+        balance: computeBalance(a, activeTxns),
+      }))
+      .filter((s) => s.balance !== 0n)
+      .sort((a, b) => (a.balance < 0n ? -a.balance : a.balance) > (b.balance < 0n ? -b.balance : b.balance) ? -1 : 1);
+    const total = bankAccounts.reduce((sum, s) => sum + (s.balance < 0n ? -s.balance : s.balance), 0n);
+    return bankAccounts.map((s, i) => ({
+      ...s,
+      color: s.color === FALLBACK_COLORS[0] ? FALLBACK_COLORS[i % FALLBACK_COLORS.length]! : s.color,
+      pct: total > 0n ? Number(((s.balance < 0n ? -s.balance : s.balance) * 100n) / total) : 0,
+    }));
+  }, [accounts, activeTxns]);
+
   // Token holdings (crypto tab model) — not represented as accounts, so they
   // must be valued separately to count toward net worth.
   const tokenHoldings = useMemo(
@@ -373,6 +392,10 @@ function DashboardContent() {
         lastSyncedAt={syncStatus.lastSyncedAt}
         currencyCode={primaryCode}
       />
+
+      {bankAccountSlices.length > 1 && (
+        <BankProportionCard data={bankAccountSlices} code={primaryCode} />
+      )}
 
       <RecentActivity
         txns={recentTxns}

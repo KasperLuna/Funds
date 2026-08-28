@@ -4,7 +4,7 @@ import { AreaChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 
-type DataPoint = { month: string; income: bigint; expense: bigint };
+type DataPoint = { month: string; income: bigint; expense: bigint; net: bigint };
 
 const MASKED = "••••";
 
@@ -15,6 +15,7 @@ export function SpendingTrendsCard({ data, code }: { data: DataPoint[]; code?: s
     month: d.month,
     income: masked ? 0 : Number(d.income),
     expense: masked ? 0 : Number(d.expense),
+    net: masked ? 0 : Number(d.net),
   }));
 
   return (
@@ -31,12 +32,14 @@ export function SpendingTrendsCard({ data, code }: { data: DataPoint[]; code?: s
             series={[
               { key: "income", color: "#10b981", fill: "rgba(16,185,129,0.12)" },
               { key: "expense", color: "#71717a", fill: "rgba(113,113,122,0.12)" },
+              { key: "net", color: "transparent", fill: "none", strokeWidth: 0 },
             ]}
             height={200}
             yFormatter={(v) => formatMoney(BigInt(Math.round(Number(v))), 2, code)}
-            tooltipFormatter={(v, name) =>
-              `${name === "income" ? "Income" : "Expense"}: ${formatMoney(BigInt(Math.round(Number(v))), 2, code)}`
-            }
+            tooltipFormatter={(v, name) => {
+              const label = name === "income" ? "Income" : name === "expense" ? "Expense" : "Total";
+              return `${label}: ${formatMoney(BigInt(Math.round(Number(v))), 2, code)}`;
+            }}
           />
         )}
       </div>

@@ -168,7 +168,7 @@ export function TransactionFilters({
               </PopoverTrigger>
               <PopoverContent align="start" className="w-56">
                 <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
-                  {categories.map((c) => {
+                  {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
                     const active = filters.categoryIds.includes(c.id);
                     return (
                       <button

@@ -151,7 +151,7 @@ export function TemplateDialog({
               onChange={(e) => setAccountId(e.target.value)}
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             >
-              {accounts.map((a) => (
+              {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
                 </option>
@@ -163,7 +163,7 @@ export function TemplateDialog({
             <div className="flex flex-col gap-1.5">
               <span className="text-sm text-zinc-500">Categories</span>
               <div className="flex flex-wrap gap-1.5">
-                {categories.map((c) => (
+                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
                   <button
                     key={c.id}
                     type="button"

@@ -222,7 +222,7 @@ export function TradeCapture({
                 onChange={(e) => setSellAccountId(e.target.value)}
               >
                 <option value="">Spend from…</option>
-                {fiatAccounts.map((a) => (
+                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
@@ -262,7 +262,7 @@ export function TradeCapture({
                 onChange={(e) => setBuyAccountId(e.target.value)}
               >
                 <option value="">Receive to…</option>
-                {fiatAccounts.map((a) => (
+                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
@@ -340,7 +340,7 @@ export function TradeCapture({
             value={feeAccountId}
             onChange={(e) => setFeeAccountId(e.target.value)}
           >
-            {accounts.map((a) => (
+            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>

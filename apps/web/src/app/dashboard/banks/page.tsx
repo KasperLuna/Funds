@@ -594,8 +594,9 @@ function BanksContent() {
         >
           All
         </button>
-        {accounts
+        {[...accounts]
           .filter((a) => !a.deletedAt)
+          .sort((a, b) => a.name.localeCompare(b.name))
           .map((a) => (
             <button
               key={a.id}

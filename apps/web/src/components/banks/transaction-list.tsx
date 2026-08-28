@@ -333,7 +333,7 @@ export function TransactionList({
         />
 
         <div className="flex flex-wrap gap-1" data-testid="category-filter">
-          {categories.map((cat) => (
+          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
             <button
               key={cat.id}
               onClick={() => toggleCategory(cat.id)}

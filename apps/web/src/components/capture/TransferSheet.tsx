@@ -122,7 +122,7 @@ export function TransferSheet({
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
-      {accounts.map((a) => (
+      {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
         <option key={a.id} value={a.id}>
           {a.name}
         </option>
