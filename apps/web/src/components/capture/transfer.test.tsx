@@ -7,6 +7,7 @@ import "@testing-library/jest-dom/vitest";
 import { MemorySyncDatabase } from "@/lib/sync";
 import { TransferSheet, type TransferSheetProps } from "./TransferSheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
+import type { CategoryOption } from "./CaptureSheet";
 import type { TransferRows } from "@/lib/capture";
 
 class ResizeObserverStub {
@@ -21,7 +22,18 @@ const ACCOUNTS = [
   { id: "acc-2", name: "Savings", assetId: "ast-2", decimals: 2 },
 ];
 
-function Harness({ onSave }: { onSave: TransferSheetProps["onSave"] }) {
+const CATEGORIES: CategoryOption[] = [
+  { id: "cat-food", name: "Food" },
+  { id: "cat-rent", name: "Rent" },
+];
+
+function Harness({
+  onSave,
+  categories = [],
+}: {
+  onSave: TransferSheetProps["onSave"];
+  categories?: CategoryOption[];
+}) {
   const [open, setOpen] = useState(true);
   return (
     <TransferSheet
@@ -29,6 +41,7 @@ function Harness({ onSave }: { onSave: TransferSheetProps["onSave"] }) {
       onOpenChange={setOpen}
       userId="usr-1"
       accounts={ACCOUNTS}
+      categories={categories}
       onSave={onSave}
       defaultFromAccountId="acc-1"
     />
@@ -104,5 +117,27 @@ describe("TransferSheet", () => {
     expect(transfers[0]!.fee_transaction_id).toBe(fee!.id);
     expect(from!.transfer_id).toBe(transfers[0]!.id);
     expect(to!.transfer_id).toBe(transfers[0]!.id);
+  });
+
+  it("selected categories are applied to both legs", async () => {
+    const user = userEvent.setup();
+    const saved: TransferRows[] = [];
+    render(
+      <Harness
+        categories={CATEGORIES}
+        onSave={(rows) => {
+          saved.push(rows);
+        }}
+      />,
+    );
+
+    for (const k of ["5", "0"]) await user.click(screen.getByRole("button", { name: k }));
+    await user.click(screen.getByRole("button", { name: "Food" }));
+    await user.click(screen.getByRole("button", { name: "Rent" }));
+    await user.click(screen.getByRole("button", { name: "Transfer" }));
+
+    expect(saved).toHaveLength(1);
+    expect(saved[0]!.fromLeg.category_ids).toEqual(["cat-food", "cat-rent"]);
+    expect(saved[0]!.toLeg.category_ids).toEqual(["cat-food", "cat-rent"]);
   });
 });

@@ -21,6 +21,7 @@ export type Txn = {
   description: string;
   categoryIds: string[];
   date: number;
+  transferId?: string | null;
   deletedAt?: number | null;
 };
 

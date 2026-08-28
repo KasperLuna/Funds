@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Copy, Pencil, Trash2, Tag } from "lucide-react";
+import { Copy, Link2, Pencil, Trash2, Tag } from "lucide-react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
@@ -169,8 +169,22 @@ export function TransactionRow({
           }
         }}
       >
+        {txn.transferId && (
+          <span
+            aria-hidden
+            className="mr-1.5 self-stretch w-0.5 shrink-0 rounded-full bg-(--accent)/40"
+          />
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">
+            {txn.transferId && (
+              <span
+                className="mr-1.5 inline-flex translate-y-px items-center text-(--accent)"
+                aria-label="Transfer"
+              >
+                <Link2 className="h-3.5 w-3.5" aria-hidden />
+              </span>
+            )}
             {txn.description || "No description"}
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">

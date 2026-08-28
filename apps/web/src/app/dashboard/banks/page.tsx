@@ -80,6 +80,7 @@ function toTxn(row: Record<string, unknown>): Txn {
     description: String(row.description ?? ""),
     categoryIds: Array.isArray(row.category_ids) ? (row.category_ids as string[]) : [],
     date: Number(row.date),
+    transferId: row.transfer_id != null ? String(row.transfer_id) : null,
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
   };
 }
@@ -758,9 +759,11 @@ function BanksContent() {
                 <p className="label-micro sticky top-[182px] z-10 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
                   {formatDayHeader(g.day)}
                 </p>
-                {g.items.map((t) => {
+                {g.items.flatMap((t, i) => {
                   const info = accountInfo[t.accountId];
-                  return (
+                  const next = g.items[i + 1];
+                  const linked = !!t.transferId && next?.transferId === t.transferId;
+                  const row = (
                     <TransactionRow
                       key={t.id}
                       txn={t}
@@ -774,6 +777,17 @@ function BanksContent() {
                       onUndoDelete={handleTxnUndoDelete}
                     />
                   );
+                  if (!linked) return [row];
+                  return [
+                    row,
+                    <span
+                      key={`link-${t.id}`}
+                      aria-hidden
+                      className="pointer-events-none relative z-10 -mt-px block h-3.5"
+                    >
+                      <span className="absolute left-[17px] top-0 h-full w-px bg-(--accent)/30" />
+                    </span>,
+                  ];
                 })}
               </div>
             ))}

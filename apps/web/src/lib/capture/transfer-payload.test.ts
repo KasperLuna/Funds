@@ -61,6 +61,16 @@ describe("buildTransferRows", () => {
     }
   });
 
+  it("categoryIds are applied to both legs and the fee leg", () => {
+    const rows = buildTransferRows(
+      { ...form, categoryIds: ["cat-a", "cat-b"], feeMinor: 100n },
+      NOW,
+    );
+    expect(rows.fromLeg.category_ids).toEqual(["cat-a", "cat-b"]);
+    expect(rows.toLeg.category_ids).toEqual(["cat-a", "cat-b"]);
+    expect(rows.feeLeg!.category_ids).toEqual(["cat-a", "cat-b"]);
+  });
+
   it("fee becomes a separate expense on origin linked via transfers.fee_transaction_id", () => {
     const rows = buildTransferRows({ ...form, feeMinor: 250n }, NOW);
     expect(rows.feeLeg).not.toBeNull();

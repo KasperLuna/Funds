@@ -30,6 +30,7 @@ export type TransferForm = {
   userId: string;
   description: string;
   date: Date;
+  categoryIds?: string[];
 };
 
 export type TransferRows = {
@@ -62,6 +63,7 @@ export function buildTransferRows(
   const ts = now.getTime();
   const transferId = newId();
   const feeMinor = form.feeMinor ?? 0n;
+  const categoryIds = form.categoryIds ?? [];
 
   const leg = (accountId: string, assetId: string, signed: bigint, type: "income" | "expense") => ({
     id: newId(),
@@ -71,7 +73,7 @@ export function buildTransferRows(
     amount_minor: Number(signed),
     type,
     description: form.description,
-    category_ids: [] as string[],
+    category_ids: categoryIds,
     date: form.date.getTime(),
     transfer_id: transferId,
     created_at: ts,

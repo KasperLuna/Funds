@@ -344,6 +344,18 @@ describe("TransactionRow", () => {
     render(<TransactionRow txn={txn} categories={[]} />);
     expect(screen.getByText("No description")).toBeInTheDocument();
   });
+
+  it("renders a transfer badge when transferId is set", () => {
+    const txn = makeTxn({ description: "Move to savings", transferId: "tr-1" });
+    render(<TransactionRow txn={txn} categories={[]} />);
+    expect(screen.getByLabelText("Transfer")).toBeInTheDocument();
+  });
+
+  it("does not render a transfer badge when transferId is absent", () => {
+    const txn = makeTxn({ description: "Coffee" });
+    render(<TransactionRow txn={txn} categories={[]} />);
+    expect(screen.queryByLabelText("Transfer")).not.toBeInTheDocument();
+  });
 });
 
 describe("TransactionRow - Swipe Actions", () => {

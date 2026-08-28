@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Keypad, type DigitKey } from "./Keypad";
-import type { AccountOption } from "./CaptureSheet";
+import type { AccountOption, CategoryOption } from "./CaptureSheet";
 import {
   emptyAmount,
   digit as applyDigit,
@@ -28,6 +29,7 @@ export type TransferSheetProps = {
   onOpenChange: (open: boolean) => void;
   userId: string;
   accounts: AccountOption[];
+  categories?: CategoryOption[];
   onSave: (rows: TransferRows) => void;
   defaultFromAccountId?: string;
 };
@@ -51,6 +53,7 @@ export function TransferSheet({
   onOpenChange,
   userId,
   accounts,
+  categories = [],
   onSave,
   defaultFromAccountId,
 }: TransferSheetProps) {
@@ -66,6 +69,7 @@ export function TransferSheet({
   const [feeInput, setFeeInput] = useState("");
   const [description, setDescription] = useState("");
   const [datePreset, setDatePreset] = useState<"today" | "yesterday">("today");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
@@ -73,6 +77,7 @@ export function TransferSheet({
     setFeeInput("");
     setDescription("");
     setDatePreset("today");
+    setCategoryIds([]);
     setError(null);
   };
 
@@ -98,9 +103,15 @@ export function TransferSheet({
     userId,
     description,
     date: presetDate(datePreset),
+    categoryIds,
   };
   const validation = validateTransfer(form);
   const canSave = minor > 0n && validation === null;
+
+  const toggleCategory = (id: string) =>
+    setCategoryIds((ids) =>
+      ids.includes(id) ? ids.filter((c) => c !== id) : [...ids, id],
+    );
 
   const save = () => {
     if (!canSave) {
@@ -166,6 +177,28 @@ export function TransferSheet({
             onChange={(v) => setDatePreset(v)}
           />
         </div>
+
+        {categories.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Categories">
+            {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
+              const active = categoryIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleCategory(c.id)}
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none ${
+                    active ? "text-(--accent)" : "text-zinc-400 hover:text-inherit"
+                  }`}
+                >
+                  {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
+                  {c.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div
           className="guilloche relative mt-4 rounded-(--radius-md) border border-(--border) px-3 py-3"
