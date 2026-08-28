@@ -135,6 +135,7 @@ function toCategory(row: Record<string, unknown>): Category {
         ? row.color
         : categoryColor(String(row.name)),
     hideable: Boolean(row.hideable),
+    excludeFromAnalytics: Boolean(row.exclude_from_analytics),
     monthlyBudgetMinor: row.monthly_budget_minor != null ? BigInt(row.monthly_budget_minor as number | string) : null,
     assetId: row.asset_id != null ? String(row.asset_id) : null,
     createdAt: Number(row.created_at),

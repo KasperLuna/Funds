@@ -12,6 +12,7 @@ function cat(overrides: Partial<Category> = {}): Category {
     name: "Food",
     color: "#6366f1",
     hideable: false,
+    excludeFromAnalytics: false,
     monthlyBudgetMinor: 50000n, // $500
     assetId: null,
     createdAt: Date.now(),
@@ -82,6 +83,21 @@ describe("computeBudgetUsage", () => {
     const t = txn({ amountMinor: -3000n });
     const result = computeBudgetUsage([deleted], [], [t], 2025, 2);
     expect(result).toEqual([]);
+  });
+
+  it("suppresses categories marked as excludeFromAnalytics from the budget list", () => {
+    const exempt = cat({ id: "exempt", name: "Transfer", excludeFromAnalytics: true, monthlyBudgetMinor: 50000n });
+    const result = computeBudgetUsage([exempt], [], [txn()], 2025, 2);
+    expect(result).toEqual([]);
+  });
+
+  it("excludes transactions tagged with an exempt category from other categories' spend", () => {
+    const exempt = cat({ id: "exempt", name: "Transfer", excludeFromAnalytics: true, monthlyBudgetMinor: 50000n });
+    const food = cat({ id: "food", name: "Food" });
+    const t = txn({ amountMinor: -3000n, categoryIds: ["exempt", "food"] });
+    const result = computeBudgetUsage([exempt, food], [], [t], 2025, 2);
+    const foodResult = result.find((r) => r.category.id === "food");
+    expect(foodResult?.spentMinor).toBe(0n);
   });
 
   it("sums multiple transactions for same category", () => {

@@ -46,10 +46,14 @@ export type MonthStat = {
 
 export function spendingByMonth(
   txns: Txn[],
+  categories: Category[],
   lookback: number = 12,
 ): MonthStat[] {
   const now = new Date();
   const buckets: MonthStat[] = [];
+  const excludedIds = new Set(
+    categories.filter((c) => c.excludeFromAnalytics && !c.deletedAt).map((c) => c.id),
+  );
 
   for (let i = lookback - 1; i >= 0; i--) {
     const { year, month } = subMonths(now, i);
@@ -71,10 +75,16 @@ export function spendingByMonth(
     const bucket = buckets.find((b) => b.year === yr && b.monthNum === mo);
     if (!bucket) continue;
     const amt = ensureBigInt(t.amountMinor);
-    if (amt >= 0n) {
-      bucket.income += amt;
+    const totalCats = t.categoryIds.length;
+    const excludedCats = t.categoryIds.filter((id) => excludedIds.has(id)).length;
+    if (excludedCats === totalCats) continue;
+    const effective = totalCats > 0 && excludedCats > 0
+      ? (amt * BigInt(totalCats - excludedCats)) / BigInt(totalCats)
+      : amt;
+    if (effective >= 0n) {
+      bucket.income += effective;
     } else {
-      bucket.expense += -amt;
+      bucket.expense += -effective;
     }
   }
 
@@ -96,9 +106,10 @@ export type SavingsRatePoint = {
 
 export function savingsRate(
   txns: Txn[],
+  categories: Category[],
   lookback: number = 12,
 ): SavingsRatePoint[] {
-  return spendingByMonth(txns, lookback).map((b) => ({
+  return spendingByMonth(txns, categories, lookback).map((b) => ({
     month: b.month,
     rate: b.income > 0n
       ? Number(((b.income - b.expense) * 10000n) / b.income) / 100
@@ -124,6 +135,9 @@ export function categoryBreakdown(
   month: number,
 ): CategorySlice[] {
   const catMap = new Map(categories.map((c) => [c.id, c]));
+  const excludedIds = new Set(
+    categories.filter((c) => c.excludeFromAnalytics && !c.deletedAt).map((c) => c.id),
+  );
   const totals = new Map<string, bigint>();
   let grandTotal = 0n;
 
@@ -134,11 +148,16 @@ export function categoryBreakdown(
     const d = new Date(Number(t.date));
     if (d.getFullYear() !== year || d.getMonth() !== month) continue;
     const spend = -amt;
-    for (const catId of t.categoryIds) {
+    const totalCats = t.categoryIds.length;
+    const includedCats = t.categoryIds.filter((id) => !excludedIds.has(id));
+    if (totalCats === 0) continue;
+    const share = (spend * BigInt(includedCats.length)) / BigInt(totalCats);
+    if (includedCats.length === 0) continue;
+    for (const catId of includedCats) {
       const prev = totals.get(catId) ?? 0n;
-      totals.set(catId, prev + spend);
-      grandTotal += spend;
+      totals.set(catId, prev + share);
     }
+    grandTotal += share;
   }
 
   const slices: CategorySlice[] = [];
@@ -192,10 +211,11 @@ export type CashFlowPoint = {
 export function cashFlowForecast(
   scheduled: ScheduledTxn[],
   historicalTxns: Txn[],
+  categories: Category[],
   futureMonths: number = 3,
 ): CashFlowPoint[] {
   // Historical: last 6 months
-  const historical = spendingByMonth(historicalTxns, 6).map((b) => ({
+  const historical = spendingByMonth(historicalTxns, categories, 6).map((b) => ({
     month: b.month,
     income: b.income,
     expense: b.expense,
@@ -289,6 +309,9 @@ export function spendingAnomalies(
   categories: Category[],
 ): Anomaly[] {
   const catMap = new Map(categories.map((c) => [c.id, c]));
+  const excludedIds = new Set(
+    categories.filter((c) => c.excludeFromAnalytics && !c.deletedAt).map((c) => c.id),
+  );
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -305,15 +328,19 @@ export function spendingAnomalies(
     const spend = Number(-amt);
     const yr = d.getFullYear();
     const mo = d.getMonth();
+    const totalCats = t.categoryIds.length;
+    const includedCats = t.categoryIds.filter((id) => !excludedIds.has(id));
+    if (totalCats === 0 || includedCats.length === 0) continue;
+    const share = (spend * includedCats.length) / totalCats;
 
-    for (const catId of t.categoryIds) {
+    for (const catId of includedCats) {
       if (yr === currentYear && mo === currentMonth) {
         const arr = current.get(catId) ?? [];
-        arr.push({ txn: t, spend });
+        arr.push({ txn: t, spend: share });
         current.set(catId, arr);
       } else {
         const arr = history.get(catId) ?? [];
-        arr.push(spend);
+        arr.push(share);
         history.set(catId, arr);
       }
     }

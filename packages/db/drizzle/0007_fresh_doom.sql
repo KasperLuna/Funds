@@ -1,0 +1,1 @@
+ALTER TABLE "categories" ADD COLUMN "exclude_from_analytics" boolean NOT NULL DEFAULT false;

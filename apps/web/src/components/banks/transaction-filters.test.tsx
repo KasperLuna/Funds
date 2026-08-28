@@ -19,8 +19,8 @@ function txn(overrides: Partial<Txn> = {}): Txn {
 }
 
 const CATS: Category[] = [
-  { id: "cat-1", name: "Food", color: "#22c55e", hideable: false, monthlyBudgetMinor: null, assetId: null, createdAt: 0, updatedAt: 0 },
-  { id: "cat-2", name: "Transport", color: "#3b82f6", hideable: false, monthlyBudgetMinor: null, assetId: null, createdAt: 0, updatedAt: 0 },
+  { id: "cat-1", name: "Food", color: "#22c55e", hideable: false, excludeFromAnalytics: false, monthlyBudgetMinor: null, assetId: null, createdAt: 0, updatedAt: 0 },
+  { id: "cat-2", name: "Transport", color: "#3b82f6", hideable: false, excludeFromAnalytics: false, monthlyBudgetMinor: null, assetId: null, createdAt: 0, updatedAt: 0 },
 ];
 
 const ACCOUNTS = [{ id: "acc-1", name: "Checking" }];

@@ -43,6 +43,7 @@ const categoriesSnakeToCamel: FieldMapper = {
   name: "name",
   color: "color",
   hideable: "hideable",
+  exclude_from_analytics: "excludeFromAnalytics",
   monthly_budget_minor: "monthlyBudgetMinor",
   asset_id: "assetId",
   created_at: "createdAt",

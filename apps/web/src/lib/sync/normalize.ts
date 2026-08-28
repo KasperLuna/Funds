@@ -73,7 +73,7 @@ export const MONEY_COLUMNS: Record<string, string[]> = {
 /** Non-text columns that may arrive as "" when NULL. */
 const NON_TEXT_COLUMNS: Record<string, string[]> = {
   accounts: ["archived", "colors"],
-  categories: ["hideable", "monthly_budget_minor"],
+  categories: ["hideable", "exclude_from_analytics", "monthly_budget_minor"],
   category_budgets: ["amount_minor"],
   transactions: ["amount_minor", "category_ids", "value_base_minor"],
   transfers: [],

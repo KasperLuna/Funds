@@ -46,6 +46,7 @@ function toTxn(row: RowRecord): Txn {
       ? (row.category_ids as string[])
       : [],
     date: Number(row.date),
+    transferId: row.transfer_id != null ? String(row.transfer_id) : null,
     deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
   };
 }
@@ -56,6 +57,7 @@ function toCategory(row: RowRecord): Category {
     name: String(row.name),
     color: resolveCategoryColor(row),
     hideable: Boolean(row.hideable),
+    excludeFromAnalytics: Boolean(row.exclude_from_analytics),
     monthlyBudgetMinor: row.monthly_budget_minor != null
       ? BigInt(row.monthly_budget_minor as string | bigint)
       : null,
@@ -118,8 +120,8 @@ export default function AnalyticsPage() {
   });
   const scheduled = scheduledQuery.data ?? [];
 
-  const spending = useMemo(() => spendingByMonth(txns, 12), [txns]);
-  const rates = useMemo(() => savingsRate(txns, 12), [txns]);
+  const spending = useMemo(() => spendingByMonth(txns, categories, 12), [txns, categories]);
+  const rates = useMemo(() => savingsRate(txns, categories, 12), [txns, categories]);
 
   const now = new Date();
   const catBreakdown = useMemo(
@@ -128,8 +130,8 @@ export default function AnalyticsPage() {
   );
 
   const cashFlow = useMemo(
-    () => cashFlowForecast(scheduled, txns, 3),
-    [scheduled, txns],
+    () => cashFlowForecast(scheduled, txns, categories, 3),
+    [scheduled, txns, categories],
   );
 
   const anomalies = useMemo(() => spendingAnomalies(txns, categories), [txns, categories]);

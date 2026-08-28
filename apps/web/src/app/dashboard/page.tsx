@@ -55,6 +55,7 @@ function toTxn(row: RowRecord): Txn {
       ? (row.category_ids as string[])
       : [],
     date: Number(row.date),
+    transferId: row.transfer_id != null ? String(row.transfer_id) : null,
     deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
   };
 }
@@ -65,6 +66,7 @@ function toCategory(row: RowRecord): Category {
     name: String(row.name),
     color: resolveCategoryColor(row),
     hideable: Boolean(row.hideable),
+    excludeFromAnalytics: Boolean(row.exclude_from_analytics),
     monthlyBudgetMinor: row.monthly_budget_minor != null
       ? BigInt(row.monthly_budget_minor as string | bigint)
       : null,
@@ -309,7 +311,7 @@ function DashboardContent() {
 
   const primaryCode = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.code : "USD";
 
-  const monthlySpending = useMemo(() => spendingByMonth(activeTxns, 12), [activeTxns]);
+  const monthlySpending = useMemo(() => spendingByMonth(activeTxns, categories, 12), [activeTxns, categories]);
   const sparkData = useMemo(
     () => monthlySpending.map((m) => ({ month: m.month, expense: privacy ? 0 : Number(m.expense) })),
     [monthlySpending, privacy],

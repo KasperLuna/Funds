@@ -50,6 +50,13 @@
       "when": 1787648652913,
       "tag": "0006_pale_madripoor",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787734400000,
+      "tag": "0007_fresh_doom",
+      "breakpoints": true
     }
   ]
 }

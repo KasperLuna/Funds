@@ -33,6 +33,7 @@ function toCategory(row: Record<string, unknown>): Category {
     name,
     color: resolveCategoryColor(row),
     hideable: Boolean(row.hideable),
+    excludeFromAnalytics: Boolean(row.exclude_from_analytics),
     monthlyBudgetMinor: row.monthly_budget_minor != null ? BigInt(row.monthly_budget_minor as number | string) : null,
     assetId: row.asset_id != null ? String(row.asset_id) : null,
     createdAt: Number(row.created_at),
@@ -51,6 +52,7 @@ function toTxn(row: Record<string, unknown>): Txn {
     description: String(row.description ?? ""),
     categoryIds: Array.isArray(row.category_ids) ? (row.category_ids as string[]) : [],
     date: Number(row.date),
+    transferId: row.transfer_id != null ? String(row.transfer_id) : null,
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
   };
 }
@@ -75,6 +77,7 @@ function categoryRow(userId: string, c: Category): Record<string, unknown> {
     name: c.name,
     color: c.color ?? null,
     hideable: c.hideable ? 1 : 0,
+    exclude_from_analytics: c.excludeFromAnalytics ? 1 : 0,
     monthly_budget_minor: c.monthlyBudgetMinor != null ? Number(c.monthlyBudgetMinor) : null,
     asset_id: c.assetId ?? null,
     created_at: c.createdAt,
@@ -413,6 +416,11 @@ export default function CategoriesPage() {
                         hidden
                       </span>
                     )}
+                    {c.excludeFromAnalytics && (
+                      <span className="mt-0.5 w-fit rounded-full border border-(--border) bg-(--surface-2) px-2 py-0.5 text-xs text-zinc-500">
+                        stats-excluded
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -489,6 +497,7 @@ function CategoryDialog({
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_CATEGORY_COLORS[0]!);
   const [hideable, setHideable] = useState(false);
+  const [excludeFromAnalytics, setExcludeFromAnalytics] = useState(false);
   const [budget, setBudget] = useState("");
   const [assetId, setAssetId] = useState<string>("");
 
@@ -498,6 +507,7 @@ function CategoryDialog({
         setName(editCategory.name);
         setColor(editCategory.color);
         setHideable(editCategory.hideable);
+        setExcludeFromAnalytics(editCategory.excludeFromAnalytics);
         setBudget(
           editCategory.monthlyBudgetMinor != null
             ? (Number(editCategory.monthlyBudgetMinor) / 10 ** (assets.find((a) => a.id === editCategory.assetId)?.decimals ?? 2)).toFixed(2)
@@ -508,6 +518,7 @@ function CategoryDialog({
         setName("");
         setColor(DEFAULT_CATEGORY_COLORS[0]!);
         setHideable(false);
+        setExcludeFromAnalytics(false);
         setBudget("");
         setAssetId(defaultAssetId ?? "");
       }
@@ -530,6 +541,7 @@ function CategoryDialog({
         name: trimmed,
         color,
         hideable,
+        excludeFromAnalytics,
         monthlyBudgetMinor: budgetMinor,
         assetId: budgetMinor ? assetId : null,
         updatedAt: now,
@@ -540,6 +552,7 @@ function CategoryDialog({
         name: trimmed,
         color,
         hideable,
+        excludeFromAnalytics,
         monthlyBudgetMinor: budgetMinor,
         assetId: budgetMinor ? assetId : null,
         createdAt: now,
@@ -635,6 +648,19 @@ function CategoryDialog({
             <div className="flex flex-col">
               <span className="text-sm font-medium">Hidden</span>
               <span className="text-xs text-zinc-500">In privacy mode, amounts for its transactions stay hidden</span>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={excludeFromAnalytics}
+              onChange={(e) => setExcludeFromAnalytics(e.target.checked)}
+              className="h-4 w-4 rounded border-(--border)"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-medium">Hide from Stats</span>
+              <span className="text-xs text-zinc-500">Transactions tagged with this category are excluded from insights and budgets</span>
             </div>
           </label>
 

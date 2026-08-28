@@ -3,6 +3,7 @@ export type Category = {
   name: string;
   color: string;
   hideable: boolean;
+  excludeFromAnalytics: boolean;
   monthlyBudgetMinor: bigint | null;
   assetId: string | null;
   createdAt: number;
@@ -83,8 +84,12 @@ export function computeBudgetUsage(
     spentMinor: bigint;
     pct: number;
   }> = [];
+  const excludedIds = new Set(
+    categories.filter((c) => c.excludeFromAnalytics && !c.deletedAt).map((c) => c.id),
+  );
   for (const cat of categories) {
     if (cat.deletedAt) continue;
+    if (cat.excludeFromAnalytics) continue;
     const budget = budgetFor(cat, budgets, year, month);
     if (!budget) continue;
     let spent = 0n;
@@ -92,6 +97,9 @@ export function computeBudgetUsage(
       if (t.deletedAt) continue;
       if (t.amountMinor >= 0n) continue;
       if (!t.categoryIds.includes(cat.id)) continue;
+      // Exempt categories are fully suppressed from budgets: a transfer tagged
+      // alongside a budgeted category is not spending on that category.
+      if (t.categoryIds.some((id) => excludedIds.has(id))) continue;
       // Only count spending in the budget's own currency; other-currency
       // transactions are excluded rather than silently mixed.
       if (budget.assetId && t.assetId && t.assetId !== budget.assetId) continue;

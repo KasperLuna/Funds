@@ -100,6 +100,7 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   color: text("color"),
   hideable: boolean("hideable").notNull().default(false),
+  excludeFromAnalytics: boolean("exclude_from_analytics").notNull().default(false),
   monthlyBudgetMinor: bigint("monthly_budget_minor", { mode: "bigint" }),
   // Currency the budget is denominated in (display + spent aggregation).
   assetId: text("asset_id").references(() => assets.id),

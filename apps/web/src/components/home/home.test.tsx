@@ -29,6 +29,7 @@ function makeCategory(overrides: Partial<Category> = {}): Category {
     name: "Food",
     color: "#6366f1",
     hideable: false,
+    excludeFromAnalytics: false,
     monthlyBudgetMinor: 50000n,
     assetId: null,
     createdAt: Date.now(),
