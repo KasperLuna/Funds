@@ -102,16 +102,52 @@ export function ScheduledCard({
       if (schedule.recurrence) {
         const advanced = waiveAdvance(schedule);
         await db.table("transactions").upsert(row);
-        await db.table("scheduled_transactions").update({
+        await db.table("scheduled_transactions").upsert({
           id: schedule.id,
-          previous_date: advanced.previousDate,
+          user_id: schedule.userId,
+          name: schedule.name,
+          description: schedule.description,
+          type: schedule.type,
+          // cavetail: converting bigint minor units to the SyncTable number column
+          // eslint-disable-next-line local/no-money-float
+          amount_minor: Number(schedule.amountMinor),
+          account_id: schedule.accountId,
+          category_ids: schedule.categoryIds,
+          recurrence: {
+            frequency: schedule.recurrence.frequency,
+            interval: schedule.recurrence.interval,
+          },
+          timezone: schedule.timezone,
           invoke_date: advanced.invokeDate,
+          previous_date: advanced.previousDate,
+          last_notified_at: schedule.lastNotifiedAt,
+          active: schedule.active ? 1 : 0,
+          created_at: schedule.createdAt,
+          updated_at: Date.now(),
+          deleted_at: schedule.deletedAt ?? null,
         });
       } else {
         await db.table("transactions").upsert(row);
-        await db.table("scheduled_transactions").update({
+        await db.table("scheduled_transactions").upsert({
           id: schedule.id,
+          user_id: schedule.userId,
+          name: schedule.name,
+          description: schedule.description,
+          type: schedule.type,
+          // cavetail: converting bigint minor units to the SyncTable number column
+          // eslint-disable-next-line local/no-money-float
+          amount_minor: Number(schedule.amountMinor),
+          account_id: schedule.accountId,
+          category_ids: schedule.categoryIds,
+          recurrence: null,
+          timezone: schedule.timezone,
+          invoke_date: schedule.invokeDate,
+          previous_date: schedule.previousDate,
+          last_notified_at: schedule.lastNotifiedAt,
           active: 0,
+          created_at: schedule.createdAt,
+          updated_at: Date.now(),
+          deleted_at: schedule.deletedAt ?? null,
         });
       }
     },

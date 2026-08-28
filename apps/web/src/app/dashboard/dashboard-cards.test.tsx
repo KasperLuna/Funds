@@ -145,16 +145,15 @@ describe("ScheduledCard occurrence logging", () => {
 
     await user.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(upsert).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledTimes(2);
     const txnRow = upsert.mock.calls[0]![0] as Record<string, unknown>;
     expect(txnRow.account_id).toBe("acc-1");
     expect(txnRow.amount_minor).toBe(-150000);
     expect(txnRow.type).toBe("expense");
 
-    expect(update).toHaveBeenCalledTimes(1);
-    const schedUpdate = update.mock.calls[0]![0] as Record<string, unknown>;
-    expect(schedUpdate.id).toBe("sch-1");
-    expect(schedUpdate.previous_date).toBe(now);
-    expect(schedUpdate.invoke_date).toBeGreaterThan(now);
+    const schedRow = upsert.mock.calls[1]![0] as Record<string, unknown>;
+    expect(schedRow.id).toBe("sch-1");
+    expect(schedRow.previous_date).toBe(now);
+    expect(schedRow.invoke_date).toBeGreaterThan(now);
   });
 });

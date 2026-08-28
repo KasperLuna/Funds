@@ -126,8 +126,11 @@ export function ScheduledDialog({
     const signedAmount = type === "expense" ? -Math.abs(amountCents) : Math.abs(amountCents);
 
     const [sy, sm, sd] = startDate.split("-").map(Number);
-    const invokeDate = new Date(sy!, sm! - 1, sd).getTime();
+    const computedInvokeDate = new Date(sy!, sm! - 1, sd).getTime();
     const now = Date.now();
+
+    const startDateChanged =
+      editItem?.invokeDate != null && computedInvokeDate !== editItem.invokeDate;
 
     const item: ScheduledTxn = {
       id: editItem?.id ?? `sch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
@@ -140,8 +143,8 @@ export function ScheduledDialog({
       categoryIds: selectedCategories,
       recurrence: { frequency, interval },
       timezone: String(timezoneOffset),
-      invokeDate: editItem?.invokeDate ?? invokeDate,
-      previousDate: editItem?.previousDate ?? null,
+      invokeDate: startDateChanged ? computedInvokeDate : (editItem?.invokeDate ?? computedInvokeDate),
+      previousDate: startDateChanged ? null : (editItem?.previousDate ?? null),
       lastNotifiedAt: editItem?.lastNotifiedAt ?? null,
       active: editItem?.active ?? true,
       createdAt: editItem?.createdAt ?? now,
