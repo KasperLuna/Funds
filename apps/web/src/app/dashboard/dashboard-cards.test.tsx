@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import type { ReactElement } from "react";
@@ -70,5 +71,90 @@ describe("TemplateCard empty state", () => {
     expect(screen.getByText("No templates yet")).toBeInTheDocument();
     expect(screen.getByText("Create reusable transaction templates.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add" })).toBeInTheDocument();
+  });
+});
+
+describe("ScheduledCard occurrence logging", () => {
+  it("opens a prefilled log dialog on row click and advances the schedule on save", async () => {
+    const user = userEvent.setup();
+    const upsert = vi.fn().mockResolvedValue(undefined);
+    const update = vi.fn().mockResolvedValue(undefined);
+    const now = Date.now();
+
+    vi.mocked(useSync).mockReturnValue({
+      db: {
+        query: mockQuery,
+        watch: vi.fn(() => (async function* () {})()),
+        table: vi.fn(() => ({ upsert, update })),
+      } as never,
+      syncStatus: {
+        online: true,
+        syncing: false,
+        lastSyncedAt: now,
+        failedCount: 0,
+      },
+      isReady: true,
+      userId: "dev-user",
+    });
+
+    mockQuery.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("scheduled_transactions")
+          ? [
+              {
+                id: "sch-1",
+                user_id: "dev-user",
+                name: "Rent",
+                description: "Monthly rent",
+                type: "expense",
+                amount_minor: "150000",
+                account_id: "acc-1",
+                category_ids: ["cat-1"],
+                recurrence: { frequency: "monthly", interval: 1 },
+                timezone: null,
+                invoke_date: now,
+                previous_date: null,
+                last_notified_at: null,
+                active: 1,
+                created_at: now,
+                updated_at: now,
+                deleted_at: null,
+              },
+            ]
+          : [],
+      }),
+    );
+
+    renderCard(
+      <ScheduledCard
+        accounts={[
+          { id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2, code: "USD" },
+        ]}
+        categories={[{ id: "cat-1", name: "Housing" }]}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
+
+    const row = await screen.findByRole("button", { name: "Log occurrence: Rent" });
+    await user.click(row);
+
+    expect(await screen.findByText("Log transaction")).toBeInTheDocument();
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("1500.00");
+    expect(screen.getByLabelText("Description")).toHaveValue("Monthly rent");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(upsert).toHaveBeenCalledTimes(1);
+    const txnRow = upsert.mock.calls[0]![0] as Record<string, unknown>;
+    expect(txnRow.account_id).toBe("acc-1");
+    expect(txnRow.amount_minor).toBe(-150000);
+    expect(txnRow.type).toBe("expense");
+
+    expect(update).toHaveBeenCalledTimes(1);
+    const schedUpdate = update.mock.calls[0]![0] as Record<string, unknown>;
+    expect(schedUpdate.id).toBe("sch-1");
+    expect(schedUpdate.previous_date).toBe(now);
+    expect(schedUpdate.invoke_date).toBeGreaterThan(now);
   });
 });

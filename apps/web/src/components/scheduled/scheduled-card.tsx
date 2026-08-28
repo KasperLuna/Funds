@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Check,
   ChevronDown,
   ChevronUp,
   Ellipsis,
@@ -25,6 +24,7 @@ import {
 import { ScheduledDialog } from "@/components/scheduled/scheduled-dialog";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
+import { CaptureSheet, type VoicePrefill } from "@/components/capture/CaptureSheet";
 
 export type ScheduledCardAccount = {
   id: string;
@@ -47,10 +47,6 @@ function formatLocalDate(isoDate: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function newTxnId(now: number): string {
-  return `txn-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 /** Controlled popover exposing open state to its trigger (for caret/icon). */
@@ -80,6 +76,7 @@ export function ScheduledCard({
   const items = itemsQuery.data ?? [];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<ScheduledTxn | null>(null);
+  const [logItem, setLogItem] = useState<ScheduledTxn | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -94,46 +91,66 @@ export function ScheduledCard({
     return () => window.clearTimeout(t);
   }, [notice]);
 
-  const confirmMutation = useSyncMutation<ScheduledTxn>({
+  const logOccurrenceMutation = useSyncMutation<{
+    row: Record<string, unknown>;
+    schedule: ScheduledTxn;
+  }>({
     keys: [queryKeys.transactions, queryKeys.scheduledTransactions],
-    mutationFn: async (row) => {
-      const account = accountById.get(row.accountId);
-      if (!account) throw new Error("Account not found");
-      // Pure advance first: if the schedule can't advance (no recurrence),
-      // bail before writing anything so a txn isn't logged without an advance.
-      const advanced = waiveAdvance(row);
-      const now = Date.now();
-      await db.table("transactions").upsert({
-        id: newTxnId(now),
-        user_id: row.userId,
-        account_id: row.accountId,
-        asset_id: account.assetId,
-        // cavetail: converting bigint minor units to the SyncTable number column
-        // eslint-disable-next-line local/no-money-float
-        amount_minor: Number(row.amountMinor),
-        type: row.type,
-        description: row.description || row.name,
-        category_ids: row.categoryIds,
-        date: row.invokeDate ?? now,
-        created_at: now,
-        updated_at: now,
-        deleted_at: null,
-      });
-      await db.table("scheduled_transactions").update({
-        id: row.id,
-        previous_date: advanced.previousDate,
-        invoke_date: advanced.invokeDate,
-      });
+    mutationFn: async ({ row, schedule }) => {
+      // Advance first: if the schedule can't advance (no recurrence), bail
+      // before writing so a txn is never logged without a schedule roll.
+      if (schedule.recurrence) {
+        const advanced = waiveAdvance(schedule);
+        await db.table("transactions").upsert(row);
+        await db.table("scheduled_transactions").update({
+          id: schedule.id,
+          previous_date: advanced.previousDate,
+          invoke_date: advanced.invokeDate,
+        });
+      } else {
+        await db.table("transactions").upsert(row);
+        await db.table("scheduled_transactions").update({
+          id: schedule.id,
+          active: 0,
+        });
+      }
     },
     onError: (error) => {
-      console.error("Failed to confirm scheduled transaction:", error);
-      setNotice("Couldn't confirm. Please try again.");
+      console.error("Failed to log scheduled transaction:", error);
+      setNotice("Couldn't log this occurrence. Please try again.");
     },
   });
 
-  const handleConfirm = (row: ScheduledTxn) => {
-    confirmMutation.mutate(row);
+  const handleOccurrenceSave = (row: Record<string, unknown>) => {
+    if (!logItem) return;
+    logOccurrenceMutation.mutate({ row, schedule: logItem });
   };
+
+  const captureAccounts = useMemo(
+    () =>
+      accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        assetId: a.assetId,
+        decimals: a.decimals,
+        assetCode: a.code,
+      })),
+    [accounts],
+  );
+
+  const occurrencePrefill: VoicePrefill | undefined = useMemo(() => {
+    if (!logItem) return undefined;
+    const account = accountById.get(logItem.accountId);
+    const dec = account?.decimals ?? 2;
+    const abs = logItem.amountMinor < 0n ? -logItem.amountMinor : logItem.amountMinor;
+    return {
+      accountId: logItem.accountId,
+      amountInput: (Number(abs) / 10 ** dec).toFixed(dec),
+      categoryIds: logItem.categoryIds,
+      description: logItem.description || logItem.name,
+      type: logItem.type,
+    };
+  }, [logItem, accountById]);
 
   const toggleMutation = useSyncMutation<ScheduledTxn>({
     keys: [queryKeys.scheduledTransactions],
@@ -270,11 +287,8 @@ export function ScheduledCard({
                 ? { cls: "bg-(--accent)/10 text-(--accent)", label: "Due" }
                 : { cls: "bg-(--surface-2) text-zinc-500", label: "Upcoming" };
 
-          return (
-            <div
-              key={row.id}
-              className={`flex items-center gap-x-3 gap-y-2 px-4 py-3 transition-opacity ${row.active ? "" : "opacity-50"}`}
-            >
+          const body = (
+            <>
               <div className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{row.name}</span>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">
@@ -288,7 +302,6 @@ export function ScheduledCard({
                 </div>
               </div>
 
-              {/* Amount + status, Confirm, and actions stay on one line with the name. */}
               <div className="flex shrink-0 items-center gap-1.5">
                 <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-zinc-500">
                   {formatMoney(row.amountMinor, decimals, code)}
@@ -301,18 +314,30 @@ export function ScheduledCard({
                   </span>
                 )}
               </div>
+            </>
+          );
 
-              <div className="flex shrink-0 items-center gap-1">
-                {needsConfirm && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => void handleConfirm(row)}
-                  >
-                    <Check className="h-4 w-4" aria-hidden />
-                    Confirm
-                  </Button>
-                )}
+          return (
+            <div
+              key={row.id}
+              className={`flex items-center transition-opacity ${row.active ? "" : "opacity-50"}`}
+            >
+              {needsConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setLogItem(row)}
+                  aria-label={`Log occurrence: ${row.name}`}
+                  className="flex min-w-0 flex-1 items-center gap-x-3 gap-y-2 px-4 py-3 text-left transition-colors hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+                >
+                  {body}
+                </button>
+              ) : (
+                <div className="flex min-w-0 flex-1 items-center gap-x-3 gap-y-2 px-4 py-3">
+                  {body}
+                </div>
+              )}
+
+              <div className="flex shrink-0 items-center gap-1 pr-4">
                 {/* Desktop: inline actions. Mobile: a kebab menu keeps rows clean. */}
                 <div className="hidden items-center gap-1 sm:flex">
                   <Button
@@ -442,6 +467,19 @@ export function ScheduledCard({
         editItem={editItem}
         accounts={accounts}
         categories={categories}
+      />
+
+      <CaptureSheet
+        open={!!logItem}
+        onOpenChange={(open) => {
+          if (!open) setLogItem(null);
+        }}
+        userId={uid}
+        accounts={captureAccounts}
+        categories={categories}
+        recentTxns={[]}
+        onSave={handleOccurrenceSave}
+        voicePrefill={occurrencePrefill}
       />
     </section>
   );
