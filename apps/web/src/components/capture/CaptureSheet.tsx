@@ -193,8 +193,11 @@ export function CaptureSheet({
 
   const handleAccountChange = (id: string) => {
     const next = accounts.find((a) => a.id === id);
+    const nextDec = next?.decimals ?? 2;
     setAccountId(id);
-    setAmount(emptyAmount(next?.decimals ?? 2));
+    if (nextDec !== decimals) {
+      setAmount(emptyAmount(nextDec));
+    }
   };
 
   const handleKey = (key: DigitKey) => setAmount((s) => applyDigit(s, key));
