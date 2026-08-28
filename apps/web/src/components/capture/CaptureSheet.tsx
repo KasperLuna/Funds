@@ -163,7 +163,11 @@ export function CaptureSheet({
     setDateOverride(null);
   };
 
-  // Reset when the sheet opens; apply voice/edit prefill if provided
+  // Reset when the sheet opens; apply voice/edit prefill if provided.
+  // cavetail: accounts/defaultAccountId are read inside the callback but must
+  // NOT be dependencies — the parent re-renders on sync ticks and a new array
+  // reference would re-trigger this effect, overwriting the user's in-progress
+  // selections (e.g. a manually chosen account) back to the default.
   useEffect(() => {
     if (open) {
       setActiveTemplateId(null);
@@ -189,7 +193,7 @@ export function CaptureSheet({
         setAccountId(defaultAccountId ?? accounts[0]?.id ?? "");
       }
     }
-  }, [open, accounts, defaultAccountId, voicePrefill]);
+  }, [open, voicePrefill]);
 
   const handleAccountChange = (id: string) => {
     const next = accounts.find((a) => a.id === id);
