@@ -243,3 +243,49 @@ describe("executeQuery — anomalies", () => {
     }
   });
 });
+
+describe("executeQuery — search", () => {
+  it("finds transactions by free-text description", () => {
+    const txns = [
+      makeTxn({ id: "p1", description: "Payroll Corp", amountMinor: 50000n, type: "income" as const, date: new Date(2026, 7, 5).getTime() }),
+      makeTxn({ id: "p2", description: "Payroll Corp", amountMinor: 50000n, type: "income" as const, date: new Date(2026, 6, 5).getTime() }),
+      makeTxn({ id: "x1", description: "Coffee", amountMinor: -200n, date: new Date(2026, 7, 6).getTime() }),
+    ];
+    const out = executeQuery({ select: "search", q: "payroll" }, ctx({ txns }), "this month");
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const data = out.data as Extract<typeof out.data, { type: "search_results" }>;
+    if (data.type === "search_results") {
+      expect(data.count).toBe(1);
+      expect(data.query).toBe("payroll");
+      expect(data.hits[0]?.description).toBe("Payroll Corp");
+    }
+  });
+
+  it("scopes search to a category when given", () => {
+    const txns = [
+      makeTxn({ id: "a1", description: "Amazon", amountMinor: -1000n, date: new Date(2026, 7, 5).getTime() }),
+      makeTxn({ id: "a2", description: "Amazon Prime", amountMinor: -200n, categoryIds: ["cat-shopping"] as string[], date: new Date(2026, 7, 6).getTime() }),
+    ];
+    const out = executeQuery(
+      { select: "search", q: "amazon", category: "Shopping" },
+      ctx({ txns, categories: [makeCategory({ name: "Shopping", id: "cat-shopping" })] }),
+      "this month",
+    );
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const data = out.data as Extract<typeof out.data, { type: "search_results" }>;
+    if (data.type === "search_results") {
+      expect(data.count).toBe(1);
+      expect(data.hits[0]?.description).toBe("Amazon Prime");
+    }
+  });
+
+  it("returns search_empty when no description is supplied", () => {
+    const out = executeQuery({ select: "search" }, ctx(), "this month");
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    const data = out.data as Extract<typeof out.data, { type: "search_empty" }>;
+    expect(data.type).toBe("search_empty");
+  });
+});

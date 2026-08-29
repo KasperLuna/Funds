@@ -10,6 +10,7 @@ import {
 import { extractJson, schemaByUseCase, tldrSchema } from "./schemas";
 import { deterministicFallback, fallbackWithNotice, queryResultToMessage, tsToMsg, newId } from "./handlers";
 import { assistantQuerySchema, executeQuery, type QueryCtx } from "./queries";
+import { resolveTerms, type ResolvedTerms } from "./resolver";
 import type { AssistantMessage, ChatMessage, UseCaseId } from "./types";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
@@ -66,6 +67,7 @@ const USE_CASE_ORDER: UseCaseId[] = [
   "recurring_query",
   "burn_query",
   "anomalies_query",
+  "search_query",
   "voice_to_txn",
   "fallback_text",
 ];
@@ -79,7 +81,8 @@ type SelectKey =
   | "merchants"
   | "recurring"
   | "burn"
-  | "anomalies";
+  | "anomalies"
+  | "search";
 
 const USE_CASE_OF_SELECT: Record<SelectKey, UseCaseId> = {
   spending: "spending_query",
@@ -91,6 +94,7 @@ const USE_CASE_OF_SELECT: Record<SelectKey, UseCaseId> = {
   recurring: "recurring_query",
   burn: "burn_query",
   anomalies: "anomalies_query",
+  search: "search_query",
 };
 
 function buildCtx(deps: ChatEngineDeps, now: number): QueryCtx {
@@ -104,13 +108,50 @@ function buildCtx(deps: ChatEngineDeps, now: number): QueryCtx {
   };
 }
 
-function buildSnapshotFor(deps: ChatEngineDeps): AssistantSnapshot {
+function buildSnapshotFor(deps: ChatEngineDeps, userText: string): AssistantSnapshot {
   return buildSnapshot({
     accounts: deps.accounts,
     categories: deps.categories,
     txns: deps.txns,
     assetsById: new Map([...deps.assetsById.entries()].map(([k, v]) => [k, { code: v.code }])),
+    userText,
   });
+}
+
+/**
+ * Back-fill the model's query with what the resolver already matched. A
+ * 1B model can emit the right shape but the wrong word ("Dining" instead
+ * of "Food") — when the model's `category` doesn't match any real category
+ * name, we substitute the resolver's. Same for the search `q` pattern.
+ */
+function backfillFromResolver(
+  q: { select: string; category?: string; q?: string },
+  resolved: ResolvedTerms,
+  categories: { name: string }[],
+): { select: string; category?: string; q?: string } {
+  const out = { ...q };
+  const realNames = new Set(categories.map((c) => c.name.toLowerCase()));
+  if (out.category && !realNames.has(out.category.toLowerCase())) {
+    if (resolved.category) out.category = resolved.category;
+    else delete out.category;
+  }
+  if (out.select === "search" && (!out.q || !out.q.trim()) && resolved.descriptionPattern) {
+    out.q = resolved.descriptionPattern;
+  }
+  // For spending/budget/compare/merchants, the resolver's category (if
+  // any) wins over the model's wrong guess even if the model did name one
+  // — except when the model emitted an exact match.
+  if (
+    (out.select === "spending" ||
+      out.select === "budget" ||
+      out.select === "compare" ||
+      out.select === "merchants") &&
+    resolved.category
+  ) {
+    const modelOk = out.category && realNames.has(out.category.toLowerCase());
+    if (!modelOk) out.category = resolved.category;
+  }
+  return out;
 }
 
 function tryAllSchemas(parsed: unknown): {
@@ -161,9 +202,20 @@ function dispatchReply(
   // stripped before execution.
   const q = assistantQuerySchema.safeParse(obj);
   if (q.success) {
-    const select = q.data.select as SelectKey;
+    // Back-fill the model's category guess with what the resolver matched.
+    // A 1B model can map "dining" to category "Dining" even when the user
+    // has only "Food" — the resolver catches that and substitutes "Food"
+    // before the executor runs.
+    const resolved = resolveTerms({ userText, categories: ctx.categories });
+    const filled = backfillFromResolver(
+      { select: q.data.select, category: q.data.category, q: q.data.q },
+      resolved,
+      ctx.categories,
+    );
+    const adjusted = { ...q.data, ...filled, select: q.data.select as SelectKey };
+    const select = adjusted.select;
     const message = queryResultToMessage(
-      executeQuery(q.data, ctx, userText),
+      executeQuery(adjusted, ctx, userText),
       USE_CASE_OF_SELECT[select],
       ctx.now,
     );
@@ -217,7 +269,7 @@ export async function runChat(
   deps: ChatEngineDeps,
 ): Promise<ChatEngineResult> {
   const ctx = buildCtx(deps, input.now);
-  const snapshot = buildSnapshotFor(deps);
+  const snapshot = buildSnapshotFor(deps, input.text);
   const system = buildSystemPrompt();
   const userPrompt = buildUserPrompt({ userText: input.text, snapshot });
   const userMsg: ChatMessage = { id: newId(), role: "user", content: input.text, ts: input.now };
@@ -353,6 +405,11 @@ export function inferUseCase(userText: string, snapshot: AssistantSnapshot): Use
   }
   if (/\b(anomal|unusual|weird|outlier|big purchase|biggest purchase|spike)\b/.test(t)) {
     return "anomalies_query";
+  }
+  if (
+    /\bpayro|\bsalar|\bpaid me|\bincome|\bdeposit|\brefun|\breimb|\bcashb|\bfind\b|\bcharges|\bpayments\b|\bpurchases\b/.test(t)
+  ) {
+    return "search_query";
   }
   if (/\b(spend|spent|how much|spending|category|breakdown)\b/.test(t)) {
     return "spending_query";

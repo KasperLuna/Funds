@@ -27,6 +27,7 @@ const USE_CASE_QUERY: Record<UseCaseId, AssistantQuery | null> = {
   recurring_query: { select: "recurring" },
   burn_query: { select: "burn" },
   anomalies_query: { select: "anomalies" },
+  search_query: { select: "search" },
   fallback_text: null,
 };
 
@@ -38,6 +39,7 @@ const EMPTY_TEXT: Record<string, string> = {
   recurring_empty: "No recurring charges detected in {period}.",
   burn_empty: "Not enough spend yet to project a pace for {period}.",
   anomalies_empty: "No unusually large transactions in {period}.",
+  search_empty: "No transactions matching that description in {period}.",
 };
 
 function emptyText(type: string, periodLabel: string): string {

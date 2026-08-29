@@ -134,6 +134,25 @@ export type AssistantPayload =
         medianMinor: string;
       }>;
       scope?: ScopeFlags;
+    }
+  | { type: "search_empty"; periodLabel: string; scope?: ScopeFlags }
+  | {
+      type: "search_results";
+      periodLabel: string;
+      query: string;
+      category: string | null;
+      assetCode: string;
+      decimals: number;
+      count: number;
+      totalMinor: string;
+      hits: Array<{
+        description: string;
+        amountMinor: string;
+        dateLabel: string;
+        categoryName: string | null;
+        accountName: string | null;
+      }>;
+      scope?: ScopeFlags;
     };
 
 /**
@@ -163,6 +182,7 @@ export const assistantQuerySchema = z.object({
     "recurring",
     "burn",
     "anomalies",
+    "search",
   ]),
   period: z.string().max(40).optional(),
   category: z.string().max(80).optional(),
@@ -171,12 +191,14 @@ export const assistantQuerySchema = z.object({
   description: z.string().max(200).optional(),
   /** "previous" (default) or "last_year" — for compare. */
   compareTo: z.string().max(40).optional(),
-  /** Top N (for merchants). String so the model can't use a float. */
+  /** Top N (for merchants / search). String so the model can't use a float. */
   limit: z.string().max(8).optional(),
   /** Minimum occurrences to count as recurring (string for the same reason). */
   minOccurrences: z.string().max(8).optional(),
   /** Threshold percent of the merchant median (string). */
   thresholdPct: z.string().max(8).optional(),
+  /** Free-text description pattern (string). */
+  q: z.string().max(80).optional(),
 });
 
 export type AssistantQuery = z.infer<typeof assistantQuerySchema>;
@@ -780,6 +802,70 @@ export function executeQuery(
         },
       };
     }
+    case "search": {
+      // Free-text search over txn descriptions. Back-filled from the resolver
+      // when the model omits `q` and the user spoke a known description
+      // keyword (e.g. "payroll" → q="payroll"). Also used when the model
+      // explicitly asks "find transactions where description contains X".
+      const range = resolvePeriod(q.period ?? userText, ctx.now);
+      const pattern = (q.q ?? "").trim().toLowerCase();
+      const cat = q.category ? findCategory(ctx, q.category) : categoryFromText(ctx, userText);
+      const limit = parseIntInRange(q.limit, 10, 1, 50);
+      if (!pattern) {
+        return {
+          ok: true,
+          data: {
+            type: "search_empty",
+            periodLabel: range.label,
+            scope: flags,
+          },
+        };
+      }
+      const hits: Array<{
+        description: string;
+        amountMinor: string;
+        dateLabel: string;
+        categoryName: string | null;
+        accountName: string | null;
+      }> = [];
+      const accountMap = new Map(ctx.accounts.map((a) => [a.id, a.name]));
+      const catMap = new Map(ctx.categories.map((c) => [c.id, c.name]));
+      for (const t of ctx.txns) {
+        if (t.deletedAt) continue;
+        const date = Number(t.date);
+        if (date < range.from || date > range.to) continue;
+        if (!t.description.toLowerCase().includes(pattern)) continue;
+        if (cat && !t.categoryIds.includes(cat.id)) continue;
+        hits.push({
+          description: t.description.trim() || "Unnamed",
+          amountMinor: t.amountMinor.toString(),
+          dateLabel: formatDayLabel(date),
+          categoryName:
+            t.categoryIds
+              .map((id) => catMap.get(id))
+              .filter((n): n is string => Boolean(n))[0] ?? null,
+          accountName: accountMap.get(t.accountId) ?? null,
+        });
+      }
+      // Newest first; cap at limit.
+      hits.sort((a, b) => (BigInt(a.amountMinor) < BigInt(b.amountMinor) ? 1 : -1));
+      const totalMinor = hits.reduce((s, h) => s + BigInt(h.amountMinor), 0n);
+      return {
+        ok: true,
+        data: {
+          type: "search_results",
+          periodLabel: range.label,
+          query: pattern,
+          category: cat?.name ?? null,
+          assetCode: code,
+          decimals,
+          count: hits.length,
+          totalMinor: totalMinor.toString(),
+          hits: hits.slice(0, limit),
+          scope: flags,
+        },
+      };
+    }
   }
 }
 
@@ -796,6 +882,7 @@ export const QUERY_LANGUAGE_DOC = `{"select":"spending","period":"<period>","cat
 {"select":"recurring","period":"<period>","minOccurrences":"<n>"}  — repeat charges and monthly cost
 {"select":"burn","period":"<period>"}  — current pace vs prior month
 {"select":"anomalies","period":"<period>","thresholdPct":"<n>"}  — transactions well above their merchant median
+{"select":"search","period":"<period>","q":"<text>","category":"<category>","limit":"<n>"}  — find transactions whose description contains q
 {"reply":"<short text>"}  — greetings or anything not about their data`;
 
 export const QUERY_EXAMPLES = `User: "How much did I spend this month?" → {"select":"spending","period":"this_month"}
@@ -808,4 +895,6 @@ User: "where does my food money go" → {"select":"merchants","category":"Food"}
 User: "any subscriptions?" → {"select":"recurring"}
 User: "am I on track this month" → {"select":"burn"}
 User: "any weird big purchases lately" → {"select":"anomalies"}
+User: "what was my payroll this month" → {"select":"search","period":"this_month","q":"payroll"}
+User: "find amazon charges" → {"select":"search","q":"amazon"}
 User: "hello" → {"reply":"Hi! Ask me about your spending, budgets, or a weekly summary."}`;

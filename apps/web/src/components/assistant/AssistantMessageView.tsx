@@ -10,6 +10,7 @@ import { MerchantListCard } from "./messages/MerchantListCard";
 import { RecurringListCard } from "./messages/RecurringListCard";
 import { BurnRateCard } from "./messages/BurnRateCard";
 import { AnomalyListCard } from "./messages/AnomalyListCard";
+import { SearchResultsCard } from "./messages/SearchResultsCard";
 import type { AssistantMessage } from "@/lib/assistant/types";
 import { DataInspector } from "./DataInspector";
 
@@ -65,6 +66,8 @@ export function AssistantMessageView({ message }: { message: AssistantMessage })
     widget = <BurnRateCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "anomaly_list") {
     widget = <AnomalyListCard payload={message} onViewData={() => setShowInspector(true)} />;
+  } else if (message.type === "search_results") {
+    widget = <SearchResultsCard payload={message} onViewData={() => setShowInspector(true)} />;
   }
 
   return (

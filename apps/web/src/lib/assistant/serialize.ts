@@ -1,5 +1,6 @@
 import type { Txn, Account } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
+import { resolveTerms, type ResolvedTerms } from "./resolver";
 
 /**
  * Build the local-context snapshot the assistant feeds to the model. The
@@ -17,6 +18,17 @@ export type AssistantSnapshot = {
   nowIso: string;
   accounts: Array<{ id: string; name: string; kind: Account["kind"]; assetCode: string }>;
   categories: Array<{ id: string; name: string }>;
+  /**
+   * What the resolver pre-matched from the user's words. The model sees
+   * this so it can emit a query that references the *actual* category name
+   * (e.g. "Food") even when the user said a synonym ("dining"). The
+   * `descriptionPattern` is also surfaced so the model can pick the
+   * `search` select when the user asked about a description.
+   *
+   * Optional in the type because `inferUseCase` (a pure keyword heuristic)
+   * is invoked with hand-built snapshots in tests.
+   */
+  resolved?: ResolvedTerms;
 };
 
 const SNAPSHOT_BYTE_BUDGET = 2_000;
@@ -35,6 +47,9 @@ export function buildSnapshot(args: {
   txns: Txn[];
   /** Map of assetId -> code, used to surface currency in the snapshot. */
   assetsById: Map<string, { code: string }>;
+  /** The raw user message — used to pre-resolve synonyms ("dining" -> "Food")
+   * and description patterns ("payroll") before the model sees anything. */
+  userText?: string;
 }): AssistantSnapshot {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -64,11 +79,19 @@ export function buildSnapshot(args: {
     (c) => categoryCount.get(c.id) ?? 0,
   ).map((c) => ({ id: c.id, name: c.name }));
 
+  // Run the resolver over the full category set (not just the truncated top
+  // 24) so a low-frequency but exact-match category still wins.
+  const resolved = resolveTerms({
+    userText: args.userText ?? "",
+    categories: args.categories.filter((c) => !c.deletedAt),
+  });
+
   let snapshot: AssistantSnapshot = {
     tz,
     nowIso: new Date().toISOString(),
     accounts,
     categories,
+    resolved,
   };
   let bytes = approxBytes(JSON.stringify(snapshot));
   if (bytes > SNAPSHOT_BYTE_BUDGET) {

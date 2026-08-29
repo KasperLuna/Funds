@@ -183,6 +183,29 @@ export const anomalyListSchema = z.object({
   scope: scopeShape,
 });
 
+export const searchResultsSchema = z.object({
+  type: z.literal("search_results"),
+  periodLabel: z.string().min(1).max(40),
+  query: z.string().min(1).max(80),
+  category: z.string().nullable(),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  count: z.number().int().min(0).max(9999),
+  totalMinor: z.string().regex(/^-?\d+$/),
+  hits: z
+    .array(
+      z.object({
+        description: z.string().min(1).max(200),
+        amountMinor: z.string().regex(/^-?\d+$/),
+        dateLabel: z.string().min(1).max(40),
+        categoryName: z.string().nullable(),
+        accountName: z.string().nullable(),
+      }),
+    )
+    .max(50),
+  scope: scopeShape,
+});
+
 /** TL;DR schema for the second model call. Strict on length to keep cost down. */
 export const tldrSchema = z.object({
   tldr: z.string().min(1).max(200),
@@ -198,6 +221,7 @@ export const schemaByUseCase = {
   recurring_query: recurringListSchema,
   burn_query: burnRateSchema,
   anomalies_query: anomalyListSchema,
+  search_query: searchResultsSchema,
   fallback_text: z.object({ type: z.literal("text"), content: z.string().min(1) }),
 } as const;
 

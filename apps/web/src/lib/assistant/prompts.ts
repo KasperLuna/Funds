@@ -25,7 +25,12 @@ ${QUERY_EXAMPLES}
 Rules:
 - Match category and account names against the snapshot in the user message (case-insensitive).
 - NEVER invent or include money amounts in the query. The app computes all figures from its own data.
-- If the user names a period ("last month"), put it in "period".`;
+- If the user names a period ("last month"), put it in "period".
+- The snapshot may include a "resolved" object — if so, USE the resolved category
+  name (not the user's literal word) so the query matches a real category. If
+  the snapshot includes a "descriptionPattern", the user is asking about a
+  description (e.g. "payroll", "amazon") — emit a search query with that
+  pattern in "q".`;
 }
 
 export function buildUserPrompt(args: {

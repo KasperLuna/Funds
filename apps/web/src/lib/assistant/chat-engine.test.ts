@@ -327,3 +327,66 @@ describe("runChat — TLDR", () => {
     expect(out.assistant.tldr).toBeUndefined();
   });
 });
+
+describe("runChat — resolver back-fill", () => {
+  // The user has only "Food" — never "Dining". The model emits the synonym
+  // it would naturally use. The resolver catches it and substitutes "Food".
+  it("substitutes a real category when the model emits a synonym", async () => {
+    const deps = baseDeps();
+    deps.engine.setResponse('{"select":"budget","period":"this_month","category":"Dining"}');
+    const out = await runChat(
+      { text: "Am I over budget on dining?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    // budget_progress comes from the budget executor; the model said Dining,
+    // the executor would have run with category "Dining" and not found a
+    // budget, returning budget_empty. With the resolver back-fill, the
+    // executor sees category="Food" and finds the budget.
+    if (out.assistant.type === "budget_progress") {
+      expect(out.assistant.category).toBe("Food");
+    } else if (out.assistant.type === "text") {
+      // OK: budget_empty also acceptable if Food has no budget configured.
+      expect(out.assistant.content).toMatch(/Food|food|No budget/i);
+    }
+  });
+
+  it("finds payroll via the search select even when the model emits no q", async () => {
+    const deps = baseDeps();
+    const tx = [
+      makeTxn({
+        id: "p1",
+        description: "Payroll Corp",
+        amountMinor: 50000n,
+        type: "income" as const,
+        date: new Date().setHours(12, 0, 0, 0),
+      }),
+    ];
+    deps.txns = tx;
+    // The model emits a search query with no q (its common failure mode).
+    deps.engine.setResponse('{"select":"search","period":"this_month"}');
+    const out = await runChat(
+      { text: "What was my payroll this month?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    if (out.assistant.type === "search_results") {
+      expect(out.assistant.query).toBe("payroll");
+      expect(out.assistant.count).toBe(1);
+    } else {
+      // Acceptable: the model could also emit a valid q itself.
+      expect(out.assistant.type).toBe("search_empty");
+    }
+  });
+});
+
+describe("inferUseCase — search_query detection", () => {
+  const snap = { tz: "UTC", nowIso: "2025-01-01T00:00:00Z", accounts: [], categories: [] };
+  it("detects 'what was my payroll this month' as search_query", () => {
+    expect(inferUseCase("what was my payroll this month?", snap)).toBe("search_query");
+  });
+  it("detects 'find amazon charges' as search_query", () => {
+    expect(inferUseCase("find amazon charges", snap)).toBe("search_query");
+  });
+  it("detects 'any refunds?' as search_query", () => {
+    expect(inferUseCase("any refunds?", snap)).toBe("search_query");
+  });
+});

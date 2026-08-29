@@ -16,6 +16,7 @@ export type UseCaseId =
   | "recurring_query"
   | "burn_query"
   | "anomalies_query"
+  | "search_query"
   | "fallback_text";
 
 /** Common flags surfaced as a small "includes archived / excluded" badge. */
@@ -179,6 +180,28 @@ export type AnomalyListPayload = {
   scope?: ScopeFlags;
 };
 
+export type SearchHitPayload = {
+  description: string;
+  amountMinor: string;
+  dateLabel: string;
+  categoryName: string | null;
+  accountName: string | null;
+};
+
+export type SearchResultsPayload = {
+  type: "search_results";
+  periodLabel: string;
+  /** The free-text pattern that was searched (already lowercased). */
+  query: string;
+  category: string | null;
+  assetCode: string;
+  decimals: number;
+  count: number;
+  totalMinor: string;
+  hits: SearchHitPayload[];
+  scope?: ScopeFlags;
+};
+
 export type FallbackTextPayload = {
   type: "text";
   content: string;
@@ -214,6 +237,7 @@ export type AssistantMessage =
   | (AssistantBase & RecurringListPayload)
   | (AssistantBase & BurnRatePayload)
   | (AssistantBase & AnomalyListPayload)
+  | (AssistantBase & SearchResultsPayload)
   | (AssistantBase & FallbackTextPayload)
   | { id: string; role: "assistant"; type: "error"; reason: string; rawOutput?: string; ts: number; usedCase: UseCaseId; notice?: string; tldr?: string };
 
