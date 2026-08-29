@@ -14,6 +14,7 @@ import {
   writeMeta,
   writeStamp,
 } from "./opfs-cache";
+import { requestPersistentStorage } from "./capability";
 
 /**
  * Real LLM engine. Lazy-imports `@mlc-ai/web-llm` so the dependency is only
@@ -57,42 +58,52 @@ export class WebLlmEngine implements LlmEngine {
     this.statusValue = "downloading";
     this.currentModel = modelId;
 
-    const { CreateMLCEngine, prebuiltAppConfig } = await import("@mlc-ai/web-llm");
+    try {
+      // Request persistent storage before download — prevents iOS from
+      // evicting cached model weights after ~7 days of no engagement.
+      await requestPersistentStorage();
 
-    // Safari's OPFS has known issues with large binary writes. Fall back to
-    // WebLLM's default (IndexedDB) on Safari to avoid silent cache failures.
-    const isSafari =
-      typeof navigator !== "undefined" &&
-      /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const { CreateMLCEngine, prebuiltAppConfig } = await import("@mlc-ai/web-llm");
 
-    // cavetail: WebLLM streams progress via a callback. We forward it
-    // verbatim; the AssistantPanel renders the bar from these bytes.
-    this.engine = await CreateMLCEngine(modelId, {
-      appConfig: {
-        model_list: prebuiltAppConfig.model_list,
-        ...(isSafari ? {} : { cacheBackend: "opfs" }),
-      },
-      initProgressCallback: (report) => {
-        onProgress({ loaded: report.progress, total: 1 });
-      },
-    });
+      // Safari's OPFS has known issues with large binary writes. Fall back to
+      // WebLLM's default (IndexedDB) on Safari to avoid silent cache failures.
+      const isSafari =
+        typeof navigator !== "undefined" &&
+        /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-    await writeStamp(modelId, { lastLoadedAt: Date.now() });
-
-    // If we previously cached weights, write a meta record so the next launch
-    // can fast-path integrity checks. The hash field is filled in by the
-    // downloader once MLC exposes a per-file digest (currently it does not);
-    // we mark the cache as present regardless so `isModelCached` is truthful.
-    if (!(await isModelCached(modelId))) {
-      await writeMeta(modelId, {
-        modelId,
-        contentHash: "",
-        totalBytes: 0,
-        cachedAt: Date.now(),
+      // cavetail: WebLLM streams progress via a callback. We forward it
+      // verbatim; the AssistantPanel renders the bar from these bytes.
+      this.engine = await CreateMLCEngine(modelId, {
+        appConfig: {
+          model_list: prebuiltAppConfig.model_list,
+          ...(isSafari ? {} : { cacheBackend: "opfs" }),
+        },
+        initProgressCallback: (report) => {
+          onProgress({ loaded: report.progress, total: 1 });
+        },
       });
-    }
 
-    this.statusValue = "ready";
+      // OPFS sidecar writes are non-fatal — don't let them crash the load.
+      try {
+        await writeStamp(modelId, { lastLoadedAt: Date.now() });
+        if (!(await isModelCached(modelId))) {
+          await writeMeta(modelId, {
+            modelId,
+            contentHash: "",
+            totalBytes: 0,
+            cachedAt: Date.now(),
+          });
+        }
+      } catch {
+        // OPFS write failed — model is still loaded and usable.
+        return;
+      }
+
+      this.statusValue = "ready";
+    } catch (e) {
+      this.statusValue = "error";
+      throw e;
+    }
   }
 
   async complete(opts: CompleteOptions): Promise<string> {
@@ -130,6 +141,9 @@ export class WebLlmEngine implements LlmEngine {
   }
 
   async unload(): Promise<void> {
+    if (this.engine && typeof (this.engine as { unload?: () => Promise<void> }).unload === "function") {
+      await (this.engine as { unload: () => Promise<void> }).unload();
+    }
     this.engine = null;
     this.statusValue = "not-loaded";
   }
