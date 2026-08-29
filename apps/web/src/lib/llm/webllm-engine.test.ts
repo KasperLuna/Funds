@@ -47,8 +47,7 @@ describe("WebLlmEngine.complete contract vs @mlc-ai/web-llm streaming shapes", (
       maxTokens: 600,
       onToken: (t) => tokens.push(t),
     });
-    expect(out.content).toBe("Hello world");
-    expect(out.toolCalls).toEqual([]);
+    expect(out).toBe("Hello world");
     expect(tokens).toEqual(["Hello", " world"]);
     expect(captured).toMatchObject({
       stream: true,
@@ -57,93 +56,16 @@ describe("WebLlmEngine.complete contract vs @mlc-ai/web-llm streaming shapes", (
     });
   });
 
-  it("emulates tool-calling in JSON mode: tool envelope parsed into toolCalls", async () => {
+  it("omits response_format when jsonMode is not set", async () => {
     let captured: unknown;
     const e = engineWith(async (args) => {
       captured = args;
       return (async function* () {
-        yield chunk('{"tool":"get_summary","arguments":{"period":"this_week"}}');
-        yield { choices: [{ delta: {}, finish_reason: "stop" }] };
+        yield chunk("ok");
       })();
     });
-    const out = await e.complete({
-      system: "s",
-      user: "u",
-      temperature: 0.1,
-      maxTokens: 600,
-      tools: [
-        { type: "function", function: { name: "get_summary", description: "d", parameters: {} } },
-      ],
-    });
-    // Native `tools` must NOT be forwarded — web-llm 0.2.84 only supports
-    // Hermes models for them and crashes on any other model.
-    expect(captured).toMatchObject({
-      stream: true,
-      response_format: { type: "json_object" },
-    });
-    expect((captured as { tools?: unknown }).tools).toBeUndefined();
-    expect(out.content).toBe("");
-    expect(out.toolCalls).toHaveLength(1);
-    expect(out.toolCalls[0]?.name).toBe("get_summary");
-    expect(out.toolCalls[0]?.arguments).toBe('{"period":"this_week"}');
-  });
-
-  it("parses a text reply out of the tool protocol envelope", async () => {
-    const e = engineWith(async () =>
-      (async function* () {
-        yield chunk('{"reply":"Hi! What can I help with?"}');
-      })(),
-    );
-    const out = await e.complete({
-      system: "s",
-      user: "u",
-      temperature: 0.1,
-      maxTokens: 600,
-      tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
-    });
-    expect(out.toolCalls).toEqual([]);
-    expect(out.content).toBe("Hi! What can I help with?");
-  });
-
-  it("passes unparseable tool-protocol output through as content (no crash)", async () => {
-    const e = engineWith(async () =>
-      (async function* () {
-        yield chunk("plain prose reply");
-      })(),
-    );
-    const out = await e.complete({
-      system: "s",
-      user: "u",
-      temperature: 0.1,
-      maxTokens: 600,
-      tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
-    });
-    expect(out.toolCalls).toEqual([]);
-    expect(out.content).toBe("plain prose reply");
-  });
-
-  it("keeps tool results in the conversation as user turns (no tool role)", async () => {
-    let captured: unknown;
-    const e = engineWith(async (args) => {
-      captured = args;
-      return (async function* () {
-        yield chunk('{"reply":"ok"}');
-      })();
-    });
-    await e.complete({
-      system: "s",
-      user: "u",
-      temperature: 0.1,
-      maxTokens: 600,
-      tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
-      messages: [
-        { role: "assistant", content: '{"tool":"x","arguments":{}}', toolCallId: "c1" },
-        { role: "tool", content: '{"total":"1"}', toolCallId: "call-x" },
-      ],
-    });
-    const msgs = (captured as { messages: Array<{ role: string; content: string }> }).messages;
-    expect(msgs.some((m) => m.role === "tool")).toBe(false);
-    expect(msgs.some((m) => m.content.startsWith("TOOL_RESULT:"))).toBe(true);
+    await e.complete({ system: "s", user: "u", temperature: 0, maxTokens: 10 });
+    expect((captured as { response_format?: unknown }).response_format).toBeUndefined();
   });
 
   it("throws the stored load failure reason when not ready", async () => {

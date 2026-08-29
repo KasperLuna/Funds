@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inferUseCase, runChat } from "./chat-engine";
-import { createMockLlmEngine, toolCall } from "./engine-mock";
+import { createMockLlmEngine } from "./engine-mock";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
 
@@ -58,10 +58,10 @@ const baseDeps = () => ({
   inferUseCase,
 });
 
-describe("runChat — tool-call loop", () => {
-  it("executes a model tool call and renders the widget without a second model turn", async () => {
+describe("runChat — query generation", () => {
+  it("executes a spending query and derives money from local rows, keeping raw output", async () => {
     const deps = baseDeps();
-    deps.engine.setResponse(toolCall("get_spending_breakdown", { period: "this_month" }));
+    deps.engine.setResponse('{"select":"spending","period":"this_month"}');
     const out = await runChat(
       { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
       deps,
@@ -69,19 +69,32 @@ describe("runChat — tool-call loop", () => {
     expect(deps.engine.calls).toHaveLength(1);
     expect(out.assistant.type).toBe("spending_breakdown");
     if (out.assistant.type === "spending_breakdown") {
-      // Money re-derived from the local txn, not the model.
       expect(out.assistant.totalMinor).toBe("1500");
       expect(out.assistant.slices[0]?.category).toBe("Food");
     }
+    expect(out.assistant.rawOutput).toContain('"select":"spending"');
   });
 
-  it("resolves 'last month' from the model's tool arguments", async () => {
+  it("renders a budget widget from a budget query", async () => {
+    const deps = baseDeps();
+    deps.engine.setResponse('{"select":"budget","category":"Food"}');
+    const out = await runChat(
+      { text: "Am I over budget on food?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    expect(out.assistant.type).toBe("budget_progress");
+    if (out.assistant.type === "budget_progress") {
+      expect(out.assistant.spentMinor).toBe("1500");
+    }
+  });
+
+  it("re-parses the period from the user's words when the model omits it", async () => {
     const deps = baseDeps();
     const lastMonth = new Date();
     lastMonth.setMonth(lastMonth.getMonth() - 1);
     lastMonth.setDate(15);
     deps.txns = [makeTxn({ date: lastMonth.getTime() })];
-    deps.engine.setResponse(toolCall("get_spending_breakdown", { period: "last_month", category: "Food" }));
+    deps.engine.setResponse('{"select":"spending","category":"Food"}');
     const out = await runChat(
       { text: "How much did I spend on food last month?", now: Date.now(), userId: "u" },
       deps,
@@ -93,25 +106,24 @@ describe("runChat — tool-call loop", () => {
     }
   });
 
-  it("feeds a failed tool result back and renders the retry", async () => {
+  it("strips hallucinated money keys before execution", async () => {
     const deps = baseDeps();
-    deps.engine.setResponses([
-      toolCall("unknown_tool", {}),
-      toolCall("get_budget_status", { category: "Food" }),
-    ]);
+    deps.engine.setResponse(
+      '{"select":"spending","period":"this_month","totalMinor":"999999","slices":[{"category":"Food","amountMinor":"999999","pct":100}]}',
+    );
     const out = await runChat(
-      { text: "Am I over budget on food?", now: Date.now(), userId: "u" },
+      { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
       deps,
     );
-    expect(out.assistant.type).toBe("budget_progress");
-    expect(deps.engine.calls).toHaveLength(2);
-    const secondCall = deps.engine.calls[1]!;
-    expect(secondCall.messages?.some((m) => m.role === "tool")).toBe(true);
+    expect(out.assistant.type).toBe("spending_breakdown");
+    if (out.assistant.type === "spending_breakdown") {
+      expect(out.assistant.totalMinor).toBe("1500");
+    }
   });
 
-  it("renders model text directly for conversational input (no tool call)", async () => {
+  it("renders a conversational reply for non-data questions", async () => {
     const deps = baseDeps();
-    deps.engine.setResponse("Hi! I can help you track spending.");
+    deps.engine.setResponse('{"reply":"Hi! Ask me about your spending."}');
     const out = await runChat({ text: "hello", now: Date.now(), userId: "u" }, deps);
     expect(out.assistant.type).toBe("text");
     if (out.assistant.type === "text") {
@@ -120,12 +132,37 @@ describe("runChat — tool-call loop", () => {
   });
 });
 
-describe("runChat — fallbacks", () => {
-  it("falls back to a deterministic breakdown when both rounds produce junk", async () => {
+describe("runChat — retry and fallback", () => {
+  it("retries once with a corrective prompt then accepts the query", async () => {
+    const deps = baseDeps();
+    deps.engine.setResponses(["not json", '{"select":"spending","period":"this_month"}']);
+    const out = await runChat(
+      { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    expect(deps.engine.calls).toHaveLength(2);
+    expect(out.assistant.type).toBe("spending_breakdown");
+    expect(out.assistant.rawOutput).toContain("not json");
+  });
+
+  it("falls back to a deterministic breakdown when both rounds fail", async () => {
     const deps = baseDeps();
     deps.engine.setResponses(["not json", "still not json"]);
     const out = await runChat(
       { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    expect(out.assistant.type).toBe("spending_breakdown");
+  });
+
+  it("rejects a real-looking widget JSON whose schema fails and derives deterministically", async () => {
+    const deps = baseDeps();
+    deps.engine.setResponses([
+      JSON.stringify({ select: "spending" }),
+      JSON.stringify({ type: "budget_progress", category: "Food" }),
+    ]);
+    const out = await runChat(
+      { text: "How much on food this month?", now: Date.now(), userId: "u" },
       deps,
     );
     expect(out.assistant.type).toBe("spending_breakdown");
@@ -141,7 +178,6 @@ describe("runChat — fallbacks", () => {
     expect(out.assistant.type).toBe("spending_breakdown");
     if (out.assistant.type === "spending_breakdown") {
       expect(out.assistant.notice).toMatch(/unavailable/i);
-      expect(out.assistant.notice).toContain("boom");
       expect(out.assistant.totalMinor).toBe("1500");
     }
   });
@@ -153,32 +189,6 @@ describe("runChat — fallbacks", () => {
     expect(out.assistant.type).toBe("error");
     if (out.assistant.type === "error") {
       expect(out.assistant.reason).toMatch(/cancelled/i);
-    }
-  });
-
-  it("re-derives money from local rows even when the model emits its own JSON", async () => {
-    const deps = baseDeps();
-    // Model fabricates spentMinor: 99999 — must be ignored.
-    deps.engine.setResponse(
-      JSON.stringify({
-        type: "budget_progress",
-        category: "Food",
-        spentMinor: "99999",
-        limitMinor: "4000",
-        periodLabel: "This month",
-        pctUsed: 250,
-        status: "over",
-        assetCode: "PHP",
-        decimals: 2,
-      }),
-    );
-    const out = await runChat(
-      { text: "Am I over budget on food?", now: Date.now(), userId: "u" },
-      deps,
-    );
-    expect(out.assistant.type).toBe("budget_progress");
-    if (out.assistant.type === "budget_progress") {
-      expect(out.assistant.spentMinor).toBe("1500");
     }
   });
 });

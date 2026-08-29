@@ -57,6 +57,16 @@ export function AssistantMessageView({ message }: { message: AssistantMessage })
         </div>
       )}
       {widget}
+      {"rawOutput" in message && message.rawOutput && message.type !== "error" && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-400">
+            Raw model output
+          </summary>
+          <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded-(--radius-md) bg-(--surface-2) p-2 font-mono text-[10px] leading-relaxed text-zinc-500">
+            {message.rawOutput}
+          </pre>
+        </details>
+      )}
       {showInspector && <DataInspector message={message} onClose={() => setShowInspector(false)} />}
     </>
   );

@@ -1,28 +1,26 @@
-import type { LlmEngine, CompletionResult } from "@/lib/llm/types";
+import type { LlmEngine } from "@/lib/llm/types";
 import { buildSnapshot, type AssistantSnapshot } from "./serialize";
-import { buildSystemPrompt, buildUserPrompt, buildCorrectivePrompt, toolDefinitions } from "./prompts";
+import { buildSystemPrompt, buildUserPrompt, buildCorrectivePrompt } from "./prompts";
 import { extractJson, schemaByUseCase } from "./schemas";
-import { deterministicFallback, fallbackWithNotice, toolResultToMessage, tsToMsg } from "./handlers";
-import { executeTool, type ToolCtx } from "./tools";
+import { deterministicFallback, fallbackWithNotice, queryResultToMessage, tsToMsg, newId } from "./handlers";
+import { assistantQuerySchema, executeQuery, type QueryCtx } from "./queries";
 import type { AssistantMessage, ChatMessage, UseCaseId } from "./types";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
 
 /**
- * Pure orchestrator implementing a bounded agent loop:
+ * Query-generation orchestrator. The model's ONLY job is to translate the
+ * user's question into one JSON query object (SELECT-only by construction —
+ * the query language has no write path). The data layer computes every figure
+ * from local rows; the widget renders directly. Hallucinated money cannot
+ * reach the UI: hallucinated keys are stripped by Zod, and the executor
+ * re-derives everything from rows.
  *
- *   user question → model picks a tool → executor runs the REAL query over
- *   local rows → result appended as a tool message → model may refine →
- *   first widget-shaped result renders.
- *
- * The invariant from the old design holds: the model only NAMES things
- * (period, category, account); every money figure is re-derived from local
- * rows by the tool executors. A widget payload coming back from a tool is
- * rendered directly — no model round-trip re-emitting numbers it never saw.
- *
- * cavetail: a 1B model's tool arguments are untrusted. Args are parsed
- * tolerantly (extractJson), executors never throw, and any failure degrades
- * to the deterministic fallback derived from the same local rows.
+ * cavetail: small models forget parameters, so the deterministic layer
+ * back-fills period/category from the user's own words (queries.ts). On any
+ * parse/validation failure we retry once with a corrective prompt, then
+ * derive the answer deterministically via inferUseCase. Every raw model
+ * generation is kept on the message (rawOutput) for debugging.
  */
 export type ChatEngineDeps = {
   engine: LlmEngine;
@@ -56,11 +54,14 @@ const USE_CASE_ORDER: UseCaseId[] = [
   "fallback_text",
 ];
 
-const MAX_TOOL_ROUNDS = 3;
+const USE_CASE_OF_SELECT: Record<"spending" | "budget" | "summary" | "log_txn", UseCaseId> = {
+  spending: "spending_query",
+  budget: "budget_check",
+  summary: "weekly_summary",
+  log_txn: "voice_to_txn",
+};
 
-type EngineMessage = { role: "assistant" | "tool" | "user"; content: string; toolCallId?: string };
-
-function buildCtx(deps: ChatEngineDeps, now: number): ToolCtx {
+function buildCtx(deps: ChatEngineDeps, now: number): QueryCtx {
   return {
     accounts: deps.accounts,
     categories: deps.categories,
@@ -80,10 +81,6 @@ function buildSnapshotFor(deps: ChatEngineDeps): AssistantSnapshot {
   });
 }
 
-function newId(): string {
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 26);
-}
-
 function tryAllSchemas(parsed: unknown): {
   useCase: UseCaseId;
   payload: unknown;
@@ -97,29 +94,56 @@ function tryAllSchemas(parsed: unknown): {
   return null;
 }
 
-const TOOL_USE_CASE: Record<string, UseCaseId> = {
-  get_spending_breakdown: "spending_query",
-  get_budget_status: "budget_check",
-  get_summary: "weekly_summary",
-  list_categories: "fallback_text",
-  log_transaction: "voice_to_txn",
-};
+type Dispatch =
+  | { kind: "widget"; message: AssistantMessage }
+  | { kind: "text"; content: string }
+  | { kind: "invalid" };
 
 /**
- * Execute one model-requested tool call and shape the reply for the message
- * list. Returns the widget message when the tool produced data, null when it
- * failed (the error JSON is still appended so the model can retry).
+ * Turn one raw model generation into an answer (or "invalid" to trigger a
+ * corrective retry). Money NEVER comes from the model: queries execute
+ * against local rows, and legacy widget JSON only contributes its use case
+ * (figures are re-derived deterministically).
  */
-function runToolCall(
-  name: string,
-  args: unknown,
-  ctx: ToolCtx,
-): { message: AssistantMessage | null; resultJson: string } {
-  const result = executeTool(name, args, ctx);
-  const usedCase = TOOL_USE_CASE[name] ?? "fallback_text";
-  const message = toolResultToMessage(result, usedCase, ctx.now);
-  const resultJson = result.ok ? JSON.stringify(result.data) : JSON.stringify({ error: result.error });
-  return { message, resultJson };
+function dispatchReply(
+  raw: string,
+  ctx: QueryCtx,
+  userText: string,
+  heuristic: UseCaseId,
+): Dispatch {
+  const parsed = extractJson(raw);
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { kind: "invalid" };
+  }
+  const obj = parsed as Record<string, unknown>;
+
+  // Conversational escape hatch — only trusted for non-data questions.
+  if (typeof obj.reply === "string" && obj.reply.trim()) {
+    return heuristic === "fallback_text"
+      ? { kind: "text", content: obj.reply.trim() }
+      : { kind: "invalid" };
+  }
+
+  // Happy path: a query object. Validated against a closed schema whose ops
+  // are pure reads over local rows; unknown keys (hallucinated money) are
+  // stripped before execution.
+  const q = assistantQuerySchema.safeParse(obj);
+  if (q.success) {
+    const message = queryResultToMessage(
+      executeQuery(q.data, ctx, userText),
+      USE_CASE_OF_SELECT[q.data.select],
+      ctx.now,
+    );
+    if (message) return { kind: "widget", message };
+  }
+
+  // Legacy widget JSON (model skipped the query protocol): only the use case
+  // is trusted; all figures re-derived from local rows.
+  const legacy = tryAllSchemas(parsed);
+  if (legacy) {
+    return { kind: "widget", message: deterministicFallback(legacy.useCase, ctx, userText) };
+  }
+  return { kind: "invalid" };
 }
 
 export async function runChat(
@@ -130,112 +154,90 @@ export async function runChat(
   const snapshot = buildSnapshotFor(deps);
   const system = buildSystemPrompt();
   const userPrompt = buildUserPrompt({ userText: input.text, snapshot });
-  const tools = toolDefinitions();
   const userMsg: ChatMessage = { id: newId(), role: "user", content: input.text, ts: input.now };
-  const onToken = deps.onToken;
-  const engineMessages: EngineMessage[] = [];
+  const heuristic = deps.inferUseCase(input.text, snapshot);
+  const raws: string[] = [];
+
+  const attachRaw = (msg: AssistantMessage): AssistantMessage =>
+    raws.length > 0 ? { ...msg, rawOutput: raws.join("\n---\n") } : msg;
 
   const finish = (assistant: AssistantMessage): ChatEngineResult => ({
     user: userMsg,
-    assistant,
+    assistant: attachRaw(assistant),
   });
 
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    let res: CompletionResult;
-    try {
-      res = await deps.engine.complete({
-        system,
-        user: userPrompt,
-        messages: engineMessages,
-        tools,
-        temperature: 0.1,
-        maxTokens: 600,
-        onToken: (token) => onToken?.(token),
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        return {
-          user: userMsg,
-          assistant: {
-            id: newId(),
-            role: "assistant",
-            type: "error",
-            reason: "Request cancelled.",
-            ts: input.now,
-            usedCase: "fallback_text",
-          },
-        };
-      }
-      const detail = err instanceof Error ? err.message : String(err);
-      const guessed = deps.inferUseCase(input.text, snapshot);
+  const settle = (d: Dispatch): ChatEngineResult | null => {
+    if (d.kind === "widget") return finish(d.message);
+    if (d.kind === "text") {
       return finish(
-        fallbackWithNotice(
-          guessed,
-          ctx,
-          `Model unavailable — showing local results instead. (${detail})`,
-          input.text,
-        ),
+        tsToMsg({ type: "text", content: d.content }, "fallback_text", input.now),
       );
     }
+    return null;
+  };
 
-    // Model called a tool: execute against local rows, append result as a
-    // tool message. The first widget-shaped result terminates the loop.
-    if (res.toolCalls.length > 0) {
-      let widget: AssistantMessage | null = null;
-      for (const tc of res.toolCalls) {
-        const args = extractJson(tc.arguments) ?? {};
-        const { message, resultJson } = runToolCall(tc.name, args, ctx);
-        engineMessages.push({ role: "assistant", content: "", toolCallId: tc.id });
-        engineMessages.push({ role: "tool", content: resultJson, toolCallId: tc.id });
-        if (!widget) widget = message;
-      }
-      if (widget) return finish(widget);
-      continue; // all tool calls errored — let the next round try again
-    }
-
-    // No tool call. Accept a legacy widget JSON (small models sometimes skip
-    // tool-calling) — but only its NAMES; money is re-derived deterministically.
-    const parsed = extractJson(res.content);
-    const match = parsed ? tryAllSchemas(parsed) : null;
-    const heuristic = deps.inferUseCase(input.text, snapshot);
-
-    // A bare "text" widget only wins for conversational input; for a
-    // data-seeking question it's a failed round (the deterministic fallback
-    // answers from local rows instead — the old spec's double-failure path).
-    if (match && (match.useCase !== "fallback_text" || heuristic === "fallback_text")) {
-      if (match.useCase === "fallback_text") {
-        return finish(
-          tsToMsg({ type: "text", content: res.content.trim() }, "fallback_text", input.now),
-        );
-      }
-      return finish(deterministicFallback(match.useCase, ctx, input.text));
-    }
-
-    // Conversational input (heuristic: not data-seeking) → render the model's
-    // text answer directly.
-    if (res.content.trim() && heuristic === "fallback_text") {
-      return finish(
-        tsToMsg({ type: "text", content: res.content.trim() }, "fallback_text", input.now),
-      );
-    }
-
-    // Unusable output for a data-seeking question — one corrective retry
-    // before the rounds run out.
-    engineMessages.push({ role: "assistant", content: res.content || "(empty)" });
-    engineMessages.push({
-      role: "user",
-      content: buildCorrectivePrompt("Output was empty or not valid JSON"),
+  try {
+    const raw1 = await deps.engine.complete({
+      system,
+      user: userPrompt,
+      jsonMode: true,
+      temperature: 0.1,
+      maxTokens: 300,
+      onToken: (token) => deps.onToken?.(token),
     });
-  }
+    raws.push(raw1);
 
-  const guessed = deps.inferUseCase(input.text, snapshot);
-  return finish(deterministicFallback(guessed, ctx, input.text));
+    let d = dispatchReply(raw1, ctx, input.text, heuristic);
+    const settled1 = settle(d);
+    if (settled1) return settled1;
+
+    // Corrective retry: show the model its bad output and ask again.
+    const raw2 = await deps.engine.complete({
+      system,
+      user: buildCorrectivePrompt(raw1),
+      jsonMode: true,
+      temperature: 0.0,
+      maxTokens: 300,
+    });
+    raws.push(raw2);
+    d = dispatchReply(raw2, ctx, input.text, heuristic);
+    const settled2 = settle(d);
+    if (settled2) return settled2;
+
+    // Both rounds failed → deterministic answer from the same local data.
+    const guessed = deps.inferUseCase(input.text, snapshot);
+    return finish(deterministicFallback(guessed, ctx, input.text));
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return {
+        user: userMsg,
+        assistant: {
+          id: newId(),
+          role: "assistant",
+          type: "error",
+          reason: "Request cancelled.",
+          ts: input.now,
+          usedCase: "fallback_text",
+          ...(raws.length > 0 ? { rawOutput: raws.join("\n---\n") } : {}),
+        },
+      };
+    }
+    const detail = err instanceof Error ? err.message : String(err);
+    return finish(
+      fallbackWithNotice(
+        heuristic,
+        ctx,
+        `Model unavailable — showing local results instead. (${detail})`,
+        input.text,
+      ),
+    );
+  }
 }
 
 /**
  * Best-effort use-case inference. Kept dumb (keyword match) on purpose:
  * used only as the fallback tie-breaker when the model produces nothing
- * usable in MAX_TOOL_ROUNDS rounds, or the engine errors/crashes.
+ * usable, or the engine errors/crashes.
  */
 export function inferUseCase(userText: string, snapshot: AssistantSnapshot): UseCaseId {
   const t = userText.toLowerCase();

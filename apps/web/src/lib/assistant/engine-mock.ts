@@ -1,28 +1,21 @@
-import type { CompleteOptions, CompletionResult, LlmEngine, ToolCall } from "@/lib/llm/types";
+import type { CompleteOptions, LlmEngine } from "@/lib/llm/types";
 
 /**
- * Test seam. Each test installs a fixture and the mock returns it on the next
- * complete() call. A fixture is either a raw string (treated as a plain
- * `content` reply, matching the old single-shot contract) or a full
- * `CompletionResult` (letting a test drive the tool-call loop: the model
- * first emits a tool call, then a final content reply).
+ * Test seam. Each test installs a raw model output string and the mock
+ * returns it on the next complete() call. The chat-engine sees a real
+ * LlmEngine contract, so the parse/dispatch/fallback path is exercised
+ * end-to-end without a live model.
  */
-export type MockFixture = string | CompletionResult;
-
 export type MockLlmEngine = LlmEngine & {
-  setResponse(fixture: MockFixture): void;
-  setResponses(fixtures: MockFixture[]): void;
+  setResponse(modelOutput: string): void;
+  setResponses(outputs: string[]): void;
   failNext(reason: Error): void;
-  calls: Array<{ system: string; user: string; messages?: CompleteOptions["messages"] }>;
+  calls: Array<{ system: string; user: string }>;
 };
 
-function coerce(content: string): CompletionResult {
-  return { content, toolCalls: [] };
-}
-
 export function createMockLlmEngine(): MockLlmEngine {
-  const queue: Array<MockFixture | Error> = [];
-  const calls: Array<{ system: string; user: string; messages?: CompleteOptions["messages"] }> = [];
+  const queue: Array<string | Error> = [];
+  const calls: Array<{ system: string; user: string }> = [];
   return {
     calls,
     status: () => "ready",
@@ -30,13 +23,12 @@ export function createMockLlmEngine(): MockLlmEngine {
     async load() {
       // no-op
     },
-    async complete(opts: CompleteOptions): Promise<CompletionResult> {
-      calls.push({ system: opts.system, user: opts.user, messages: opts.messages });
+    async complete(opts: CompleteOptions) {
+      calls.push({ system: opts.system, user: opts.user });
       const next = queue.shift();
       if (next instanceof Error) throw next;
-      if (typeof next === "string") return coerce(next);
-      if (next) return next;
-      return coerce(JSON.stringify({ type: "text", content: "no fixture" }));
+      if (typeof next === "string") return next;
+      return JSON.stringify({ type: "text", content: "no fixture" });
     },
     async unload() {
       // no-op
@@ -50,25 +42,17 @@ export function createMockLlmEngine(): MockLlmEngine {
     async deleteModel() {
       // no-op
     },
-    setResponse(fixture: MockFixture) {
+    setResponse(out: string) {
       queue.length = 0;
-      queue.push(fixture);
+      queue.push(out);
     },
-    setResponses(fixtures: MockFixture[]) {
+    setResponses(outputs: string[]) {
       queue.length = 0;
-      queue.push(...fixtures);
+      queue.push(...outputs);
     },
     failNext(reason: Error) {
       queue.length = 0;
       queue.push(reason);
     },
-  };
-}
-
-/** Convenience: build a tool-call fixture (a model turn that calls a tool). */
-export function toolCall(name: string, args: unknown): CompletionResult {
-  return {
-    content: "",
-    toolCalls: [{ id: `call-${name}`, name, arguments: JSON.stringify(args) } as ToolCall],
   };
 }

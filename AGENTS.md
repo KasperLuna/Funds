@@ -144,34 +144,40 @@ No transaction data ever leaves the device. No network calls during inference.
 - `lib/llm/` — LLM engine layer: `capability.ts` (WebGPU/OPFS probes), `opfs-cache.ts`
   (model weight persistence), `webllm-engine.ts` (real WebLLM wrapper), `index.ts`
   (singleton factory + mock seam).
-- `lib/assistant/` — orchestrator: `chat-engine.ts` (bounded tool-calling agent loop:
-  prompt → model calls a tool via WebLLM function-calling → executor runs the real
-  query over local rows → widget renders; max 3 rounds, then deterministic fallback),
-  `tools.ts` (tool JSON-schemas + executors — the only place money is computed),
-  `period.ts` (temporal phrase → [from,to] range: "last month", snake_case tool ids),
-  `schemas.ts` (Zod schemas per use case), `prompts.ts` (system + user prompts),
-  `serialize.ts` (local snapshot for model context), `handlers.ts` (deterministic
-  fallback via the same tool executors — model only names things).
+- `lib/assistant/` — orchestrator: `chat-engine.ts` (query generation: prompt → model
+  emits ONE read-only JSON query under json_object → data layer computes the widget;
+  one corrective retry, then deterministic fallback; raw generations kept on the message
+  as `rawOutput`), `queries.ts` (the query language — Zod schema + executors, the only
+  place money is computed), `period.ts` (temporal phrase → [from,to] range: "last month",
+  snake_case ids), `schemas.ts` (Zod schemas per use case + `extractJson`), `prompts.ts`
+  (system prompt = query generator with few-shot examples), `serialize.ts` (local snapshot
+  for model context), `handlers.ts` (deterministic fallback via the same query executor —
+  model only names things).
 - `components/assistant/` — React layer: `use-chat.tsx` (ChatProvider context), AssistantPanel
   (chat thread + input), AssistantButton (floating FAB), AssistantSheet (bottom-sheet
-  variant), AssistantMessageView (type-switch renderer), GenUI widgets in `messages/`.
+  variant), AssistantMessageView (type-switch renderer + collapsed raw-output debug block),
+  GenUI widgets in `messages/`.
 - `app/dashboard/assistant/page.tsx` — full-page route (`/dashboard/assistant`).
 
 ### Key invariants
 
-- The agent uses **JSON-mode function-calling** (`{"tool":...,"arguments":{...}}` /
-  `{"reply":...}` under web-llm's grammar-constrained `json_object`). web-llm 0.2.84's
-  native `tools` only support Hermes models and crash on any other model via
-  `ToolCallOutputParseError` — never pass `tools` to `completions.create`. The model
-  only NAMES things (tool, period, category, account); every money figure is re-derived
-  by tool executors from local rows. First widget-shaped tool result terminates the loop.
+- The model is a **query generator**, not an agent with tools. It replies with exactly ONE
+  JSON query object (`{"select":"spending|budget|summary|log_txn","period":..,"category":..}`
+  or `{"reply":"..."}`) under web-llm's grammar-constrained `json_object`. The query language
+  is **SELECT-only by construction** — no write path exists, so a hallucinating model cannot
+  mutate data. Hallucinated keys are stripped by Zod; every money figure is re-derived by
+  query executors from local rows.
+- web-llm 0.2.84's native `tools` only support the five Hermes models (`functionCallingModelIds`)
+  and crash every other model via `ToolCallOutputParseError` on the streaming path — **never
+  pass `tools` to `completions.create`**.
 - Money is **never** passed to the model as BigInt. It is serialized as decimal strings
-  in the snapshot, and handlers re-derive it from local rows after Zod validation.
+  in the snapshot, and executors re-derive it from local rows after Zod validation.
 - The model never generates JSX. Each validated schema maps to a fixed React component
   via a type-discriminated switch — no dynamic code generation.
-- If the model produces nothing usable (no valid tool call / widget JSON) after the
-  rounds run out, the chat-engine falls back to a deterministic answer derived from
-  the same local data (no broken UI, no model-reliant text).
+- If the model produces nothing usable (no valid query after one corrective retry), the
+  chat-engine falls back to a deterministic answer derived from the same local data
+  (no broken UI, no model-reliant text). The deterministic layer also back-fills
+  period/category from the user's own words when a small model omits them.
 
 ### Device gating
 

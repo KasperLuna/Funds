@@ -80,6 +80,12 @@ type AssistantBase = {
   usedCase: UseCaseId;
   /** Optional failure note — set when a widget was derived without model help. */
   notice?: string;
+  /**
+   * Verbatim model generations for every round of this request, kept in the
+   * transcript for debugging (the widget replaces the streamed text, but the
+   * raw output stays attached and renders collapsed in the bubble).
+   */
+  rawOutput?: string;
 };
 
 export type AssistantMessage =
