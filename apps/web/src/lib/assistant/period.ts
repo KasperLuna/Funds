@@ -65,6 +65,63 @@ export function resolvePeriod(
   return buildRange("this_month", nowDate);
 }
 
+export type CompareToId = "previous" | "last_year";
+
+export function resolveCompareTo(
+  text: string | null | undefined,
+): CompareToId {
+  const t = typeof text === "string" ? text.replace(/[_-]+/g, " ") : "";
+  if (/\b(last year|year ago|year over year|yoy|year on year)\b/i.test(t)) return "last_year";
+  return "previous";
+}
+
+/** Range of the equivalent prior period for a given PeriodRange. */
+export function previousRange(range: PeriodRange, kind: CompareToId = "previous"): PeriodRange {
+  if (kind === "last_year") {
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+    from.setFullYear(from.getFullYear() - 1);
+    to.setFullYear(to.getFullYear() - 1);
+    return { id: range.id, label: `${range.label} (last year)`, from: from.getTime(), to: to.getTime() };
+  }
+  switch (range.id) {
+    case "this_week":
+      return buildRange("last_week", new Date(range.to));
+    case "last_week":
+      return {
+        id: "this_week",
+        label: "2 weeks ago",
+        from: range.from - 7 * 24 * 60 * 60 * 1000,
+        to: range.from,
+      };
+    case "this_month":
+      return buildRange("last_month", new Date(range.to));
+    case "last_month": {
+      const from = new Date(range.from);
+      const to = new Date(range.to);
+      from.setMonth(from.getMonth() - 1);
+      to.setMonth(to.getMonth() - 1);
+      return { id: range.id, label: "2 months ago", from: from.getTime(), to: to.getTime() };
+    }
+    case "30d":
+      return {
+        id: "30d",
+        label: "Previous 30 days",
+        from: range.from - 30 * 24 * 60 * 60 * 1000,
+        to: range.from,
+      };
+    case "this_year":
+      return buildRange("last_year", new Date(range.to));
+    case "last_year": {
+      const from = new Date(range.from);
+      const to = new Date(range.to);
+      from.setFullYear(from.getFullYear() - 1);
+      to.setFullYear(to.getFullYear() - 1);
+      return { id: range.id, label: "2 years ago", from: from.getTime(), to: to.getTime() };
+    }
+  }
+}
+
 function buildRange(id: PeriodId, now: Date): PeriodRange {
   switch (id) {
     case "this_week": {

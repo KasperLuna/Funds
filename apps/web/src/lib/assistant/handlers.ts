@@ -22,8 +22,29 @@ const USE_CASE_QUERY: Record<UseCaseId, AssistantQuery | null> = {
   budget_check: { select: "budget" },
   weekly_summary: { select: "summary" },
   voice_to_txn: { select: "log_txn" },
+  compare_query: { select: "compare" },
+  merchants_query: { select: "merchants" },
+  recurring_query: { select: "recurring" },
+  burn_query: { select: "burn" },
+  anomalies_query: { select: "anomalies" },
   fallback_text: null,
 };
+
+const EMPTY_TEXT: Record<string, string> = {
+  spending_empty: "No spending recorded for {period} yet.",
+  budget_empty: "No budget found for {period}.",
+  compare_empty: "Not enough data to compare for {period} yet.",
+  merchants_empty: "No merchant spending found for {period}.",
+  recurring_empty: "No recurring charges detected in {period}.",
+  burn_empty: "Not enough spend yet to project a pace for {period}.",
+  anomalies_empty: "No unusually large transactions in {period}.",
+};
+
+function emptyText(type: string, periodLabel: string): string {
+  const tpl = EMPTY_TEXT[type];
+  if (!tpl) return `No data available for ${periodLabel.toLowerCase()}.`;
+  return tpl.replace("{period}", periodLabel.toLowerCase());
+}
 
 /**
  * Convert a query result into a renderable AssistantMessage. Returns null only
@@ -36,13 +57,9 @@ export function queryResultToMessage(
 ): AssistantMessage | null {
   if (!result.ok) return null;
   const data = result.data as { type?: string; periodLabel?: string };
-  if (data.type === "spending_empty" || data.type === "budget_empty") {
+  if (typeof data.type === "string" && data.type.endsWith("_empty")) {
     const label = data.periodLabel ?? "this period";
-    return tsToMsg(
-      { type: "text", content: `No spending recorded for ${label.toLowerCase()} yet.` },
-      usedCase,
-      ts,
-    );
+    return tsToMsg({ type: "text", content: emptyText(data.type, label) }, usedCase, ts);
   }
   return tsToMsg(result.data, usedCase, ts);
 }

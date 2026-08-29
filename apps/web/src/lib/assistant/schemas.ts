@@ -6,6 +6,19 @@ import { z } from "zod";
  * validates. The handler signature is `(payload, ctx) => AssistantMessage`
  * and runs ONLY after `schema.safeParse` succeeds.
  */
+const sliceShape = z.object({
+  category: z.string().min(1).max(80),
+  amountMinor: z.string().regex(/^-?\d+$/),
+  pct: z.number().min(0).max(100),
+});
+
+const scopeShape = z
+  .object({
+    includesArchived: z.boolean(),
+    includesExcluded: z.boolean(),
+  })
+  .optional();
+
 export const budgetProgressSchema = z.object({
   type: z.literal("budget_progress"),
   category: z.string().min(1).max(80),
@@ -16,12 +29,15 @@ export const budgetProgressSchema = z.object({
   status: z.enum(["under", "near", "over"]),
   assetCode: z.string().min(1).max(8),
   decimals: z.number().int().min(0).max(18),
+  scope: scopeShape,
 });
 
-export const spendingSliceSchema = z.object({
-  category: z.string().min(1).max(80),
+export const spendingSliceSchema = sliceShape;
+
+export const topTxnSchema = z.object({
+  description: z.string().min(1).max(200),
   amountMinor: z.string().regex(/^\d+$/),
-  pct: z.number().min(0).max(100),
+  dateLabel: z.string().min(1).max(40),
 });
 
 export const spendingBreakdownSchema = z.object({
@@ -31,6 +47,17 @@ export const spendingBreakdownSchema = z.object({
   decimals: z.number().int().min(0).max(18),
   totalMinor: z.string().regex(/^\d+$/),
   slices: z.array(spendingSliceSchema).min(1).max(12),
+  topTxn: topTxnSchema.optional(),
+  dailyTrend: z
+    .array(
+      z.object({
+        day: z.string().min(1).max(20),
+        amountMinor: z.string().regex(/^\d+$/),
+      }),
+    )
+    .max(120)
+    .optional(),
+  scope: scopeShape,
 });
 
 export const summaryDashboardSchema = z.object({
@@ -41,6 +68,7 @@ export const summaryDashboardSchema = z.object({
   incomeMinor: z.string().regex(/^\d+$/),
   expenseMinor: z.string().regex(/^\d+$/),
   netMinor: z.string().regex(/^-?\d+$/),
+  savingsRatePct: z.number().min(-200).max(200).nullable(),
   topCategories: z.array(spendingSliceSchema).max(6),
   budgets: z
     .array(
@@ -51,6 +79,7 @@ export const summaryDashboardSchema = z.object({
       }),
     )
     .max(8),
+  scope: scopeShape,
 });
 
 export const voiceTxnPrefillSchema = z.object({
@@ -65,11 +94,110 @@ export const voiceTxnPrefillSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 
+export const periodCompareSchema = z.object({
+  type: z.literal("period_compare"),
+  category: z.string().nullable(),
+  currentLabel: z.string().min(1).max(40),
+  priorLabel: z.string().min(1).max(60),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  currentMinor: z.string().regex(/^\d+$/),
+  priorMinor: z.string().regex(/^\d+$/),
+  deltaPct: z.number().min(-1000).max(10000).nullable(),
+  scope: scopeShape,
+});
+
+export const merchantBreakdownSchema = z.object({
+  type: z.literal("merchant_breakdown"),
+  periodLabel: z.string().min(1).max(40),
+  category: z.string().nullable(),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  totalMinor: z.string().regex(/^\d+$/),
+  merchants: z
+    .array(
+      z.object({
+        description: z.string().min(1).max(200),
+        amountMinor: z.string().regex(/^\d+$/),
+        count: z.number().int().min(1).max(9999),
+      }),
+    )
+    .min(1)
+    .max(12),
+  scope: scopeShape,
+});
+
+export const recurringListSchema = z.object({
+  type: z.literal("recurring_list"),
+  periodLabel: z.string().min(1).max(40),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  totalMonthlyMinor: z.string().regex(/^\d+$/),
+  items: z
+    .array(
+      z.object({
+        description: z.string().min(1).max(200),
+        avgMinor: z.string().regex(/^\d+$/),
+        occurrences: z.number().int().min(2).max(9999),
+        lastDateLabel: z.string().min(1).max(40),
+        cadence: z.enum(["weekly", "biweekly", "monthly", "irregular"]),
+        monthlyCostMinor: z.string().regex(/^\d+$/),
+      }),
+    )
+    .min(1)
+    .max(12),
+  scope: scopeShape,
+});
+
+export const burnRateSchema = z.object({
+  type: z.literal("burn_rate"),
+  periodLabel: z.string().min(1).max(40),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  currentMinor: z.string().regex(/^\d+$/),
+  priorMonthMinor: z.string().regex(/^\d+$/),
+  dailyAverageMinor: z.string().regex(/^\d+$/),
+  daysElapsed: z.number().int().min(1).max(366),
+  daysInPeriod: z.number().int().min(1).max(366),
+  projectedMinor: z.string().regex(/^\d+$/),
+  vsPriorPct: z.number().min(-1000).max(10000).nullable(),
+  scope: scopeShape,
+});
+
+export const anomalyListSchema = z.object({
+  type: z.literal("anomaly_list"),
+  periodLabel: z.string().min(1).max(40),
+  assetCode: z.string().min(1).max(8),
+  decimals: z.number().int().min(0).max(18),
+  items: z
+    .array(
+      z.object({
+        description: z.string().min(1).max(200),
+        amountMinor: z.string().regex(/^\d+$/),
+        dateLabel: z.string().min(1).max(40),
+        multipleOfMedian: z.number().min(1).max(100),
+        medianMinor: z.string().regex(/^\d+$/),
+      }),
+    )
+    .max(5),
+  scope: scopeShape,
+});
+
+/** TL;DR schema for the second model call. Strict on length to keep cost down. */
+export const tldrSchema = z.object({
+  tldr: z.string().min(1).max(200),
+});
+
 export const schemaByUseCase = {
   spending_query: spendingBreakdownSchema,
   budget_check: budgetProgressSchema,
   weekly_summary: summaryDashboardSchema,
   voice_to_txn: voiceTxnPrefillSchema,
+  compare_query: periodCompareSchema,
+  merchants_query: merchantBreakdownSchema,
+  recurring_query: recurringListSchema,
+  burn_query: burnRateSchema,
+  anomalies_query: anomalyListSchema,
   fallback_text: z.object({ type: z.literal("text"), content: z.string().min(1) }),
 } as const;
 

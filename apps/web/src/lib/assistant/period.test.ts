@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePeriod, rangeToYearMonth } from "./period";
+import { resolvePeriod, rangeToYearMonth, previousRange, resolveCompareTo } from "./period";
 
 // Anchor: 2026-08-29 12:00 UTC (Saturday). Local-time helpers in period.ts
 // use the runtime TZ; assertions target boundaries, not absolute clock reads.
@@ -39,5 +39,40 @@ describe("resolvePeriod", () => {
     const { year, month } = rangeToYearMonth(resolvePeriod("last_month", NOW));
     expect(year).toBe(2026);
     expect(month).toBe(6); // July
+  });
+});
+
+describe("previousRange", () => {
+  it("returns the prior equivalent month for this_month", () => {
+    const tm = resolvePeriod("this_month", NOW);
+    const prev = previousRange(tm);
+    expect(prev.label).toBe("Last month");
+    expect(prev.to).toBe(tm.from);
+  });
+
+  it("returns last_week for this_week", () => {
+    const tw = resolvePeriod("this_week", NOW);
+    const prev = previousRange(tw);
+    expect(prev.id).toBe("last_week");
+    expect(prev.to).toBe(tw.from);
+  });
+
+  it("returns the same calendar range one year earlier when kind=last_year", () => {
+    const tm = resolvePeriod("this_month", NOW);
+    const prev = previousRange(tm, "last_year");
+    expect(prev.from).toBe(new Date(2025, 7, 1).getTime());
+    expect(prev.label).toContain("last year");
+  });
+});
+
+describe("resolveCompareTo", () => {
+  it("defaults to previous", () => {
+    expect(resolveCompareTo("this month vs last")).toBe("previous");
+    expect(resolveCompareTo(null)).toBe("previous");
+  });
+  it("detects year-over-year intent", () => {
+    expect(resolveCompareTo("year over year")).toBe("last_year");
+    expect(resolveCompareTo("year-ago")).toBe("last_year");
+    expect(resolveCompareTo("YoY")).toBe("last_year");
   });
 });

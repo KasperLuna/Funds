@@ -96,6 +96,22 @@ describe("assistant/schemas", () => {
         incomeMinor: "100",
         expenseMinor: "500",
         netMinor: "-400",
+        savingsRatePct: null,
+        topCategories: [],
+        budgets: [],
+      });
+      expect(r.success).toBe(true);
+    });
+    it("accepts a savingsRatePct integer", () => {
+      const r = summaryDashboardSchema.safeParse({
+        type: "summary_dashboard",
+        periodLabel: "This week",
+        assetCode: "PHP",
+        decimals: 2,
+        incomeMinor: "1000",
+        expenseMinor: "200",
+        netMinor: "800",
+        savingsRatePct: 80,
         topCategories: [],
         budgets: [],
       });
