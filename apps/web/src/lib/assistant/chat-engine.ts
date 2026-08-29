@@ -27,6 +27,8 @@ export type ChatEngineDeps = {
   assetsById: Map<string, { code: string; decimals: number }>;
   /** Heuristic to pick the default use case when the model returns generic text. */
   inferUseCase: (userText: string, snapshot: AssistantSnapshot) => UseCaseId;
+  /** Called for each token as the model streams its response. */
+  onToken?: (token: string) => void;
 };
 
 export type ChatEngineInput = {
@@ -99,6 +101,8 @@ export async function runChat(
   void useCaseHint; // future: bias which schema the orchestrator accepts first
 
   let raw: string;
+  let partialOutput = "";
+  const onToken = deps.onToken;
   try {
     raw = await deps.engine.complete({
       system,
@@ -106,12 +110,18 @@ export async function runChat(
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 600,
+      onToken: (token) => {
+        partialOutput += token;
+        onToken?.(token);
+      },
     });
   } catch (err) {
     const reason =
       err instanceof DOMException && err.name === "AbortError"
         ? "Request cancelled."
-        : "Model unavailable. Showing local results instead.";
+        : partialOutput
+          ? `Model error. Raw output:\n${partialOutput}`
+          : "Model unavailable. Showing local results instead.";
     return {
       user: { id: newId(), role: "user", content: input.text, ts: input.now },
       assistant: {
@@ -119,6 +129,7 @@ export async function runChat(
         role: "assistant",
         type: "error",
         reason,
+        rawOutput: partialOutput || undefined,
         ts: input.now,
         usedCase: "fallback_text",
       },

@@ -121,7 +121,10 @@ export class WebLlmEngine implements LlmEngine {
         throw new DOMException("Aborted", "AbortError");
       }
       const delta = chunk.choices?.[0]?.text;
-      if (delta) out += delta;
+      if (delta) {
+        out += delta;
+        opts.onToken?.(delta);
+      }
     }
     return out;
   }

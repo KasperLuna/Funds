@@ -218,7 +218,7 @@ function AssistantStatus() {
   const [cachedModels, setCachedModels] = useState<Record<string, boolean>>({});
   const [modelIds, setModelIds] = useState<ModelId[]>([]);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
-  const [downloading, setDownloading] = useState(false);
+  const [downloadingModel, setDownloadingModel] = useState<ModelId | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -245,7 +245,7 @@ function AssistantStatus() {
   }, []);
 
   const handleDownload = useCallback(async (modelId: ModelId) => {
-    setDownloading(true);
+    setDownloadingModel(modelId);
     setDownloadProgress(0);
     setDownloadError(null);
     try {
@@ -262,7 +262,7 @@ function AssistantStatus() {
       setDownloadError(msg);
       console.error("Model download failed:", err);
     } finally {
-      setDownloading(false);
+      setDownloadingModel(null);
       setDownloadProgress(null);
     }
   }, []);
@@ -315,7 +315,7 @@ function AssistantStatus() {
                 <Button variant="ghost" size="sm" onClick={() => void handleUnload()}>
                   Unload
                 </Button>
-              ) : downloading ? (
+              ) : downloadingModel === id ? (
                 downloadProgress !== null ? (
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">

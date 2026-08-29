@@ -18,6 +18,7 @@ type State = {
   support: LlmSupport | null;
   loadProgress: { loaded: number; total: number } | null;
   staleNotice: boolean;
+  streamingText: string | null;
 };
 
 type Action =
@@ -26,6 +27,7 @@ type Action =
   | { type: "support"; support: LlmSupport }
   | { type: "load-progress"; progress: { loaded: number; total: number } | null }
   | { type: "stale"; stale: boolean }
+  | { type: "stream-text"; text: string | null }
   | { type: "reset" };
 
 const initial: State = {
@@ -34,6 +36,7 @@ const initial: State = {
   support: null,
   loadProgress: null,
   staleNotice: false,
+  streamingText: null,
 };
 
 function reducer(state: State, action: Action): State {
@@ -48,6 +51,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, loadProgress: action.progress };
     case "stale":
       return { ...state, staleNotice: action.stale };
+    case "stream-text":
+      return { ...state, streamingText: action.text };
     case "reset":
       return initial;
   }
@@ -59,6 +64,7 @@ type ChatContextValue = {
   support: LlmSupport | null;
   loadProgress: { loaded: number; total: number } | null;
   staleNotice: boolean;
+  streamingText: string | null;
   send: (text: string) => Promise<void>;
   reset: () => void;
   /** Test seam: inject a mock engine. */
@@ -189,6 +195,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     engineRef.current = engine;
   }, []);
 
+  const streamingBufRef = useRef("");
+
   const send = useCallback(
     async (text: string) => {
       if (!text.trim()) return;
@@ -213,6 +221,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
 
       dispatch({ type: "status", status: "thinking" });
+      // Append user message immediately so the bubble appears while the model runs.
+      dispatch({
+        type: "append",
+        message: {
+          id: crypto.randomUUID().replace(/-/g, "").slice(0, 26),
+          role: "user",
+          content: text,
+          ts: Date.now(),
+        },
+      });
+      streamingBufRef.current = "";
       const deps: ChatEngineDeps = {
         engine,
         accounts,
@@ -221,12 +240,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         txns,
         assetsById,
         inferUseCase,
+        onToken: (token) => {
+          streamingBufRef.current += token;
+          dispatch({ type: "stream-text", text: streamingBufRef.current });
+        },
       };
       const result = await runChat(
         { text, now: Date.now(), userId: userId ?? "local" },
         deps,
       );
-      dispatch({ type: "append", message: result.user });
+      dispatch({ type: "stream-text", text: null });
       dispatch({ type: "append", message: result.assistant });
       dispatch({ type: "status", status: "idle" });
     },
@@ -242,6 +265,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       support: state.support,
       loadProgress: state.loadProgress,
       staleNotice: state.staleNotice,
+      streamingText: state.streamingText,
       send,
       reset,
       setEngine,

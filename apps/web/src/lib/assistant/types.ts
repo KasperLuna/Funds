@@ -79,7 +79,7 @@ export type AssistantMessage =
   | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & SummaryDashboardPayload)
   | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & VoiceTxnPrefillPayload)
   | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId; type: "text" } & FallbackTextPayload)
-  | { id: string; role: "assistant"; type: "error"; reason: string; ts: number; usedCase: UseCaseId };
+  | { id: string; role: "assistant"; type: "error"; reason: string; rawOutput?: string; ts: number; usedCase: UseCaseId };
 
 export type UserMessage = {
   id: string;

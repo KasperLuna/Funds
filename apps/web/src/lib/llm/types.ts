@@ -37,6 +37,8 @@ export type CompleteOptions = {
   temperature: number;
   /** Hard cap on tokens the model may emit; prevents runaway generation. */
   maxTokens: number;
+  /** Called for each token as it streams. Optional — engine accumulates regardless. */
+  onToken?: (token: string) => void;
 };
 
 export interface LlmEngine {

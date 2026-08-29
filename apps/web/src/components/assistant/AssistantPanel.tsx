@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw, Settings } from "lucide-react";
+import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw, Settings, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useChat } from "./use-chat";
 import { AssistantMessageView } from "./AssistantMessageView";
@@ -16,7 +16,7 @@ import { MODEL_LABELS } from "@/lib/llm/types";
  * dashboard pages.
  */
 export function AssistantPanel({ onClose }: { onClose?: () => void }) {
-  const { messages, status, support, send, reset } = useChat();
+  const { messages, status, support, streamingText, send, reset } = useChat();
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const unsupported = support && support.ok === false ? support : null;
@@ -74,7 +74,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
 
       <StaleBanner />
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
           <EmptyChat onPick={(text) => setDraft(text)} />
         ) : (
@@ -102,6 +102,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
             </div>
           ))
         )}
+        {status === "thinking" && streamingText && <ThinkingBlock text={streamingText} />}
         {status === "thinking" && <TypingIndicator />}
         {status === "loading-model" && <ModelLoadingIndicator support={support?.ok ? support : null} />}
         <div ref={bottomRef} />
@@ -185,6 +186,35 @@ function TypingIndicator() {
         <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:120ms]" />
         <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:240ms]" />
       </span>
+    </div>
+  );
+}
+
+function ThinkingBlock({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-xs">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-zinc-400 hover:text-zinc-300"
+      >
+        <ChevronDown
+          className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
+          aria-hidden
+        />
+        <span className="font-medium">Thinking</span>
+        <span className="ml-auto text-[10px] text-zinc-500">
+          {text.split(/\s+/).length} tokens
+        </span>
+      </button>
+      {open && (
+        <div className="border-t border-(--border) px-3 py-2">
+          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-relaxed text-zinc-500">
+            {text}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
