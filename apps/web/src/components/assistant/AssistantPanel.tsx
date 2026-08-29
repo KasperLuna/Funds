@@ -34,7 +34,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-3">
+      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-2.5">
         <span className="inline-flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
           Assistant
@@ -74,7 +74,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
 
       <StaleBanner />
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
         {messages.length === 0 ? (
           <EmptyChat onPick={(text) => setDraft(text)} />
         ) : (
@@ -115,7 +115,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
           void send(draft);
           setDraft("");
         }}
-        className="flex items-center gap-2 border-t border-(--border) bg-(--surface-1) px-3 py-3"
+        className="flex items-center gap-2 border-t border-(--border) bg-(--surface-1) px-3 py-2.5"
       >
         <input
           type="text"
@@ -146,17 +146,17 @@ function EmptyChat({ onPick }: { onPick: (text: string) => void }) {
     "Summarize this week",
   ];
   return (
-    <div className="flex flex-col items-center gap-4 pt-8 text-center">
-      <div className="rounded-full bg-(--surface-2) p-3" aria-hidden>
-        <Sparkles className="h-6 w-6 text-(--accent)" />
+    <div className="flex flex-col items-center gap-3 pt-4 text-center">
+      <div className="rounded-full bg-(--surface-2) p-2.5" aria-hidden>
+        <Sparkles className="h-5 w-5 text-(--accent)" />
       </div>
       <div>
         <p className="text-sm font-semibold">Ask about your money</p>
-        <p className="mt-1 max-w-xs text-xs text-zinc-500">
+        <p className="mt-0.5 max-w-xs text-xs text-zinc-500">
           Everything runs on this device. No data leaves the phone.
         </p>
       </div>
-      <ul className="flex w-full flex-col gap-2">
+      <ul className="flex w-full flex-col gap-1.5">
         {suggestions.map((s) => (
           <li key={s}>
             <button
@@ -267,7 +267,7 @@ function UnsupportedView({
   const m = messages[reason];
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-3">
+      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-2.5">
         <span className="inline-flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
           Assistant

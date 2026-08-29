@@ -27,6 +27,18 @@
   --radius-md: 5px;
   --radius-lg: 8px;
   --radius-sheet: 10px;
+  /* Chrome heights for layout-aware sizing. The mobile top header is
+     `py-2.5` (10+10) + content (~36pt) = ~56pt; the bottom nav is the same
+     plus the protruding + button row = ~88pt. Desktop has neither. */
+  --chrome-header-h: 0px;
+  --chrome-footer-h: 0px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --chrome-header-h: 56px;
+    --chrome-footer-h: 88px;
+  }
 }
 
 @layer base {
