@@ -49,36 +49,11 @@ jobs:
       # stopped ("cannot stop container ... is not running"), which aborts the
       # whole deploy before migrate/check. Force-remove any leftover project
       # containers first (docker rm -f works on stopped containers too) so a
-      # stale container (e.g. the old powersync) can never block a deploy.
+      # stale container can never block a deploy.
       - run: |
           docker rm -f $(docker ps -aq --filter "label=com.docker.compose.project=funds") 2>/dev/null || true
           docker compose -f infra/docker-compose.yml down --remove-orphans
       - run: docker image prune -af
-      # cavetail: postgres won't start with wal_level=replica while an orphaned
-      # logical replication slot (left by the old PowerSync service) exists
-      # ("logical replication slot ... exists, but wal_level < logical").
-      # Chicken-and-egg: the slot can only be dropped while postgres runs with
-      # wal_level=logical. Bootstrap a throwaway postgres on the same pgdata with
-      # wal_level=logical, drop any stale powersync_* slots, then remove it so the
-      # normal container starts clean. No-op on healthy hosts.
-      - name: Drop stale PowerSync replication slots
-        run: |
-          set -euo pipefail
-          set -a; source infra/.env; set +a
-          docker rm -f $(docker ps -aq --filter "label=com.docker.compose.project=funds") 2>/dev/null || true
-          docker run -d --rm --name funds-slot-fix \
-            -e POSTGRES_USER="$POSTGRES_USER" \
-            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            -e POSTGRES_DB="$POSTGRES_DB" \
-            -v funds_pgdata:/var/lib/postgresql/data \
-            postgres:16-alpine -c wal_level=logical
-          for i in $(seq 1 60); do
-            docker exec funds-slot-fix pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1 && break
-            sleep 2
-          done
-          docker exec funds-slot-fix psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-            -c "SELECT pg_drop_replication_slot(slot_name) FROM pg_replication_slots WHERE slot_name LIKE 'powersync_%'" || true
-          docker rm -f funds-slot-fix
       # cavetail: migrate runs on host against localhost:5432, so postgres must
       # be up first (fresh box has nothing running).
       - run: docker compose -f infra/docker-compose.yml up -d --no-build postgres

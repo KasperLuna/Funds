@@ -2,7 +2,7 @@
 
 Execution order for the rewrite. Sources of truth: `logic.md` (domain rules), `architecture.md` (stack/topology), `design.md` (UX). This file defines phases, deliverables, and acceptance gates. Phases are vertical slices — each ends `docker compose up`-deployable and demoable.
 
-> **Status 2026-08-24:** Phases 1–4 are live in production (VPS + cloudflared + sync working end-to-end). Phases 5–14 are the forward roadmap. Phase 1's deliverable changed mid-flight: the VPS is also a proxy and OOMs under a heavy `next build`, so the build was moved off-host (see Phase 1 notes). PowerSync was since removed in favor of a Dexie local-first store + custom delta-sync engine.
+> **Status 2026-08-24:** Phases 1–4 are live in production (VPS + cloudflared + sync working end-to-end). Phases 5–14 are the forward roadmap. Phase 1's deliverable changed mid-flight: the VPS is also a proxy and OOMs under a heavy `next build`, so the build was moved off-host (see Phase 1 notes). The client uses a Dexie local-first store + custom delta-sync engine.
 
 ---
 

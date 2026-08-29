@@ -110,12 +110,10 @@ Never merge a schema change without running `db:check` against a migrated DB.
 - `apps/web/.env` drives the dev server; `DATABASE_URL` points at the local stack.
 - Guest/demo account: `demo@funds.local`.
 
-## Custom sync architecture (no PowerSync)
+## Custom sync architecture
 
 - The client uses a **Dexie (IndexedDB) local store** (`apps/web/src/lib/sync/store.ts`)
-  + a lightweight sync engine (`apps/web/src/lib/sync/engine.ts`). There is NO
-  PowerSync service, NO `/api/sync/token`, NO `/sync/stream` proxy, and NO
-  `POWER_SYNC_*` / `PS_*` env vars. Do not reintroduce them.
+  + a lightweight sync engine (`apps/web/src/lib/sync/engine.ts`).
 - **Push**: writes land in the Dexie outbox; the engine drains it via
   `trpc.applyMutations` (idempotent, per-row savepoints). **Pull**: `GET
   /api/sync/data?since=<ms>` returns deltas since the server-echoed watermark,
