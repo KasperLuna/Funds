@@ -27,6 +27,7 @@ import { SyncStatus } from "@/components/settings/sync-status";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { useSync } from "@/lib/sync/sync-context";
+import { useAssistantSheet } from "@/components/assistant/assistant-sheet-context";
 import {
   subscribeToPush,
   unsubscribeFromPush,
@@ -219,6 +220,7 @@ export default function SettingsPage() {
 }
 
 function AssistantStatus() {
+  const { setOpen: setAssistantOpen } = useAssistantSheet();
   const [support, setSupport] = useState<string | null>(null);
   const [engineStatus, setEngineStatus] = useState<string>("not-loaded");
   const [currentModel, setCurrentModel] = useState<string | null>(null);
@@ -290,13 +292,14 @@ function AssistantStatus() {
           Ask about your money in plain language. Everything runs on this device — no
           data leaves the phone.
         </p>
-        <Link
-          href="/dashboard/settings?openAssistant=1"
+        <button
+          type="button"
+          onClick={() => setAssistantOpen(true)}
           className="mb-3 inline-flex items-center gap-1.5 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
         >
           <MessageSquare className="h-3.5 w-3.5" aria-hidden />
           Open chat
-        </Link>
+        </button>
         <div className="flex items-center justify-between text-sm">
           <span className="text-zinc-500">Capability</span>
           <span className="text-zinc-300">{support ?? "checking…"}</span>

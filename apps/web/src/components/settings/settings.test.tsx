@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import SettingsPage from "@/app/dashboard/settings/page";
+import { AssistantSheetProvider } from "@/components/assistant/assistant-sheet-context";
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
@@ -31,7 +32,9 @@ describe("SettingsPage", () => {
   const renderSettings = () =>
     render(
       <QueryClientProvider client={queryClient}>
-        <SettingsPage />
+        <AssistantSheetProvider>
+          <SettingsPage />
+        </AssistantSheetProvider>
       </QueryClientProvider>,
     );
 
