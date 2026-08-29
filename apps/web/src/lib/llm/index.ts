@@ -1,8 +1,11 @@
-import type { LlmEngine } from "./types";
+import type { LlmEngine, ModelId } from "./types";
 import { WebLlmEngine } from "./webllm-engine";
 import { detectSupport, type LlmSupport } from "./capability";
+import { isModelCached } from "./opfs-cache";
 
 export type { LlmSupport } from "./capability";
+
+const ALL_MODELS: ModelId[] = ["qwen2.5-1.5b-instruct", "llama-3.2-1b-instruct"];
 
 /**
  * Factory + cache. Components call `getLlmEngine()` and receive a singleton;
@@ -34,4 +37,14 @@ export function setLlmEngineForTest(engine: LlmEngine | null): void {
 /** Reset cached support state so the next getLlmSupport re-probes (e.g. on resume). */
 export function resetLlmSupport(): void {
   support = null;
+}
+
+/** Check whether a model's weights are cached in OPFS. */
+export async function isModelAvailable(modelId: ModelId): Promise<boolean> {
+  return isModelCached(modelId);
+}
+
+/** All model IDs the app knows about. */
+export function allModelIds(): ModelId[] {
+  return ALL_MODELS;
 }

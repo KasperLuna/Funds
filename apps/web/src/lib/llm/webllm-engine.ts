@@ -37,6 +37,10 @@ export class WebLlmEngine implements LlmEngine {
     return this.statusValue;
   }
 
+  currentModelId(): ModelId | null {
+    return this.currentModel;
+  }
+
   async load(modelId: ModelId, onProgress: (p: DownloadProgress) => void): Promise<void> {
     if (this.statusValue === "ready" && this.currentModel === modelId) return;
     if (this.loadPromise) return this.loadPromise;

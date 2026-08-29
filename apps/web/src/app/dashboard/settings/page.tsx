@@ -211,18 +211,67 @@ export default function SettingsPage() {
 
 function AssistantStatus() {
   const [support, setSupport] = useState<string | null>(null);
-  const [lastLoaded, setLastLoaded] = useState<string | null>(null);
+  const [engineStatus, setEngineStatus] = useState<string>("not-loaded");
+  const [currentModel, setCurrentModel] = useState<string | null>(null);
+  const [cachedModels, setCachedModels] = useState<Record<string, boolean>>({});
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const { detectSupport } = await import("@/lib/llm/capability");
       const s = await detectSupport();
       setSupport(s.ok ? `${s.engine} · ${s.recommendedModel}` : s.reason);
-      const { getLlmEngine } = await import("@/lib/llm");
-      const ts = await getLlmEngine().lastLoadedAt();
-      if (ts) setLastLoaded(new Date(ts).toLocaleString());
+
+      const { getLlmEngine, allModelIds, isModelAvailable } = await import("@/lib/llm");
+      const engine = getLlmEngine();
+      setEngineStatus(engine.status());
+      const model = engine.currentModelId();
+      setCurrentModel(model);
+
+      const cached: Record<string, boolean> = {};
+      for (const id of allModelIds()) {
+        cached[id] = await isModelAvailable(id);
+      }
+      setCachedModels(cached);
     })();
   }, []);
+
+  const handleDownload = useCallback(async (modelId: string) => {
+    setDownloading(true);
+    setDownloadProgress(0);
+    try {
+      const { getLlmEngine } = await import("@/lib/llm");
+      const engine = getLlmEngine();
+      await engine.load(modelId as "qwen2.5-1.5b-instruct" | "llama-3.2-1b-instruct", (p) => {
+        setDownloadProgress(Math.round(p.loaded * 100));
+      });
+      setEngineStatus("ready");
+      setCurrentModel(modelId);
+      setCachedModels((prev) => ({ ...prev, [modelId]: true }));
+    } catch (err) {
+      console.error("Model download failed:", err);
+    } finally {
+      setDownloading(false);
+      setDownloadProgress(null);
+    }
+  }, []);
+
+  const handleUnload = useCallback(async () => {
+    const { getLlmEngine } = await import("@/lib/llm");
+    await getLlmEngine().unload();
+    setEngineStatus("not-loaded");
+    setCurrentModel(null);
+  }, []);
+
+  const MODEL_LABELS: Record<string, string> = {
+    "qwen2.5-1.5b-instruct": "Qwen 2.5 1.5B",
+    "llama-3.2-1b-instruct": "Llama 3.2 1B",
+  };
+  const MODEL_SIZES: Record<string, string> = {
+    "qwen2.5-1.5b-instruct": "~1.5 GB",
+    "llama-3.2-1b-instruct": "~700 MB",
+  };
 
   return (
     <Section title="On-device assistant">
@@ -230,9 +279,58 @@ function AssistantStatus() {
         <span className="text-zinc-500">Capability</span>
         <span className="text-zinc-300">{support ?? "checking…"}</span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-zinc-500">Last loaded</span>
-        <span className="text-zinc-300">{lastLoaded ?? "never"}</span>
+
+      <div className="mt-3 flex flex-col gap-2">
+        {Object.entries(MODEL_LABELS).map(([id, label]) => {
+          const isCached = cachedModels[id] ?? false;
+          const isActive = currentModel === id && engineStatus === "ready";
+          return (
+            <div
+              key={id}
+              className="flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{label}</span>
+                <span className="text-[10px] text-zinc-500">{MODEL_SIZES[id]}</span>
+                {isActive && (
+                  <span className="rounded-full bg-(--accent)/10 px-1.5 py-0.5 text-[10px] font-medium text-(--accent)">
+                    Active
+                  </span>
+                )}
+                {isCached && !isActive && (
+                  <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                    Cached
+                  </span>
+                )}
+              </div>
+              {isActive ? (
+                <Button variant="ghost" size="sm" onClick={() => void handleUnload()}>
+                  Unload
+                </Button>
+              ) : downloading ? (
+                downloadProgress !== null ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">
+                      <div
+                        className="h-full rounded-full bg-(--accent) transition-[width]"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-zinc-400">{downloadProgress}%</span>
+                  </div>
+                ) : null
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void handleDownload(id)}
+                >
+                  {isCached ? "Load" : "Download"}
+                </Button>
+              )}
+            </div>
+          );
+        })}
       </div>
     </Section>
   );

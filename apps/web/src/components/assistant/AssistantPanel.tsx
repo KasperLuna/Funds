@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw } from "lucide-react";
+import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw, Settings } from "lucide-react";
+import Link from "next/link";
 import { useChat } from "./use-chat";
 import { AssistantMessageView } from "./AssistantMessageView";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,14 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const unsupported = support && support.ok === false ? support : null;
+  const [engineReady, setEngineReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const engine = getLlmEngine();
+      setEngineReady(engine.status() === "ready");
+    })();
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -25,6 +34,10 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
 
   if (unsupported) {
     return <UnsupportedView reason={unsupported.reason} onClose={onClose} />;
+  }
+
+  if (engineReady === false) {
+    return <NoModelView onClose={onClose} />;
   }
 
   return (
@@ -35,6 +48,7 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
           Assistant
         </span>
         <div className="flex items-center gap-1">
+          <ModelChip />
           {messages.length > 0 && (
             <button
               type="button"
@@ -255,6 +269,68 @@ function UnsupportedView({
         <AlertTriangle className="h-8 w-8 text-(--warning)" aria-hidden />
         <h2 className="text-base font-semibold">{m.title}</h2>
         <p className="max-w-sm text-sm text-zinc-500">{m.body}</p>
+      </div>
+    </div>
+  );
+}
+
+function ModelChip() {
+  const [modelId, setModelId] = useState<string | null>(null);
+  useEffect(() => {
+    const engine = getLlmEngine();
+    setModelId(engine.currentModelId());
+  }, []);
+  if (!modelId) return null;
+  const label = modelId === "qwen2.5-1.5b-instruct" ? "Qwen 2.5" : "Llama 3.2";
+  return (
+    <Link
+      href="/dashboard/settings"
+      title="Change model in Settings"
+      className="inline-flex items-center gap-1 rounded-full bg-(--surface-2) px-2 py-0.5 text-[10px] font-medium text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-zinc-300"
+    >
+      <Settings className="h-2.5 w-2.5" aria-hidden />
+      {label}
+    </Link>
+  );
+}
+
+function NoModelView({ onClose }: { onClose?: () => void }) {
+  return (
+    <div className="flex h-full flex-col">
+      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-3">
+        <span className="inline-flex items-center gap-2 text-sm font-semibold">
+          <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
+          Assistant
+        </span>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close assistant"
+            className="rounded-(--radius-sm) p-1.5 text-zinc-500 hover:bg-(--surface-3) hover:text-inherit"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        )}
+      </header>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="rounded-full bg-(--surface-2) p-3">
+          <Download className="h-6 w-6 text-(--accent)" aria-hidden />
+        </div>
+        <div>
+          <h2 className="text-base font-semibold">No model loaded</h2>
+          <p className="mt-1 max-w-sm text-sm text-zinc-500">
+            Download a model to start using the on-device assistant.
+            Everything stays on this device.
+          </p>
+        </div>
+        <Link
+          href="/dashboard/settings"
+          className="inline-flex items-center gap-2 rounded-(--radius-md) bg-(--accent) px-4 py-2 text-sm font-medium text-(--accent-foreground) transition-[filter] hover:brightness-110"
+        >
+          <Settings className="h-4 w-4" aria-hidden />
+          Go to Settings
+        </Link>
       </div>
     </div>
   );

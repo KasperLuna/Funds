@@ -27,6 +27,7 @@ export type CompleteOptions = {
 
 export interface LlmEngine {
   status(): EngineStatus;
+  currentModelId(): ModelId | null;
   load(modelId: ModelId, onProgress: (p: DownloadProgress) => void): Promise<void>;
   complete(opts: CompleteOptions): Promise<string>;
   unload(): Promise<void>;
