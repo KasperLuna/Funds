@@ -1,61 +1,66 @@
-import type { AssistantSnapshot } from "./serialize";
-import type { UseCaseId } from "./types";
+import { toolSchemas } from "./tools";
 
 /**
- * Build the system prompt for the assistant. The system prompt establishes
- * identity, declares the contract (JSON only, schema-validated), and
- * enumerates the available use-case shapes.
- *
- * cavetail: the prompt is small on purpose. Larger system prompts eat into
- * the 1.5B model's context and degrade JSON-mode reliability. We do the
- * schema-narrowing work in the handler (which re-derives money from local
- * rows) rather than asking the model to compute it.
+ * System prompt for the tool-calling agent. The model's job is to PICK a tool
+ * and NAME parameters (period, category, account) — never to compute or
+ * invent money. All figures are derived by the tool executors from local
+ * transaction rows.
  */
-const SHAPE_BLOCKS: Record<UseCaseId, string> = {
-  spending_query: `For spending breakdowns, return JSON of shape:
-  {"type":"spending_breakdown","periodLabel":"This month","assetCode":"PHP","decimals":2,"totalMinor":"12540","slices":[{"category":"Food","amountMinor":"4200","pct":33}]}`,
-  budget_check: `For budget checks, return JSON of shape:
-  {"type":"budget_progress","category":"Dining","spentMinor":"3120","limitMinor":"4000","periodLabel":"This month","pctUsed":78,"status":"near","assetCode":"PHP","decimals":2}`,
-  weekly_summary: `For weekly/monthly summaries, return JSON of shape:
-  {"type":"summary_dashboard","periodLabel":"This week","assetCode":"PHP","decimals":2,"incomeMinor":"12000","expenseMinor":"7400","netMinor":"4600","topCategories":[{"category":"Food","amountMinor":"2200","pct":30}],"budgets":[{"category":"Dining","pctUsed":78,"status":"near"}]}`,
-  voice_to_txn: `For voice-to-transaction entries, return JSON of shape:
-  {"type":"voice_to_txn","accountId":null,"accountName":"BPI","amountInput":"42.50","amountMinor":"4250","currency":"PHP","categoryIds":[],"description":"lunch","confidence":0.6}`,
-  fallback_text: `If you cannot answer as a structured widget, return JSON of shape:
-  {"type":"text","content":"short text answer"}`,
-};
-
 export function buildSystemPrompt(): string {
-  return `You are Funds Assistant, an on-device helper for a personal finance app. You run entirely on the user's device; no data leaves it.
+  return `You are Funds Assistant, an on-device helper for a personal finance app. No data leaves the device.
 
 Hard rules:
-- Respond with ONLY a single JSON object. No prose, no markdown, no preamble.
-- Use the snapshot of accounts and categories to pick the right ids/names. Match names case-insensitively.
-- Never invent transaction amounts. If the user did not give an amount, return a "voice_to_txn" shape with amountMinor: null and amountInput: null.
-- Money values are decimal STRINGS in minor units (e.g. "4250" = ₱42.50 when decimals=2). Never use float fields for money.
-- Choose the schema that best matches the user's question. Do not mix schemas.
+- To answer ANY question about spending, budgets, balances, or summaries, you MUST call one of the provided tools. Never guess or compute amounts yourself.
+- After a tool returns a result, the answer is rendered automatically. If you have the result you need, stop calling tools.
+- Call a tool at most once per question unless the user asks a new question.
+- For logging a transaction ("spent 50 on lunch"), call log_transaction.
+- Only reply with plain text (no tool call) for greetings, thanks, or questions about what you can do.
 
-Available schemas:
-${SHAPE_BLOCKS.spending_query}
+User's snapshot (names only) is provided in the user message. Category names must match the snapshot exactly (case-insensitive).`;
+}
 
-${SHAPE_BLOCKS.budget_check}
+/**
+ * The tool definitions passed to the model on each turn. Wrapped in the
+ * OpenAI-style envelope WebLLM expects.
+ */
+export function toolDefinitions(): Array<{
+  type: "function";
+  function: { name: string; description: string; parameters: unknown };
+}> {
+  return toolSchemas().map((t) => ({
+    type: "function" as const,
+    function: { name: t.name, description: t.description, parameters: t.parameters },
+  }));
+}
 
-${SHAPE_BLOCKS.weekly_summary}
+/**
+ * Legacy shape hints kept for the JSON-compat path: when a small model skips
+ * tool-calling and emits one of the old widget JSONs directly, we still
+ * validate and render it. Kept terse.
+ */
+export const WIDGET_SHAPES_HINT = `Widget JSON shapes (only if NOT calling a tool):
+{"type":"spending_breakdown","periodLabel":"...","assetCode":"PHP","decimals":2,"totalMinor":"12540","slices":[{"category":"Food","amountMinor":"4200","pct":33}]}
+{"type":"budget_progress","category":"Dining","spentMinor":"3120","limitMinor":"4000","periodLabel":"This month","pctUsed":78,"status":"near","assetCode":"PHP","decimals":2}
+{"type":"summary_dashboard","periodLabel":"This week","assetCode":"PHP","decimals":2,"incomeMinor":"12000","expenseMinor":"7400","netMinor":"4600","topCategories":[],"budgets":[]}
+{"type":"voice_to_txn","accountId":null,"accountName":null,"amountInput":"42.50","amountMinor":"4250","currency":"PHP","categoryIds":[],"description":"lunch","confidence":0.6}`;
 
-${SHAPE_BLOCKS.voice_to_txn}
-
-${SHAPE_BLOCKS.fallback_text}`;
+/** One-line nudge appended to the corrective retry. */
+export function correctiveNote(): string {
+  return "If the question needs data, call a tool instead. Otherwise reply with a short plain-text sentence.";
 }
 
 export function buildUserPrompt(args: {
   userText: string;
-  snapshot: AssistantSnapshot;
+  snapshot: {
+    tz: string;
+    nowIso: string;
+    accounts: Array<{ id: string; name: string; kind: string; assetCode: string }>;
+    categories: Array<{ id: string; name: string }>;
+  };
 }): string {
-  return JSON.stringify({
-    user: args.userText,
-    snapshot: args.snapshot,
-  });
+  return JSON.stringify({ user: args.userText, snapshot: args.snapshot });
 }
 
 export function buildCorrectivePrompt(previousError: string): string {
-  return `Your previous output did not validate against the schema: ${previousError}. Re-emit a single JSON object that conforms to one of the schemas in the system prompt.`;
+  return `Your previous output was invalid: ${previousError}. ${correctiveNote()}`;
 }

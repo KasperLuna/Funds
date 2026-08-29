@@ -2,10 +2,12 @@
 
 import type {
   CompleteOptions,
+  CompletionResult,
   DownloadProgress,
   EngineStatus,
   LlmEngine,
   ModelId,
+  ToolCall,
 } from "./types";
 import {
   isModelCached,
@@ -111,7 +113,7 @@ export class WebLlmEngine implements LlmEngine {
     }
   }
 
-  async complete(opts: CompleteOptions): Promise<string> {
+  async complete(opts: CompleteOptions): Promise<CompletionResult> {
     if (this.statusValue !== "ready" || !this.engine) {
       throw new Error(this.loadError ?? "LLM not ready");
     }
@@ -124,27 +126,51 @@ export class WebLlmEngine implements LlmEngine {
     const TOKEN_TIMEOUT_MS = isIos ? 30_000 : 60_000;
     let lastTokenAt = Date.now();
 
-    // cavetail: must match @mlc-ai/web-llm's real streaming contract —
-    // `create({ stream: true })` resolves to an AsyncIterable of chunks whose
-    // text lives in `choices[0].delta.content`. There is no `.stream()` helper
-    // and non-streaming replies carry `message.content`, not `.text`.
+    // cavetail: must match @mlc-ai/web-llm's real streaming contract.
+    // `create({ stream: true })` resolves to an AsyncIterable of chunks; text
+    // lives in `choices[0].delta.content`, and `tool_calls` are accumulated
+    // only on the FINAL chunk (per web-llm's openai_api_protocols header).
+    type MlcToolCallDelta = {
+      index?: number;
+      id?: string;
+      function?: { name?: string; arguments?: string };
+      type?: "function";
+    };
+    type MlcChunk = {
+      choices?: Array<{
+        delta?: { content?: string | null; tool_calls?: Array<MlcToolCallDelta> };
+        finish_reason?: string | null;
+      }>;
+    };
     type MlcChat = {
       completions: {
-        create: (args: unknown) => Promise<AsyncIterable<{ choices?: Array<{ delta?: { content?: string } }> }>>;
+        create: (args: unknown) => Promise<AsyncIterable<MlcChunk>>;
       };
     };
     const mlc = this.engine as MlcChat;
-    let completion: AsyncIterable<{ choices?: Array<{ delta?: { content?: string } }> }>;
+
+    const messages: Array<{ role: string; content: string | null; tool_calls?: unknown; tool_call_id?: string }> = [
+      { role: "system", content: opts.system },
+      { role: "user", content: opts.user },
+    ];
+    for (const m of opts.messages ?? []) {
+      messages.push({
+        role: m.role,
+        content: m.content,
+        tool_call_id: m.toolCallId,
+      });
+    }
+
+    let completion: AsyncIterable<MlcChunk>;
     try {
       completion = await mlc.completions.create({
-        messages: [
-          { role: "system", content: opts.system },
-          { role: "user", content: opts.user },
-        ],
+        messages,
         temperature: opts.temperature,
         max_tokens: opts.maxTokens,
         stream: true,
-        response_format: opts.jsonMode ? { type: "json_object" } : undefined,
+        ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
+        ...(opts.tools ? { tools: opts.tools } : {}),
+        ...(opts.toolChoice !== undefined ? { tool_choice: opts.toolChoice } : {}),
       });
     } catch (err) {
       if (this.statusValue === "ready") this.statusValue = "error";
@@ -152,6 +178,10 @@ export class WebLlmEngine implements LlmEngine {
     }
 
     let out = "";
+    const toolCalls: ToolCall[] = [];
+    // WebLLM streams tool-call argument fragments across chunks and only
+    // finalizes them on the last chunk. Accumulate by index, keyed on name.
+    const acc = new Map<number, { id: string; name: string; args: string }>();
     try {
       for await (const chunk of completion) {
         if (this.cancelRef.cancelled) {
@@ -165,11 +195,18 @@ export class WebLlmEngine implements LlmEngine {
               : "Inference timed out — the model took too long to respond.",
           );
         }
-        const delta = chunk.choices?.[0]?.delta?.content;
-        if (delta) {
+        const delta = chunk.choices?.[0]?.delta;
+        if (delta?.content) {
           lastTokenAt = Date.now();
-          out += delta;
-          opts.onToken?.(delta);
+          out += delta.content;
+          opts.onToken?.(delta.content);
+        }
+        for (const tc of delta?.tool_calls ?? []) {
+          const idx = tc.index ?? 0;
+          const cur = acc.get(idx) ?? { id: tc.id ?? String(idx), name: "", args: "" };
+          if (tc.function?.name) cur.name = tc.function.name;
+          if (tc.function?.arguments) cur.args += tc.function.arguments;
+          acc.set(idx, cur);
         }
       }
     } catch (err) {
@@ -184,7 +221,13 @@ export class WebLlmEngine implements LlmEngine {
       }
       throw err;
     }
-    return out;
+
+    for (const v of acc.values()) {
+      if (v.name) {
+        toolCalls.push({ id: v.id, name: v.name, arguments: v.args });
+      }
+    }
+    return { content: out, toolCalls };
   }
 
   async unload(): Promise<void> {

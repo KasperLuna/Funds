@@ -146,23 +146,32 @@ No transaction data ever leaves the device. No network calls during inference.
 - `lib/llm/` — LLM engine layer: `capability.ts` (WebGPU/OPFS probes), `opfs-cache.ts`
   (model weight persistence), `webllm-engine.ts` (real WebLLM wrapper), `index.ts`
   (singleton factory + mock seam).
-- `lib/assistant/` — orchestrator: `chat-engine.ts` (prompt → LLM → Zod validate →
-  handler), `schemas.ts` (Zod schemas per use case), `prompts.ts` (system + user
-  prompts), `serialize.ts` (local snapshot for model context), `handlers.ts`
-  (re-derives money from local rows — model only names things).
-- `components/assistant/` — React layer: `use-chat.tsx` (ChatProvider context), `AssistantPanel`
-  (chat thread + input), `AssistantButton` (floating FAB), `AssistantSheet` (bottom-sheet
-  variant), `AssistantMessageView` (type-switch renderer), GenUI widgets in `messages/`.
+- `lib/assistant/` — orchestrator: `chat-engine.ts` (bounded tool-calling agent loop:
+  prompt → model calls a tool via WebLLM function-calling → executor runs the real
+  query over local rows → widget renders; max 3 rounds, then deterministic fallback),
+  `tools.ts` (tool JSON-schemas + executors — the only place money is computed),
+  `period.ts` (temporal phrase → [from,to] range: "last month", snake_case tool ids),
+  `schemas.ts` (Zod schemas per use case), `prompts.ts` (system + user prompts),
+  `serialize.ts` (local snapshot for model context), `handlers.ts` (deterministic
+  fallback via the same tool executors — model only names things).
+- `components/assistant/` — React layer: `use-chat.tsx` (ChatProvider context), AssistantPanel
+  (chat thread + input), AssistantButton (floating FAB), AssistantSheet (bottom-sheet
+  variant), AssistantMessageView (type-switch renderer), GenUI widgets in `messages/`.
 - `app/dashboard/assistant/page.tsx` — full-page route (`/dashboard/assistant`).
 
 ### Key invariants
 
+- The agent uses **native WebLLM function-calling** (`tools`/`tool_calls` on
+  `completions.create`). The model only NAMES things (tool, period, category,
+  account); every money figure is re-derived by tool executors from local rows.
+  First widget-shaped tool result terminates the loop.
 - Money is **never** passed to the model as BigInt. It is serialized as decimal strings
   in the snapshot, and handlers re-derive it from local rows after Zod validation.
 - The model never generates JSX. Each validated schema maps to a fixed React component
   via a type-discriminated switch — no dynamic code generation.
-- If Zod validation fails twice, the chat-engine falls back to a deterministic answer
-  derived from the same local data (no broken UI, no model-reliant text).
+- If the model produces nothing usable (no valid tool call / widget JSON) after the
+  rounds run out, the chat-engine falls back to a deterministic answer derived from
+  the same local data (no broken UI, no model-reliant text).
 
 ### Device gating
 
