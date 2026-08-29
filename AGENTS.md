@@ -168,7 +168,7 @@ No transaction data ever leaves the device. No network calls during inference.
 
 - `detectSupport()` probes WebGPU, OPFS, storage quota (≥1 GB), and cross-origin
   isolation. Returns a typed `LlmSupport` discriminated union.
-- Primary model: Qwen2.5-1.5B-Instruct (~1 GB). Fallback: Llama-3.2-1B (~700 MB).
+- Models tiered by free storage in `pickModel` (`lib/llm/capability.ts`): SmolLM2-360M (smallest), Qwen3-0.6B, Llama-3.2-1B (q4f32/q4f16). `@mlc-ai/web-llm` streams via `completions.create({ stream: true })` → chunks carry `choices[0].delta.content` — see `webllm-engine.test.ts` for the contract.
 - `AssistantButton` does NOT render on truly unsupported devices. The `/dashboard/assistant`
   route renders an explanation page.
 

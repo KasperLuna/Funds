@@ -51,6 +51,11 @@ export function AssistantMessageView({ message }: { message: AssistantMessage })
 
   return (
     <>
+      {"notice" in message && message.notice && (
+        <div className="mb-2 rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-3 py-2 text-xs text-zinc-400">
+          {message.notice}
+        </div>
+      )}
       {widget}
       {showInspector && <DataInspector message={message} onClose={() => setShowInspector(false)} />}
     </>

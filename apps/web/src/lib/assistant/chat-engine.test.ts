@@ -121,16 +121,31 @@ describe("runChat", () => {
     expect(out.assistant.type).toBe("spending_breakdown");
   });
 
-  it("returns a friendly error when the engine throws", async () => {
+  it("answers from local rows with a notice when the engine throws", async () => {
     const deps = baseDeps();
     deps.engine.failNext(new Error("boom"));
+    const out = await runChat(
+      { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
+      deps,
+    );
+    expect(out.assistant.type).toBe("spending_breakdown");
+    if (out.assistant.type === "spending_breakdown") {
+      expect(out.assistant.notice).toMatch(/unavailable/i);
+      expect(out.assistant.notice).toContain("boom");
+      expect(out.assistant.totalMinor).toBe("1500");
+    }
+  });
+
+  it("keeps a cancelled request as an error bubble without a local answer", async () => {
+    const deps = baseDeps();
+    deps.engine.failNext(new DOMException("Aborted", "AbortError"));
     const out = await runChat(
       { text: "anything", now: Date.now(), userId: "u" },
       deps,
     );
     expect(out.assistant.type).toBe("error");
     if (out.assistant.type === "error") {
-      expect(out.assistant.reason).toMatch(/unavailable/i);
+      expect(out.assistant.reason).toMatch(/cancelled/i);
     }
   });
 

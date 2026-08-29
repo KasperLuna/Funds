@@ -204,7 +204,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       engineRef.current = engine;
       const status = engine.status();
 
-      // Auto-load the recommended model when nothing is loaded yet.
+      // Auto-load the recommended model when nothing is loaded yet. A load
+      // failure is NOT swallowed silently: engine.loadError flows into
+      // complete()'s throw, and runChat attaches it to the fallback notice.
       if (status === "not-loaded" || status === "error") {
         dispatch({ type: "status", status: "loading-model" });
         dispatch({ type: "load-progress", progress: { loaded: 0, total: 1 } });
@@ -215,7 +217,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             dispatch({ type: "load-progress", progress: p });
           });
         } catch {
-          // Load failed — runChat will handle the error gracefully.
+          // runChat's fallback path renders the reason via the engine's
+          // loadError; nothing else to do here.
         }
         dispatch({ type: "load-progress", progress: null });
       }

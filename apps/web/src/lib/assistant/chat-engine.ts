@@ -101,8 +101,8 @@ export async function runChat(
   void useCaseHint; // future: bias which schema the orchestrator accepts first
 
   let raw: string;
-  let partialOutput = "";
   const onToken = deps.onToken;
+  const userMsg: ChatMessage = { id: newId(), role: "user", content: input.text, ts: input.now };
   try {
     raw = await deps.engine.complete({
       system,
@@ -110,28 +110,33 @@ export async function runChat(
       jsonMode: true,
       temperature: 0.1,
       maxTokens: 600,
-      onToken: (token) => {
-        partialOutput += token;
-        onToken?.(token);
-      },
+      onToken: (token) => onToken?.(token),
     });
   } catch (err) {
-    const reason =
-      err instanceof DOMException && err.name === "AbortError"
-        ? "Request cancelled."
-        : partialOutput
-          ? `Model error. Raw output:\n${partialOutput}`
-          : "Model unavailable. Showing local results instead.";
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return {
+        user: userMsg,
+        assistant: {
+          id: newId(),
+          role: "assistant",
+          type: "error",
+          reason: "Request cancelled.",
+          ts: input.now,
+          usedCase: "fallback_text",
+        },
+      };
+    }
+    // Engine failure (download, load, crash). Deliver the deterministic local
+    // answer — handlers re-derive everything from rows, so this is a real
+    // answer, not an apology — and surface why the model was skipped.
+    const detail = err instanceof Error ? err.message : String(err);
+    const guessed: UseCaseId = deps.inferUseCase(input.text, snapshot);
+    const fallback = deterministicFallback(guessed, ctx);
     return {
-      user: { id: newId(), role: "user", content: input.text, ts: input.now },
+      user: userMsg,
       assistant: {
-        id: newId(),
-        role: "assistant",
-        type: "error",
-        reason,
-        rawOutput: partialOutput || undefined,
-        ts: input.now,
-        usedCase: "fallback_text",
+        ...fallback,
+        notice: `Model unavailable — showing local results instead. (${detail})`,
       },
     };
   }

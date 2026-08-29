@@ -73,13 +73,22 @@ export type FallbackTextPayload = {
   content: string;
 };
 
+type AssistantBase = {
+  id: string;
+  role: "assistant";
+  ts: number;
+  usedCase: UseCaseId;
+  /** Optional failure note — set when a widget was derived without model help. */
+  notice?: string;
+};
+
 export type AssistantMessage =
-  | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & BudgetProgressPayload)
-  | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & SpendingBreakdownPayload)
-  | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & SummaryDashboardPayload)
-  | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId } & VoiceTxnPrefillPayload)
-  | ({ id: string; role: "assistant"; ts: number; usedCase: UseCaseId; type: "text" } & FallbackTextPayload)
-  | { id: string; role: "assistant"; type: "error"; reason: string; rawOutput?: string; ts: number; usedCase: UseCaseId };
+  | (AssistantBase & BudgetProgressPayload)
+  | (AssistantBase & SpendingBreakdownPayload)
+  | (AssistantBase & SummaryDashboardPayload)
+  | (AssistantBase & VoiceTxnPrefillPayload)
+  | (AssistantBase & FallbackTextPayload)
+  | { id: string; role: "assistant"; type: "error"; reason: string; rawOutput?: string; ts: number; usedCase: UseCaseId; notice?: string };
 
 export type UserMessage = {
   id: string;

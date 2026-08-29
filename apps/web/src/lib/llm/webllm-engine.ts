@@ -34,6 +34,7 @@ export class WebLlmEngine implements LlmEngine {
   private engine: unknown = null;
   private cancelRef: { cancelled: boolean } = { cancelled: false };
   private loadPromise: Promise<void> | null = null;
+  private loadError: string | null = null;
 
   status(): EngineStatus {
     return this.statusValue;
@@ -85,6 +86,10 @@ export class WebLlmEngine implements LlmEngine {
       });
 
       // OPFS sidecar writes are non-fatal — don't let them crash the load.
+      // Status flips to ready BEFORE sidecar writes: a Safari OPFS hiccup
+      // must not wedge the engine in "downloading" (complete() would then
+      // throw forever and send() would never retry the load).
+      this.statusValue = "ready";
       try {
         await writeStamp(modelId, { lastLoadedAt: Date.now() });
         if (!(await isModelCached(modelId))) {
@@ -97,19 +102,18 @@ export class WebLlmEngine implements LlmEngine {
         }
       } catch {
         // OPFS write failed — model is still loaded and usable.
-        return;
       }
-
-      this.statusValue = "ready";
+      this.loadError = null;
     } catch (e) {
       this.statusValue = "error";
+      this.loadError = e instanceof Error ? e.message : String(e);
       throw e;
     }
   }
 
   async complete(opts: CompleteOptions): Promise<string> {
     if (this.statusValue !== "ready" || !this.engine) {
-      throw new Error("LLM not ready");
+      throw new Error(this.loadError ?? "LLM not ready");
     }
     this.cancelRef = { cancelled: false };
 
@@ -120,21 +124,36 @@ export class WebLlmEngine implements LlmEngine {
     const TOKEN_TIMEOUT_MS = isIos ? 30_000 : 60_000;
     let lastTokenAt = Date.now();
 
-    type MlcChat = { completions: { create: (args: unknown) => Promise<{ stream: () => AsyncIterable<{ choices?: Array<{ text?: string }> }> }> } };
+    // cavetail: must match @mlc-ai/web-llm's real streaming contract —
+    // `create({ stream: true })` resolves to an AsyncIterable of chunks whose
+    // text lives in `choices[0].delta.content`. There is no `.stream()` helper
+    // and non-streaming replies carry `message.content`, not `.text`.
+    type MlcChat = {
+      completions: {
+        create: (args: unknown) => Promise<AsyncIterable<{ choices?: Array<{ delta?: { content?: string } }> }>>;
+      };
+    };
     const mlc = this.engine as MlcChat;
-    const completion = await mlc.completions.create({
-      messages: [
-        { role: "system", content: opts.system },
-        { role: "user", content: opts.user },
-      ],
-      temperature: opts.temperature,
-      max_tokens: opts.maxTokens,
-      response_format: opts.jsonMode ? { type: "json_object" } : undefined,
-    });
+    let completion: AsyncIterable<{ choices?: Array<{ delta?: { content?: string } }> }>;
+    try {
+      completion = await mlc.completions.create({
+        messages: [
+          { role: "system", content: opts.system },
+          { role: "user", content: opts.user },
+        ],
+        temperature: opts.temperature,
+        max_tokens: opts.maxTokens,
+        stream: true,
+        response_format: opts.jsonMode ? { type: "json_object" } : undefined,
+      });
+    } catch (err) {
+      if (this.statusValue === "ready") this.statusValue = "error";
+      throw err;
+    }
 
     let out = "";
     try {
-      for await (const chunk of completion.stream()) {
+      for await (const chunk of completion) {
         if (this.cancelRef.cancelled) {
           throw new DOMException("Aborted", "AbortError");
         }
@@ -146,7 +165,7 @@ export class WebLlmEngine implements LlmEngine {
               : "Inference timed out — the model took too long to respond.",
           );
         }
-        const delta = chunk.choices?.[0]?.text;
+        const delta = chunk.choices?.[0]?.delta?.content;
         if (delta) {
           lastTokenAt = Date.now();
           out += delta;
