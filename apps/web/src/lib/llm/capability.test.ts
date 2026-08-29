@@ -67,7 +67,7 @@ describe("detectSupport", () => {
     const out = await detectSupport();
     expect(out.ok).toBe(true);
     if (out.ok && out.engine === "webgpu") {
-      expect(out.recommendedModel).toBe("qwen2.5-1.5b-instruct");
+      expect(out.recommendedModel).toBe("Llama-3.2-1B-Instruct-q4f16_1-MLC");
     }
   });
 
@@ -81,7 +81,7 @@ describe("detectSupport", () => {
     });
     const out = await detectSupport();
     expect(out.ok).toBe(true);
-    if (out.ok) expect(out.recommendedModel).toBe("llama-3.2-1b-instruct");
+    if (out.ok) expect(out.recommendedModel).toBe("Llama-3.2-1B-Instruct-q4f32_1-MLC");
   });
 
   it("returns no-storage when below the 1 GB floor", async () => {

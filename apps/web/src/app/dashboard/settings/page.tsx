@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { ModelId } from "@/lib/llm/types";
+import { MODEL_LABELS } from "@/lib/llm/types";
 import { UserCard } from "@/components/auth/user-card";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { SyncStatus } from "@/components/settings/sync-status";
@@ -214,8 +216,10 @@ function AssistantStatus() {
   const [engineStatus, setEngineStatus] = useState<string>("not-loaded");
   const [currentModel, setCurrentModel] = useState<string | null>(null);
   const [cachedModels, setCachedModels] = useState<Record<string, boolean>>({});
+  const [modelIds, setModelIds] = useState<ModelId[]>([]);
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -229,27 +233,33 @@ function AssistantStatus() {
       const model = engine.currentModelId();
       setCurrentModel(model);
 
+      const ids = allModelIds();
+      setModelIds(ids);
+
       const cached: Record<string, boolean> = {};
-      for (const id of allModelIds()) {
+      for (const id of ids) {
         cached[id] = await isModelAvailable(id);
       }
       setCachedModels(cached);
     })();
   }, []);
 
-  const handleDownload = useCallback(async (modelId: string) => {
+  const handleDownload = useCallback(async (modelId: ModelId) => {
     setDownloading(true);
     setDownloadProgress(0);
+    setDownloadError(null);
     try {
       const { getLlmEngine } = await import("@/lib/llm");
       const engine = getLlmEngine();
-      await engine.load(modelId as "qwen2.5-1.5b-instruct" | "llama-3.2-1b-instruct", (p) => {
+      await engine.load(modelId, (p) => {
         setDownloadProgress(Math.round(p.loaded * 100));
       });
       setEngineStatus("ready");
       setCurrentModel(modelId);
       setCachedModels((prev) => ({ ...prev, [modelId]: true }));
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      setDownloadError(msg);
       console.error("Model download failed:", err);
     } finally {
       setDownloading(false);
@@ -264,15 +274,6 @@ function AssistantStatus() {
     setCurrentModel(null);
   }, []);
 
-  const MODEL_LABELS: Record<string, string> = {
-    "qwen2.5-1.5b-instruct": "Qwen 2.5 1.5B",
-    "llama-3.2-1b-instruct": "Llama 3.2 1B",
-  };
-  const MODEL_SIZES: Record<string, string> = {
-    "qwen2.5-1.5b-instruct": "~1.5 GB",
-    "llama-3.2-1b-instruct": "~700 MB",
-  };
-
   return (
     <Section title="On-device assistant">
       <div className="flex items-center justify-between text-sm">
@@ -280,8 +281,16 @@ function AssistantStatus() {
         <span className="text-zinc-300">{support ?? "checking…"}</span>
       </div>
 
+      {downloadError && (
+        <div className="mt-2 rounded-(--radius-md) border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+          <p className="font-medium">Download failed</p>
+          <p className="mt-0.5 text-red-400/80">{downloadError}</p>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-col gap-2">
-        {Object.entries(MODEL_LABELS).map(([id, label]) => {
+        {modelIds.map((id) => {
+          const label = MODEL_LABELS[id];
           const isCached = cachedModels[id] ?? false;
           const isActive = currentModel === id && engineStatus === "ready";
           return (
@@ -291,7 +300,6 @@ function AssistantStatus() {
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{label}</span>
-                <span className="text-[10px] text-zinc-500">{MODEL_SIZES[id]}</span>
                 {isActive && (
                   <span className="rounded-full bg-(--accent)/10 px-1.5 py-0.5 text-[10px] font-medium text-(--accent)">
                     Active

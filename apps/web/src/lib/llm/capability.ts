@@ -84,10 +84,10 @@ export function isIosStorageStale(lastLoadedAt: number | null, now = Date.now())
 }
 
 function pickModel(availableBytes: number): ModelId {
-  // Qwen2.5-1.5B is the primary model. Llama-3.2-1B is the storage-tight
-  // fallback for devices that can host a model but not the 1.5 GB weights.
-  if (availableBytes >= 1.5 * 1024 * 1024 * 1024) return "qwen2.5-1.5b-instruct";
-  return "llama-3.2-1b-instruct";
+  // q4f32_1 uses less memory; q4f16_1 has better quality but needs more headroom.
+  // Both models are ~700 MB. Prefer fp16 when storage is generous.
+  if (availableBytes >= 2 * 1024 * 1024 * 1024) return "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+  return "Llama-3.2-1B-Instruct-q4f32_1-MLC";
 }
 
 export async function detectSupport(): Promise<LlmSupport> {

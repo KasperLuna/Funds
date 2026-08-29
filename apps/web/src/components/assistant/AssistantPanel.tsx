@@ -8,6 +8,7 @@ import { AssistantMessageView } from "./AssistantMessageView";
 import { cn } from "@/lib/utils";
 import { isIosStorageStale, isIosLikeDevice } from "@/lib/llm/capability";
 import { getLlmEngine } from "@/lib/llm";
+import { MODEL_LABELS } from "@/lib/llm/types";
 
 /**
  * Chat thread + input + model-status banner. Used both inline on the
@@ -281,7 +282,7 @@ function ModelChip() {
     setModelId(engine.currentModelId());
   }, []);
   if (!modelId) return null;
-  const label = modelId === "qwen2.5-1.5b-instruct" ? "Qwen 2.5" : "Llama 3.2";
+  const label = MODEL_LABELS[modelId as keyof typeof MODEL_LABELS] ?? modelId;
   return (
     <Link
       href="/dashboard/settings"

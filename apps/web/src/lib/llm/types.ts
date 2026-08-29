@@ -3,7 +3,17 @@
  * `webllm-engine.ts`; tests use `MockLlmEngine`. The orchestrator imports this
  * interface only, so swapping the runtime costs zero callsite edits.
  */
-export type ModelId = "qwen2.5-1.5b-instruct" | "llama-3.2-1b-instruct";
+export type ModelId =
+  | "Llama-3.2-1B-Instruct-q4f32_1-MLC"
+  | "Llama-3.2-1B-Instruct-q4f16_1-MLC";
+
+/** Display-friendly labels for model IDs. */
+export const MODEL_LABELS: Record<ModelId, string> = {
+  "Llama-3.2-1B-Instruct-q4f32_1-MLC": "Llama 3.2 1B",
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC": "Llama 3.2 1B (fp16)",
+};
+
+export const DEFAULT_MODEL: ModelId = "Llama-3.2-1B-Instruct-q4f32_1-MLC";
 
 export type EngineStatus =
   | "unsupported"

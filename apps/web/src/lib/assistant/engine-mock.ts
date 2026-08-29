@@ -18,7 +18,7 @@ export function createMockLlmEngine(): MockLlmEngine {
   return {
     calls,
     status: () => "ready",
-    currentModelId: () => "qwen2.5-1.5b-instruct",
+    currentModelId: () => "Llama-3.2-1B-Instruct-q4f32_1-MLC",
     async load() {
       // no-op
     },
