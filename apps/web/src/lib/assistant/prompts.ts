@@ -22,22 +22,37 @@ period is one of: this_month, last_month, this_week, last_week, 30d, this_year, 
 Examples:
 ${QUERY_EXAMPLES}
 
-Rules:
-- Match category and account names against the snapshot in the user message (case-insensitive).
-- NEVER invent or include money amounts in the query. The app computes all figures from its own data.
-- If the user names a period ("last month"), put it in "period".
-- The snapshot may include a "resolved" object — if so, USE the resolved category
-  name (not the user's literal word) so the query matches a real category. If
-  the snapshot includes a "descriptionPattern", the user is asking about a
-  description (e.g. "payroll", "amazon") — emit a search query with that
-  pattern in "q".`;
+READ THESE RULES FIRST:
+1. The user message may include a "Resolved" line that tells you what the user's
+   words mean in THIS app's vocabulary. USE THE RESOLVED VALUES, not the user's
+   literal words.
+   - "Resolved: category=Work, q=payroll" means the user said something like
+     "what was my payroll" — emit {"select":"search","q":"payroll","category":"Work"}.
+   - "Resolved: category=Food" means the user said "dining", "groceries",
+     "restaurants", etc. — emit {"category":"Food",...} (the REAL category name).
+   - If the "Resolved" line is empty, infer from the categories in the snapshot.
+2. Match category and account names against the snapshot in the user message
+   (case-insensitive). The snapshot also pre-injects the resolved category at
+   the top of the categories list if it would otherwise be hidden by the size cap.
+3. NEVER invent or include money amounts in the query. The app computes all figures.
+4. If the user names a period ("last month"), put it in "period".`;
 }
 
 export function buildUserPrompt(args: {
   userText: string;
   snapshot: AssistantSnapshot;
 }): string {
-  return JSON.stringify({ user: args.userText, snapshot: args.snapshot });
+  // A single-line "Resolved: ..." header at the top of the user message
+  // is the most reliable way to steer a 1B model. Only emit it when
+  // something was actually resolved — an empty header confuses the model
+  // into thinking there is a category it should reference.
+  const r = args.snapshot.resolved;
+  const tokens = [
+    r?.category ? `category=${r.category}` : null,
+    r?.descriptionPattern ? `q=${r.descriptionPattern}` : null,
+  ].filter((t): t is string => Boolean(t));
+  const hint = tokens.length > 0 ? `Resolved: ${tokens.join(", ")}\n\n` : "";
+  return hint + JSON.stringify({ user: args.userText, snapshot: args.snapshot });
 }
 
 export function buildCorrectivePrompt(previousRaw: string): string {

@@ -193,3 +193,68 @@ describe("TLDR_SYSTEM", () => {
     expect(TLDR_SYSTEM).toMatch(/do NOT divide/i);
   });
 });
+
+describe("buildUserPrompt — Resolved header", () => {
+  // The Resolved line is the single most reliable steering signal for a
+  // 1B model. A regression that drops it makes the model fall back to
+  // the user's literal words, which is exactly the "dining" -> Dining
+  // (instead of Food) bug we hit.
+  it("prepends 'Resolved: category=…' when the resolver matched a category", async () => {
+    const { buildUserPrompt } = await import("./prompts");
+    const out = buildUserPrompt({
+      userText: "how much on dining",
+      snapshot: {
+        tz: "UTC",
+        nowIso: "2026-01-01T00:00:00Z",
+        accounts: [],
+        categories: [{ id: "c1", name: "Food" }],
+        resolved: {
+          category: "Food",
+          categorySource: "alias",
+          descriptionSource: "none",
+          matched: ['category≈"Food"'],
+        },
+      },
+    });
+    expect(out.startsWith("Resolved: category=Food")).toBe(true);
+  });
+
+  it("prepends 'Resolved: q=…' when the resolver matched a description pattern", async () => {
+    const { buildUserPrompt } = await import("./prompts");
+    const out = buildUserPrompt({
+      userText: "what was my payroll",
+      snapshot: {
+        tz: "UTC",
+        nowIso: "2026-01-01T00:00:00Z",
+        accounts: [],
+        categories: [],
+        resolved: {
+          descriptionPattern: "payroll",
+          categorySource: "none",
+          descriptionSource: "keyword",
+          matched: ['description≈"payroll"'],
+        },
+      },
+    });
+    expect(out.startsWith("Resolved: q=payroll")).toBe(true);
+  });
+
+  it("omits the Resolved line when the resolver found nothing", async () => {
+    const { buildUserPrompt } = await import("./prompts");
+    const out = buildUserPrompt({
+      userText: "hello",
+      snapshot: {
+        tz: "UTC",
+        nowIso: "2026-01-01T00:00:00Z",
+        accounts: [],
+        categories: [],
+        resolved: {
+          categorySource: "none",
+          descriptionSource: "none",
+          matched: [],
+        },
+      },
+    });
+    expect(out.startsWith("Resolved:")).toBe(false);
+  });
+});

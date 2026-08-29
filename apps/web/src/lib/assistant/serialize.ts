@@ -101,5 +101,14 @@ export function buildSnapshot(args: {
   if (bytes > SNAPSHOT_BYTE_BUDGET) {
     snapshot = { ...snapshot, accounts: accounts.slice(0, 12) };
   }
+  // The byte budget can hide the resolver's matched category from the model.
+  // If we resolved a category that didn't survive truncation, prepend it so
+  // the model sees it and emits the correct query name. Idempotent.
+  if (resolved.category && !snapshot.categories.some((c) => c.name === resolved.category)) {
+    snapshot = {
+      ...snapshot,
+      categories: [{ id: "__resolved__", name: resolved.category }, ...snapshot.categories],
+    };
+  }
   return snapshot;
 }
