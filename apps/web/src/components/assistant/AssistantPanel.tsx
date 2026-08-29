@@ -96,7 +96,16 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
                 {m.role === "user" ? (
                   <span>{m.content}</span>
                 ) : (
-                  <AssistantMessageView message={m} />
+                  <AssistantMessageView
+                    message={m}
+                    onPickSuggestion={(text) => {
+                      setDraft(text);
+                      if (status === "idle") {
+                        void send(text);
+                        setDraft("");
+                      }
+                    }}
+                  />
                 )}
               </div>
             </div>
@@ -142,8 +151,8 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
 function EmptyChat({ onPick }: { onPick: (text: string) => void }) {
   const suggestions = [
     "How much did I spend on Food this month?",
-    "Am I over budget on Dining?",
-    "Summarize this week",
+    "Am I on track this month?",
+    "Find my payroll transactions.",
   ];
   return (
     <div className="flex flex-col items-center gap-3 pt-4 text-center">

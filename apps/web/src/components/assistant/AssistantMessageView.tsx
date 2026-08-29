@@ -3,14 +3,12 @@
 import { useState, type ReactNode } from "react";
 import { BudgetProgressCard } from "./messages/BudgetProgressCard";
 import { CategoryBarChartCard } from "./messages/CategoryBarChartCard";
-import { SummaryDashboardCard } from "./messages/SummaryDashboardCard";
+import { BurnRateCard } from "./messages/BurnRateCard";
 import { VoiceTxnPrefillCard } from "./messages/VoiceTxnPrefillCard";
 import { PeriodCompareCard } from "./messages/PeriodCompareCard";
 import { MerchantListCard } from "./messages/MerchantListCard";
-import { RecurringListCard } from "./messages/RecurringListCard";
-import { BurnRateCard } from "./messages/BurnRateCard";
-import { AnomalyListCard } from "./messages/AnomalyListCard";
 import { SearchResultsCard } from "./messages/SearchResultsCard";
+import { UnsupportedAffordance } from "./messages/UnsupportedAffordance";
 import type { AssistantMessage } from "@/lib/assistant/types";
 import { DataInspector } from "./DataInspector";
 
@@ -19,10 +17,16 @@ import { DataInspector } from "./DataInspector";
  * directly — it can only set one of the `type` values that has a Zod schema
  * and a fixed component. There is no dynamic JSX path.
  *
- * A second model call writes a one-sentence TL;DR to `tldr`; the renderer
- * shows it as a headline line at the top of every widget.
+ * A deterministic headline line (`tldr`) is rendered above the widget
+ * for every payload type except text / error / voice_to_txn.
  */
-export function AssistantMessageView({ message }: { message: AssistantMessage }) {
+export function AssistantMessageView({
+  message,
+  onPickSuggestion,
+}: {
+  message: AssistantMessage;
+  onPickSuggestion?: (text: string) => void;
+}) {
   const [showInspector, setShowInspector] = useState(false);
 
   let widget: ReactNode = null;
@@ -45,27 +49,27 @@ export function AssistantMessageView({ message }: { message: AssistantMessage })
   } else if (message.type === "text") {
     widget = (
       <div className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-3 text-sm text-zinc-300">
-        {message.content}
+        <p>{message.content}</p>
+        {message.suggestedUseCases && message.suggestedUseCases.length > 0 && onPickSuggestion && (
+          <UnsupportedAffordance
+            suggestedUseCases={message.suggestedUseCases}
+            onPick={onPickSuggestion}
+          />
+        )}
       </div>
     );
   } else if (message.type === "budget_progress") {
     widget = <BudgetProgressCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "spending_breakdown") {
     widget = <CategoryBarChartCard payload={message} onViewData={() => setShowInspector(true)} />;
-  } else if (message.type === "summary_dashboard") {
-    widget = <SummaryDashboardCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "voice_to_txn") {
     widget = <VoiceTxnPrefillCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "period_compare") {
     widget = <PeriodCompareCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "merchant_breakdown") {
     widget = <MerchantListCard payload={message} onViewData={() => setShowInspector(true)} />;
-  } else if (message.type === "recurring_list") {
-    widget = <RecurringListCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "burn_rate") {
     widget = <BurnRateCard payload={message} onViewData={() => setShowInspector(true)} />;
-  } else if (message.type === "anomaly_list") {
-    widget = <AnomalyListCard payload={message} onViewData={() => setShowInspector(true)} />;
   } else if (message.type === "search_results") {
     widget = <SearchResultsCard payload={message} onViewData={() => setShowInspector(true)} />;
   }

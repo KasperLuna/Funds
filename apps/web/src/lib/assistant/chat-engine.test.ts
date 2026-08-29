@@ -62,19 +62,18 @@ describe("runChat — query generation", () => {
   it("executes a spending query and derives money from local rows, keeping raw output", async () => {
     const deps = baseDeps();
     deps.engine.setResponse('{"select":"spending","period":"this_month"}');
-    deps.engine.setTldr('{"tldr":"You spent 15 on Food this month."}');
     const out = await runChat(
       { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
       deps,
     );
-    // 1 query call + 1 TLDR call.
-    expect(deps.engine.calls).toHaveLength(2);
+    expect(deps.engine.calls).toHaveLength(1);
     expect(out.assistant.type).toBe("spending_breakdown");
     if (out.assistant.type === "spending_breakdown") {
       expect(out.assistant.totalMinor).toBe("1500");
       expect(out.assistant.slices[0]?.category).toBe("Food");
     }
     expect(out.assistant.rawOutput).toContain('"select":"spending"');
+    // TLDR is now derived deterministically from the payload.
     expect(out.assistant.tldr).toContain("Food");
   });
 
@@ -139,13 +138,11 @@ describe("runChat — retry and fallback", () => {
   it("retries once with a corrective prompt then accepts the query", async () => {
     const deps = baseDeps();
     deps.engine.setResponses(["not json", '{"select":"spending","period":"this_month"}']);
-    deps.engine.setTldr("You spent 15 on Food this month.");
     const out = await runChat(
       { text: "How much did I spend on food?", now: Date.now(), userId: "u" },
       deps,
     );
-    // 2 query rounds + 1 TLDR call after the second-round widget settles.
-    expect(deps.engine.calls).toHaveLength(3);
+    expect(deps.engine.calls).toHaveLength(2);
     expect(out.assistant.type).toBe("spending_breakdown");
     expect(out.assistant.rawOutput).toContain("not json");
   });
@@ -206,9 +203,6 @@ describe("inferUseCase", () => {
   it("detects budget_check", () => {
     expect(inferUseCase("am I over budget on dining?", snap)).toBe("budget_check");
   });
-  it("detects weekly_summary", () => {
-    expect(inferUseCase("summarize this week", snap)).toBe("weekly_summary");
-  });
   it("detects voice_to_txn for non-question log intent", () => {
     expect(inferUseCase("log a ₱42 lunch at BPI", snap)).toBe("voice_to_txn");
   });
@@ -218,14 +212,8 @@ describe("inferUseCase", () => {
   it("detects merchants_query", () => {
     expect(inferUseCase("where does my food money go", snap)).toBe("merchants_query");
   });
-  it("detects recurring_query", () => {
-    expect(inferUseCase("any subscriptions?", snap)).toBe("recurring_query");
-  });
   it("detects burn_query", () => {
     expect(inferUseCase("am I on track this month?", snap)).toBe("burn_query");
-  });
-  it("detects anomalies_query", () => {
-    expect(inferUseCase("any weird big purchases lately", snap)).toBe("anomalies_query");
   });
   it("falls through to fallback_text", () => {
     expect(inferUseCase("hi there", snap)).toBe("fallback_text");
@@ -253,16 +241,6 @@ describe("runChat — new analytics selects", () => {
     expect(out.assistant.type).toBe("merchant_breakdown");
   });
 
-  it("renders a recurring_list widget", async () => {
-    const deps = baseDeps();
-    deps.engine.setResponse('{"select":"recurring"}');
-    const out = await runChat(
-      { text: "any subscriptions?", now: Date.now(), userId: "u" },
-      deps,
-    );
-    expect(out.assistant.type).toBe("recurring_list");
-  });
-
   it("renders a burn_rate widget", async () => {
     const deps = baseDeps();
     deps.engine.setResponse('{"select":"burn"}');
@@ -272,59 +250,22 @@ describe("runChat — new analytics selects", () => {
     );
     expect(out.assistant.type).toBe("burn_rate");
   });
-
-  it("renders an anomaly_list widget", async () => {
-    const deps = baseDeps();
-    deps.engine.setResponse('{"select":"anomalies"}');
-    const out = await runChat(
-      { text: "any unusual purchases lately?", now: Date.now(), userId: "u" },
-      deps,
-    );
-    expect(out.assistant.type).toBe("anomaly_list");
-  });
 });
 
-describe("runChat — TLDR", () => {
-  it("attaches a tldr when the model returns a valid one", async () => {
+describe("runChat — unsupported intent", () => {
+  it("short-circuits to an affordance for a 'why' question without calling the model", async () => {
     const deps = baseDeps();
-    deps.engine.setResponse('{"select":"spending","period":"this_month"}');
-    deps.engine.setTldr('{"tldr":"You spent 15 on Food this month."}');
     const out = await runChat(
-      { text: "How much on food?", now: Date.now(), userId: "u" },
+      { text: "Why did my spending go up this month?", now: Date.now(), userId: "u" },
       deps,
     );
-    expect(out.assistant.tldr).toMatch(/Food/);
-  });
-
-  it("leaves tldr undefined when the model returns invalid JSON", async () => {
-    const deps = baseDeps();
-    deps.engine.setResponse('{"select":"spending","period":"this_month"}');
-    deps.engine.setTldr("not json at all");
-    const out = await runChat(
-      { text: "How much on food?", now: Date.now(), userId: "u" },
-      deps,
-    );
-    expect(out.assistant.tldr).toBeUndefined();
-  });
-
-  it("leaves tldr undefined when the TLDR model throws", async () => {
-    const deps = baseDeps();
-    deps.engine.setResponse('{"select":"spending","period":"this_month"}');
-    deps.engine.failTldr(new Error("boom"));
-    const out = await runChat(
-      { text: "How much on food?", now: Date.now(), userId: "u" },
-      deps,
-    );
-    expect(out.assistant.type).toBe("spending_breakdown");
-    expect(out.assistant.tldr).toBeUndefined();
-  });
-
-  it("does not run a TLDR for text replies", async () => {
-    const deps = baseDeps();
-    deps.engine.setResponse('{"reply":"Hi there"}');
-    const out = await runChat({ text: "hello", now: Date.now(), userId: "u" }, deps);
+    // No model call was made — classifyIntent caught it.
+    expect(deps.engine.calls).toHaveLength(0);
     expect(out.assistant.type).toBe("text");
-    expect(out.assistant.tldr).toBeUndefined();
+    if (out.assistant.type === "text") {
+      expect(out.assistant.suggestedUseCases).toBeDefined();
+      expect(out.assistant.suggestedUseCases?.length).toBeGreaterThan(0);
+    }
   });
 });
 
@@ -358,7 +299,9 @@ describe("runChat — resolver back-fill", () => {
         description: "Payroll Corp",
         amountMinor: 50000n,
         type: "income" as const,
-        date: new Date().setHours(12, 0, 0, 0),
+        // Use a time a minute ago so the txn is always in "this month" no
+        // matter what timezone the test runner is in.
+        date: Date.now() - 60_000,
       }),
     ];
     deps.txns = tx;

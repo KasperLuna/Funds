@@ -20,13 +20,10 @@ export function tsToMsg(payload: object, usedCase: UseCaseId, ts: number): Assis
 const USE_CASE_QUERY: Record<UseCaseId, AssistantQuery | null> = {
   spending_query: { select: "spending" },
   budget_check: { select: "budget" },
-  weekly_summary: { select: "summary" },
   voice_to_txn: { select: "log_txn" },
   compare_query: { select: "compare" },
   merchants_query: { select: "merchants" },
-  recurring_query: { select: "recurring" },
   burn_query: { select: "burn" },
-  anomalies_query: { select: "anomalies" },
   search_query: { select: "search" },
   fallback_text: null,
 };
@@ -36,9 +33,7 @@ const EMPTY_TEXT: Record<string, string> = {
   budget_empty: "No budget found for {period}.",
   compare_empty: "Not enough data to compare for {period} yet.",
   merchants_empty: "No merchant spending found for {period}.",
-  recurring_empty: "No recurring charges detected in {period}.",
   burn_empty: "Not enough spend yet to project a pace for {period}.",
-  anomalies_empty: "No unusually large transactions in {period}.",
   search_empty: "No transactions matching that description in {period}.",
 };
 
@@ -81,7 +76,7 @@ export function deterministicFallback(
       {
         type: "text",
         content:
-          "I couldn't reach a structured answer. Try asking about spending on a category, a budget, or a weekly summary.",
+          "I couldn't reach a structured answer. Try asking about spending on a category, a budget, or a comparison.",
       },
       useCase,
       ctx.now,

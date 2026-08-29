@@ -9,16 +9,12 @@ import type { CompleteOptions, LlmEngine } from "@/lib/llm/types";
 export type MockLlmEngine = LlmEngine & {
   setResponse(modelOutput: string): void;
   setResponses(outputs: string[]): void;
-  setTldr(modelOutput: string): void;
-  setTldrs(outputs: string[]): void;
   failNext(reason: Error): void;
-  failTldr(reason: Error): void;
   calls: Array<{ system: string; user: string }>;
 };
 
 export function createMockLlmEngine(): MockLlmEngine {
   const queue: Array<string | Error> = [];
-  const tldrQueue: Array<string | Error> = [];
   const calls: Array<{ system: string; user: string }> = [];
   return {
     calls,
@@ -27,17 +23,12 @@ export function createMockLlmEngine(): MockLlmEngine {
     async load() {
       // no-op
     },
-    async complete(opts: CompleteOptions) {
-      calls.push({ system: opts.system, user: opts.user });
-      // The TLDR system prompt is a stable signal. The chat-engine uses it
-      // for the second-call summarization; tests can install fixture
-      // responses separately to keep the two paths deterministic.
-      const isTldr = opts.system.startsWith("You write a single-sentence headline");
-      const q = isTldr ? tldrQueue : queue;
-      const next = q.shift();
+    async complete(_opts: CompleteOptions) {
+      calls.push({ system: _opts.system, user: _opts.user });
+      const next = queue.shift();
       if (next instanceof Error) throw next;
       if (typeof next === "string") return next;
-      return JSON.stringify({ tldr: "ok" });
+      return JSON.stringify({ type: "text", content: "no fixture" });
     },
     async unload() {
       // no-op
@@ -59,21 +50,9 @@ export function createMockLlmEngine(): MockLlmEngine {
       queue.length = 0;
       queue.push(...outputs);
     },
-    setTldr(out: string) {
-      tldrQueue.length = 0;
-      tldrQueue.push(out);
-    },
-    setTldrs(outputs: string[]) {
-      tldrQueue.length = 0;
-      tldrQueue.push(...outputs);
-    },
     failNext(reason: Error) {
       queue.length = 0;
       queue.push(reason);
-    },
-    failTldr(reason: Error) {
-      tldrQueue.length = 0;
-      tldrQueue.push(reason);
     },
   };
 }

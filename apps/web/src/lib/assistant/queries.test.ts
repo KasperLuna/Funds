@@ -107,31 +107,6 @@ describe("executeQuery — spending", () => {
   });
 });
 
-describe("executeQuery — summary", () => {
-  it("computes savingsRatePct as integer", () => {
-    const txns = [
-      makeTxn({ id: "t-in", amountMinor: 10000n, type: "income" as const, date: new Date(2026, 7, 5).getTime() }),
-      makeTxn({ id: "t-out", amountMinor: -4000n, date: new Date(2026, 7, 10).getTime() }),
-    ];
-    const out = executeQuery({ select: "summary" }, ctx({ txns }), "this month");
-    expect(out.ok).toBe(true);
-    if (out.ok && out.data.type === "summary_dashboard") {
-      expect(out.data.incomeMinor).toBe("10000");
-      expect(out.data.expenseMinor).toBe("4000");
-      expect(out.data.netMinor).toBe("6000");
-      expect(out.data.savingsRatePct).toBe(60);
-    }
-  });
-
-  it("returns null savingsRatePct when income is zero", () => {
-    const out = executeQuery({ select: "summary" }, ctx(), "this month");
-    expect(out.ok).toBe(true);
-    if (out.ok && out.data.type === "summary_dashboard") {
-      expect(out.data.savingsRatePct).toBeNull();
-    }
-  });
-});
-
 describe("executeQuery — compare", () => {
   it("computes deltaPct against the prior period", () => {
     const lastMonth = new Date(NOW);
@@ -169,43 +144,6 @@ describe("executeQuery — merchants", () => {
   });
 });
 
-describe("executeQuery — recurring", () => {
-  it("detects a monthly subscription", () => {
-    const base = new Date(2026, 7, 15).getTime();
-    const txns = [
-      makeTxn({ id: "n1", description: "Netflix", amountMinor: -54900n, date: base }),
-      makeTxn({ id: "n2", description: "Netflix", amountMinor: -54900n, date: base - 30 * 24 * 60 * 60 * 1000 }),
-      makeTxn({ id: "n3", description: "Netflix", amountMinor: -54900n, date: base - 60 * 24 * 60 * 60 * 1000 }),
-    ];
-    // Span is 60 days. Use a custom query with a wide range so all three fit.
-    const out = executeQuery(
-      { select: "recurring", period: "this_year" },
-      ctx({ txns }),
-      "this year",
-    );
-    expect(out.ok).toBe(true);
-    if (out.ok && out.data.type === "recurring_list") {
-      const item = out.data.items[0];
-      expect(item?.description).toBe("Netflix");
-      expect(item?.cadence).toBe("monthly");
-      expect(item?.monthlyCostMinor).toBe("54900");
-    }
-  });
-
-  it("returns an empty list when nothing repeats enough", () => {
-    const out = executeQuery(
-      { select: "recurring" },
-      ctx({ txns: [makeTxn({ description: "One-off" })] }),
-      "last 90 days",
-    );
-    expect(out.ok).toBe(true);
-    if (out.ok && out.data.type === "recurring_list") {
-      expect(out.data.items).toHaveLength(0);
-      expect(out.data.totalMonthlyMinor).toBe("0");
-    }
-  });
-});
-
 describe("executeQuery — burn", () => {
   it("projects end-of-period and reports vs prior", () => {
     const txns = [
@@ -221,25 +159,6 @@ describe("executeQuery — burn", () => {
       expect(data.currentMinor).toBe("30000");
       expect(data.daysElapsed).toBeGreaterThan(15);
       expect(data.projectedMinor).not.toBe("0");
-    }
-  });
-});
-
-describe("executeQuery — anomalies", () => {
-  it("flags transactions well above the merchant median", () => {
-    const base = new Date(2026, 7, 10).getTime();
-    const txns = [
-      makeTxn({ id: "a1", description: "Amazon", amountMinor: -1000n, date: base }),
-      makeTxn({ id: "a2", description: "Amazon", amountMinor: -1200n, date: base + 24 * 60 * 60 * 1000 }),
-      makeTxn({ id: "a3", description: "Amazon", amountMinor: -10000n, date: base + 2 * 24 * 60 * 60 * 1000 }), // 10x median
-    ];
-    const out = executeQuery({ select: "anomalies" }, ctx({ txns }), "this month");
-    expect(out.ok).toBe(true);
-    if (!out.ok) return;
-    const data = out.data as Extract<typeof out.data, { type: "anomaly_list" }>;
-    if (data.type === "anomaly_list") {
-      expect(data.items.length).toBeGreaterThan(0);
-      expect(data.items[0]?.description).toBe("Amazon");
     }
   });
 });

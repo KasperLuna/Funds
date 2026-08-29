@@ -46,19 +46,6 @@ export type AssistantPayload =
       scope?: ScopeFlags;
     }
   | {
-      type: "summary_dashboard";
-      periodLabel: string;
-      assetCode: string;
-      decimals: number;
-      incomeMinor: string;
-      expenseMinor: string;
-      netMinor: string;
-      savingsRatePct: number | null;
-      topCategories: Array<{ category: string; amountMinor: string; pct: number }>;
-      budgets: Array<{ category: string; pctUsed: number; status: "under" | "near" | "over" }>;
-      scope?: ScopeFlags;
-    }
-  | {
       type: "voice_to_txn";
       accountId: string | null;
       accountName: string | null;
@@ -92,22 +79,6 @@ export type AssistantPayload =
       scope?: ScopeFlags;
     }
   | {
-      type: "recurring_list";
-      periodLabel: string;
-      assetCode: string;
-      decimals: number;
-      totalMonthlyMinor: string;
-      items: Array<{
-        description: string;
-        avgMinor: string;
-        occurrences: number;
-        lastDateLabel: string;
-        cadence: "weekly" | "biweekly" | "monthly" | "irregular";
-        monthlyCostMinor: string;
-      }>;
-      scope?: ScopeFlags;
-    }
-  | {
       type: "burn_rate";
       periodLabel: string;
       assetCode: string;
@@ -119,20 +90,6 @@ export type AssistantPayload =
       daysInPeriod: number;
       projectedMinor: string;
       vsPriorPct: number | null;
-      scope?: ScopeFlags;
-    }
-  | {
-      type: "anomaly_list";
-      periodLabel: string;
-      assetCode: string;
-      decimals: number;
-      items: Array<{
-        description: string;
-        amountMinor: string;
-        dateLabel: string;
-        multipleOfMedian: number;
-        medianMinor: string;
-      }>;
       scope?: ScopeFlags;
     }
   | { type: "search_empty"; periodLabel: string; scope?: ScopeFlags }
@@ -175,13 +132,10 @@ export const assistantQuerySchema = z.object({
   select: z.enum([
     "spending",
     "budget",
-    "summary",
     "log_txn",
     "compare",
     "merchants",
-    "recurring",
     "burn",
-    "anomalies",
     "search",
   ]),
   period: z.string().max(40).optional(),
@@ -510,37 +464,6 @@ export function executeQuery(
         },
       };
     }
-    case "summary": {
-      const range = resolvePeriod(q.period ?? userText, ctx.now);
-      const { income, expense } = incomeExpense(ctx, range);
-      const { slices } = categorySlicesForRange(ctx, range);
-      const budgets = budgetUsageFor(ctx, range)
-        .sort((x, y) => y.pct - x.pct)
-        .slice(0, 4)
-        .map((u) => {
-          const pct = pctOf(u.spentMinor, u.budgetMinor);
-          return { category: u.category.name, pctUsed: pct, status: statusOf(pct) };
-        });
-      const savingsRatePct = income > 0n
-        ? Math.round(Number(((income - expense) * 10000n) / income) / 100)
-        : null;
-      return {
-        ok: true,
-        data: {
-          type: "summary_dashboard",
-          periodLabel: range.label,
-          assetCode: code,
-          decimals,
-          incomeMinor: fmtMoney(income),
-          expenseMinor: fmtMoney(expense),
-          netMinor: fmtMoney(income - expense),
-          savingsRatePct,
-          topCategories: slices.slice(0, 5),
-          budgets,
-          scope: flags,
-        },
-      };
-    }
     case "log_txn": {
       const account =
         (q.account ? findAccountByName(ctx, q.account) : null) ??
@@ -627,93 +550,6 @@ export function executeQuery(
         },
       };
     }
-    case "recurring": {
-      // Look back over the resolved period (default 90d). A tx is "recurring"
-      // when the same description string repeats and the amounts are within
-      // a 25% relative tolerance of the cluster's median.
-      const range = resolvePeriod(q.period ?? "last 90 days", ctx.now);
-      const minOcc = parseIntInRange(q.minOccurrences, 3, 2, 12);
-      const clusters = new Map<string, { display: string; txns: Array<{ amt: bigint; date: number }> }>();
-      for (const t of ctx.txns) {
-        if (t.deletedAt) continue;
-        const date = Number(t.date);
-        if (date < range.from || date > range.to) continue;
-        const amt = ensureBigInt(t.amountMinor);
-        if (amt >= 0n) continue;
-        const key = t.description.trim().toLowerCase();
-        if (!key) continue;
-        const cur = clusters.get(key) ?? { display: t.description.trim() || "Unnamed", txns: [] };
-        cur.txns.push({ amt: -amt, date });
-        clusters.set(key, cur);
-      }
-      const median = (xs: bigint[]): bigint => {
-        if (xs.length === 0) return 0n;
-        const sorted = [...xs].sort((a, b) => (a > b ? 1 : -1));
-        const mid = Math.floor(sorted.length / 2);
-        if (sorted.length % 2 === 0) return (sorted[mid - 1]! + sorted[mid]!) / 2n;
-        return sorted[mid]!;
-      };
-      const items: Array<{
-        description: string;
-        avgMinor: string;
-        occurrences: number;
-        lastDateLabel: string;
-        cadence: "weekly" | "biweekly" | "monthly" | "irregular";
-        monthlyCostMinor: string;
-      }> = [];
-      let totalMonthly = 0n;
-      for (const c of clusters.values()) {
-        if (c.txns.length < minOcc) continue;
-        const amounts = c.txns.map((x) => x.amt);
-        const med = median(amounts);
-        if (med === 0n) continue;
-        // Drop outliers (anything more than 50% off the cluster median).
-        const tight = c.txns.filter((x) => {
-          const diff = x.amt > med ? x.amt - med : med - x.amt;
-          return diff * 2n <= med;
-        });
-        if (tight.length < minOcc) continue;
-        const sum = tight.reduce((s, x) => s + x.amt, 0n);
-        const avg = sum / BigInt(tight.length);
-        // Cadence: average gap between tight txns.
-        const sorted = [...tight].sort((a, b) => (a.date > b.date ? -1 : 1));
-        const last = sorted[0]!;
-        let cadence: "weekly" | "biweekly" | "monthly" | "irregular" = "irregular";
-        if (sorted.length >= 2) {
-          const first = sorted[sorted.length - 1]!;
-          const spanDays = Math.max(1, (last.date - first.date) / (24 * 60 * 60 * 1000));
-          const gap = spanDays / Math.max(1, sorted.length - 1);
-          if (gap <= 9) cadence = "weekly";
-          else if (gap <= 18) cadence = "biweekly";
-          else if (gap <= 40) cadence = "monthly";
-        }
-        // Normalize to monthly cost: weekly → 4.345, biweekly → 2.1725, monthly → 1.
-        const multiplier = cadence === "weekly" ? 4345n : cadence === "biweekly" ? 2173n : 1000n;
-        const monthly = (avg * multiplier) / 1000n;
-        totalMonthly += monthly;
-        items.push({
-          description: c.display,
-          avgMinor: avg.toString(),
-          occurrences: tight.length,
-          lastDateLabel: formatDayLabel(last.date),
-          cadence,
-          monthlyCostMinor: monthly.toString(),
-        });
-      }
-      items.sort((a, b) => (BigInt(a.monthlyCostMinor) > BigInt(b.monthlyCostMinor) ? -1 : 1));
-      return {
-        ok: true,
-        data: {
-          type: "recurring_list",
-          periodLabel: range.label,
-          assetCode: code,
-          decimals,
-          totalMonthlyMinor: totalMonthly.toString(),
-          items: items.slice(0, 12),
-          scope: flags,
-        },
-      };
-    }
     case "burn": {
       const range = resolvePeriod(q.period ?? "this_month", ctx.now);
       const prior = previousRange(range);
@@ -737,67 +573,6 @@ export function executeQuery(
           daysInPeriod,
           projectedMinor: projected.toString(),
           vsPriorPct: deltaPctOf(cur, prev),
-          scope: flags,
-        },
-      };
-    }
-    case "anomalies": {
-      const range = resolvePeriod(q.period ?? "last 30 days", ctx.now);
-      const threshold = parseIntInRange(q.thresholdPct, 200, 110, 1000);
-      const perMerchant = new Map<string, { display: string; amounts: bigint[]; txns: Array<{ amt: bigint; date: number }> }>();
-      // Two-pass: first gather amounts, then identify outliers.
-      for (const t of ctx.txns) {
-        if (t.deletedAt) continue;
-        const date = Number(t.date);
-        if (date < range.from || date > range.to) continue;
-        const amt = ensureBigInt(t.amountMinor);
-        if (amt >= 0n) continue;
-        const key = t.description.trim().toLowerCase();
-        if (!key) continue;
-        const cur = perMerchant.get(key) ?? { display: t.description.trim() || "Unnamed", amounts: [], txns: [] };
-        cur.amounts.push(-amt);
-        cur.txns.push({ amt: -amt, date });
-        perMerchant.set(key, cur);
-      }
-      const median = (xs: bigint[]): bigint => {
-        if (xs.length === 0) return 0n;
-        const sorted = [...xs].sort((a, b) => (a > b ? 1 : -1));
-        const mid = Math.floor(sorted.length / 2);
-        if (sorted.length % 2 === 0) return (sorted[mid - 1]! + sorted[mid]!) / 2n;
-        return sorted[mid]!;
-      };
-      const anomalies: Array<{
-        description: string;
-        amountMinor: string;
-        dateLabel: string;
-        multipleOfMedian: number;
-        medianMinor: string;
-      }> = [];
-      for (const m of perMerchant.values()) {
-        if (m.amounts.length < 3) continue;
-        const med = median(m.amounts);
-        if (med === 0n) continue;
-        for (const t of m.txns) {
-          if (t.amt * 100n <= med * BigInt(threshold)) continue;
-          const multiple = Number((t.amt * 100n) / med) / 100;
-          anomalies.push({
-            description: m.display,
-            amountMinor: t.amt.toString(),
-            dateLabel: formatDayLabel(t.date),
-            multipleOfMedian: multiple,
-            medianMinor: med.toString(),
-          });
-        }
-      }
-      anomalies.sort((a, b) => (BigInt(a.amountMinor) > BigInt(b.amountMinor) ? -1 : 1));
-      return {
-        ok: true,
-        data: {
-          type: "anomaly_list",
-          periodLabel: range.label,
-          assetCode: code,
-          decimals,
-          items: anomalies.slice(0, 5),
           scope: flags,
         },
       };
@@ -875,26 +650,20 @@ export function executeQuery(
 
 export const QUERY_LANGUAGE_DOC = `{"select":"spending","period":"<period>","category":"<category>"}  — spending by category (category optional)
 {"select":"budget","period":"<period>","category":"<category>"}  — spend vs budget for a category
-{"select":"summary","period":"<period>"}                          — income, expense, net, top categories
 {"select":"log_txn","account":"<name>","amount":"<n>","description":"<text>","category":"<category>"}  — prepare a transaction entry
 {"select":"compare","period":"<period>","category":"<category>","compareTo":"previous|last_year"}  — current vs prior period
 {"select":"merchants","period":"<period>","category":"<category>","limit":"<n>"}  — top descriptions, default 5
-{"select":"recurring","period":"<period>","minOccurrences":"<n>"}  — repeat charges and monthly cost
 {"select":"burn","period":"<period>"}  — current pace vs prior month
-{"select":"anomalies","period":"<period>","thresholdPct":"<n>"}  — transactions well above their merchant median
 {"select":"search","period":"<period>","q":"<text>","category":"<category>","limit":"<n>"}  — find transactions whose description contains q
 {"reply":"<short text>"}  — greetings or anything not about their data`;
 
 export const QUERY_EXAMPLES = `User: "How much did I spend this month?" → {"select":"spending","period":"this_month"}
 User: "food spending last month" → {"select":"spending","period":"last_month","category":"Food"}
 User: "am I over budget on dining?" → {"select":"budget","period":"this_month","category":"Dining"}
-User: "summarize this week" → {"select":"summary","period":"this_week"}
 User: "log 42.50 lunch" → {"select":"log_txn","amount":"42.50","description":"lunch"}
 User: "compare food spending this month vs last" → {"select":"compare","period":"this_month","category":"Food"}
 User: "where does my food money go" → {"select":"merchants","category":"Food"}
-User: "any subscriptions?" → {"select":"recurring"}
 User: "am I on track this month" → {"select":"burn"}
-User: "any weird big purchases lately" → {"select":"anomalies"}
 User: "what was my payroll this month" → {"select":"search","period":"this_month","q":"payroll"}
 User: "find amazon charges" → {"select":"search","q":"amazon"}
 User: "hello" → {"reply":"Hi! Ask me about your spending, budgets, or a weekly summary."}`;

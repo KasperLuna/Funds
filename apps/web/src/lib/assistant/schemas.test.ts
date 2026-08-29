@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { schemaByUseCase, extractJson, spendingBreakdownSchema, budgetProgressSchema, summaryDashboardSchema, voiceTxnPrefillSchema } from "./schemas";
+import { schemaByUseCase, extractJson, spendingBreakdownSchema, budgetProgressSchema, voiceTxnPrefillSchema } from "./schemas";
 
 describe("assistant/schemas", () => {
   describe("budgetProgress", () => {
@@ -86,39 +86,6 @@ describe("assistant/schemas", () => {
     });
   });
 
-  describe("summaryDashboard", () => {
-    it("accepts a valid payload including negative netMinor", () => {
-      const r = summaryDashboardSchema.safeParse({
-        type: "summary_dashboard",
-        periodLabel: "This week",
-        assetCode: "PHP",
-        decimals: 2,
-        incomeMinor: "100",
-        expenseMinor: "500",
-        netMinor: "-400",
-        savingsRatePct: null,
-        topCategories: [],
-        budgets: [],
-      });
-      expect(r.success).toBe(true);
-    });
-    it("accepts a savingsRatePct integer", () => {
-      const r = summaryDashboardSchema.safeParse({
-        type: "summary_dashboard",
-        periodLabel: "This week",
-        assetCode: "PHP",
-        decimals: 2,
-        incomeMinor: "1000",
-        expenseMinor: "200",
-        netMinor: "800",
-        savingsRatePct: 80,
-        topCategories: [],
-        budgets: [],
-      });
-      expect(r.success).toBe(true);
-    });
-  });
-
   describe("voiceTxnPrefill", () => {
     it("accepts nullable fields", () => {
       const r = voiceTxnPrefillSchema.safeParse({
@@ -142,7 +109,6 @@ describe("assistant/schemas", () => {
         expect.arrayContaining([
           "spending_query",
           "budget_check",
-          "weekly_summary",
           "voice_to_txn",
           "fallback_text",
         ]),

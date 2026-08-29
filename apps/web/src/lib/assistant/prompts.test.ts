@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { payloadSummary, TLDR_SYSTEM } from "./prompts";
+import { deriveTldr } from "./prompts";
 import type { AssistantMessage } from "./types";
 
 /**
- * The TL;DR model must see money in MAJOR UNITS — the codebase's wire format
- * is `*Minor` strings (no floats, no BigInts in the LLM context). A 1B model
- * asked to read "12540" with a hidden `decimals: 2` will reliably emit
- * "₱12540" as a headline. These tests pin the conversion so a regression
- * can't quietly turn the assistant into a thousand-times-amplifier.
+ * The TL;DR is now derived deterministically from the validated payload —
+ * no second LLM call. These tests pin the headline format so a regression
+ * can't quietly change the UX (e.g. regressing to "₱12540" because a
+ * widget was added without scaling the minor → major conversion).
  */
-describe("payloadSummary — money is in major units", () => {
-  it("converts spending_breakdown totalMinor to a major number", () => {
+describe("deriveTldr", () => {
+  it("returns a single-category headline for spending_breakdown with one slice", () => {
     const m = {
       id: "1",
       role: "assistant",
@@ -23,39 +22,89 @@ describe("payloadSummary — money is in major units", () => {
       totalMinor: "12540",
       slices: [{ category: "Food", amountMinor: "12540", pct: 100 }],
     } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(m));
-    expect(json.total).toBe(125.4);
-    expect(json.slices[0].amount).toBe(125.4);
-    expect(json.asset).toBe("PHP");
-    expect(json.decimals).toBe(2);
+    expect(deriveTldr(m)).toBe("Spent ₱125.40 on Food.");
   });
 
-  it("converts summary_dashboard income/expense/net", () => {
+  it("returns a multi-category headline", () => {
     const m = {
       id: "1",
       role: "assistant",
-      type: "summary_dashboard",
+      type: "spending_breakdown",
       ts: 0,
-      usedCase: "weekly_summary",
-      periodLabel: "This week",
-      assetCode: "USD",
+      usedCase: "spending_query",
+      periodLabel: "This month",
+      assetCode: "PHP",
       decimals: 2,
-      incomeMinor: "10000",
-      expenseMinor: "4000",
-      netMinor: "6000",
-      savingsRatePct: 60,
-      topCategories: [],
-      budgets: [],
+      totalMinor: "30000",
+      slices: [
+        { category: "Food", amountMinor: "12540", pct: 42 },
+        { category: "Transport", amountMinor: "17460", pct: 58 },
+      ],
     } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(m));
-    expect(json.income).toBe(100);
-    expect(json.expense).toBe(40);
-    expect(json.net).toBe(60);
-    expect(json.savingsRatePct).toBe(60);
-    expect(json.asset).toBe("USD");
+    expect(deriveTldr(m)).toBe("Spent ₱300.00 across 2 categories.");
   });
 
-  it("converts budget_progress spent and limit", () => {
+  it("omits the leading $ for USD but keeps ₱ for PHP", () => {
+    const usd = {
+      id: "1",
+      role: "assistant",
+      type: "spending_breakdown",
+      ts: 0,
+      usedCase: "spending_query",
+      periodLabel: "This month",
+      assetCode: "USD",
+      decimals: 2,
+      totalMinor: "10000",
+      slices: [{ category: "Food", amountMinor: "10000", pct: 100 }],
+    } as unknown as AssistantMessage;
+    expect(deriveTldr(usd)).toBe("Spent 100.00 on Food.");
+
+    const php = {
+      ...usd,
+      assetCode: "PHP",
+    } as unknown as AssistantMessage;
+    expect(deriveTldr(php)).toBe("Spent ₱100.00 on Food.");
+  });
+
+  it("returns a delta headline for period_compare", () => {
+    const m = {
+      id: "1",
+      role: "assistant",
+      type: "period_compare",
+      ts: 0,
+      usedCase: "compare_query",
+      category: null,
+      currentLabel: "This month",
+      priorLabel: "Last month",
+      assetCode: "PHP",
+      decimals: 2,
+      currentMinor: "15000",
+      priorMinor: "10000",
+      deltaPct: 50,
+    } as unknown as AssistantMessage;
+    expect(deriveTldr(m)).toBe("Up 50% vs Last month.");
+  });
+
+  it("returns a 'flat' headline when deltaPct is null", () => {
+    const m = {
+      id: "1",
+      role: "assistant",
+      type: "period_compare",
+      ts: 0,
+      usedCase: "compare_query",
+      category: null,
+      currentLabel: "This month",
+      priorLabel: "Last month",
+      assetCode: "PHP",
+      decimals: 2,
+      currentMinor: "0",
+      priorMinor: "0",
+      deltaPct: null,
+    } as unknown as AssistantMessage;
+    expect(deriveTldr(m)).toBe("No comparable spend in Last month.");
+  });
+
+  it("returns an over-budget headline for budget_progress", () => {
     const m = {
       id: "1",
       role: "assistant",
@@ -71,35 +120,29 @@ describe("payloadSummary — money is in major units", () => {
       assetCode: "PHP",
       decimals: 2,
     } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(m));
-    expect(json.spent).toBe(500);
-    expect(json.limit).toBe(40);
-    expect(json.pctUsed).toBe(125);
+    expect(deriveTldr(m)).toBe("Over budget on Food (125%).");
   });
 
-  it("converts period_compare current and prior", () => {
+  it("returns a search headline", () => {
     const m = {
       id: "1",
       role: "assistant",
-      type: "period_compare",
+      type: "search_results",
       ts: 0,
-      usedCase: "compare_query",
-      category: "Food",
-      currentLabel: "This month",
-      priorLabel: "Last month",
+      usedCase: "search_query",
+      periodLabel: "This month",
+      query: "payroll",
+      category: null,
       assetCode: "PHP",
       decimals: 2,
-      currentMinor: "2000",
-      priorMinor: "1000",
-      deltaPct: 100,
+      count: 1,
+      totalMinor: "50000",
+      hits: [],
     } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(m));
-    expect(json.current).toBe(20);
-    expect(json.prior).toBe(10);
-    expect(json.deltaPct).toBe(100);
+    expect(deriveTldr(m)).toBe(`1 match for "payroll".`);
   });
 
-  it("converts burn_rate current/projected/dailyAverage", () => {
+  it("returns a burn rate headline", () => {
     const m = {
       id: "1",
       role: "assistant",
@@ -117,88 +160,32 @@ describe("payloadSummary — money is in major units", () => {
       projectedMinor: "46500",
       vsPriorPct: 50,
     } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(m));
-    expect(json.current).toBe(300);
-    expect(json.projected).toBe(465);
-    expect(json.dailyAverage).toBe(15);
+    expect(deriveTldr(m)).toBe("On pace to spend 50% more than last month.");
   });
 
-  it("converts merchant_breakdown and recurring_list per-item amounts", () => {
-    const merch = {
+  it("returns null for text and error messages", () => {
+    const text = {
       id: "1",
       role: "assistant",
-      type: "merchant_breakdown",
+      type: "text",
+      content: "hi",
       ts: 0,
-      usedCase: "merchants_query",
-      periodLabel: "This month",
-      category: "Food",
-      assetCode: "PHP",
-      decimals: 2,
-      totalMinor: "5000",
-      merchants: [{ description: "Jollibee", amountMinor: "5000", count: 2 }],
+      usedCase: "fallback_text",
     } as unknown as AssistantMessage;
-    const merchJson = JSON.parse(payloadSummary(merch));
-    expect(merchJson.total).toBe(50);
-    expect(merchJson.merchants[0].amount).toBe(50);
-
-    const recur = {
+    const err = {
       id: "2",
       role: "assistant",
-      type: "recurring_list",
+      type: "error",
+      reason: "boom",
       ts: 0,
-      usedCase: "recurring_query",
-      periodLabel: "Last 90 days",
-      assetCode: "PHP",
-      decimals: 2,
-      totalMonthlyMinor: "54900",
-      items: [
-        {
-          description: "Netflix",
-          avgMinor: "54900",
-          occurrences: 3,
-          lastDateLabel: "Aug 15",
-          cadence: "monthly",
-          monthlyCostMinor: "54900",
-        },
-      ],
+      usedCase: "fallback_text",
     } as unknown as AssistantMessage;
-    const recurJson = JSON.parse(payloadSummary(recur));
-    expect(recurJson.totalMonthly).toBe(549);
-    expect(recurJson.items[0].monthlyCost).toBe(549);
-  });
-
-  it("respects the asset's decimals (BTC has 8, JPY has 0)", () => {
-    const btc = {
-      id: "1",
-      role: "assistant",
-      type: "spending_breakdown",
-      ts: 0,
-      usedCase: "spending_query",
-      periodLabel: "This month",
-      assetCode: "BTC",
-      decimals: 8,
-      totalMinor: "100000000",
-      slices: [{ category: "Fees", amountMinor: "100000000", pct: 100 }],
-    } as unknown as AssistantMessage;
-    const json = JSON.parse(payloadSummary(btc));
-    expect(json.total).toBe(1);
-    expect(json.asset).toBe("BTC");
-    expect(json.decimals).toBe(8);
-  });
-});
-
-describe("TLDR_SYSTEM", () => {
-  it("instructs the model that money is already in major units", () => {
-    expect(TLDR_SYSTEM).toMatch(/already in major units/i);
-    expect(TLDR_SYSTEM).toMatch(/do NOT divide/i);
+    expect(deriveTldr(text)).toBeNull();
+    expect(deriveTldr(err)).toBeNull();
   });
 });
 
 describe("buildUserPrompt — Resolved header", () => {
-  // The Resolved line is the single most reliable steering signal for a
-  // 1B model. A regression that drops it makes the model fall back to
-  // the user's literal words, which is exactly the "dining" -> Dining
-  // (instead of Food) bug we hit.
   it("prepends 'Resolved: category=…' when the resolver matched a category", async () => {
     const { buildUserPrompt } = await import("./prompts");
     const out = buildUserPrompt({

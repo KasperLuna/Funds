@@ -13,6 +13,8 @@
  * means when it says `category: "Food"`.
  */
 
+import type { UseCaseId } from "./types";
+
 export type ResolvedTerms = {
   /** Category name as it exists in the user's data. */
   category?: string;
@@ -207,4 +209,102 @@ export function resolveTerms(args: {
     descriptionSource,
     matched,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Intent classification. The assistant is a read-only analytics surface; many
+// natural questions are outside what it can answer. Rather than letting the
+// model emit a low-confidence shape and the fallback pick a wrong widget, we
+// detect these queries up front and render an "I can help with…" affordance
+// with chip-row suggestions of the supported use cases.
+// ---------------------------------------------------------------------------
+
+export type Intent = {
+  supported: boolean;
+  suggestedUseCases: UseCaseId[];
+};
+
+const UNSUPPORTED_PATTERNS: Array<{ reason: string; pattern: RegExp; suggestions: UseCaseId[] }> = [
+  // Causal / explanatory — we don't have a "why" select.
+  {
+    reason: "why",
+    pattern: /\b(why|how come|what caused|reason .* (for|behind))\b/,
+    suggestions: ["compare_query", "merchants_query"],
+  },
+  // Forecast — we don't project future periods.
+  {
+    reason: "forecast",
+    pattern: /\b(predict|forecast|next month|next week|next year|will (i|you)|projection)\b/,
+    suggestions: ["burn_query"],
+  },
+  // Timeline — no "when" query.
+  {
+    reason: "timeline",
+    pattern: /\b(when (will|did|is|are)|how long|how many days|how many weeks)\b/,
+    suggestions: ["search_query", "spending_query"],
+  },
+  // Recommendations — no advice path.
+  {
+    reason: "advice",
+    pattern: /\b(should i|recommend|suggest|advice|best way|tip|help me (save|spend|budget))\b/,
+    suggestions: ["burn_query", "spending_query", "budget_check"],
+  },
+  // Writes — read-only by design; the schema also blocks these, but flagging
+  // up front gives a cleaner answer than a fallback error.
+  {
+    reason: "writes",
+    pattern: /\b(set up|create|delete|remove|edit|change|update)\b.*\b(account|category|budget)\b/,
+    suggestions: [],
+  },
+  // Out of scope.
+  {
+    reason: "taxes",
+    pattern: /\b(tax|taxes|deductible|deduction)\b/,
+    suggestions: ["search_query"],
+  },
+  {
+    reason: "investing",
+    pattern: /\b(invest|investing|stock|stocks|share|shares|equity|crypto|bitcoin|ethereum)\b/,
+    suggestions: [],
+  },
+  {
+    reason: "loans",
+    pattern: /\b(loan|loans|apr|interest rate|mortgage|mortgages|amorti)\b/,
+    suggestions: [],
+  },
+  {
+    reason: "transfer",
+    pattern: /\b(transfer|send money|wire)\b/,
+    suggestions: ["search_query"],
+  },
+];
+
+/** Use cases the assistant CAN answer, for the chip-row affordance. */
+const SUPPORTED_SUGGESTIONS: UseCaseId[] = [
+  "spending_query",
+  "compare_query",
+  "merchants_query",
+  "burn_query",
+  "search_query",
+  "budget_check",
+];
+
+/**
+ * Decide whether the user's question is inside the assistant's capability
+ * set. If not, return a list of suggested use cases for the "I can help
+ * with…" affordance.
+ */
+export function classifyIntent(userText: string): Intent {
+  const t = userText.toLowerCase();
+  for (const u of UNSUPPORTED_PATTERNS) {
+    if (u.pattern.test(t)) {
+      return { supported: false, suggestedUseCases: u.suggestions };
+    }
+  }
+  return { supported: true, suggestedUseCases: [] };
+}
+
+/** Public helper for the affordance UI: the chip rows it can offer. */
+export function supportedUseCases(): UseCaseId[] {
+  return [...SUPPORTED_SUGGESTIONS];
 }

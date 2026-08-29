@@ -1,16 +1,10 @@
 import type { LlmEngine } from "@/lib/llm/types";
 import { buildSnapshot, type AssistantSnapshot } from "./serialize";
-import {
-  buildSystemPrompt,
-  buildUserPrompt,
-  buildCorrectivePrompt,
-  TLDR_SYSTEM,
-  buildTldrPrompt,
-} from "./prompts";
-import { extractJson, schemaByUseCase, tldrSchema } from "./schemas";
+import { buildSystemPrompt, buildUserPrompt, buildCorrectivePrompt, deriveTldr } from "./prompts";
+import { extractJson, schemaByUseCase } from "./schemas";
 import { deterministicFallback, fallbackWithNotice, queryResultToMessage, tsToMsg, newId } from "./handlers";
 import { assistantQuerySchema, executeQuery, type QueryCtx } from "./queries";
-import { resolveTerms, type ResolvedTerms } from "./resolver";
+import { classifyIntent, resolveTerms, type ResolvedTerms } from "./resolver";
 import type { AssistantMessage, ChatMessage, UseCaseId } from "./types";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
@@ -29,10 +23,10 @@ import type { Category, CategoryBudget } from "@/lib/categories/categories-store
  * derive the answer deterministically via inferUseCase. Every raw model
  * generation is kept on the message (rawOutput) for debugging.
  *
- * After a widget settles we optionally call the model again to produce a
- * one-sentence TL;DR; this is a separate, narrow prompt that sees only the
- * validated payload, so a hallucination there cannot change the numbers the
- * user actually sees.
+ * The TL;DR is computed deterministically from the validated payload via
+ * `deriveTldr` — no second LLM call. The unsupported-intent classifier
+ * short-circuits before any model call when the user's question is outside
+ * what the assistant can answer.
  */
 export type ChatEngineDeps = {
   engine: LlmEngine;
@@ -61,12 +55,9 @@ export type ChatEngineResult = {
 const USE_CASE_ORDER: UseCaseId[] = [
   "spending_query",
   "budget_check",
-  "weekly_summary",
   "compare_query",
   "merchants_query",
-  "recurring_query",
   "burn_query",
-  "anomalies_query",
   "search_query",
   "voice_to_txn",
   "fallback_text",
@@ -75,25 +66,19 @@ const USE_CASE_ORDER: UseCaseId[] = [
 type SelectKey =
   | "spending"
   | "budget"
-  | "summary"
   | "log_txn"
   | "compare"
   | "merchants"
-  | "recurring"
   | "burn"
-  | "anomalies"
   | "search";
 
 const USE_CASE_OF_SELECT: Record<SelectKey, UseCaseId> = {
   spending: "spending_query",
   budget: "budget_check",
-  summary: "weekly_summary",
   log_txn: "voice_to_txn",
   compare: "compare_query",
   merchants: "merchants_query",
-  recurring: "recurring_query",
   burn: "burn_query",
-  anomalies: "anomalies_query",
   search: "search_query",
 };
 
@@ -138,9 +123,6 @@ function backfillFromResolver(
   if (out.select === "search" && (!out.q || !out.q.trim()) && resolved.descriptionPattern) {
     out.q = resolved.descriptionPattern;
   }
-  // For spending/budget/compare/merchants, the resolver's category (if
-  // any) wins over the model's wrong guess even if the model did name one
-  // — except when the model emitted an exact match.
   if (
     (out.select === "spending" ||
       out.select === "budget" ||
@@ -190,22 +172,14 @@ function dispatchReply(
   }
   const obj = parsed as Record<string, unknown>;
 
-  // Conversational escape hatch — only trusted for non-data questions.
   if (typeof obj.reply === "string" && obj.reply.trim()) {
     return heuristic === "fallback_text"
       ? { kind: "text", content: obj.reply.trim() }
       : { kind: "invalid" };
   }
 
-  // Happy path: a query object. Validated against a closed schema whose ops
-  // are pure reads over local rows; unknown keys (hallucinated money) are
-  // stripped before execution.
   const q = assistantQuerySchema.safeParse(obj);
   if (q.success) {
-    // Back-fill the model's category guess with what the resolver matched.
-    // A 1B model can map "dining" to category "Dining" even when the user
-    // has only "Food" — the resolver catches that and substitutes "Food"
-    // before the executor runs.
     const resolved = resolveTerms({ userText, categories: ctx.categories });
     const filled = backfillFromResolver(
       { select: q.data.select, category: q.data.category, q: q.data.q },
@@ -222,8 +196,6 @@ function dispatchReply(
     if (message) return { kind: "widget", message };
   }
 
-  // Legacy widget JSON (model skipped the query protocol): only the use case
-  // is trusted; all figures re-derived from local rows.
   const legacy = tryAllSchemas(parsed);
   if (legacy) {
     return { kind: "widget", message: deterministicFallback(legacy.useCase, ctx, userText) };
@@ -231,37 +203,24 @@ function dispatchReply(
   return { kind: "invalid" };
 }
 
-const SKIP_TLDR_TYPES: ReadonlySet<AssistantMessage["type"]> = new Set([
-  "text",
-  "error",
-  "voice_to_txn",
-]);
-
-/** Best-effort TL;DR via a second model call. Failures are silent. */
-async function tryTldr(
-  deps: ChatEngineDeps,
-  userText: string,
-  message: AssistantMessage,
-  onToken?: (token: string) => void,
-): Promise<string | null> {
-  if (SKIP_TLDR_TYPES.has(message.type)) return null;
-  try {
-    const raw = await deps.engine.complete({
-      system: TLDR_SYSTEM,
-      user: buildTldrPrompt({ userText, message }),
-      jsonMode: true,
-      temperature: 0.4,
-      maxTokens: 60,
-      onToken,
-    });
-    const parsed = extractJson(raw);
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return null;
-    const r = tldrSchema.safeParse(parsed);
-    if (!r.success) return null;
-    return r.data.tldr.trim();
-  } catch {
-    return null;
-  }
+/**
+ * Build an "I can help with…" affordance for an unsupported question. The
+ * caller has already classified the intent as unsupported; this helper
+ * turns the suggested use cases into a chat message.
+ */
+function buildUnsupportedMessage(
+  intent: { suggestedUseCases: UseCaseId[] },
+  now: number,
+): AssistantMessage {
+  return tsToMsg(
+    {
+      type: "text",
+      content: "That's outside what I can help with. I can answer:",
+      suggestedUseCases: intent.suggestedUseCases,
+    },
+    "fallback_text",
+    now,
+  );
 }
 
 export async function runChat(
@@ -270,8 +229,6 @@ export async function runChat(
 ): Promise<ChatEngineResult> {
   const ctx = buildCtx(deps, input.now);
   const snapshot = buildSnapshotFor(deps, input.text);
-  const system = buildSystemPrompt();
-  const userPrompt = buildUserPrompt({ userText: input.text, snapshot });
   const userMsg: ChatMessage = { id: newId(), role: "user", content: input.text, ts: input.now };
   const heuristic = deps.inferUseCase(input.text, snapshot);
   const raws: string[] = [];
@@ -279,13 +236,25 @@ export async function runChat(
   const attachRaw = (msg: AssistantMessage): AssistantMessage =>
     raws.length > 0 ? { ...msg, rawOutput: raws.join("\n---\n") } : msg;
 
-  const attachTldr = (msg: AssistantMessage, tldr: string | null): AssistantMessage =>
-    tldr ? ({ ...msg, tldr } as AssistantMessage) : msg;
+  const withTldr = (msg: AssistantMessage): AssistantMessage => {
+    const tldr = deriveTldr(msg);
+    return tldr ? ({ ...msg, tldr } as AssistantMessage) : msg;
+  };
 
   const finish = (assistant: AssistantMessage): ChatEngineResult => ({
     user: userMsg,
-    assistant: attachRaw(assistant),
+    assistant: attachRaw(withTldr(assistant)),
   });
+
+  // Short-circuit: if the question is outside what the assistant can answer,
+  // render the affordance immediately — skip the model call.
+  const intent = classifyIntent(input.text);
+  if (!intent.supported) {
+    return finish(buildUnsupportedMessage(intent, input.now));
+  }
+
+  const system = buildSystemPrompt();
+  const userPrompt = buildUserPrompt({ userText: input.text, snapshot });
 
   const settle = (d: Dispatch): ChatEngineResult | null => {
     if (d.kind === "widget") return finish(d.message);
@@ -295,15 +264,6 @@ export async function runChat(
       );
     }
     return null;
-  };
-
-  // A widget that we can give a TL;DR. We run the summary call after the
-  // happy-path widget settles (synchronous fallthrough) so the user sees the
-  // chart first and the headline streams under it.
-  const maybeSummarize = async (msg: AssistantMessage): Promise<AssistantMessage> => {
-    if (SKIP_TLDR_TYPES.has(msg.type)) return msg;
-    const tldr = await tryTldr(deps, input.text, msg, deps.onToken);
-    return attachTldr(msg, tldr);
   };
 
   try {
@@ -319,13 +279,8 @@ export async function runChat(
 
     let d = dispatchReply(raw1, ctx, input.text, heuristic);
     const settled1 = settle(d);
-    if (settled1) {
-      // Fire-and-forget TL;DR; the widget is the source of truth.
-      const summarized = await maybeSummarize(settled1.assistant);
-      return { ...settled1, assistant: summarized };
-    }
+    if (settled1) return settled1;
 
-    // Corrective retry: show the model its bad output and ask again.
     const raw2 = await deps.engine.complete({
       system,
       user: buildCorrectivePrompt(raw1),
@@ -336,12 +291,8 @@ export async function runChat(
     raws.push(raw2);
     d = dispatchReply(raw2, ctx, input.text, heuristic);
     const settled2 = settle(d);
-    if (settled2) {
-      const summarized = await maybeSummarize(settled2.assistant);
-      return { ...settled2, assistant: summarized };
-    }
+    if (settled2) return settled2;
 
-    // Both rounds failed → deterministic answer from the same local data.
     const guessed = deps.inferUseCase(input.text, snapshot);
     const fallback = deterministicFallback(guessed, ctx, input.text);
     return finish(fallback);
@@ -388,23 +339,14 @@ export function inferUseCase(userText: string, snapshot: AssistantSnapshot): Use
   if (/\b(budget|over|under|limit|allowance)\b/.test(t)) {
     return "budget_check";
   }
-  if (/\b(week|summary|recap|overview|how (did|am)|last 7|this week)\b/.test(t)) {
-    return "weekly_summary";
-  }
   if (/\b(compare|vs|versus|year over year|yoy|vs last)\b/.test(t)) {
     return "compare_query";
   }
   if (/\b(merchant|where .* (spend|money|go)|top|biggest|most .* on)\b/.test(t)) {
     return "merchants_query";
   }
-  if (/\bsubscrip|\brecurring|\bmonthly charge|\brepeat|\bevery month/.test(t)) {
-    return "recurring_query";
-  }
   if (/\b(pace|on track|burn|projected|will (i|you) (spend|overspend))\b/.test(t)) {
     return "burn_query";
-  }
-  if (/\b(anomal|unusual|weird|outlier|big purchase|biggest purchase|spike)\b/.test(t)) {
-    return "anomalies_query";
   }
   if (
     /\bpayro|\bsalar|\bpaid me|\bincome|\bdeposit|\brefun|\breimb|\bcashb|\bfind\b|\bcharges|\bpayments\b|\bpurchases\b/.test(t)

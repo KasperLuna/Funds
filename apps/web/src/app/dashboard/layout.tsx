@@ -14,7 +14,8 @@ import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
 import { SyncProvider } from "@/lib/sync/sync-context";
 import { SyncQueryProvider } from "@/lib/sync/sync-query";
 import { VoicePrefillProvider } from "@/lib/voice/voice-context";
-import { AssistantButton } from "@/components/assistant/AssistantButton";
+import { AssistantButton, AssistantOpener, AssistantSheetMount } from "@/components/assistant/AssistantButton";
+import { AssistantSheetProvider } from "@/components/assistant/assistant-sheet-context";
 import { ChatProvider } from "@/components/assistant/use-chat";
 
 function PrivacyToggle({
@@ -70,6 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SyncQueryProvider>
       <VoicePrefillProvider>
       <ChatProvider>
+      <AssistantSheetProvider>
       <div className="mx-auto min-h-dvh max-w-[1920px] bg-(--bg)">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
@@ -127,8 +129,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
 
-        {/* FAB — desktop only; opens the assistant chat sheet */}
+        {/* FAB — opens the assistant chat sheet. The sheet is mounted once
+            in the layout so the Settings deep link can drive the same
+            instance via a URL param (`?openAssistant=1`). */}
+        <AssistantOpener />
         <AssistantButton />
+        <AssistantSheetMount />
 
         {/* Mobile bottom bar */}
         <nav
@@ -172,10 +178,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </AddMenu>
             <MobileTab item={NAV_ITEMS[2]!} />
-            <MobileTab item={NAV_ITEMS[4]!} />
+            <MobileTab item={NAV_ITEMS[3]!} />
           </div>
         </nav>
       </div>
+      </AssistantSheetProvider>
       </ChatProvider>
       </VoicePrefillProvider>
       </SyncQueryProvider>

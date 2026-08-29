@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTerms } from "./resolver";
+import { classifyIntent, resolveTerms } from "./resolver";
 import type { Category } from "@/lib/categories/categories-store";
 
 function makeCategory(overrides: Partial<Category> = {}): Category {
@@ -93,5 +93,40 @@ describe("resolveTerms — payroll scenario", () => {
     // resolver only returns the description pattern — the model picks
     // search with q=payroll, and the executor runs the description filter.
     expect(r.category).toBeUndefined();
+  });
+});
+
+describe("classifyIntent", () => {
+  it("flags 'why' questions as unsupported with compare/merchants suggestions", () => {
+    const r = classifyIntent("Why did my spending go up?");
+    expect(r.supported).toBe(false);
+    expect(r.suggestedUseCases).toEqual(
+      expect.arrayContaining(["compare_query", "merchants_query"]),
+    );
+  });
+
+  it("flags forecast questions with burn_query as the only suggestion", () => {
+    const r = classifyIntent("What will I spend next month?");
+    expect(r.supported).toBe(false);
+    expect(r.suggestedUseCases).toEqual(["burn_query"]);
+  });
+
+  it("flags investment / stock questions as unsupported with no suggestions", () => {
+    expect(classifyIntent("Should I invest in stocks?").supported).toBe(false);
+  });
+
+  it("flags tax questions as unsupported", () => {
+    const r = classifyIntent("How much did I pay in taxes?");
+    expect(r.supported).toBe(false);
+  });
+
+  it("flags write-intent questions (set up / delete / change an account)", () => {
+    expect(classifyIntent("delete my BPI account").supported).toBe(false);
+  });
+
+  it("lets supported questions through", () => {
+    expect(classifyIntent("How much did I spend on food this month?").supported).toBe(true);
+    expect(classifyIntent("Am I on track this month?").supported).toBe(true);
+    expect(classifyIntent("Find my payroll").supported).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import type { AssistantSnapshot } from "./serialize";
 import { QUERY_LANGUAGE_DOC, QUERY_EXAMPLES } from "./queries";
-import type { AssistantMessage } from "./types";
+import { assetSymbol } from "@/lib/money";
+import type { AssistantMessage, PeriodComparePayload, SearchResultsPayload, SpendingBreakdownPayload } from "./types";
 
 /**
  * System prompt: the model is a QUERY GENERATOR, not a chat assistant. It
@@ -22,30 +23,21 @@ period is one of: this_month, last_month, this_week, last_week, 30d, this_year, 
 Examples:
 ${QUERY_EXAMPLES}
 
-READ THESE RULES FIRST:
-1. The user message may include a "Resolved" line that tells you what the user's
-   words mean in THIS app's vocabulary. USE THE RESOLVED VALUES, not the user's
-   literal words.
-   - "Resolved: category=Work, q=payroll" means the user said something like
-     "what was my payroll" — emit {"select":"search","q":"payroll","category":"Work"}.
-   - "Resolved: category=Food" means the user said "dining", "groceries",
-     "restaurants", etc. — emit {"category":"Food",...} (the REAL category name).
-   - If the "Resolved" line is empty, infer from the categories in the snapshot.
-2. Match category and account names against the snapshot in the user message
-   (case-insensitive). The snapshot also pre-injects the resolved category at
-   the top of the categories list if it would otherwise be hidden by the size cap.
-3. NEVER invent or include money amounts in the query. The app computes all figures.
-4. If the user names a period ("last month"), put it in "period".`;
+Rules:
+- Match category and account names against the snapshot in the user message (case-insensitive).
+- NEVER invent or include money amounts in the query. The app computes all figures from its own data.
+- If the user names a period ("last month"), put it in "period".
+- The snapshot may include a "resolved" object — if so, USE the resolved category
+  name (not the user's literal word) so the query matches a real category. If
+  the snapshot includes a "descriptionPattern", the user is asking about a
+  description (e.g. "payroll", "amazon") — emit a search query with that
+  pattern in "q".`;
 }
 
 export function buildUserPrompt(args: {
   userText: string;
   snapshot: AssistantSnapshot;
 }): string {
-  // A single-line "Resolved: ..." header at the top of the user message
-  // is the most reliable way to steer a 1B model. Only emit it when
-  // something was actually resolved — an empty header confuses the model
-  // into thinking there is a category it should reference.
   const r = args.snapshot.resolved;
   const tokens = [
     r?.category ? `category=${r.category}` : null,
@@ -60,140 +52,96 @@ export function buildCorrectivePrompt(previousRaw: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// TL;DR (second model call): produces a one-sentence summary of the widget
-// payload that the model has already validated and the renderer will display.
+// Deterministic headline (TL;DR) — replaces the previous second LLM call.
+// Computes a one-sentence summary from the validated payload only. Money is
+// re-derived from `*Minor` strings using the widget's own `assetCode` and
+// `decimals` so the symbol matches the rest of the UI.
 // ---------------------------------------------------------------------------
 
-/**
- * Convert a minor-units BigInt string into a major-units number using the
- * asset's `decimals`. The codebase's invariant is: money crosses the wire
- * as a minor-units string (no float, no BigInt in the LLM context). For the
- * TL;DR prompt, we project the figure back into a plain Number in major
- * units so a 1B model does not have to do "12540 / 100" arithmetic in its
- * head — small models reliably fail at that and emit headlines like
- * "You spent ₱12540 this month". The model's hallucination ceiling here
- * stays at "the figure is wrong by some percentage", not "off by 100×".
- */
 function minorToMajor(minor: string, decimals: number): number {
   const big = BigInt(minor);
   const denom = 10 ** Math.min(decimals, 18);
-  // BigInt -> Number for the prompt only. Acceptable precision loss for a
-  // narrative summary; the widget itself keeps BigInt.
   return Number(big) / denom;
 }
 
-/**
- * TLDR_SYSTEM: short, narrow, single-purpose. The model sees only the
- * validated payload as a small JSON object (no row data, no money strings
- * beyond what the widget itself will show), so a hallucination can only
- * produce a slightly-off summary sentence — it cannot change the numbers
- * the user sees. Plain prose, ≤20 words, calm tone.
- *
- * cavetail: money fields are pre-converted to MAJOR UNITS (e.g. 125.40,
- * not "12540") and the asset code is included so the model can format
- * amounts correctly. The model must NOT divide anything by 100.
- */
-export const TLDR_SYSTEM = `You write a single-sentence headline that summarises a personal-finance result for the user.
-
-Rules:
-- Money fields are ALREADY in major units (e.g. 125.40 means ₱125.40). Do NOT divide by 100 or re-scale.
-- The "asset" field tells you the currency code (PHP, USD, …); use its symbol or the code in your sentence.
-- Be SPECIFIC: use the numbers already given to you (the user does not want vague language).
-- ONE sentence, ≤20 words. No exclamation marks. No emojis.
-- Tone: calm, direct, second person ("You", not "The user").
-- Reply with a JSON object: {"tldr":"<one sentence>"}.`;
-
-/** Build the small payload-only summary the TLDR model sees. */
-export function payloadSummary(message: AssistantMessage): string {
-  // The model only needs a denormalised view of the widget — never the raw
-  // rows, never BigInts. Money is converted to major units here at the
-  // prompt boundary so the model gets correct magnitudes.
-  const out: Record<string, unknown> = { type: message.type };
-  if ("periodLabel" in message) out.period = (message as { periodLabel: string }).periodLabel;
-  if ("currentLabel" in message)
-    out.currentLabel = (message as { currentLabel: string }).currentLabel;
-  if ("priorLabel" in message)
-    out.priorLabel = (message as { priorLabel: string }).priorLabel;
-  if (message.type === "spending_breakdown") {
-    const m = message;
-    out.total = minorToMajor(m.totalMinor, m.decimals);
-    out.slices = m.slices.slice(0, 5).map((s) => ({
-      category: s.category,
-      amount: minorToMajor(s.amountMinor, m.decimals),
-      pct: s.pct,
-    }));
-    if (m.topTxn) {
-      out.topTxn = {
-        description: m.topTxn.description,
-        amount: minorToMajor(m.topTxn.amountMinor, m.decimals),
-        dateLabel: m.topTxn.dateLabel,
-      };
-    }
-    out.asset = m.assetCode;
-    out.decimals = m.decimals;
-  } else if (message.type === "summary_dashboard") {
-    out.income = minorToMajor(message.incomeMinor, message.decimals);
-    out.expense = minorToMajor(message.expenseMinor, message.decimals);
-    out.net = minorToMajor(message.netMinor, message.decimals);
-    out.savingsRatePct = message.savingsRatePct;
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "budget_progress") {
-    out.category = message.category;
-    out.spent = minorToMajor(message.spentMinor, message.decimals);
-    out.limit = minorToMajor(message.limitMinor, message.decimals);
-    out.pctUsed = message.pctUsed;
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "period_compare") {
-    out.current = minorToMajor(message.currentMinor, message.decimals);
-    out.prior = minorToMajor(message.priorMinor, message.decimals);
-    out.deltaPct = message.deltaPct;
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "merchant_breakdown") {
-    out.total = minorToMajor(message.totalMinor, message.decimals);
-    out.merchants = message.merchants.slice(0, 5).map((x) => ({
-      description: x.description,
-      amount: minorToMajor(x.amountMinor, message.decimals),
-      count: x.count,
-    }));
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "recurring_list") {
-    out.totalMonthly = minorToMajor(message.totalMonthlyMinor, message.decimals);
-    out.items = message.items.slice(0, 5).map((i) => ({
-      description: i.description,
-      monthlyCost: minorToMajor(i.monthlyCostMinor, message.decimals),
-      cadence: i.cadence,
-    }));
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "burn_rate") {
-    out.current = minorToMajor(message.currentMinor, message.decimals);
-    out.projected = minorToMajor(message.projectedMinor, message.decimals);
-    out.dailyAverage = minorToMajor(message.dailyAverageMinor, message.decimals);
-    out.vsPriorPct = message.vsPriorPct;
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  } else if (message.type === "anomaly_list") {
-    out.items = message.items.slice(0, 3).map((i) => ({
-      description: i.description,
-      amount: minorToMajor(i.amountMinor, message.decimals),
-      multipleOfMedian: i.multipleOfMedian,
-    }));
-    out.asset = message.assetCode;
-    out.decimals = message.decimals;
-  }
-  return JSON.stringify(out);
+function fmtAmount(minor: string, decimals: number, code: string): string {
+  const major = minorToMajor(minor, decimals);
+  // Asset symbol prefix is only useful when it's not "$" — the dollar
+  // sign is just noise on the headline.
+  const prefix = code === "USD" ? "" : assetSymbol(code);
+  return `${prefix}${major.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  })}`;
 }
 
-export function buildTldrPrompt(args: {
-  userText: string;
-  message: AssistantMessage;
-}): string {
-  return `User question: ${args.userText}
-Result: ${payloadSummary(args.message)}
+function spendingHeadline(p: SpendingBreakdownPayload): string | null {
+  if (p.slices.length === 0) return null;
+  const total = fmtAmount(p.totalMinor, p.decimals, p.assetCode);
+  if (p.slices.length === 1 && p.slices[0]) {
+    return `Spent ${total} on ${p.slices[0].category}.`;
+  }
+  return `Spent ${total} across ${p.slices.length} categories.`;
+}
 
-Write a one-sentence headline for the user. Money is already in major units (e.g. 125.40 = ₱125.40). Reply with JSON: {"tldr":"<one sentence>"}.`;
+function periodCompareHeadline(p: PeriodComparePayload): string | null {
+  if (p.deltaPct === null) return `No comparable spend in ${p.priorLabel}.`;
+  const abs = Math.abs(p.deltaPct);
+  const dir = p.deltaPct > 0 ? "Up" : "Down";
+  return `${dir} ${abs}% vs ${p.priorLabel}.`;
+}
+
+function burnHeadline(p: import("./types").BurnRatePayload): string | null {
+  if (p.vsPriorPct === null) return null;
+  const dir = p.vsPriorPct > 0 ? "more" : "less";
+  return `On pace to spend ${Math.abs(p.vsPriorPct)}% ${dir} than last month.`;
+}
+
+function searchHeadline(p: SearchResultsPayload): string | null {
+  if (p.count === 0) return null;
+  return `${p.count} match${p.count === 1 ? "" : "es"} for "${p.query}".`;
+}
+
+function merchantHeadline(p: import("./types").MerchantBreakdownPayload): string | null {
+  if (p.merchants.length === 0) return null;
+  if (p.merchants.length === 1 && p.merchants[0]) {
+    return `Top: ${p.merchants[0].description}.`;
+  }
+  const [a, b] = p.merchants;
+  if (!a || !b) return null;
+  return `Top: ${a.description} ${fmtAmount(a.amountMinor, p.decimals, p.assetCode)}, ${b.description} ${fmtAmount(b.amountMinor, p.decimals, p.assetCode)}.`;
+}
+
+function budgetHeadline(p: import("./types").BudgetProgressPayload): string | null {
+  const pct = Math.round(p.pctUsed);
+  const verb = p.status === "over" ? "Over" : p.status === "near" ? "Near" : "Under";
+  return `${verb} budget on ${p.category} (${pct}%).`;
+}
+
+/**
+ * Compute a one-sentence headline for a widget message. Returns null when
+ * the widget type doesn't get a headline (text, error, voice_to_txn).
+ *
+ * The widget is the source of truth — the headline is a one-line summary,
+ * never a substitute for the actual numbers.
+ */
+export function deriveTldr(message: AssistantMessage): string | null {
+  switch (message.type) {
+    case "spending_breakdown":
+      return spendingHeadline(message);
+    case "period_compare":
+      return periodCompareHeadline(message);
+    case "burn_rate":
+      return burnHeadline(message);
+    case "search_results":
+      return searchHeadline(message);
+    case "merchant_breakdown":
+      return merchantHeadline(message);
+    case "budget_progress":
+      return budgetHeadline(message);
+    case "voice_to_txn":
+    case "text":
+    case "error":
+      return null;
+  }
 }
