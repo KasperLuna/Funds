@@ -118,7 +118,7 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
             return (
               <Link
                 key={item.category.id}
-                href={`/dashboard/banks?category=${item.category.id}`}
+                href={`/dashboard/assets?tab=banks&category=${item.category.id}`}
                 className="flex items-center justify-between py-2 first:pt-0 last:pb-0 transition-colors hover:bg-(--surface-3)/40 -mx-6 px-6"
               >
                 <div className="min-w-0 flex-1">

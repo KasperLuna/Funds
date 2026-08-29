@@ -26,9 +26,9 @@ import {
 } from "@/lib/push/notifications";
 
 const CHECKLIST_ITEMS = [
-  { id: "account", label: "Create first account", icon: CreditCard, href: "/dashboard/banks" },
+  { id: "account", label: "Create first account", icon: CreditCard, href: "/dashboard/assets?tab=banks" },
   { id: "transaction", label: "Log first transaction", icon: Plus, href: "/dashboard?capture=1" },
-  { id: "bank", label: "Connect bank", icon: LinkIcon, href: "/dashboard/banks" },
+  { id: "bank", label: "Connect bank", icon: LinkIcon, href: "/dashboard/assets?tab=banks" },
 ];
 
 function Section({

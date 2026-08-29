@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { HoldingsList } from "@/components/crypto/holdings-list";
 import type { AccountOption } from "@/components/crypto/trade-capture";
 import { useSync } from "@/lib/sync/sync-context";
@@ -9,10 +8,7 @@ import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { useAssets } from "@/lib/assets";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 
-function CryptoContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const tradeParam = searchParams.get("trade") === "1";
+export function CryptoPanel({ autoOpenTrade }: { autoOpenTrade?: boolean }) {
   const { masked: privacy } = usePrivacy();
   const { userId } = useSync();
   const uid = userId ?? "dev-user";
@@ -21,10 +17,6 @@ function CryptoContent() {
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
   );
-
-  useEffect(() => {
-    if (tradeParam) router.replace("/dashboard/crypto", { scroll: false });
-  }, [tradeParam, router]);
 
   const accountsQuery = useSyncQuery<AccountOption>({
     key: queryKeys.accounts,
@@ -40,20 +32,8 @@ function CryptoContent() {
   const accounts = accountsQuery.data ?? [];
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
-      <header className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Crypto</h1>
-      </header>
-
-      <HoldingsList accounts={accounts} userId={uid} autoOpenTrade={tradeParam} masked={privacy} />
+    <div className="flex flex-col gap-4">
+      <HoldingsList accounts={accounts} userId={uid} autoOpenTrade={autoOpenTrade} masked={privacy} />
     </div>
-  );
-}
-
-export default function CryptoPage() {
-  return (
-    <Suspense>
-      <CryptoContent />
-    </Suspense>
   );
 }

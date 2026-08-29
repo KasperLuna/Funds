@@ -11,8 +11,8 @@ export type AddMenuTarget = { label: string; href: string };
 export const ADD_MENU_TARGETS: AddMenuTarget[] = [
   { label: "Expense", href: "/dashboard?capture=1&type=expense" },
   { label: "Income", href: "/dashboard?capture=1&type=income" },
-  { label: "Transfer", href: "/dashboard/banks?transfer=1" },
-  { label: "Trade", href: "/dashboard/crypto?trade=1" },
+  { label: "Transfer", href: "/dashboard/assets?tab=banks&transfer=1" },
+  { label: "Trade", href: "/dashboard/assets?tab=crypto&trade=1" },
 ];
 
 type AddMenuRender = (controls: {

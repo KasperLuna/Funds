@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Landmark, Bitcoin, Tag, BarChart3, Sparkles, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
+import { Home, Wallet, Tag, BarChart3, Sparkles, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
 import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
@@ -11,9 +11,8 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/banks", label: "Banks", icon: Landmark },
+  { href: "/dashboard/assets", label: "Assets", icon: Wallet },
   { href: "/dashboard/categories", label: "Categories", icon: Tag },
-  { href: "/dashboard/crypto", label: "Crypto", icon: Bitcoin },
   { href: "/dashboard/analytics", label: "Insights", icon: BarChart3 },
   { href: "/dashboard/assistant", label: "Assistant", icon: Sparkles },
 ];

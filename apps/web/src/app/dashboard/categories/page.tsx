@@ -348,7 +348,7 @@ export default function CategoriesPage() {
               return (
                 <Link
                   key={category.id}
-                  href={`/dashboard/banks?category=${category.id}`}
+                  href={`/dashboard/assets?tab=banks&category=${category.id}`}
                   className="flex flex-col gap-1 rounded-(--radius-md) p-2 -m-2 transition-colors hover:bg-(--surface-3)/40"
                 >
                   <div className="flex items-center justify-between gap-3 text-sm">

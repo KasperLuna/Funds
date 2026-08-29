@@ -57,7 +57,7 @@ export function RecentActivity({
           return (
             <Link
               key={txn.id}
-              href={`/dashboard/banks?txn=${txn.id}`}
+              href={`/dashboard/assets?tab=banks&txn=${txn.id}`}
               className="block transition-colors hover:bg-(--surface-3)/40"
             >
               <TransactionRowReadonly

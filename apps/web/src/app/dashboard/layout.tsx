@@ -120,14 +120,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Main content */}
-        <main className="min-h-dvh bg-(--bg) pb-24 pt-4 md:ml-56 md:pb-8">
+        <main className="min-h-dvh bg-(--bg) pb-20 pt-4 md:ml-56 md:pb-8">
           <div className="mx-auto max-w-3xl px-4 md:px-6">
             <SignedOutBanner />
           </div>
           {children}
         </main>
 
-        {/* FAB — always visible; opens the assistant chat sheet */}
+        {/* FAB — desktop only; opens the assistant chat sheet */}
         <AssistantButton />
 
         {/* Mobile bottom bar */}
@@ -172,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </AddMenu>
             <MobileTab item={NAV_ITEMS[2]!} />
-            <MobileTab item={NAV_ITEMS[3]!} />
+            <MobileTab item={NAV_ITEMS[4]!} />
           </div>
         </nav>
       </div>

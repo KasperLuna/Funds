@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
@@ -41,7 +41,7 @@ import { type VoicePrefill } from "@/components/capture/CaptureSheet";
 
 const PAGE_SIZE = 50;
 
-function toAccount(row: Record<string, unknown>): Account {
+export function toAccount(row: Record<string, unknown>): Account {
   const colors = row.colors;
   let parsed: { primary_color?: string; secondary_color?: string } | null = null;
   if (colors != null) {
@@ -160,15 +160,7 @@ function formatDayHeader(day: string): string {
   });
 }
 
-export default function BanksPage() {
-  return (
-    <Suspense>
-      <BanksContent />
-    </Suspense>
-  );
-}
-
-function BanksContent() {
+export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean }) {
   const { db, userId } = useSync();
   const queryClient = useQueryClient();
   const { masked: privacy } = usePrivacy();
@@ -228,20 +220,12 @@ function BanksContent() {
   const archivedAccounts = archivedAccountsQuery.data ?? [];
   const dataPending = accountsQuery.isPending || txnsQuery.isPending || categoriesQuery.isPending;
 
-  // Deep link from the long-press Add menu: open the transfer sheet once.
-  useEffect(() => {
-    if (searchParams.get("transfer") === "1") {
-      setTransferOpen(true);
-      router.replace("/dashboard/banks", { scroll: false });
-    }
-  }, [searchParams, router]);
-
   // Deep link: filter by category from budget pulse / categories page.
   useEffect(() => {
     const catId = searchParams.get("category");
     if (catId) {
       setFilters((f) => ({ ...f, categoryIds: [catId] }));
-      router.replace("/dashboard/banks", { scroll: false });
+      router.replace("/dashboard/assets?tab=banks", { scroll: false });
     }
   }, [searchParams, router]);
 
@@ -249,7 +233,7 @@ function BanksContent() {
   useEffect(() => {
     const txnId = searchParams.get("txn");
     if (txnId) {
-      router.replace("/dashboard/banks", { scroll: false });
+      router.replace("/dashboard/assets?tab=banks", { scroll: false });
       requestAnimationFrame(() => {
         const el = document.getElementById(`txn-${txnId}`);
         if (el) {
@@ -265,10 +249,9 @@ function BanksContent() {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
   }, []);
 
-  const totalBalance = useMemo(
-    () => accounts.reduce((sum, a) => sum + computeBalance(a, txns), 0n),
-    [accounts, txns],
-  );
+  useEffect(() => {
+    if (autoOpenTransfer) setTransferOpen(true);
+  }, [autoOpenTransfer]);
 
   const visibleTxns = useMemo(
     () => {
@@ -283,7 +266,6 @@ function BanksContent() {
     [txns, selectedAccountId, filters, categories, accounts],
   );
 
-  // Newest → oldest; the latest transaction is first, scrolling loads older pages.
   const sortedDesc = useMemo(
     () =>
       [...visibleTxns].sort((a, b) => b.date - a.date || a.id.localeCompare(b.id)),
@@ -294,10 +276,8 @@ function BanksContent() {
 
   const grouped = useMemo(() => groupByDay(pagedTxns), [pagedTxns]);
 
-  // Reset pagination when the account filter or data set changes.
   useEffect(() => setVisibleCount(PAGE_SIZE), [visibleTxns]);
 
-  // Load the next page when the sentinel scrolls into view.
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
@@ -406,7 +386,6 @@ function BanksContent() {
   const txnSaveMutation = useSyncMutation({
     keys: [queryKeys.transactions],
     mutationFn: async (row: Record<string, unknown>) => {
-      // Preserve the original row id when editing, so we update in place.
       const next = editTxn ? { ...row, id: editTxn.id } : row;
       await db.table("transactions").upsert(upsertTxnRow(uid, next));
       setEditTxn(null);
@@ -419,8 +398,6 @@ function BanksContent() {
     setCaptureOpen(true);
   }, []);
 
-  // Delete keeps the row mounted so its Undo toast stays clickable: invalidate
-  // after the undo window (5s) instead of immediately like other mutations.
   const txnDeleteMutation = useSyncMutation({
     keys: [],
     mutationFn: async (txn: Txn) => {
@@ -571,20 +548,7 @@ function BanksContent() {
     }));
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-display text-2xl font-bold tracking-tight">Banks</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-500">Total</span>
-          <span
-            className="font-display text-xl font-bold tabular-nums"
-            aria-label={privacy ? "Total masked" : `Total ${fmt(totalBalance)}`}
-          >
-            {privacy ? "••••" : fmt(totalBalance)}
-          </span>
-        </div>
-      </header>
-
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2 pb-1">
         <button
           onClick={() => setSelectedAccountId(null)}

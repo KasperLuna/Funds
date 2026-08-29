@@ -21,7 +21,7 @@ export function AssistantButton({ className }: { className?: string }) {
         onClick={() => setOpen(true)}
         aria-label="Open assistant"
         className={cn(
-          "fixed z-30 flex h-12 w-12 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) shadow-lg transition-[transform,filter] hover:scale-105 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none active:scale-95 md:bottom-6 md:right-6 bottom-20 right-4",
+          "hidden z-30 md:flex h-12 w-12 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) shadow-lg transition-[transform,filter] hover:scale-105 hover:brightness-110 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none active:scale-95 bottom-6 right-6",
           className,
         )}
       >
