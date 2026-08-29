@@ -13,6 +13,7 @@ import type { VoicePrefill } from "@/components/capture/CaptureSheet";
 import type { RecentTxn } from "@/lib/capture";
 import { redeemDraft } from "@/lib/voice/redeem";
 import { resolvePrefill } from "@/lib/voice/resolve";
+import { useVoicePrefill } from "@/lib/voice/voice-context";
 import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { BankProportionCard, FALLBACK_COLORS } from "@/components/home/bank-proportion-card";
 import { RecentActivity } from "@/components/home/recent-activity";
@@ -157,6 +158,7 @@ function DashboardContent() {
   const tokenTxns = tokenTxnsQuery.data ?? [];
 
   const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
+  const { prefill: assistantPrefill, setPrefill: setAssistantPrefill } = useVoicePrefill();
   const [voicePrefill, setVoicePrefill] = useState<VoicePrefill | undefined>();
   const [editTxn, setEditTxn] = useState<Txn | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -449,8 +451,13 @@ function DashboardContent() {
       />
 
       <CaptureSheet
-        open={captureOpen || !!draftToken || !!editTxn}
-        onOpenChange={() => { setVoicePrefill(undefined); setEditTxn(null); router.replace("/dashboard", { scroll: false }); }}
+        open={captureOpen || !!draftToken || !!editTxn || !!assistantPrefill}
+        onOpenChange={() => {
+          setVoicePrefill(undefined);
+          setAssistantPrefill(undefined);
+          setEditTxn(null);
+          router.replace("/dashboard", { scroll: false });
+        }}
         userId={uid}
         accounts={accounts.map((a) => ({
           id: a.id,
@@ -463,7 +470,7 @@ function DashboardContent() {
         recentTxns={recentForCapture}
         templates={templates}
         onSave={handleSave}
-        voicePrefill={voicePrefill ?? typePrefill ?? txnPrefill}
+        voicePrefill={voicePrefill ?? typePrefill ?? txnPrefill ?? assistantPrefill}
         editing={!!editTxn}
       />
     </div>

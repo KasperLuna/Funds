@@ -13,6 +13,9 @@ import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicato
 import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
 import { SyncProvider } from "@/lib/sync/sync-context";
 import { SyncQueryProvider } from "@/lib/sync/sync-query";
+import { VoicePrefillProvider } from "@/lib/voice/voice-context";
+import { AssistantButton } from "@/components/assistant/AssistantButton";
+import { ChatProvider } from "@/components/assistant/use-chat";
 
 function PrivacyToggle({
   className,
@@ -65,6 +68,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <PrivacyProvider>
       <SyncProvider>
       <SyncQueryProvider>
+      <VoicePrefillProvider>
+      <ChatProvider>
       <div className="mx-auto min-h-dvh max-w-[1920px] bg-(--bg)">
         {/* Desktop sidebar */}
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
@@ -122,6 +127,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
 
+        {/* FAB — always visible; opens the assistant chat sheet */}
+        <AssistantButton />
+
         {/* Mobile bottom bar */}
         <nav
           aria-label="Primary"
@@ -168,6 +176,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </nav>
       </div>
+      </ChatProvider>
+      </VoicePrefillProvider>
       </SyncQueryProvider>
       </SyncProvider>
     </PrivacyProvider>

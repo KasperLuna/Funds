@@ -203,6 +203,37 @@ export default function SettingsPage() {
       <Section title="Privacy">
         <PrivacyToggle />
       </Section>
+
+      <AssistantStatus />
     </div>
+  );
+}
+
+function AssistantStatus() {
+  const [support, setSupport] = useState<string | null>(null);
+  const [lastLoaded, setLastLoaded] = useState<string | null>(null);
+
+  useEffect(() => {
+    void (async () => {
+      const { detectSupport } = await import("@/lib/llm/capability");
+      const s = await detectSupport();
+      setSupport(s.ok ? `${s.engine} · ${s.recommendedModel}` : s.reason);
+      const { getLlmEngine } = await import("@/lib/llm");
+      const ts = await getLlmEngine().lastLoadedAt();
+      if (ts) setLastLoaded(new Date(ts).toLocaleString());
+    })();
+  }, []);
+
+  return (
+    <Section title="On-device assistant">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-zinc-500">Capability</span>
+        <span className="text-zinc-300">{support ?? "checking…"}</span>
+      </div>
+      <div className="mt-2 flex items-center justify-between text-sm">
+        <span className="text-zinc-500">Last loaded</span>
+        <span className="text-zinc-300">{lastLoaded ?? "never"}</span>
+      </div>
+    </Section>
   );
 }

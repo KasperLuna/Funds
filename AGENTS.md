@@ -135,3 +135,65 @@ Never merge a schema change without running `db:check` against a migrated DB.
 - Client generates all IDs (ULID, text PK) — offline creates never collide.
 - Keep the PWA offline-first contract: writes land in the local Dexie store first, sync
   uploads after. Never gate writes on the server.
+
+## On-device assistant (local LLM + GenUI)
+
+Fully client-only AI assistant using WebLLM (`@mlc-ai/web-llm`) for on-device inference.
+No transaction data ever leaves the device. No network calls during inference.
+
+### Architecture
+
+- `lib/llm/` — LLM engine layer: `capability.ts` (WebGPU/OPFS probes), `opfs-cache.ts`
+  (model weight persistence), `webllm-engine.ts` (real WebLLM wrapper), `index.ts`
+  (singleton factory + mock seam).
+- `lib/assistant/` — orchestrator: `chat-engine.ts` (prompt → LLM → Zod validate →
+  handler), `schemas.ts` (Zod schemas per use case), `prompts.ts` (system + user
+  prompts), `serialize.ts` (local snapshot for model context), `handlers.ts`
+  (re-derives money from local rows — model only names things).
+- `components/assistant/` — React layer: `use-chat.tsx` (ChatProvider context), `AssistantPanel`
+  (chat thread + input), `AssistantButton` (floating FAB), `AssistantSheet` (bottom-sheet
+  variant), `AssistantMessageView` (type-switch renderer), GenUI widgets in `messages/`.
+- `app/dashboard/assistant/page.tsx` — full-page route (`/dashboard/assistant`).
+
+### Key invariants
+
+- Money is **never** passed to the model as BigInt. It is serialized as decimal strings
+  in the snapshot, and handlers re-derive it from local rows after Zod validation.
+- The model never generates JSX. Each validated schema maps to a fixed React component
+  via a type-discriminated switch — no dynamic code generation.
+- If Zod validation fails twice, the chat-engine falls back to a deterministic answer
+  derived from the same local data (no broken UI, no model-reliant text).
+
+### Device gating
+
+- `detectSupport()` probes WebGPU, OPFS, storage quota (≥1 GB), and cross-origin
+  isolation. Returns a typed `LlmSupport` discriminated union.
+- Primary model: Qwen2.5-1.5B-Instruct (~1 GB). Fallback: Llama-3.2-1B (~700 MB).
+- `AssistantButton` does NOT render on truly unsupported devices. The `/dashboard/assistant`
+  route renders an explanation page.
+
+### iOS Safari specifics
+
+- OPFS storage is best-effort — iOS may evict after ~7 days of no engagement.
+- `StaleBanner` (in AssistantPanel) checks `lastLoadedAt` from an OPFS sidecar. If
+  >5 days, it shows a non-blocking "Model may need redownload" notice with a refresh
+  button that unloads the engine so the next send triggers a fresh load.
+- Settings page shows last-loaded timestamp for debugging.
+
+### Testing
+
+Tests use `MockLlmEngine` (fixture-driven) — no WebGPU needed in CI.
+Run: `pnpm --filter @funds/web exec vitest run src/lib/assistant/`
+
+### iOS Safari PWA test plan (manual)
+
+1. Open the app in Safari on an iPhone (not a home-screen PWA).
+2. Navigate to Settings > Assistant — confirm capability shows "webgpu" or "wasm".
+3. Open the assistant via the FAB (bottom-right floating button).
+4. Send "How much did I spend on Food this month?" — verify a CategoryBarChart renders.
+5. Send "Am I over budget on Dining?" — verify a BudgetProgressCard renders.
+6. Send "Summarize this week" — verify a SummaryDashboardCard renders.
+7. Add to home screen. Force-kill the PWA. Wait 6+ days (or fake via dev tools by
+   editing the `lastLoadedAt` sidecar in OPFS to be 6 days old).
+8. Reopen the PWA. Open assistant. Verify the stale redownload banner appears.
+9. Tap "Refresh" on the banner. Confirm the model redownloads and subsequent queries work.

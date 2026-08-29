@@ -1,0 +1,47 @@
+"use client";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogContentTitle,
+  DialogContentDescription,
+} from "@/components/ui/dialog";
+import type { AssistantMessage } from "@/lib/assistant/types";
+
+/**
+ * Transparency panel: shows the raw validated payload that drove the widget.
+ * The user can verify the source of every number, and the "from this device"
+ * footer in the widget itself makes clear the numbers were re-derived from
+ * local rows, not copied verbatim from the model.
+ */
+export function DataInspector({
+  message,
+  onClose,
+}: {
+  message: AssistantMessage;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogContentTitle>Underlying data</DialogContentTitle>
+        <DialogContentDescription>
+          This widget was generated on this device. Money and totals are
+          re-derived from your local transaction rows after the assistant
+          named the category or period.
+        </DialogContentDescription>
+        <pre className="mt-3 max-h-72 overflow-auto rounded-(--radius-md) bg-(--surface-2) p-3 text-[11px] text-zinc-300">
+          {JSON.stringify(stripForDisplay(message), null, 2)}
+        </pre>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function stripForDisplay(message: AssistantMessage) {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(message)) {
+    if (k !== "id" && k !== "role" && k !== "ts" && k !== "usedCase") out[k] = v;
+  }
+  return out;
+}
