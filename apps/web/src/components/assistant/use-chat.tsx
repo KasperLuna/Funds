@@ -245,14 +245,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           dispatch({ type: "stream-text", text: streamingBufRef.current });
         },
       };
-      const result = await runChat(
-        { text, now: Date.now(), userId: userId ?? "local" },
-        deps,
-      );
+      try {
+        const result = await runChat(
+          { text, now: Date.now(), userId: userId ?? "local" },
+          deps,
+        );
+        dispatch({ type: "stream-text", text: null });
+        dispatch({ type: "append", message: result.assistant });
+        dispatch({ type: "status", status: "idle" });
+      } catch (err) {
+      // Safety net: if runChat itself throws (e.g. an uncaught iOS crash
+      // escapes the engine's own error handling), surface a user-friendly
+      // message and reset the UI to idle instead of leaving it stuck in
+      // "thinking" forever.
       dispatch({ type: "stream-text", text: null });
-      dispatch({ type: "append", message: result.assistant });
+      const reason =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Request cancelled."
+          : err instanceof Error
+            ? `Model crashed: ${err.message}`
+            : "Model crashed unexpectedly. Try again.";
+      dispatch({
+        type: "append",
+        message: {
+          id: crypto.randomUUID().replace(/-/g, "").slice(0, 26),
+          role: "assistant",
+          type: "error",
+          reason,
+          ts: Date.now(),
+          usedCase: "fallback_text",
+        },
+      });
       dispatch({ type: "status", status: "idle" });
-    },
+    }
+  },
     [accounts, categories, budgets, txns, assetsById, userId],
   );
 

@@ -38,6 +38,9 @@ export function createMockLlmEngine(): MockLlmEngine {
     cancel() {
       // no-op
     },
+    async deleteModel() {
+      // no-op
+    },
     setResponse(out: string) {
       queue.length = 0;
       queue.push(out);

@@ -13,8 +13,9 @@ import {
   readStamp,
   writeMeta,
   writeStamp,
+  clearModel,
 } from "./opfs-cache";
-import { requestPersistentStorage } from "./capability";
+import { isIosLikeDevice, requestPersistentStorage } from "./capability";
 
 /**
  * Real LLM engine. Lazy-imports `@mlc-ai/web-llm` so the dependency is only
@@ -111,6 +112,14 @@ export class WebLlmEngine implements LlmEngine {
       throw new Error("LLM not ready");
     }
     this.cancelRef = { cancelled: false };
+
+    // iOS Safari can kill the tab during long-running WebGPU inference due to
+    // memory pressure. A per-token timeout detects this early and surfaces a
+    // recoverable error instead of a white-screen crash.
+    const isIos = isIosLikeDevice();
+    const TOKEN_TIMEOUT_MS = isIos ? 30_000 : 60_000;
+    let lastTokenAt = Date.now();
+
     type MlcChat = { completions: { create: (args: unknown) => Promise<{ stream: () => AsyncIterable<{ choices?: Array<{ text?: string }> }> }> } };
     const mlc = this.engine as MlcChat;
     const completion = await mlc.completions.create({
@@ -123,19 +132,38 @@ export class WebLlmEngine implements LlmEngine {
       response_format: opts.jsonMode ? { type: "json_object" } : undefined,
     });
 
-    // Stream the response and accumulate. We choose streaming because the
-    // spec's first-token target is <2s; if the request is long we surface
-    // progress via the engine status, not via this return value.
     let out = "";
-    for await (const chunk of completion.stream()) {
-      if (this.cancelRef.cancelled) {
-        throw new DOMException("Aborted", "AbortError");
+    try {
+      for await (const chunk of completion.stream()) {
+        if (this.cancelRef.cancelled) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        if (Date.now() - lastTokenAt > TOKEN_TIMEOUT_MS) {
+          this.cancel();
+          throw new Error(
+            isIos
+              ? "Inference timed out — iOS may have reclaimed GPU memory. Try a shorter question or restart the page."
+              : "Inference timed out — the model took too long to respond.",
+          );
+        }
+        const delta = chunk.choices?.[0]?.text;
+        if (delta) {
+          lastTokenAt = Date.now();
+          out += delta;
+          opts.onToken?.(delta);
+        }
       }
-      const delta = chunk.choices?.[0]?.text;
-      if (delta) {
-        out += delta;
-        opts.onToken?.(delta);
+    } catch (err) {
+      // If the engine itself crashed (WebGPU context loss, OOM), mark it
+      // failed so the next send() triggers a fresh load instead of retrying
+      // a dead engine.
+      if (
+        !(err instanceof DOMException && err.name === "AbortError") &&
+        this.statusValue === "ready"
+      ) {
+        this.statusValue = "error";
       }
+      throw err;
     }
     return out;
   }
@@ -156,6 +184,13 @@ export class WebLlmEngine implements LlmEngine {
 
   cancel(): void {
     this.cancelRef.cancelled = true;
+  }
+
+  async deleteModel(modelId: ModelId): Promise<void> {
+    if (this.currentModel === modelId) {
+      await this.unload();
+    }
+    await clearModel(modelId);
   }
 
   // Expose for tests: read cached meta without a live engine.

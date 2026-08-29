@@ -51,4 +51,6 @@ export interface LlmEngine {
   lastLoadedAt(): Promise<number | null>;
   /** Cancel an in-flight `complete()`. The promise rejects with `AbortError`. */
   cancel(): void;
+  /** Delete a model's cached weights from disk. Unloads first if active. */
+  deleteModel(modelId: ModelId): Promise<void>;
 }

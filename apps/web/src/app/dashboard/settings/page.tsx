@@ -12,6 +12,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogContentTitle,
+  DialogContentDescription,
+} from "@/components/ui/dialog";
 import type { ModelId } from "@/lib/llm/types";
 import { MODEL_LABELS } from "@/lib/llm/types";
 import { UserCard } from "@/components/auth/user-card";
@@ -220,6 +226,8 @@ function AssistantStatus() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [downloadingModel, setDownloadingModel] = useState<ModelId | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ModelId | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -275,71 +283,141 @@ function AssistantStatus() {
   }, []);
 
   return (
-    <Section title="On-device assistant">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-zinc-500">Capability</span>
-        <span className="text-zinc-300">{support ?? "checking…"}</span>
-      </div>
-
-      {downloadError && (
-        <div className="mt-2 rounded-(--radius-md) border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-          <p className="font-medium">Download failed</p>
-          <p className="mt-0.5 text-red-400/80">{downloadError}</p>
+    <>
+      <Section title="On-device assistant">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-zinc-500">Capability</span>
+          <span className="text-zinc-300">{support ?? "checking…"}</span>
         </div>
-      )}
 
-      <div className="mt-3 flex flex-col gap-2">
-        {modelIds.map((id) => {
-          const label = MODEL_LABELS[id];
-          const isCached = cachedModels[id] ?? false;
-          const isActive = currentModel === id && engineStatus === "ready";
-          return (
-            <div
-              key={id}
-              className="flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{label}</span>
-                {isActive && (
-                  <span className="rounded-full bg-(--accent)/10 px-1.5 py-0.5 text-[10px] font-medium text-(--accent)">
-                    Active
-                  </span>
-                )}
-                {isCached && !isActive && (
-                  <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
-                    Cached
-                  </span>
+        {downloadError && (
+          <div className="mt-2 rounded-(--radius-md) border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            <p className="font-medium">Download failed</p>
+            <p className="mt-0.5 text-red-400/80">{downloadError}</p>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-col gap-2">
+          {modelIds.map((id) => {
+            const label = MODEL_LABELS[id];
+            const isCached = cachedModels[id] ?? false;
+            const isActive = currentModel === id && engineStatus === "ready";
+            return (
+              <div
+                key={id}
+                className="flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{label}</span>
+                  {isActive && (
+                    <span className="rounded-full bg-(--accent)/10 px-1.5 py-0.5 text-[10px] font-medium text-(--accent)">
+                      Active
+                    </span>
+                  )}
+                  {isCached && !isActive && (
+                    <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-400">
+                      Cached
+                    </span>
+                  )}
+                </div>
+                {isActive ? (
+                  <Button variant="ghost" size="sm" onClick={() => void handleUnload()}>
+                    Unload
+                  </Button>
+                ) : deleting && deleteTarget === id ? (
+                  <span className="text-[10px] text-zinc-500">Deleting…</span>
+                ) : downloadingModel === id ? (
+                  downloadProgress !== null ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">
+                        <div
+                          className="h-full rounded-full bg-(--accent) transition-[width]"
+                          style={{ width: `${downloadProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-zinc-400">{downloadProgress}%</span>
+                    </div>
+                  ) : null
+                ) : isCached ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => void handleDownload(id)}
+                    >
+                      {isCached ? "Load" : "Download"}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => void setDeleteTarget(id)}
+                    >
+                      Delete
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleDownload(id)}
+                  >
+                    Download
+                  </Button>
                 )}
               </div>
-              {isActive ? (
-                <Button variant="ghost" size="sm" onClick={() => void handleUnload()}>
-                  Unload
-                </Button>
-              ) : downloadingModel === id ? (
-                downloadProgress !== null ? (
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">
-                      <div
-                        className="h-full rounded-full bg-(--accent) transition-[width]"
-                        style={{ width: `${downloadProgress}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-zinc-400">{downloadProgress}%</span>
-                  </div>
-                ) : null
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void handleDownload(id)}
-                >
-                  {isCached ? "Load" : "Download"}
-                </Button>
-              )}
+            );
+          })}
+        </div>
+      </Section>
+      
+      {deleteTarget && (
+        <Dialog open onOpenChange={() => setDeleteTarget(null)}>
+          <DialogContent>
+            <DialogContentTitle>Delete model?</DialogContentTitle>
+            <DialogContentDescription>
+              This will remove the model's cached weights from the device.
+              The model will need to be re-downloaded to use it again.
+            </DialogContentDescription>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={deleting}
+                onClick={async () => {
+                  setDeleting(true);
+                  try {
+                    const { getLlmEngine } = await import("@/lib/llm");
+                    await getLlmEngine().deleteModel(deleteTarget!);
+                    // Refresh cached models state
+                    const { isModelAvailable, allModelIds } = await import("@/lib/llm");
+                    const ids = allModelIds();
+                    const cached: Record<string, boolean> = {};
+                    for (const id of ids) {
+                      cached[id] = await isModelAvailable(id);
+                    }
+                    setCachedModels(cached);
+                    // If the deleted model was active, unload and reset
+                    if (currentModel === deleteTarget) {
+                      setEngineStatus("not-loaded");
+                      setCurrentModel(null);
+                    }
+                  } catch (err) {
+                    console.error("Model delete failed:", err);
+                  } finally {
+                    setDeleting(false);
+                    setDeleteTarget(null);
+                  }
+                }}
+              >
+                {deleting ? "Deleting…" : "Delete"}
+              </Button>
             </div>
-          );
-        })}
-      </div>
-    </Section>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }
