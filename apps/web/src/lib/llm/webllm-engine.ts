@@ -9,6 +9,55 @@ import type {
   ModelId,
   ToolCall,
 } from "./types";
+import { isIosLikeDevice, requestPersistentStorage } from "./capability";
+
+/**
+ * JSON-mode tool protocol. The model MUST reply with exactly one JSON object:
+ * a tool call, a text reply, or (tolerated) a legacy widget shape. Validated
+ * here so the orchestrator always receives well-formed tool calls.
+ */
+function buildToolSystemPrompt(
+  system: string,
+  tools: Array<{ type: "function"; function: { name: string; description: string; parameters: unknown } }>,
+): string {
+  return `${system}
+
+TOOL PROTOCOL — reply with exactly ONE JSON object, nothing else:
+- To use a tool: {"tool":"<tool name>","arguments":{<args per its schema>}}
+- To answer in text: {"reply":"<your answer>"}
+
+Available tools:
+${JSON.stringify(
+  tools.map((t) => ({ name: t.function.name, description: t.function.description, parameters: t.function.parameters })),
+)}`;
+}
+
+function parseToolReply(out: string): CompletionResult {
+  const raw = out.trim();
+  let parsed: unknown = null;
+  try {
+    // response_format json_object guarantees a parseable whole; the fence
+    // strip is belt-and-braces for models that wrap it anyway.
+    const stripped = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+    parsed = JSON.parse(stripped);
+  } catch {
+    return { content: raw, toolCalls: [] };
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return { content: raw, toolCalls: [] };
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (typeof obj.tool === "string" && obj.tool.trim()) {
+    const call: ToolCall = {
+      id: `call-${obj.tool}`,
+      name: obj.tool.trim(),
+      arguments: JSON.stringify(obj.arguments ?? {}),
+    };
+    return { content: "", toolCalls: [call] };
+  }
+  const reply = typeof obj.reply === "string" ? obj.reply : undefined;
+  return { content: reply ?? out, toolCalls: [] };
+}
 import {
   isModelCached,
   readMeta,
@@ -17,7 +66,6 @@ import {
   writeStamp,
   clearModel,
 } from "./opfs-cache";
-import { isIosLikeDevice, requestPersistentStorage } from "./capability";
 
 /**
  * Real LLM engine. Lazy-imports `@mlc-ai/web-llm` so the dependency is only
@@ -127,18 +175,11 @@ export class WebLlmEngine implements LlmEngine {
     let lastTokenAt = Date.now();
 
     // cavetail: must match @mlc-ai/web-llm's real streaming contract.
-    // `create({ stream: true })` resolves to an AsyncIterable of chunks; text
-    // lives in `choices[0].delta.content`, and `tool_calls` are accumulated
-    // only on the FINAL chunk (per web-llm's openai_api_protocols header).
-    type MlcToolCallDelta = {
-      index?: number;
-      id?: string;
-      function?: { name?: string; arguments?: string };
-      type?: "function";
-    };
+    // `create({ stream: true })` resolves to an AsyncIterable of chunks whose
+    // text lives in `choices[0].delta.content`.
     type MlcChunk = {
       choices?: Array<{
-        delta?: { content?: string | null; tool_calls?: Array<MlcToolCallDelta> };
+        delta?: { content?: string | null };
         finish_reason?: string | null;
       }>;
     };
@@ -149,16 +190,37 @@ export class WebLlmEngine implements LlmEngine {
     };
     const mlc = this.engine as MlcChat;
 
-    const messages: Array<{ role: string; content: string | null; tool_calls?: unknown; tool_call_id?: string }> = [
+    // cavetail: web-llm 0.2.84's native `tools` only works for the five
+    // Hermes models (functionCallingModelIds), and even there it replaces the
+    // system prompt and forbids response_format. On the STREAMING path it
+    // skips the allowlist check entirely and then JSON.parses the whole
+    // output as a tool-call array — any prose reply throws
+    // ToolCallOutputParseError, crashing every request on Llama/Qwen/SmolLM.
+    // So tool-calling is carried in JSON mode instead: the model replies with
+    // {"tool":..., "arguments":{...}} or {"reply":"..."} under the
+    // grammar-constrained json_object response format, which works for ANY
+    // model and cannot produce unparseable output.
+    let system = opts.system;
+    const messages: Array<{ role: string; content: string | null }> = [
       { role: "system", content: opts.system },
       { role: "user", content: opts.user },
     ];
-    for (const m of opts.messages ?? []) {
-      messages.push({
-        role: m.role,
-        content: m.content,
-        tool_call_id: m.toolCallId,
-      });
+    if (opts.tools) {
+      system = buildToolSystemPrompt(opts.system, opts.tools);
+      messages[0] = { role: "system", content: system };
+      for (const m of opts.messages ?? []) {
+        if (m.role === "tool") {
+          // Llama-3.2's MLC template has no tool role; feed results back as
+          // a user turn the model can read.
+          messages.push({ role: "user", content: `TOOL_RESULT: ${m.content}` });
+        } else {
+          messages.push({ role: m.role, content: m.content });
+        }
+      }
+    } else {
+      for (const m of opts.messages ?? []) {
+        messages.push({ role: m.role, content: m.content });
+      }
     }
 
     let completion: AsyncIterable<MlcChunk>;
@@ -168,9 +230,9 @@ export class WebLlmEngine implements LlmEngine {
         temperature: opts.temperature,
         max_tokens: opts.maxTokens,
         stream: true,
-        ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
-        ...(opts.tools ? { tools: opts.tools } : {}),
-        ...(opts.toolChoice !== undefined ? { tool_choice: opts.toolChoice } : {}),
+        // Tool-protocol turns MUST be grammar-constrained: prose output is
+        // what made native tools crash. jsonMode also stays honored alone.
+        response_format: opts.jsonMode || opts.tools ? { type: "json_object" } : undefined,
       });
     } catch (err) {
       if (this.statusValue === "ready") this.statusValue = "error";
@@ -178,10 +240,6 @@ export class WebLlmEngine implements LlmEngine {
     }
 
     let out = "";
-    const toolCalls: ToolCall[] = [];
-    // WebLLM streams tool-call argument fragments across chunks and only
-    // finalizes them on the last chunk. Accumulate by index, keyed on name.
-    const acc = new Map<number, { id: string; name: string; args: string }>();
     try {
       for await (const chunk of completion) {
         if (this.cancelRef.cancelled) {
@@ -201,13 +259,6 @@ export class WebLlmEngine implements LlmEngine {
           out += delta.content;
           opts.onToken?.(delta.content);
         }
-        for (const tc of delta?.tool_calls ?? []) {
-          const idx = tc.index ?? 0;
-          const cur = acc.get(idx) ?? { id: tc.id ?? String(idx), name: "", args: "" };
-          if (tc.function?.name) cur.name = tc.function.name;
-          if (tc.function?.arguments) cur.args += tc.function.arguments;
-          acc.set(idx, cur);
-        }
       }
     } catch (err) {
       // If the engine itself crashed (WebGPU context loss, OOM), mark it
@@ -222,12 +273,11 @@ export class WebLlmEngine implements LlmEngine {
       throw err;
     }
 
-    for (const v of acc.values()) {
-      if (v.name) {
-        toolCalls.push({ id: v.id, name: v.name, arguments: v.args });
-      }
+    // Parse the tool-call envelope out of the grammar-constrained JSON reply.
+    if (opts.tools) {
+      return parseToolReply(out);
     }
-    return { content: out, toolCalls };
+    return { content: out, toolCalls: [] };
   }
 
   async unload(): Promise<void> {

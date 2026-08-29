@@ -159,10 +159,12 @@ No transaction data ever leaves the device. No network calls during inference.
 
 ### Key invariants
 
-- The agent uses **native WebLLM function-calling** (`tools`/`tool_calls` on
-  `completions.create`). The model only NAMES things (tool, period, category,
-  account); every money figure is re-derived by tool executors from local rows.
-  First widget-shaped tool result terminates the loop.
+- The agent uses **JSON-mode function-calling** (`{"tool":...,"arguments":{...}}` /
+  `{"reply":...}` under web-llm's grammar-constrained `json_object`). web-llm 0.2.84's
+  native `tools` only support Hermes models and crash on any other model via
+  `ToolCallOutputParseError` — never pass `tools` to `completions.create`. The model
+  only NAMES things (tool, period, category, account); every money figure is re-derived
+  by tool executors from local rows. First widget-shaped tool result terminates the loop.
 - Money is **never** passed to the model as BigInt. It is serialized as decimal strings
   in the snapshot, and handlers re-derive it from local rows after Zod validation.
 - The model never generates JSX. Each validated schema maps to a fixed React component

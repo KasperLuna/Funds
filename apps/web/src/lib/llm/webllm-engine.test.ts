@@ -57,33 +57,77 @@ describe("WebLlmEngine.complete contract vs @mlc-ai/web-llm streaming shapes", (
     });
   });
 
-  it("accumulates streamed tool_calls (fragmented args, finalized on last chunk)", async () => {
+  it("emulates tool-calling in JSON mode: tool envelope parsed into toolCalls", async () => {
+    let captured: unknown;
+    const e = engineWith(async (args) => {
+      captured = args;
+      return (async function* () {
+        yield chunk('{"tool":"get_summary","arguments":{"period":"this_week"}}');
+        yield { choices: [{ delta: {}, finish_reason: "stop" }] };
+      })();
+    });
+    const out = await e.complete({
+      system: "s",
+      user: "u",
+      temperature: 0.1,
+      maxTokens: 600,
+      tools: [
+        { type: "function", function: { name: "get_summary", description: "d", parameters: {} } },
+      ],
+    });
+    // Native `tools` must NOT be forwarded — web-llm 0.2.84 only supports
+    // Hermes models for them and crashes on any other model.
+    expect(captured).toMatchObject({
+      stream: true,
+      response_format: { type: "json_object" },
+    });
+    expect((captured as { tools?: unknown }).tools).toBeUndefined();
+    expect(out.content).toBe("");
+    expect(out.toolCalls).toHaveLength(1);
+    expect(out.toolCalls[0]?.name).toBe("get_summary");
+    expect(out.toolCalls[0]?.arguments).toBe('{"period":"this_week"}');
+  });
+
+  it("parses a text reply out of the tool protocol envelope", async () => {
     const e = engineWith(async () =>
       (async function* () {
-        yield { choices: [{ delta: { tool_calls: [{ index: 0, id: "call-1", function: { name: "get_spending_breakdown", arguments: "{\"peri" } }] } }] };
-        yield { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: "od\":\"last_month\"}" } }] } }] };
-        yield { choices: [{ delta: {}, finish_reason: "tool_calls" }] };
+        yield chunk('{"reply":"Hi! What can I help with?"}');
       })(),
     );
     const out = await e.complete({
       system: "s",
       user: "u",
-      tools: [{ type: "function", function: { name: "get_spending_breakdown", description: "", parameters: {} } }],
       temperature: 0.1,
       maxTokens: 600,
+      tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
     });
-    expect(out.content).toBe("");
-    expect(out.toolCalls).toHaveLength(1);
-    expect(out.toolCalls[0]?.name).toBe("get_spending_breakdown");
-    expect(out.toolCalls[0]?.arguments).toBe("{\"period\":\"last_month\"}");
+    expect(out.toolCalls).toEqual([]);
+    expect(out.content).toBe("Hi! What can I help with?");
   });
 
-  it("forwards tools and tool_choice to completions.create", async () => {
+  it("passes unparseable tool-protocol output through as content (no crash)", async () => {
+    const e = engineWith(async () =>
+      (async function* () {
+        yield chunk("plain prose reply");
+      })(),
+    );
+    const out = await e.complete({
+      system: "s",
+      user: "u",
+      temperature: 0.1,
+      maxTokens: 600,
+      tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
+    });
+    expect(out.toolCalls).toEqual([]);
+    expect(out.content).toBe("plain prose reply");
+  });
+
+  it("keeps tool results in the conversation as user turns (no tool role)", async () => {
     let captured: unknown;
     const e = engineWith(async (args) => {
       captured = args;
       return (async function* () {
-        yield { choices: [{ delta: {} }] };
+        yield chunk('{"reply":"ok"}');
       })();
     });
     await e.complete({
@@ -92,12 +136,14 @@ describe("WebLlmEngine.complete contract vs @mlc-ai/web-llm streaming shapes", (
       temperature: 0.1,
       maxTokens: 600,
       tools: [{ type: "function", function: { name: "t", description: "d", parameters: {} } }],
-      toolChoice: "auto",
+      messages: [
+        { role: "assistant", content: '{"tool":"x","arguments":{}}', toolCallId: "c1" },
+        { role: "tool", content: '{"total":"1"}', toolCallId: "call-x" },
+      ],
     });
-    expect(captured).toMatchObject({
-      tools: [{ type: "function", function: { name: "t" } }],
-      tool_choice: "auto",
-    });
+    const msgs = (captured as { messages: Array<{ role: string; content: string }> }).messages;
+    expect(msgs.some((m) => m.role === "tool")).toBe(false);
+    expect(msgs.some((m) => m.content.startsWith("TOOL_RESULT:"))).toBe(true);
   });
 
   it("throws the stored load failure reason when not ready", async () => {
