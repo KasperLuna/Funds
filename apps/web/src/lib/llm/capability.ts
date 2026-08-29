@@ -22,19 +22,19 @@ export type LlmSupport =
       engine: "wasm";
       availableBytes: number;
       recommendedModel: ModelId;
-      warn: "slower-inference";
+      warn: "slower-inference" | "no-cross-origin-isolation";
     }
   | {
       ok: false;
       reason:
         | "no-webgpu"
         | "no-cross-origin-isolation"
-        | "no-opfs"
         | "no-storage"
         | "unsupported-environment";
     };
 
-const MIN_STORAGE_BYTES = 1 * 1024 * 1024 * 1024; // 1 GB — below this we cannot host a model at all
+// Below this we cannot host even the smallest model (~200 MB + headroom).
+const MIN_STORAGE_BYTES = 256 * 1024 * 1024;
 
 type NavigatorWithGpu = Navigator & {
   gpu?: { requestAdapter?: () => Promise<unknown> };
@@ -47,10 +47,6 @@ type NavigatorWithGpu = Navigator & {
 
 function hasWebGpu(nav: NavigatorWithGpu): boolean {
   return typeof nav.gpu?.requestAdapter === "function";
-}
-
-function hasOpfs(nav: NavigatorWithGpu): boolean {
-  return typeof nav.storage?.getDirectory === "function";
 }
 
 async function hasStorage(
@@ -84,10 +80,12 @@ export function isIosStorageStale(lastLoadedAt: number | null, now = Date.now())
 }
 
 function pickModel(availableBytes: number): ModelId {
-  // q4f32_1 uses less memory; q4f16_1 has better quality but needs more headroom.
-  // Both models are ~700 MB. Prefer fp16 when storage is generous.
-  if (availableBytes >= 2 * 1024 * 1024 * 1024) return "Llama-3.2-1B-Instruct-q4f16_1-MLC";
-  return "Llama-3.2-1B-Instruct-q4f32_1-MLC";
+  // Tier by available storage — smallest models for constrained devices.
+  // q4f32_1 uses less VRAM headroom; q4f16_1 has better quality.
+  if (availableBytes < 500 * 1024 * 1024) return "SmolLM2-360M-Instruct-q4f16_1-MLC";
+  if (availableBytes < 1024 * 1024 * 1024) return "Qwen3-0.6B-q4f16_1-MLC";
+  if (availableBytes < 1536 * 1024 * 1024) return "Llama-3.2-1B-Instruct-q4f32_1-MLC";
+  return "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 }
 
 export async function detectSupport(): Promise<LlmSupport> {
@@ -96,16 +94,7 @@ export async function detectSupport(): Promise<LlmSupport> {
   }
   const nav = navigator as NavigatorWithGpu;
 
-  if (typeof crossOriginIsolated !== "undefined" && !crossOriginIsolated) {
-    // SharedArrayBuffer is required for the WASM fallback path. Without it,
-    // even the smaller model cannot load.
-    return { ok: false, reason: "no-cross-origin-isolation" };
-  }
-
-  if (!hasOpfs(nav)) {
-    return { ok: false, reason: "no-opfs" };
-  }
-
+  // Probe storage first — without it nothing works.
   const storage = await hasStorage(nav);
   if (!storage) {
     return { ok: false, reason: "no-storage" };
@@ -114,6 +103,9 @@ export async function detectSupport(): Promise<LlmSupport> {
     return { ok: false, reason: "no-storage" };
   }
 
+  const hasCoi = typeof crossOriginIsolated !== "undefined" && crossOriginIsolated;
+
+  // Try WebGPU first — the fast path. If it works, we don't need COI or OPFS.
   if (hasWebGpu(nav)) {
     let adapter: unknown = null;
     try {
@@ -129,7 +121,11 @@ export async function detectSupport(): Promise<LlmSupport> {
         recommendedModel: pickModel(storage.available),
       };
     }
-    return { ok: false, reason: "no-webgpu" };
+  }
+
+  // No WebGPU — fall back to WASM. WASM needs SharedArrayBuffer → cross-origin isolation.
+  if (!hasCoi) {
+    return { ok: false, reason: "no-cross-origin-isolation" };
   }
 
   return {

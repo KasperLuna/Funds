@@ -195,11 +195,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const engine = engineRef.current ?? getLlmEngine();
       engineRef.current = engine;
       const status = engine.status();
-      if (status === "downloading" || status === "not-loaded") {
+
+      // Auto-load the recommended model when nothing is loaded yet.
+      if (status === "not-loaded" || status === "error") {
         dispatch({ type: "status", status: "loading-model" });
-      } else {
-        dispatch({ type: "status", status: "thinking" });
+        dispatch({ type: "load-progress", progress: { loaded: 0, total: 1 } });
+        try {
+          const support = await getLlmSupport();
+          const modelId = support.ok ? support.recommendedModel : "SmolLM2-360M-Instruct-q4f16_1-MLC";
+          await engine.load(modelId, (p) => {
+            dispatch({ type: "load-progress", progress: p });
+          });
+        } catch {
+          // Load failed — runChat will handle the error gracefully.
+        }
+        dispatch({ type: "load-progress", progress: null });
       }
+
+      dispatch({ type: "status", status: "thinking" });
       const deps: ChatEngineDeps = {
         engine,
         accounts,

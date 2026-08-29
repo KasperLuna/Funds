@@ -4,16 +4,20 @@
  * interface only, so swapping the runtime costs zero callsite edits.
  */
 export type ModelId =
+  | "SmolLM2-360M-Instruct-q4f16_1-MLC"
+  | "Qwen3-0.6B-q4f16_1-MLC"
   | "Llama-3.2-1B-Instruct-q4f32_1-MLC"
   | "Llama-3.2-1B-Instruct-q4f16_1-MLC";
 
 /** Display-friendly labels for model IDs. */
 export const MODEL_LABELS: Record<ModelId, string> = {
+  "SmolLM2-360M-Instruct-q4f16_1-MLC": "SmolLM2 360M",
+  "Qwen3-0.6B-q4f16_1-MLC": "Qwen3 0.6B",
   "Llama-3.2-1B-Instruct-q4f32_1-MLC": "Llama 3.2 1B",
   "Llama-3.2-1B-Instruct-q4f16_1-MLC": "Llama 3.2 1B (fp16)",
 };
 
-export const DEFAULT_MODEL: ModelId = "Llama-3.2-1B-Instruct-q4f32_1-MLC";
+export const DEFAULT_MODEL: ModelId = "SmolLM2-360M-Instruct-q4f16_1-MLC";
 
 export type EngineStatus =
   | "unsupported"

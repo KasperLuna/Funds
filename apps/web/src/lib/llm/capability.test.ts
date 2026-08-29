@@ -34,23 +34,20 @@ describe("detectSupport", () => {
     vi.restoreAllMocks();
   });
 
-  it("returns no-cross-origin-isolation when not isolated", async () => {
+  it("returns no-cross-origin-isolation when WebGPU is absent and not isolated", async () => {
     (globalThis as { crossOriginIsolated?: boolean }).crossOriginIsolated = false;
-    stubNav({});
+    stubNav({
+      storage: {
+        estimate: () => Promise.resolve({ quota: 4 * 1024 ** 3, usage: 0 }),
+      },
+    });
     const out = await detectSupport();
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.reason).toBe("no-cross-origin-isolation");
   });
 
-  it("returns no-opfs when getDirectory is missing", async () => {
-    stubNav({});
-    const out = await detectSupport();
-    expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.reason).toBe("no-opfs");
-  });
-
   it("returns no-storage when estimate is missing or below threshold", async () => {
-    stubNav({ storage: { getDirectory: () => ({}) } });
+    stubNav({});
     const out = await detectSupport();
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.reason).toBe("no-storage");
@@ -84,12 +81,11 @@ describe("detectSupport", () => {
     if (out.ok) expect(out.recommendedModel).toBe("Llama-3.2-1B-Instruct-q4f32_1-MLC");
   });
 
-  it("returns no-storage when below the 1 GB floor", async () => {
+  it("returns no-storage when below the 256 MB floor", async () => {
     stubNav({
       gpu: { requestAdapter: () => Promise.resolve({}) },
       storage: {
-        getDirectory: () => ({}),
-        estimate: () => Promise.resolve({ quota: 0.8 * 1024 ** 3, usage: 0 }),
+        estimate: () => Promise.resolve({ quota: 0.2 * 1024 ** 3, usage: 0 }),
       },
     });
     const out = await detectSupport();
@@ -100,7 +96,6 @@ describe("detectSupport", () => {
   it("returns wasm support when WebGPU is absent", async () => {
     stubNav({
       storage: {
-        getDirectory: () => ({}),
         estimate: () => Promise.resolve({ quota: 4 * 1024 ** 3, usage: 0 }),
       },
     });
@@ -108,7 +103,34 @@ describe("detectSupport", () => {
     expect(out.ok).toBe(true);
     if (out.ok && out.engine === "wasm") {
       expect(out.warn).toBe("slower-inference");
+      expect(out.recommendedModel).toBe("Llama-3.2-1B-Instruct-q4f16_1-MLC");
     }
+  });
+
+  it("recommends Qwen3 0.6B when storage is 500MB–1GB", async () => {
+    stubNav({
+      gpu: { requestAdapter: () => Promise.resolve({}) },
+      storage: {
+        estimate: () => Promise.resolve({ quota: 0.8 * 1024 ** 3, usage: 0 }),
+      },
+    });
+    const out = await detectSupport();
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.recommendedModel).toBe("Qwen3-0.6B-q4f16_1-MLC");
+  });
+
+  it("recommends SmolLM2 360M when storage is below 500MB but above 1GB floor", async () => {
+    // This is an edge case: device reports >1GB total but <500MB available
+    // after usage. pickModel sees available bytes, not total.
+    stubNav({
+      gpu: { requestAdapter: () => Promise.resolve({}) },
+      storage: {
+        estimate: () => Promise.resolve({ quota: 2 * 1024 ** 3, usage: 1.7 * 1024 ** 3 }),
+      },
+    });
+    const out = await detectSupport();
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.recommendedModel).toBe("SmolLM2-360M-Instruct-q4f16_1-MLC");
   });
 });
 

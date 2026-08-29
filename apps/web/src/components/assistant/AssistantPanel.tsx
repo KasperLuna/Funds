@@ -20,14 +20,6 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const unsupported = support && support.ok === false ? support : null;
-  const [engineReady, setEngineReady] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    void (async () => {
-      const engine = getLlmEngine();
-      setEngineReady(engine.status() === "ready");
-    })();
-  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -37,9 +29,8 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
     return <UnsupportedView reason={unsupported.reason} onClose={onClose} />;
   }
 
-  if (engineReady === false) {
-    return <NoModelView onClose={onClose} />;
-  }
+  // Show the chat view with loading indicator when auto-loading a model.
+  // The input stays visible but disabled until the model is ready.
 
   return (
     <div className="flex h-full flex-col">
@@ -222,7 +213,7 @@ function UnsupportedView({
   reason,
   onClose,
 }: {
-  reason: "no-webgpu" | "no-cross-origin-isolation" | "no-opfs" | "no-storage" | "unsupported-environment";
+  reason: "no-webgpu" | "no-cross-origin-isolation" | "no-storage" | "unsupported-environment";
   onClose?: () => void;
 }) {
   const messages: Record<typeof reason, { title: string; body: string }> = {
@@ -233,10 +224,6 @@ function UnsupportedView({
     "no-cross-origin-isolation": {
       title: "Cross-origin isolation required",
       body: "The assistant needs the app to be cross-origin isolated to use shared memory for inference.",
-    },
-    "no-opfs": {
-      title: "OPFS not available",
-      body: "The Origin Private File System is needed to cache the model. Update to a recent browser to use the assistant.",
     },
     "no-storage": {
       title: "Not enough free storage",
@@ -292,48 +279,6 @@ function ModelChip() {
       <Settings className="h-2.5 w-2.5" aria-hidden />
       {label}
     </Link>
-  );
-}
-
-function NoModelView({ onClose }: { onClose?: () => void }) {
-  return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-3">
-        <span className="inline-flex items-center gap-2 text-sm font-semibold">
-          <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
-          Assistant
-        </span>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close assistant"
-            className="rounded-(--radius-sm) p-1.5 text-zinc-500 hover:bg-(--surface-3) hover:text-inherit"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
-        )}
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-        <div className="rounded-full bg-(--surface-2) p-3">
-          <Download className="h-6 w-6 text-(--accent)" aria-hidden />
-        </div>
-        <div>
-          <h2 className="text-base font-semibold">No model loaded</h2>
-          <p className="mt-1 max-w-sm text-sm text-zinc-500">
-            Download a model to start using the on-device assistant.
-            Everything stays on this device.
-          </p>
-        </div>
-        <Link
-          href="/dashboard/settings"
-          className="inline-flex items-center gap-2 rounded-(--radius-md) bg-(--accent) px-4 py-2 text-sm font-medium text-(--accent-foreground) transition-[filter] hover:brightness-110"
-        >
-          <Settings className="h-4 w-4" aria-hidden />
-          Go to Settings
-        </Link>
-      </div>
-    </div>
   );
 }
 

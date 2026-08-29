@@ -59,10 +59,19 @@ export class WebLlmEngine implements LlmEngine {
 
     const { CreateMLCEngine, prebuiltAppConfig } = await import("@mlc-ai/web-llm");
 
+    // Safari's OPFS has known issues with large binary writes. Fall back to
+    // WebLLM's default (IndexedDB) on Safari to avoid silent cache failures.
+    const isSafari =
+      typeof navigator !== "undefined" &&
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
     // cavetail: WebLLM streams progress via a callback. We forward it
     // verbatim; the AssistantPanel renders the bar from these bytes.
     this.engine = await CreateMLCEngine(modelId, {
-      appConfig: { model_list: prebuiltAppConfig.model_list, cacheBackend: "opfs" },
+      appConfig: {
+        model_list: prebuiltAppConfig.model_list,
+        ...(isSafari ? {} : { cacheBackend: "opfs" }),
+      },
       initProgressCallback: (report) => {
         onProgress({ loaded: report.progress, total: 1 });
       },

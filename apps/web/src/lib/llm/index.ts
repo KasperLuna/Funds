@@ -5,7 +5,12 @@ import { isModelCached } from "./opfs-cache";
 
 export type { LlmSupport } from "./capability";
 
-const ALL_MODELS: ModelId[] = ["Llama-3.2-1B-Instruct-q4f32_1-MLC", "Llama-3.2-1B-Instruct-q4f16_1-MLC"];
+const ALL_MODELS: ModelId[] = [
+  "SmolLM2-360M-Instruct-q4f16_1-MLC",
+  "Qwen3-0.6B-q4f16_1-MLC",
+  "Llama-3.2-1B-Instruct-q4f32_1-MLC",
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+];
 
 /**
  * Factory + cache. Components call `getLlmEngine()` and receive a singleton;
