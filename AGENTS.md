@@ -92,6 +92,48 @@ Never merge a schema change without running `db:check` against a migrated DB.
 - After a deploy, clients pick up fresh code on next navigation (SW updates with
   `skipWaiting`). The `file://` security error users saw was a broken old SW install.
 
+## shadcn/ui (the source of truth for primitives)
+
+`apps/web/src/components/ui/` is canonical shadcn/ui. Add components with
+`npx shadcn@latest add <name> --cwd apps/web --overwrite` — that writes
+the registry source (MIT) into the repo under the `new-york` style with
+aliases `@/components` and `@/lib/utils`. The shadcn meta-package `radix-ui`
+is installed so each file imports from one place.
+
+`apps/web/components.json` is the registry config; do not change the style
+or base color without re-running the global CSS token aliases — see
+"Theming" below.
+
+### Theming — Intaglio Plate tokens alias shadcn semantic names
+
+The codebase keeps its bespoke token names (`--bg`, `--fg`, `--accent`,
+`--surface-1/2/3`, `--border`, `--danger`) and **aliases** them to shadcn's
+semantic names (`--background`, `--foreground`, `--primary`, `--card`,
+`--muted`, etc.) in `apps/web/src/app/globals.css`. New pages should use
+shadcn tokens (`bg-background`, `text-foreground`); legacy pages can keep
+using the raw tokens. The shadcn `tailwindcss-animate` plugin is loaded
+via `@plugin "tailwindcss-animate";` in `globals.css` (Tailwind v4).
+
+### iOS bottom-sheet rule
+
+Mobile sheets (capture, transfer, reconcile, account, template, scheduled,
+trade, categories create/edit) render through the shadcn `Sheet` primitive
+in `components/ui/sheet.tsx`. `Sheet` is **dual-backed at render time**:
+on `sm:` (desktop) it mounts a centered Radix Dialog; below `sm:` (mobile,
+iOS Safari PWA) it mounts a vaul Drawer. The choice is driven by
+`useMediaQuery("(min-width: 640px)")` so the iOS gesture model always
+sees vaul's drag-to-dismiss, and the desktop always sees a proper
+centered dialog. Do not bypass `Sheet` to render a mobile bottom-sheet
+as a plain `Dialog` — the iOS gesture model will eat the second-half
+of every press.
+
+### Destructive confirms
+
+Destructive confirm flows (delete model, delete category, archive/delete
+account) use shadcn `AlertDialog` from `components/ui/alert-dialog.tsx`,
+not the regular `Dialog`. This is so the destructive intent is explicit
+in the modal semantics and out-of-band from the form dialogs.
+
 ## Testing conventions
 
 - vitest. `@vitest-environment jsdom` for components. Mock the sync layer:
@@ -100,7 +142,10 @@ Never merge a schema change without running `db:check` against a migrated DB.
 - db tests (`packages/db/src/schema.test.ts`) run `migrate` against
   `postgres://postgres:postgres@localhost:54329/funds_test` — the throwaway PG
   the pre-commit hook spins up. `funds-test-pg` container, port 54329.
-- Component tests stub `ResizeObserver` (jsdom lacks it) for radix primitives.
+- Component tests stub `ResizeObserver` + pointer-capture + scrollIntoView
+  (jsdom lacks them, but radix + vaul need them) via `src/test/setup.ts`.
+  Per-test stubs are no longer needed for those four — `setup.ts` covers
+  all `*.test.tsx` files.
 
 ## Local dev environment
 

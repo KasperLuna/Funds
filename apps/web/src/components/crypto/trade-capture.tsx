@@ -3,18 +3,31 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { AmountInput } from "@/components/capture/amount-input";
+import { Keypad, type DigitKey } from "@/components/capture/keypad";
 import {
   emptyAmount,
   amountToMinor,
   presetDate,
+  sanitizeAmountInput,
+  backspace,
+  clearAmount,
+  digit as applyDigit,
   type AmountState,
 } from "@/lib/capture";
 import type { Token } from "@/lib/crypto/crypto-store";
@@ -129,7 +142,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
   const description = watch("description");
   const datePreset = watch("datePreset");
 
-  const [amount] = useState<AmountState>(() => emptyAmount(8));
+  const [amount, setAmount] = useState<AmountState>(() => emptyAmount(8));
 
   const sellAccount = accounts.find((a) => a.id === sellAccountId);
   const buyToken = cryptoTokens.find((t) => t.id === buyTokenId);
@@ -168,8 +181,10 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
   const canSave =
     minor > 0n &&
     effectiveRate > 0 &&
-    ((side === "buy" && sellAccountId && buyTokenId) ||
-      (side === "sell" && sellTokenId && buyAccountId));
+    Boolean(
+      (side === "buy" && sellAccountId && buyTokenId) ||
+        (side === "sell" && sellTokenId && buyAccountId),
+    );
 
   const save = () => {
     if (!canSave) return;
@@ -202,7 +217,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           Record a crypto buy or sell
         </SheetDescription>
 
-        <div className="mt-2 flex justify-center">
+        <div className="flex justify-center">
           <SegmentedControl
             options={[
               { value: "buy", label: "Buy" },
@@ -214,73 +229,85 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         </div>
 
         {fiatAccounts.length === 0 && (
-          <p className="mt-3 rounded-(--radius-md) border border-(--border-strong) bg-(--surface-2) px-3 py-2 text-xs text-zinc-500">
+          <p className="rounded-(--radius-md) border border-(--border-strong) bg-(--surface-2) px-3 py-2 text-xs text-zinc-500">
             No spendable fiat account yet — add one on the Banks page to log a trade.
           </p>
         )}
 
         {side === "buy" ? (
-          <div className="mt-2 flex items-center gap-2">
-            <select
-              aria-label="Spend from"
-              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-              value={sellAccountId}
-              onChange={(e) => setValue("sellAccountId", e.target.value, { shouldValidate: true })}
+          <div className="flex items-center gap-2">
+            <Select
+              value={sellAccountId || "__placeholder__"}
+              onValueChange={(v) => setValue("sellAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
             >
-              <option value="">Spend from…</option>
-              {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Spend from" className="h-11 flex-1">
+                <SelectValue placeholder="Spend from…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__">Spend from…</SelectItem>
+                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <span aria-hidden className="text-zinc-500">→</span>
-            <select
-              aria-label="Buy token"
-              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-              value={buyTokenId}
-              onChange={(e) => setValue("buyTokenId", e.target.value, { shouldValidate: true })}
+            <Select
+              value={buyTokenId || "__placeholder__"}
+              onValueChange={(v) => setValue("buyTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
             >
-              <option value="">Select token…</option>
-              {cryptoTokens.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Buy token" className="h-11 flex-1">
+                <SelectValue placeholder="Select token…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__">Select token…</SelectItem>
+                {cryptoTokens.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         ) : (
-          <div className="mt-2 flex items-center gap-2">
-            <select
-              aria-label="Sell token"
-              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-              value={sellTokenId}
-              onChange={(e) => setValue("sellTokenId", e.target.value, { shouldValidate: true })}
+          <div className="flex items-center gap-2">
+            <Select
+              value={sellTokenId || "__placeholder__"}
+              onValueChange={(v) => setValue("sellTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
             >
-              <option value="">Select token…</option>
-              {cryptoTokens.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Sell token" className="h-11 flex-1">
+                <SelectValue placeholder="Select token…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__">Select token…</SelectItem>
+                {cryptoTokens.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <span aria-hidden className="text-zinc-500">→</span>
-            <select
-              aria-label="Receive to"
-              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-              value={buyAccountId}
-              onChange={(e) => setValue("buyAccountId", e.target.value, { shouldValidate: true })}
+            <Select
+              value={buyAccountId || "__placeholder__"}
+              onValueChange={(v) => setValue("buyAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
             >
-              <option value="">Receive to…</option>
-              {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Receive to" className="h-11 flex-1">
+                <SelectValue placeholder="Receive to…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__">Receive to…</SelectItem>
+                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
-        <input
+        <Input
           aria-label="Description"
-          className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+          className="h-11"
           placeholder="Description (optional)"
           {...register("description")}
         />
 
-        <div className="mt-2 flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <SegmentedControl
             options={[
               { value: "today", label: "Today" },
@@ -297,18 +324,24 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         </div>
 
         <AmountInput
-          className="mt-4"
+          className="mt-2"
           assetCode={side === "buy" ? (sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD") : (buyToken?.symbol ?? "CRYPTO")}
           tone="foreground"
-          value=""
-          onChange={() => {}}
+          value={amount.input}
+          // cavetail: display-only formatting, not arithmetic. `value` is the
+          // partial keystroke buffer (e.g. "1" or "1.5") from the keypad;
+          // mobile shows the canonical formatted version (e.g. "1.00000000").
+          // eslint-disable-next-line local/no-money-float
+          display={minor > 0n ? (Number(minor) / 10 ** 8).toFixed(8) : "0"}
+          onChange={(next) => setAmount({ ...amount, input: sanitizeAmountInput(next, amount.decimals) })}
           sanitize={(v) => v}
           decimals={8}
           aria-label="Amount"
+          testId="amount-readout"
         />
 
         {minor > 0n && effectiveRate > 0 && (
-          <p className="mt-1 text-center text-xs text-zinc-500">
+          <p className="text-center text-xs text-zinc-500">
             ≈ {side === "buy"
               ? `${(Number(computedBuyAmount) / 10 ** 8).toFixed(8)} ${buyToken?.symbol ?? ""}`
               : `${formatMinor(computedBuyAmount, sellAccount?.decimals ?? 2)} ${sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD"}`
@@ -316,37 +349,54 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           </p>
         )}
 
-        <input
+        <Input
           aria-label="Rate"
           inputMode="decimal"
-          className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+          className="h-11"
           placeholder={`Rate (auto: $${autoRate.toLocaleString()})`}
           {...register("rateInput")}
         />
 
-        <input
+        <Input
           aria-label="Fee"
           inputMode="decimal"
-          className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+          className="h-11"
           placeholder="Fee (optional)"
           {...register("feeInput")}
         />
         {feeMinor > 0n && (
-          <select
-            aria-label="Fee asset"
-            className="mt-1 h-9 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-xs text-zinc-200"
+          <Select
             value={feeAccountId}
-            onChange={(e) => setValue("feeAccountId", e.target.value, { shouldValidate: true })}
+            onValueChange={(v) => setValue("feeAccountId", v, { shouldValidate: true })}
           >
-            {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
+            <SelectTrigger aria-label="Fee asset" className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
 
-        <Button size="lg" className="mt-3 w-full" disabled={!canSave} onClick={save}>
-          {canSave ? `Log ${side}` : "Enter amount"}
-        </Button>
+        {/* Mobile: keypad drives the amount. Desktop: single Save button. */}
+        <div className="mt-2 sm:hidden">
+          <Keypad
+            onKey={(k: DigitKey) => setAmount((s) => applyDigit(s, k))}
+            onBackspace={() => setAmount(backspace)}
+            onClear={() => setAmount(clearAmount)}
+            onSave={save}
+            canSave={canSave}
+            currencySymbol={side === "buy" && sellAccount?.assetId === "USD" ? "$" : undefined}
+          />
+        </div>
+
+        <div className="mt-2 hidden sm:block">
+          <Button size="lg" className="w-full" disabled={!canSave} onClick={save}>
+            {canSave ? `Log ${side}` : "Enter amount"}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );
