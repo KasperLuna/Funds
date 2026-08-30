@@ -322,7 +322,7 @@ const CaptureForm = (props: CaptureFormProps) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex-1 overflow-y-auto overscroll-contain px-6 pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-1">
         <SheetTitle className="font-display text-lg font-bold tracking-tight">
           {props.editing ? "Edit transaction" : "Log transaction"}
         </SheetTitle>
@@ -338,8 +338,6 @@ const CaptureForm = (props: CaptureFormProps) => {
           accountId={accountId}
           selected={selected}
           onAccountChange={handleAccountChange}
-          type={type}
-          onTypeChange={handleTypeChange}
           description={description}
           onDescriptionChange={(v) => form.setValue("description", v, { shouldValidate: true })}
           onDescriptionFocus={() => setTextFocused(true)}
@@ -356,23 +354,24 @@ const CaptureForm = (props: CaptureFormProps) => {
           activeTemplate={activeTemplate}
           dateLabel={dateLabel}
         />
-        <div className="mt-4">
-          <CaptureAmountKeypad
-            amount={amount}
-            onAmountInputChange={setAmount}
-            onKey={handleKey}
-            onBackspace={() => setAmount(backspace)}
-            onClear={() => setAmount(clearAmount)}
-            onSave={save}
-            canSave={canSave}
-            selected={selected}
-            type={type}
-            suggestions={suggestions}
-            onApplySuggestion={applySuggestion}
-            decimals={decimals}
-            compact
-          />
-        </div>
+      </div>
+      <div className="shrink-0 px-6 pb-1 pt-3">
+        <CaptureAmountKeypad
+          amount={amount}
+          onAmountInputChange={setAmount}
+          onKey={handleKey}
+          onBackspace={() => setAmount(backspace)}
+          onClear={() => setAmount(clearAmount)}
+          onSave={save}
+          canSave={canSave}
+          selected={selected}
+          type={type}
+          onTypeChange={handleTypeChange}
+          suggestions={suggestions}
+          onApplySuggestion={applySuggestion}
+          decimals={decimals}
+          compact
+        />
       </div>
       <div
         className={cn(

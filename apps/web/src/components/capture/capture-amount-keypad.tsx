@@ -21,6 +21,7 @@ export interface CaptureAmountKeypadProps {
   canSave: boolean;
   selected: AccountOption | undefined;
   type: "income" | "expense";
+  onTypeChange: (next: "income" | "expense") => void;
   suggestions: RecentTxn[];
   onApplySuggestion: (txn: RecentTxn) => void;
   decimals: number;
@@ -36,6 +37,7 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
     onAmountInputChange,
     selected,
     type,
+    onTypeChange,
     suggestions,
     onApplySuggestion,
     decimals,
@@ -45,8 +47,38 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
 
   return (
     <div className={cn(compact ? "" : "mt-4", className)}>
+      {/* Type — Expense | Income. A small modifier row above the amount
+          hero, not a sibling of it: the type colours the amount readout
+          (red/green) so the two read as one statement without competing
+          for width on mobile. */}
+      <div role="group" aria-label="Type" className="flex justify-center">
+        <div className="inline-flex items-center gap-0.5 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-0.5">
+          {(["expense", "income"] as const).map((value) => {
+            const active = type === value;
+            const activeColor = value === "expense" ? "text-(--danger)" : "text-(--accent)";
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onTypeChange(value)}
+                className={cn(
+                  "min-h-9 rounded-(--radius-sm) px-4 text-sm transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
+                  active
+                    ? cn("bg-(--surface-3) font-semibold", activeColor)
+                    : "font-medium text-zinc-500 hover:text-inherit",
+                )}
+              >
+                {value === "expense" ? "Expense" : "Income"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Hero — the amount readout, the one dominant plate. */}
       <AmountInput
+        className="mt-3"
         assetCode={selected?.assetCode}
         tone={type === "expense" ? "danger" : "accent"}
         value={amount.input}

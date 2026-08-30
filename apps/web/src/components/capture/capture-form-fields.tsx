@@ -52,8 +52,6 @@ export interface CaptureFormFieldsProps {
   accountId: string;
   selected: AccountOption | undefined;
   onAccountChange: (id: string) => void;
-  type: "income" | "expense";
-  onTypeChange: (next: "income" | "expense") => void;
   description: string;
   onDescriptionChange: (next: string) => void;
   onDescriptionFocus: () => void;
@@ -79,8 +77,6 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     accountId,
     selected,
     onAccountChange,
-    type,
-    onTypeChange,
     description,
     onDescriptionChange,
     onDescriptionFocus,
@@ -100,19 +96,27 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
 
   return (
     <>
-      {/* Context strip — quiet chips: account · date · templates (nested). */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      {/* Context strip — quiet chips: account · date · templates (nested).
+          The strip is single-line on purpose: chips truncate inside their
+          own bounds rather than wrapping to a new line, so the strip's
+          vertical rhythm stays consistent. When the natural widths exceed
+          the viewport, the rightmost chip is clipped by the strip's
+          overflow-hidden — its visible portion is still 44pt+ and tappable. */}
+      <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-hidden">
         <ContextPopover>
           {({ isOpen: accountOpen, setOpen: setAccountOpen }) => (
             <>
               <PopoverTrigger asChild>
-                <ContextChip active={accountOpen} aria-label="Account">
-                  <span className="max-w-40 truncate">{selected?.name ?? "Account"}</span>
+                <ContextChip active={accountOpen} aria-label="Account" className="min-w-0 shrink">
+                  <span className="truncate">{selected?.name ?? "Account"}</span>
                   <Caret isOpen={accountOpen} />
                 </ContextChip>
               </PopoverTrigger>
-              <PopoverContent align="start">
-                <div role="listbox" aria-label="Account" className="flex flex-col gap-0.5">
+              <PopoverContent
+                align="start"
+                className="flex max-h-[var(--radix-popper-available-height)] flex-col gap-0 overflow-hidden p-0"
+              >
+                <div role="listbox" aria-label="Account" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain p-1">
                   {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
                     <button
                       key={a.id}
@@ -144,12 +148,12 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
           {({ isOpen: dateOpen, setOpen: setDateOpen }) => (
             <>
               <PopoverTrigger asChild>
-                <ContextChip active={dateOpen} aria-label="Date">
-                  <span className="tabular-nums">{dateLabel}</span>
+                <ContextChip active={dateOpen} aria-label="Date" className="min-w-0 flex-1">
+                  <span className="min-w-0 flex-1 truncate tabular-nums">{dateLabel}</span>
                   <Caret isOpen={dateOpen} />
                 </ContextChip>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto min-w-64">
+              <PopoverContent align="start" className="w-auto max-h-[var(--radix-popper-available-height)] min-w-64 overflow-y-auto">
                 <div className="flex gap-1.5 p-1">
                   {(["today", "yesterday"] as const).map((preset) => (
                     <button
@@ -190,11 +194,11 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
             {({ isOpen: templatesOpen, setOpen: setTemplatesOpen }) => (
               <>
                 <PopoverTrigger asChild>
-                  <ContextChip active={templatesOpen || !!activeTemplate} aria-label="Templates">
+                  <ContextChip active={templatesOpen || !!activeTemplate} aria-label="Templates" className="min-w-0 shrink">
                     {activeTemplate ? (
                       <>
                         <Check className="h-4 w-4 text-(--accent)" strokeWidth={3} aria-hidden />
-                        <span className="max-w-40 truncate">{activeTemplate.name}</span>
+                        <span className="truncate">{activeTemplate.name}</span>
                       </>
                     ) : (
                       <>
@@ -205,9 +209,9 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
                     <Caret isOpen={templatesOpen} />
                   </ContextChip>
                 </PopoverTrigger>
-                <PopoverContent align="start" className="w-64">
+                <PopoverContent align="start" className="w-64 flex max-h-[var(--radix-popper-available-height)] flex-col gap-0 overflow-hidden p-0">
                   <p className="label-micro px-3 pb-1 pt-1.5">Apply a template</p>
-                  <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto">
+                  <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain p-1">
                     {templates.map((t) => {
                       const isActive = activeTemplateId === t.id;
                       return (
@@ -270,35 +274,6 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
           })}
         </div>
       )}
-
-      {/* Type — Expense | Income. A small modifier row above the amount
-          hero, not a sibling of it: the type colours the amount readout
-          (red/green) so the two read as one statement without competing
-          for width on mobile. */}
-      <div role="group" aria-label="Type" className="mt-4 flex justify-center">
-        <div className="inline-flex items-center gap-0.5 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-0.5">
-          {(["expense", "income"] as const).map((value) => {
-            const active = type === value;
-            const activeColor = value === "expense" ? "text-(--danger)" : "text-(--accent)";
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onTypeChange(value)}
-                className={cn(
-                  "min-h-9 rounded-(--radius-sm) px-4 text-sm transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                  active
-                    ? cn("bg-(--surface-3) font-semibold", activeColor)
-                    : "font-medium text-zinc-500 hover:text-inherit",
-                )}
-              >
-                {value === "expense" ? "Expense" : "Income"}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </>
   );
 };
