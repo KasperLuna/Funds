@@ -8,6 +8,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { ContextPopover } from "@/components/capture/context-popover";
+import { CategoryChipSelect } from "@/components/capture/category-chip-select";
 import { cn } from "@/lib/utils";
 import type { Template } from "@/lib/templates/templates-store";
 import type { AccountOption, CategoryOption } from "@/components/capture/capture-sheet";
@@ -58,7 +59,7 @@ export interface CaptureFormFieldsProps {
   onDescriptionBlur: () => void;
   descriptionRef?: React.Ref<HTMLInputElement>;
   categoryIds: string[];
-  onToggleCategory: (id: string) => void;
+  onCategoryChange: (next: string[]) => void;
   datePreset: "today" | "yesterday";
   dateOverride: number | null;
   onDatePreset: (preset: "today" | "yesterday") => void;
@@ -83,7 +84,7 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     onDescriptionBlur,
     descriptionRef,
     categoryIds,
-    onToggleCategory,
+    onCategoryChange,
     datePreset,
     dateOverride,
     onDatePreset,
@@ -252,28 +253,12 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
         onBlur={onDescriptionBlur}
       />
 
-      {categories.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Categories">
-          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
-            const active = categoryIds.includes(c.id);
-            return (
-              <button
-                key={c.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => onToggleCategory(c.id)}
-                className={cn(
-                  "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                  active ? "text-(--accent)" : "text-zinc-400 hover:text-inherit",
-                )}
-              >
-                {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
-                {c.name}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      <CategoryChipSelect
+        className="mt-3"
+        categories={categories}
+        value={categoryIds}
+        onChange={onCategoryChange}
+      />
     </>
   );
 };

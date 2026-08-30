@@ -89,13 +89,15 @@ const ReconcileForm = ({
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
-        <SheetTitle>Adjust balance</SheetTitle>
-        <SheetDescription>
-          Match {account.name} to your real balance
-        </SheetDescription>
-
-        <div className="mt-3 flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2.5">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>Adjust balance</SheetTitle>
+          <SheetDescription>
+            Match {account.name} to your real balance
+          </SheetDescription>
+        </div>
+        <div className="flex flex-col gap-4 px-6 pb-6">
+          <div className="flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2.5">
           <span className="text-sm text-zinc-400">Recorded balance</span>
           <span className="text-sm font-semibold tabular-nums">
             {currentLabel}
@@ -177,6 +179,7 @@ const ReconcileForm = ({
           >
             {canSave ? "Save adjustment" : "Enter new balance"}
           </Button>
+        </div>
         </div>
       </SheetContent>
     </Sheet>

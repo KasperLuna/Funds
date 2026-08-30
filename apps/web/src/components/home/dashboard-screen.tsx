@@ -377,7 +377,7 @@ export const DashboardScreen = () => {
     [accounts, assetsById],
   );
   const captureCategories = useMemo(
-    () => categories.map((c) => ({ id: c.id, name: c.name })),
+    () => categories.map((c) => ({ id: c.id, name: c.name, color: c.color })),
     [categories],
   );
   const captureRecent = recentForCapture;
@@ -459,7 +459,7 @@ export const DashboardScreen = () => {
           decimals: assetsById.get(a.assetId)?.decimals ?? 2,
           code: assetsById.get(a.assetId)?.code ?? "",
         }))}
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
       />
 
       <TemplateCard
@@ -469,7 +469,7 @@ export const DashboardScreen = () => {
           decimals: assetsById.get(a.assetId)?.decimals ?? 2,
           assetCode: assetsById.get(a.assetId)?.code,
         }))}
-        categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
         onChanged={() => void queryClient.invalidateQueries({ queryKey: [...queryKeys.templates] })}
       />
 

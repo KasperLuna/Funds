@@ -7,6 +7,9 @@ import {
   type TxnFilters,
 } from "@/components/banks/transaction-filters";
 import { TransactionRow } from "@/components/banks/transaction-row";
+import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
 
@@ -72,6 +75,10 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
     onUndoDeleteTxn,
     formatDayHeader,
   } = props;
+  const { masked: privacy } = usePrivacy();
+
+  const primaryDecimals = primaryAssetDecimals(accountInfo, accounts);
+  const primaryCode = primaryAssetCode(accountInfo, accounts);
 
   return (
     <>
@@ -119,43 +126,56 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
                 <Plus className="h-4 w-4" aria-hidden /> Add transaction
               </Button>
             </div>
-            {grouped.map((g) => (
-              <div key={g.day}>
-                <p className="label-micro sticky top-[182px] z-10 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
-                  {formatDayHeader(g.day)}
-                </p>
-                {g.items.flatMap((t, i) => {
-                  const info = accountInfo[t.accountId];
-                  const next = g.items[i + 1];
-                  const linked = !!t.transferId && next?.transferId === t.transferId;
-                  const row = (
-                    <TransactionRow
-                      key={t.id}
-                      txn={t}
-                      categories={categoryInfoList}
-                      accountName={info?.name}
-                      assetCode={info?.code}
-                      assetDecimals={info?.decimals}
-                      onEdit={onEditTxn}
-                      onDuplicate={onDuplicateTxn}
-                      onDelete={onDeleteTxn}
-                      onUndoDelete={onUndoDeleteTxn}
-                    />
-                  );
-                  if (!linked) return [row];
-                  return [
-                    row,
-                    <span
-                      key={`link-${t.id}`}
-                      aria-hidden
-                      className="pointer-events-none relative z-10 -mt-px block h-3.5"
+            {grouped.map((g) => {
+              const dayNet = g.items.reduce((sum, t) => sum + t.amountMinor, 0n);
+              const dayLabel = formatDayMoney(dayNet, primaryDecimals, primaryCode, privacy);
+              return (
+                <div key={g.day}>
+                  <div className="sticky top-[182px] z-10 flex items-center justify-between gap-3 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
+                    <p className="label-micro">{formatDayHeader(g.day)}</p>
+                    <p
+                      className={cn(
+                        "text-xs font-semibold tabular-nums",
+                        dayNet >= 0n ? "text-zinc-50" : "text-(--danger)",
+                      )}
+                      aria-label={privacy ? "Day total masked" : `Day total ${dayLabel}`}
                     >
-                      <span className="absolute left-[17px] top-0 h-full w-px bg-(--accent)/30" />
-                    </span>,
-                  ];
-                })}
-              </div>
-            ))}
+                      {privacy ? "••••" : dayLabel}
+                    </p>
+                  </div>
+                  {g.items.flatMap((t, i) => {
+                    const info = accountInfo[t.accountId];
+                    const next = g.items[i + 1];
+                    const linked = !!t.transferId && next?.transferId === t.transferId;
+                    const row = (
+                      <TransactionRow
+                        key={t.id}
+                        txn={t}
+                        categories={categoryInfoList}
+                        accountName={info?.name}
+                        assetCode={info?.code}
+                        assetDecimals={info?.decimals}
+                        onEdit={onEditTxn}
+                        onDuplicate={onDuplicateTxn}
+                        onDelete={onDeleteTxn}
+                        onUndoDelete={onUndoDeleteTxn}
+                      />
+                    );
+                    if (!linked) return [row];
+                    return [
+                      row,
+                      <span
+                        key={`link-${t.id}`}
+                        aria-hidden
+                        className="pointer-events-none relative z-10 -mt-px block h-3.5"
+                      >
+                        <span className="absolute left-[17px] top-0 h-full w-px bg-(--accent)/30" />
+                      </span>,
+                    ];
+                  })}
+                </div>
+              );
+            })}
             {sortedDesc.length > visibleCount && (
               <div
                 ref={loadMoreRef}
@@ -171,3 +191,31 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
     </>
   );
 };
+
+function primaryAssetDecimals(
+  accountInfo: Record<string, AccountInfo | undefined>,
+  accounts: Account[],
+): number {
+  const first = accounts[0];
+  if (!first) return 2;
+  return accountInfo[first.id]?.decimals ?? 2;
+}
+
+function primaryAssetCode(
+  accountInfo: Record<string, AccountInfo | undefined>,
+  accounts: Account[],
+): string {
+  const first = accounts[0];
+  if (!first) return "";
+  return accountInfo[first.id]?.code ?? "";
+}
+
+function formatDayMoney(
+  minor: bigint,
+  decimals: number,
+  code: string,
+  privacy: boolean,
+): string {
+  if (privacy) return "••••";
+  return formatMoney(minor, decimals, code);
+}

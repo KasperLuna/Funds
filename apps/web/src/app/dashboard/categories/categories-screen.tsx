@@ -487,19 +487,21 @@ export const CategoriesScreen = () => {
       )}
 
       <Sheet open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
-        <SheetContent className="flex flex-col gap-4">
-          <SheetTitle>Delete category?</SheetTitle>
-          <SheetDescription>
-            This deletes the category and removes it from all tagged transactions.
-            Past transactions keep their amounts but lose this category tag.
-          </SheetDescription>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setPendingDelete(null)}>
-              Cancel
-            </Button>
-            <Button type="button" variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
+        <SheetContent className="flex flex-col gap-4 p-0">
+          <div className="flex flex-col gap-4 px-6 pb-6 pt-6">
+            <SheetTitle>Delete category?</SheetTitle>
+            <SheetDescription>
+              This deletes the category and removes it from all tagged transactions.
+              Past transactions keep their amounts but lose this category tag.
+            </SheetDescription>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setPendingDelete(null)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="destructive" onClick={confirmDelete}>
+                Delete
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -601,14 +603,16 @@ const CategoryForm = ({
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
-        <SheetTitle>
-          {editCategory ? "Edit category" : "New category"}
-        </SheetTitle>
-        <SheetDescription>
-          {editCategory ? "Update category details." : "Create a spending category."}
-        </SheetDescription>
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>
+            {editCategory ? "Edit category" : "New category"}
+          </SheetTitle>
+          <SheetDescription>
+            {editCategory ? "Update category details." : "Create a spending category."}
+          </SheetDescription>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 pb-6">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input

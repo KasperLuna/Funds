@@ -32,7 +32,7 @@ import type { Template } from "@/lib/templates/templates-store";
 import { cn } from "@/lib/utils";
 
 export type AccountOption = { id: string; name: string; assetId: string; decimals: number; assetCode?: string };
-export type CategoryOption = { id: string; name: string; color?: string };
+export type CategoryOption = { id: string; name: string; color?: string | null };
 
 export type VoicePrefill = {
   accountId: string | null;
@@ -289,11 +289,6 @@ const CaptureForm = (props: CaptureFormProps) => {
     onOpenChange(false);
   };
 
-  const toggleCategory = (id: string) => {
-    const next = categoryIds.includes(id) ? categoryIds.filter((x) => x !== id) : [...categoryIds, id];
-    form.setValue("categoryIds", next, { shouldValidate: true });
-  };
-
   const activeTemplate = templates.find((t) => t.id === activeTemplateId);
   const dateLabel = dateOverride
     ? formatCustomDate(dateOverride)
@@ -322,7 +317,7 @@ const CaptureForm = (props: CaptureFormProps) => {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6">
         <SheetTitle className="font-display text-lg font-bold tracking-tight">
           {props.editing ? "Edit transaction" : "Log transaction"}
         </SheetTitle>
@@ -344,7 +339,7 @@ const CaptureForm = (props: CaptureFormProps) => {
           onDescriptionBlur={() => setTextFocused(false)}
           descriptionRef={descriptionRef}
           categoryIds={categoryIds}
-          onToggleCategory={toggleCategory}
+          onCategoryChange={(next) => form.setValue("categoryIds", next, { shouldValidate: true })}
           datePreset={datePreset}
           dateOverride={dateOverride}
           onDatePreset={applyDatePreset}
@@ -408,7 +403,7 @@ export const CaptureSheet = (props: CaptureSheetProps) => {
   const { isOpen: open, onOpenChange } = props;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col">
+      <SheetContent className="flex flex-col p-0">
         <CaptureForm {...props} open={open} />
       </SheetContent>
     </Sheet>

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { TransactionRow } from "./transaction-row";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 type CategoryInfo = { id: string; name: string; color: string };
 
@@ -180,8 +181,9 @@ interface DesktopTableProps {
 const DesktopTable = (props: DesktopTableProps) => {
   const { groups, categories, onDuplicate, onDelete } = props;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
+    <ScrollArea className="w-full">
+      <ScrollBar orientation="horizontal" />
+      <table className="w-full min-w-[600px]">
         <thead>
           <tr className="border-b border-(--border) text-left text-xs font-semibold text-zinc-500 uppercase tracking-wide">
             <th className="px-4 py-3">Description</th>
@@ -263,7 +265,7 @@ const DesktopTable = (props: DesktopTableProps) => {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   );
 };
 

@@ -9,11 +9,11 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { CategoryChipSelect } from "@/components/capture/category-chip-select";
 import type { Template } from "@/lib/templates/templates-store";
 
 type AccountOption = { id: string; name: string; decimals: number };
-type CategoryOption = { id: string; name: string };
+type CategoryOption = { id: string; name: string; color?: string | null };
 
 interface TemplateDialogProps {
   isOpen: boolean;
@@ -73,13 +73,6 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
 
   const decimals = accounts.find((a) => a.id === accountId)?.decimals ?? 2;
 
-  const toggleCategory = (catId: string) => {
-    const next = categoryIds.includes(catId)
-      ? categoryIds.filter((c) => c !== catId)
-      : [...categoryIds, catId];
-    setValue("categoryIds", next, { shouldValidate: true });
-  };
-
   const onSubmit = (values: TemplateFormValues) => {
     // cavetail: display-only formatting, not arithmetic
     // eslint-disable-next-line local/no-money-float
@@ -105,16 +98,18 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4 max-h-[96dvh] overflow-y-auto">
-        <SheetTitle>
-          {editTemplate ? "Edit template" : "New template"}
-        </SheetTitle>
-        <SheetDescription>
-          {editTemplate
-            ? "Update the template details."
-            : "Save a reusable prefill for quick transaction entry."}
-        </SheetDescription>
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>
+            {editTemplate ? "Edit template" : "New template"}
+          </SheetTitle>
+          <SheetDescription>
+            {editTemplate
+              ? "Update the template details."
+              : "Save a reusable prefill for quick transaction entry."}
+          </SheetDescription>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 pb-6">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
@@ -174,28 +169,11 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
             )}
           </label>
 
-          {categories.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm text-zinc-500">Categories</span>
-              <div className="flex flex-wrap gap-1.5">
-                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => toggleCategory(c.id)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                      categoryIds.includes(c.id)
-                        ? "bg-(--accent) text-(--accent-foreground)"
-                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit",
-                    )}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <CategoryChipSelect
+            categories={categories}
+            value={categoryIds}
+            onChange={(next) => setValue("categoryIds", next, { shouldValidate: true })}
+          />
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Description</span>

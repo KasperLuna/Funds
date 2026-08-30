@@ -200,4 +200,20 @@ describe("TransferSheet", () => {
     });
     expect(tagged).toHaveLength(2);
   });
+
+  it("mobile keypad collapses when a text input gains focus", async () => {
+    const user = userEvent.setup();
+    render(<Harness onSave={() => {}} />);
+    // Keypad button is part of the mobile pinned region. It must be
+    // visible by default (sm:hidden)…
+    const key = screen.getByRole("button", { name: "5" });
+    expect(key).toBeVisible();
+    // …and hidden via aria-hidden once a text input is focused. jsdom does
+    // not run CSS, so the visual max-h-0 collapse is asserted via the
+    // aria-hidden attribute the wrapper exposes.
+    const fee = screen.getByRole("textbox", { name: "Fee" });
+    await user.click(fee);
+    const wrapper = key.parentElement!.parentElement!;
+    expect(wrapper).toHaveAttribute("aria-hidden", "true");
+  });
 });

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/capture";
 import type { Token } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
+import { cn } from "@/lib/utils";
 
 export type AccountOption = {
   id: string;
@@ -143,6 +144,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
   const datePreset = watch("datePreset");
 
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(8));
+  const [focusedField, setFocusedField] = useState<HTMLElement | null>(null);
 
   const sellAccount = accounts.find((a) => a.id === sellAccountId);
   const buyToken = cryptoTokens.find((t) => t.id === buyTokenId);
@@ -186,6 +188,21 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         (side === "sell" && sellTokenId && buyAccountId),
     );
 
+  // On mobile, focusing a text input (description, rate, fee) brings up the
+  // soft keyboard and shrinks the viewport. The mobile Keypad below would
+  // otherwise cover the focused field, so the `max-h-0` transition on the
+  // keypad wrapper hides it. After the 220ms collapse animation, scroll the
+  // focused field into the visible area of the sheet — iOS does not do this
+  // automatically inside a `position: fixed` drawer.
+  useEffect(() => {
+    if (!focusedField) return;
+    const el = focusedField;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 220);
+    return () => window.clearTimeout(id);
+  }, [focusedField]);
+
   const save = () => {
     if (!canSave) return;
     const payload: TradePayload = {
@@ -211,13 +228,15 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
-        <SheetTitle>Log trade</SheetTitle>
-        <SheetDescription>
-          Record a crypto buy or sell
-        </SheetDescription>
-
-        <div className="flex justify-center">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>Log trade</SheetTitle>
+          <SheetDescription>
+            Record a crypto buy or sell
+          </SheetDescription>
+        </div>
+        <div className="flex flex-col gap-4 px-6 pb-6">
+          <div className="flex justify-center">
           <SegmentedControl
             options={[
               { value: "buy", label: "Buy" },
@@ -305,6 +324,8 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           className="h-11"
           placeholder="Description (optional)"
           {...register("description")}
+          onFocus={(e) => setFocusedField(e.currentTarget)}
+          onBlur={() => setFocusedField(null)}
         />
 
         <div className="flex items-center gap-2">
@@ -355,6 +376,8 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           className="h-11"
           placeholder={`Rate (auto: $${autoRate.toLocaleString()})`}
           {...register("rateInput")}
+          onFocus={(e) => setFocusedField(e.currentTarget)}
+          onBlur={() => setFocusedField(null)}
         />
 
         <Input
@@ -363,6 +386,8 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           className="h-11"
           placeholder="Fee (optional)"
           {...register("feeInput")}
+          onFocus={(e) => setFocusedField(e.currentTarget)}
+          onBlur={() => setFocusedField(null)}
         />
         {feeMinor > 0n && (
           <Select
@@ -381,7 +406,13 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         )}
 
         {/* Mobile: keypad drives the amount. Desktop: single Save button. */}
-        <div className="mt-2 sm:hidden">
+        <div
+          className={cn(
+            "mt-2 overflow-hidden transition-[max-height,opacity] duration-200 ease-out sm:hidden",
+            focusedField ? "max-h-0 opacity-0" : "max-h-96 opacity-100",
+          )}
+          aria-hidden={Boolean(focusedField)}
+        >
           <Keypad
             onKey={(k: DigitKey) => setAmount((s) => applyDigit(s, k))}
             onBackspace={() => setAmount(backspace)}
@@ -396,6 +427,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           <Button size="lg" className="w-full" disabled={!canSave} onClick={save}>
             {canSave ? `Log ${side}` : "Enter amount"}
           </Button>
+        </div>
         </div>
       </SheetContent>
     </Sheet>

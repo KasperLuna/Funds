@@ -27,6 +27,7 @@ export type ScheduledCardAccount = {
 export type ScheduledCardCategory = {
   id: string;
   name: string;
+  color?: string | null;
 };
 
 export interface ScheduledCardProps {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Check, Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { AmountInput } from "@/components/capture/amount-input";
+import { CategoryChipSelect } from "./category-chip-select";
 import { Keypad, type DigitKey } from "./keypad";
 import type { AccountOption, CategoryOption } from "./capture-sheet";
 import type { Category } from "@/lib/categories/categories-store";
@@ -119,6 +120,7 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(first?.decimals ?? 2));
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [focusedField, setFocusedField] = useState<HTMLElement | null>(null);
   const inlineForm = useForm<InlineCategoryValues>({
     resolver: zodResolver(inlineCategorySchema),
     mode: "onChange",
@@ -164,6 +166,22 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
     form.setValue("amountInput", amount.input, { shouldValidate: true });
   }, [amount, form]);
 
+  // On mobile, focusing a text input (description, fee, inline category name)
+  // brings up the soft keyboard and shrinks the viewport. The pinned Keypad
+  // below the form would otherwise cover the focused field, so the
+  // `max-h-0` transition on the keypad wrapper hides it. After the 220ms
+  // collapse animation, scroll the focused field into the visible area of
+  // the sheet's inner scroll region — iOS does not do this automatically
+  // inside a `position: fixed` drawer with an `overflow-y-auto` child.
+  useEffect(() => {
+    if (!focusedField) return;
+    const el = focusedField;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 220);
+    return () => window.clearTimeout(id);
+  }, [focusedField]);
+
   const handleKey = (key: DigitKey) => setAmount((s) => applyDigit(s, key));
   const minor = amountToMinor(amount);
   const feeMinor = parseFeeToMinor(feeInput, decimals);
@@ -182,13 +200,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   };
   const validation = validateTransfer(transferForm);
   const canSave = minor > 0n && validation === null;
-
-  const toggleCategory = (id: string) => {
-    const next = categoryIds.includes(id)
-      ? categoryIds.filter((c) => c !== id)
-      : [...categoryIds, id];
-    setValue("categoryIds", next, { shouldValidate: true });
-  };
 
   const save = () => {
     if (!canSave) {
@@ -210,7 +221,7 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   ) => (
     <select
       aria-label={label}
-      className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
+      className="h-11 min-w-0 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -224,32 +235,26 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
-        <SheetTitle>Transfer</SheetTitle>
-        <SheetDescription>
-          Moves money between two accounts
-        </SheetDescription>
+      <SheetContent className="flex flex-col p-0">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6">
+          <SheetTitle>Transfer</SheetTitle>
+          <SheetDescription>
+            Moves money between two accounts
+          </SheetDescription>
 
-        <div className="mt-3 flex items-center gap-1.5">
-          {accountSelect("From account", fromId, (id) => {
-            setValue("fromId", id, { shouldValidate: true });
-            setAmount(emptyAmount(accounts.find((a) => a.id === id)?.decimals ?? 2));
-          })}
-          <span aria-hidden className="text-zinc-500">
-            →
-          </span>
-          {accountSelect("To account", toId, (id) => setValue("toId", id, { shouldValidate: true }))}
-        </div>
+          <div className="mt-3 flex items-center gap-1.5">
+            {accountSelect("From account", fromId, (id) => {
+              setValue("fromId", id, { shouldValidate: true });
+              setAmount(emptyAmount(accounts.find((a) => a.id === id)?.decimals ?? 2));
+            })}
+            <span aria-hidden className="text-zinc-500">
+              →
+            </span>
+            {accountSelect("To account", toId, (id) => setValue("toId", id, { shouldValidate: true }))}
+          </div>
 
-        <div className="mt-4 flex items-center gap-1.5">
-          <input
-            aria-label="Description"
-            className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
-            placeholder="Description (optional)"
-            value={description}
-            onChange={(e) => setValue("description", e.target.value, { shouldValidate: true })}
-          />
           <SegmentedControl
+            className="mt-3"
             options={[
               { value: "today", label: "Today" },
               { value: "yesterday", label: "Yesterday" },
@@ -257,123 +262,118 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
             value={datePreset}
             onChange={(v) => setValue("datePreset", v, { shouldValidate: true })}
           />
-        </div>
 
-        {(categories.length > 0 || onCreateCategory) && (
-          <div className="mt-3 flex flex-col gap-2">
-            <div className="flex flex-wrap gap-1" role="group" aria-label="Categories">
-              {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
-                const active = categoryIds.includes(c.id);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => toggleCategory(c.id)}
-                    className={cn(
-                      "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                      active ? "text-(--accent)" : "text-zinc-400 hover:text-inherit",
-                    )}
-                  >
-                    {active && <Check className="h-4 w-4" strokeWidth={3} aria-hidden />}
-                    {c.name}
-                  </button>
-                );
-              })}
-              {onCreateCategory && !creatingCategory && (
-                <button
-                  type="button"
-                  aria-label="New category"
-                  onClick={startCreating}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-sm) px-2.5 text-sm font-medium text-zinc-500 hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+          <input
+            aria-label="Description"
+            className="mt-3 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+            placeholder="Description (optional)"
+            value={description}
+            onChange={(e) => setValue("description", e.target.value, { shouldValidate: true })}
+            onFocus={(e) => setFocusedField(e.currentTarget)}
+            onBlur={() => setFocusedField(null)}
+          />
+
+          {(categories.length > 0 || onCreateCategory) && (
+            <div className="mt-3 flex flex-col gap-2">
+              <CategoryChipSelect
+                categories={categories}
+                value={categoryIds}
+                onChange={(next) => setValue("categoryIds", next, { shouldValidate: true })}
+                onCreateCategory={onCreateCategory && !creatingCategory ? startCreating : undefined}
+              />
+              {creatingCategory && (
+                <form
+                  onSubmit={inlineForm.handleSubmit(submitInlineCategory)}
+                  className="flex flex-col gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-3"
                 >
-                  <Plus className="h-4 w-4" strokeWidth={3} aria-hidden />
-                  New category
-                </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      aria-label="New category name"
+                      type="text"
+                      {...inlineForm.register("name")}
+                      placeholder="Category name"
+                      autoFocus
+                      className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--bg) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+                      onFocus={(e) => setFocusedField(e.currentTarget)}
+                      onBlur={() => setFocusedField(null)}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Cancel new category"
+                      onClick={cancelCreating}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-(--radius-sm) text-zinc-500 hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+                    >
+                      <X className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color">
+                    {DEFAULT_CATEGORY_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        role="radio"
+                        aria-checked={newColor === c}
+                        aria-label={c}
+                        onClick={() => inlineForm.setValue("color", c, { shouldValidate: true })}
+                        className={cn(
+                          "h-7 w-7 rounded-full transition-transform focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
+                          newColor === c ? "scale-110 ring-2 ring-white" : "hover:scale-105",
+                        )}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                  <Button type="submit" size="sm" disabled={!newName.trim()}>
+                    Create
+                  </Button>
+                </form>
               )}
             </div>
-            {creatingCategory && (
-              <form
-                onSubmit={inlineForm.handleSubmit(submitInlineCategory)}
-                className="flex flex-col gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-3"
-              >
-                <div className="flex items-center gap-2">
-                  <input
-                    aria-label="New category name"
-                    type="text"
-                    {...inlineForm.register("name")}
-                    placeholder="Category name"
-                    autoFocus
-                    className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--bg) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Cancel new category"
-                    onClick={cancelCreating}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-(--radius-sm) text-zinc-500 hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-                  >
-                    <X className="h-4 w-4" aria-hidden />
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color">
-                  {DEFAULT_CATEGORY_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      role="radio"
-                      aria-checked={newColor === c}
-                      aria-label={c}
-                      onClick={() => inlineForm.setValue("color", c, { shouldValidate: true })}
-                      className={cn(
-                        "h-7 w-7 rounded-full transition-transform focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                        newColor === c ? "scale-110 ring-2 ring-white" : "hover:scale-105",
-                      )}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-                <Button type="submit" size="sm" disabled={!newName.trim()}>
-                  Create
-                </Button>
-              </form>
-            )}
-          </div>
-        )}
+          )}
 
-        <AmountInput
-          className="mt-4"
-          assetCode={from?.assetCode ?? from?.assetId?.slice(0, 3).toUpperCase()}
-          tone="foreground"
-          value={amount.input}
-          // cavetail: display-only formatting, not arithmetic
-          display={formatMinor(minor, decimals)}
-          onChange={(v) => setAmount((s) => ({ ...s, input: sanitizeAmountInput(v, s.decimals) }))}
-          sanitize={(v) => v}
-          decimals={decimals}
-          aria-label="Amount"
-        />
+          <AmountInput
+            className="mt-3"
+            assetCode={from?.assetCode ?? from?.assetId?.slice(0, 3).toUpperCase()}
+            tone="foreground"
+            value={amount.input}
+            // cavetail: display-only formatting, not arithmetic
+            display={formatMinor(minor, decimals)}
+            onChange={(v) => setAmount((s) => ({ ...s, input: sanitizeAmountInput(v, s.decimals) }))}
+            sanitize={(v) => v}
+            decimals={decimals}
+            aria-label="Amount"
+          />
 
-        <input
-          aria-label="Fee"
-          inputMode="decimal"
-          className="mt-4 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
-          placeholder="Fee (optional)"
-          value={feeInput}
-          onChange={(e) => setValue("feeInput", e.target.value, { shouldValidate: true })}
-        />
-        <p aria-live="polite" className="mt-1 text-xs text-zinc-500">
-          {feeMinor > 0n
-            ? `Fee ${formatMinor(feeMinor, decimals)} is deducted from ${from?.name ?? "origin"} in addition to the transferred amount.`
-            : "No fee. Both legs post the same amount."}
-        </p>
-
-        {error && (
-          <p role="alert" className="mt-1 text-xs text-(--danger)">
-            {error}
+          <input
+            aria-label="Fee"
+            inputMode="decimal"
+            className="mt-3 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
+            placeholder="Fee (optional)"
+            value={feeInput}
+            onChange={(e) => setValue("feeInput", e.target.value, { shouldValidate: true })}
+            onFocus={(e) => setFocusedField(e.currentTarget)}
+            onBlur={() => setFocusedField(null)}
+          />
+          <p aria-live="polite" className="mt-2 text-xs text-zinc-500">
+            {feeMinor > 0n
+              ? `Fee ${formatMinor(feeMinor, decimals)} is deducted from ${from?.name ?? "origin"} in addition to the transferred amount.`
+              : "No fee. Both legs post the same amount."}
           </p>
-        )}
 
-        <div className="mt-5 sm:hidden">
+          {error && (
+            <p role="alert" className="mt-2 text-xs text-(--danger)">
+              {error}
+            </p>
+          )}
+        </div>
+
+        <div
+          className={cn(
+            "shrink-0 overflow-hidden border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 transition-[max-height,opacity] duration-200 ease-out sm:hidden",
+            focusedField ? "max-h-0 border-t-0 opacity-0" : "max-h-96 opacity-100",
+          )}
+          aria-hidden={Boolean(focusedField)}
+        >
           <Keypad
             onKey={handleKey}
             onBackspace={() => setAmount(backspace)}
@@ -383,9 +383,11 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
           />
         </div>
 
-        <Button size="lg" className="mt-5 hidden w-full sm:block" disabled={!canSave} onClick={handleSubmit(onSubmit)}>
-          {canSave ? "Transfer" : fromId === toId ? validation : "Enter amount"}
-        </Button>
+        <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block">
+          <Button size="lg" className="w-full" disabled={!canSave} onClick={handleSubmit(onSubmit)}>
+            {canSave ? "Transfer" : fromId === toId ? validation : "Enter amount"}
+          </Button>
+        </div>
       </SheetContent>
     </Sheet>
   );

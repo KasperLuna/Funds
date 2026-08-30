@@ -124,16 +124,18 @@ const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) =>
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
-        <SheetTitle>
-          {isEditing ? "Edit account" : "New account"}
-        </SheetTitle>
-        <SheetDescription>
-          {isEditing
-            ? "Update account details."
-            : "Create a new account to track transactions."}
-        </SheetDescription>
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>
+            {isEditing ? "Edit account" : "New account"}
+          </SheetTitle>
+          <SheetDescription>
+            {isEditing
+              ? "Update account details."
+              : "Create a new account to track transactions."}
+          </SheetDescription>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 pb-6">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input

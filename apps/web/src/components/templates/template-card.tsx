@@ -20,6 +20,7 @@ export type TemplateCardAccount = {
 export type TemplateCardCategory = {
   id: string;
   name: string;
+  color?: string | null;
 };
 
 interface TemplateCardProps {

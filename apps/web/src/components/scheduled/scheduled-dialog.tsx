@@ -8,12 +8,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import { CategoryChipSelect } from "@/components/capture/category-chip-select";
 import { advanceRecurrence, type Frequency, type Schedule } from "@funds/core";
 import type { ScheduledTxn } from "@/lib/scheduled/compute";
-import { cn } from "@/lib/utils";
 
 type AccountOption = { id: string; name: string };
-type CategoryOption = { id: string; name: string };
+type CategoryOption = { id: string; name: string; color?: string | null };
 
 const FREQUENCY_OPTIONS: { value: Frequency; label: string }[] = [
   { value: "daily", label: "Daily" },
@@ -109,13 +109,6 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
   const interval = watch("interval");
   const startDate = watch("startDate");
 
-  const toggleCategory = (catId: string) => {
-    const next = categoryIds.includes(catId)
-      ? categoryIds.filter((c) => c !== catId)
-      : [...categoryIds, catId];
-    setValue("categoryIds", next, { shouldValidate: true });
-  };
-
   const [y, m, d] = startDate.split("-").map(Number);
   const from = new Date(y!, m! - 1, d);
   const nextPreview = previewNextDate(frequency, interval, from);
@@ -159,16 +152,18 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4 max-h-[96dvh] overflow-y-auto">
-        <SheetTitle>
-          {editItem ? "Edit scheduled transaction" : "New scheduled transaction"}
-        </SheetTitle>
-        <SheetDescription>
-          {editItem
-            ? "Update the recurrence schedule and details."
-            : "Set up a recurring transaction entry."}
-        </SheetDescription>
-        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
+      <SheetContent className="flex flex-col gap-4 p-0">
+        <div className="shrink-0 px-6 pt-6">
+          <SheetTitle>
+            {editItem ? "Edit scheduled transaction" : "New scheduled transaction"}
+          </SheetTitle>
+          <SheetDescription>
+            {editItem
+              ? "Update the recurrence schedule and details."
+              : "Set up a recurring transaction entry."}
+          </SheetDescription>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 pb-6">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
@@ -237,28 +232,11 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
             )}
           </label>
 
-          {categories.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm text-zinc-500">Categories</span>
-              <div className="flex flex-wrap gap-1.5">
-                {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => toggleCategory(c.id)}
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
-                      categoryIds.includes(c.id)
-                        ? "bg-(--accent) text-(--accent-foreground)"
-                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit",
-                    )}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <CategoryChipSelect
+            categories={categories}
+            value={categoryIds}
+            onChange={(next) => setValue("categoryIds", next, { shouldValidate: true })}
+          />
 
           <div className="flex gap-2">
             <label className="flex flex-col gap-1.5 flex-1">
