@@ -1,50 +1,30 @@
 "use client";
 
-import { Check, ChevronDown, ChevronRight, LayoutTemplate } from "lucide-react";
+import { CalendarDays, LayoutTemplate } from "lucide-react";
 import {
+  Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { ContextPopover } from "@/components/capture/context-popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { CategoryChipSelect } from "@/components/capture/category-chip-select";
 import { cn } from "@/lib/utils";
 import type { Template } from "@/lib/templates/templates-store";
-import type { AccountOption, CategoryOption } from "@/components/capture/capture-sheet";
+import type {
+  AccountOption,
+  CategoryOption,
+} from "@/components/capture/capture-sheet";
 
-interface ContextChipProps extends React.ComponentProps<"button"> {
-  active?: boolean;
-}
-
-function ContextChip({ active, children, className, ...props }: ContextChipProps) {
-  return (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm font-medium transition-colors duration-150 ease-out hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-        active ? "text-inherit" : "text-zinc-400 hover:text-inherit",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-interface CaretProps {
-  isOpen: boolean;
-}
-
-function Caret({ isOpen }: CaretProps) {
-  return (
-    <ChevronDown
-      className={cn("h-4 w-4 text-zinc-500 transition-transform duration-150 ease-out", isOpen && "rotate-180")}
-      aria-hidden
-    />
-  );
-}
+const triggerCls =
+  "h-11 min-w-0 flex-1 items-center justify-between gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm font-medium text-zinc-400 transition-colors duration-150 ease-out hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none data-[state=open]:text-inherit data-[placeholder]:text-zinc-400 dark:bg-(--surface-2) dark:hover:bg-(--surface-3) [&_svg]:opacity-100";
 
 export interface CaptureFormFieldsProps {
   accounts: AccountOption[];
@@ -73,7 +53,6 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     categories,
     templates,
     accountId,
-    selected,
     onAccountChange,
     description,
     onDescriptionChange,
@@ -92,147 +71,111 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
   return (
     <>
       {/* Context strip — quiet chips: account · date · templates (nested).
-          The strip is single-line on purpose: chips truncate inside their
-          own bounds rather than wrapping to a new line, so the strip's
-          vertical rhythm stays consistent. When the natural widths exceed
-          the viewport, the rightmost chip is clipped by the strip's
-          overflow-hidden — its visible portion is still 44pt+ and tappable. */}
+          Single-line on purpose: chips truncate inside their own bounds
+          rather than wrapping to a new line, so the strip's vertical rhythm
+          stays consistent. When the natural widths exceed the viewport, the
+          rightmost chip is clipped by the strip's overflow-hidden — its
+          visible portion is still 44pt+ and tappable. */}
       <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-hidden">
-        <ContextPopover>
-          {({ isOpen: accountOpen, setOpen: setAccountOpen }) => (
-            <>
-              <PopoverTrigger asChild>
-                <ContextChip active={accountOpen} aria-label="Account" className="min-w-0 shrink">
-                  <span className="truncate">{selected?.name ?? "Account"}</span>
-                  <Caret isOpen={accountOpen} />
-                </ContextChip>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                className="flex max-h-[var(--radix-popper-available-height)] flex-col gap-0 overflow-hidden p-0"
-              >
-                <div role="listbox" aria-label="Account" className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain p-1">
-                  {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                    <button
-                      key={a.id}
-                      type="button"
-                      role="option"
-                      aria-selected={a.id === accountId}
-                      onClick={() => {
-                        onAccountChange(a.id);
-                        setAccountOpen(false);
-                      }}
-                      className={cn(
-                        "flex min-h-11 items-center justify-between gap-3 rounded-(--radius-sm) px-3 text-sm transition-colors hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                        a.id === accountId ? "font-semibold text-inherit" : "text-zinc-400",
-                      )}
-                    >
-                      <span className="truncate">{a.name}</span>
-                      {a.id === accountId && (
-                        <Check className="h-4 w-4 shrink-0 text-(--accent)" strokeWidth={3} aria-hidden />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </>
-          )}
-        </ContextPopover>
+        <Select
+          value={accountId || "__placeholder__"}
+          onValueChange={(v) =>
+            onAccountChange(v === "__placeholder__" ? "" : v)
+          }
+        >
+          <SelectTrigger aria-label="Account" className={triggerCls}>
+            <SelectValue placeholder="Account" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__placeholder__" disabled>
+              Account
+            </SelectItem>
+            {[...accounts]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
 
-        <ContextPopover>
-          {({ isOpen: dateOpen, setOpen: setDateOpen }) => (
-            <>
-              <PopoverTrigger asChild>
-                <ContextChip active={dateOpen} aria-label="Date" className="min-w-0 flex-1">
-                  <span className="min-w-0 flex-1 truncate tabular-nums">{dateLabel}</span>
-                  <Caret isOpen={dateOpen} />
-                </ContextChip>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto max-h-[var(--radix-popper-available-height)] min-w-64 overflow-y-auto">
-                <div className="flex gap-1.5 p-1">
-                  {(["today", "yesterday"] as const).map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      aria-pressed={!dateOverride && datePreset === preset}
-                      onClick={() => onDatePreset(preset)}
-                      className={cn(
-                        "min-h-11 flex-1 rounded-(--radius-sm) px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                        !dateOverride && datePreset === preset
-                          ? "bg-(--surface-2) text-inherit"
-                          : "text-zinc-400 hover:bg-(--surface-2) hover:text-inherit",
-                      )}
-                    >
-                      {preset === "today" ? "Today" : "Yesterday"}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-1 border-t border-(--border) pt-1.5">
-                  <Calendar
-                    mode="single"
-                    selected={dateOverride ? new Date(dateOverride) : undefined}
-                    defaultMonth={new Date()}
-                    onSelect={(day) => {
-                      if (!day) return;
-                      onDateOverride(day.getTime());
-                      setDateOpen(false);
-                    }}
-                  />
-                </div>
-              </PopoverContent>
-            </>
-          )}
-        </ContextPopover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Date"
+              className={cn(triggerCls, "inline-flex")}
+            >
+              <CalendarDays className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1 truncate text-left tabular-nums">
+                {dateLabel}
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="w-auto max-h-[var(--radix-popper-available-height)] min-w-64 overflow-y-auto p-0"
+          >
+            <div className="flex gap-1.5 p-1">
+              {(["today", "yesterday"] as const).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  aria-pressed={!dateOverride && datePreset === preset}
+                  onClick={() => onDatePreset(preset)}
+                  className={
+                    "min-h-11 flex-1 items-center rounded-(--radius-sm) px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none " +
+                    (!dateOverride && datePreset === preset
+                      ? "bg-(--surface-2) text-inherit"
+                      : "text-zinc-400 hover:bg-(--surface-2) hover:text-inherit")
+                  }
+                >
+                  {preset === "today" ? "Today" : "Yesterday"}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1 border-t border-(--border) pt-1.5">
+              <Calendar
+                mode="single"
+                selected={dateOverride ? new Date(dateOverride) : undefined}
+                defaultMonth={new Date()}
+                onSelect={(day) => {
+                  if (!day) return;
+                  onDateOverride(day.getTime());
+                }}
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
 
         {templates.length > 0 && (
-          <ContextPopover>
-            {({ isOpen: templatesOpen, setOpen: setTemplatesOpen }) => (
-              <>
-                <PopoverTrigger asChild>
-                  <ContextChip active={templatesOpen || !!activeTemplate} aria-label="Templates" className="min-w-0 shrink">
-                    {activeTemplate ? (
-                      <>
-                        <Check className="h-4 w-4 text-(--accent)" strokeWidth={3} aria-hidden />
-                        <span className="truncate">{activeTemplate.name}</span>
-                      </>
-                    ) : (
-                      <>
-                        <LayoutTemplate className="h-4 w-4" aria-hidden />
-                        <span>Templates</span>
-                      </>
-                    )}
-                    <Caret isOpen={templatesOpen} />
-                  </ContextChip>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-64 flex max-h-[var(--radix-popper-available-height)] flex-col gap-0 overflow-hidden p-0">
-                  <p className="label-micro px-3 pb-1 pt-1.5">Apply a template</p>
-                  <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain p-1">
-                    {templates.map((t) => {
-                      const isActive = activeTemplateId === t.id;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          aria-pressed={isActive}
-                          onClick={() => {
-                            onApplyTemplate(t);
-                            setTemplatesOpen(false);
-                          }}
-                          className={cn(
-                            "flex min-h-11 items-center justify-between gap-3 rounded-(--radius-sm) px-3 text-sm transition-colors hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                            isActive ? "font-semibold text-inherit" : "text-zinc-400",
-                          )}
-                        >
-                          <span className="truncate">{t.name}</span>
-                          <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" aria-hidden />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </PopoverContent>
-              </>
-            )}
-          </ContextPopover>
+          <Select
+            value={activeTemplateId || "__placeholder__"}
+            onValueChange={(v) => {
+              if (v === "__placeholder__") {
+                if (activeTemplate) onApplyTemplate(activeTemplate);
+                return;
+              }
+              const next = templates.find((t) => t.id === v);
+              if (next) onApplyTemplate(next);
+            }}
+          >
+            <SelectTrigger aria-label="Templates" className={triggerCls}>
+              <LayoutTemplate className="h-4 w-4 shrink-0" aria-hidden />
+              <SelectValue placeholder="Templates" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__placeholder__" disabled>
+                Templates
+              </SelectItem>
+              {templates.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
 

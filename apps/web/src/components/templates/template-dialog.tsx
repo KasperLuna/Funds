@@ -4,6 +4,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetTitle,
@@ -154,16 +161,20 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Account</span>
-            <select
-              {...register("accountId")}
-              className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+            <Select
+              value={accountId || "__placeholder__"}
+              onValueChange={(v) => setValue("accountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
             >
-              {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Account" className="h-11">
+                <SelectValue placeholder="Account" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__">Account</SelectItem>
+                {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {formState.errors.accountId && (
               <span className="text-xs text-(--danger)">{formState.errors.accountId.message}</span>
             )}

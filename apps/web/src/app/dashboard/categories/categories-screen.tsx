@@ -7,6 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import {
@@ -282,21 +289,22 @@ export const CategoriesScreen = () => {
               >
                 <ChevronLeft className="h-4 w-4" aria-hidden />
               </button>
-              <select
-                aria-label="Budget month"
+              <Select
                 value={budgetPeriodKey(viewMonth.year, viewMonth.month)}
-                onChange={(e) => {
-                  const opt = monthOpts.find((o) => o.value === e.target.value);
+                onValueChange={(v) => {
+                  const opt = monthOpts.find((o) => o.value === v);
                   if (opt) setViewMonth({ year: opt.year, month: opt.month });
                 }}
-                className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-200 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               >
-                {monthOpts.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Budget month" className="h-9 w-auto min-w-[10ch]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOpts.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <button
                 type="button"
                 aria-label="Next month"
@@ -660,17 +668,20 @@ const CategoryForm = ({
             </label>
             <label className="flex flex-col gap-1.5 w-32">
               <span className="text-sm text-zinc-500">Currency</span>
-              <select
-                {...register("assetId")}
+              <Select
+                value={assetId}
+                onValueChange={(v) => setValue("assetId", v, { shouldValidate: true })}
                 disabled={!budget.trim()}
-                className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-50"
               >
-                {assets.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.code} ({assetSymbol(a.code).trim()})
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Currency" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {assets.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.code} ({assetSymbol(a.code).trim()})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
           {budget.trim() && assetId && (

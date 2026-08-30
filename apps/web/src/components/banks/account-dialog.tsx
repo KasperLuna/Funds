@@ -3,6 +3,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetTitle,
@@ -92,6 +99,8 @@ const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) =>
 
   const { register, handleSubmit, watch, setValue, formState } = form;
   const name = watch("name");
+  const kind = watch("kind");
+  const assetId = watch("assetId");
   const primaryColor = watch("primaryColor");
 
   const isEditing = !!editAccount;
@@ -152,30 +161,36 @@ const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) =>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Type</span>
-            <select
-              {...register("kind")}
-              className={inputCls}
+            <Select
+              value={kind}
+              onValueChange={(v) => setValue("kind", v as Kind, { shouldValidate: true })}
             >
-              {KIND_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Type" className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {KIND_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Asset</span>
-            <select
-              {...register("assetId")}
-              className={inputCls}
+            <Select
+              value={assetId}
+              onValueChange={(v) => setValue("assetId", v, { shouldValidate: true })}
             >
-              {assetOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Asset" className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {assetOptions.map((opt) => (
+                  <SelectItem key={opt.id} value={opt.id}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {formState.errors.assetId && (
               <span className="text-xs text-(--danger)">{formState.errors.assetId.message}</span>
             )}

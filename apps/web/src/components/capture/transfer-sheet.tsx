@@ -10,6 +10,13 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { AmountInput } from "@/components/capture/amount-input";
 import { CategoryChipSelect } from "./category-chip-select";
@@ -62,7 +69,12 @@ const transferFormSchema = z
   .object({
     fromId: z.string().min(1, "Select origin account"),
     toId: z.string().min(1, "Select destination account"),
-    amountInput: z.string().refine((s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0, "Enter a valid amount"),
+    amountInput: z
+      .string()
+      .refine(
+        (s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0,
+        "Enter a valid amount",
+      ),
     description: z.string().max(500),
     datePreset: z.enum(["today", "yesterday"]),
     categoryIds: z.array(z.string()),
@@ -91,7 +103,15 @@ const inlineCategorySchema = z.object({
 });
 type InlineCategoryValues = z.infer<typeof inlineCategorySchema>;
 
-const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCreateCategory, defaultFromAccountId }: TransferFormProps) => {
+const TransferForm = ({
+  onOpenChange,
+  userId,
+  accounts,
+  categories,
+  onSave,
+  onCreateCategory,
+  defaultFromAccountId,
+}: TransferFormProps) => {
   const first = accounts[0];
   const second = accounts[1] ?? accounts[0];
 
@@ -117,7 +137,9 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   const categoryIds = watch("categoryIds");
   const feeInput = watch("feeInput") ?? "";
 
-  const [amount, setAmount] = useState<AmountState>(() => emptyAmount(first?.decimals ?? 2));
+  const [amount, setAmount] = useState<AmountState>(() =>
+    emptyAmount(first?.decimals ?? 2),
+  );
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const inlineForm = useForm<InlineCategoryValues>({
@@ -152,7 +174,9 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
     };
     onCreateCategory(created);
     if (!categoryIds.includes(created.id)) {
-      setValue("categoryIds", [...categoryIds, created.id], { shouldValidate: true });
+      setValue("categoryIds", [...categoryIds, created.id], {
+        shouldValidate: true,
+      });
     }
     setCreatingCategory(false);
   };
@@ -197,43 +221,75 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
     save();
   };
 
-  const accountSelect = (
-    label: string,
-    value: string,
-    onChange: (id: string) => void,
-  ) => (
-    <select
-      aria-label={label}
-      className="h-11 min-w-0 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.name}
-        </option>
-      ))}
-    </select>
+  const sortedAccounts = [...accounts].sort((a, b) =>
+    a.name.localeCompare(b.name),
   );
 
   return (
     <Sheet open onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col p-0">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 pt-6 pb-3">
           <SheetTitle>Transfer</SheetTitle>
-          <SheetDescription>
-            Moves money between two accounts
-          </SheetDescription>
+          <SheetDescription>Moves money between two accounts</SheetDescription>
 
           <div className="mt-3 flex items-center gap-1.5">
-            {accountSelect("From account", fromId, (id) => {
-              setValue("fromId", id, { shouldValidate: true });
-              setAmount(emptyAmount(accounts.find((a) => a.id === id)?.decimals ?? 2));
-            })}
+            <Select
+              value={fromId || "__placeholder__"}
+              onValueChange={(v) => {
+                const next = v === "__placeholder__" ? "" : v;
+                setValue("fromId", next, { shouldValidate: true });
+                setAmount(
+                  emptyAmount(
+                    accounts.find((a) => a.id === next)?.decimals ?? 2,
+                  ),
+                );
+              }}
+            >
+              <SelectTrigger
+                aria-label="From account"
+                className="h-11 min-w-0 flex-1"
+              >
+                <SelectValue placeholder="From account" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__" disabled>
+                  From account
+                </SelectItem>
+                {sortedAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <span aria-hidden className="text-zinc-500">
               →
             </span>
-            {accountSelect("To account", toId, (id) => setValue("toId", id, { shouldValidate: true }))}
+            <Select
+              value={toId || "__placeholder__"}
+              onValueChange={(v) =>
+                setValue("toId", v === "__placeholder__" ? "" : v, {
+                  shouldValidate: true,
+                })
+              }
+            >
+              <SelectTrigger
+                aria-label="To account"
+                className="h-11 min-w-0 flex-1"
+              >
+                <SelectValue placeholder="To account" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__placeholder__" disabled>
+                  To account
+                </SelectItem>
+                {sortedAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <SegmentedControl
@@ -243,7 +299,9 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
               { value: "yesterday", label: "Yesterday" },
             ]}
             value={datePreset}
-            onChange={(v) => setValue("datePreset", v, { shouldValidate: true })}
+            onChange={(v) =>
+              setValue("datePreset", v, { shouldValidate: true })
+            }
           />
 
           <input
@@ -251,7 +309,9 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
             className="mt-3 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
             placeholder="Description (optional)"
             value={description}
-            onChange={(e) => setValue("description", e.target.value, { shouldValidate: true })}
+            onChange={(e) =>
+              setValue("description", e.target.value, { shouldValidate: true })
+            }
           />
 
           {(categories.length > 0 || onCreateCategory) && (
@@ -259,13 +319,19 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
               <CategoryChipSelect
                 categories={categories}
                 value={categoryIds}
-                onChange={(next) => setValue("categoryIds", next, { shouldValidate: true })}
-                onCreateCategory={onCreateCategory && !creatingCategory ? startCreating : undefined}
+                onChange={(next) =>
+                  setValue("categoryIds", next, { shouldValidate: true })
+                }
+                onCreateCategory={
+                  onCreateCategory && !creatingCategory
+                    ? startCreating
+                    : undefined
+                }
               />
               {creatingCategory && (
                 <form
                   onSubmit={inlineForm.handleSubmit(submitInlineCategory)}
-                  className="flex flex-col gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-3"
+                  className="flex flex-col gap-4 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-3"
                 >
                   <div className="flex items-center gap-2">
                     <input
@@ -285,7 +351,11 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
                       <X className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color">
+                  <div
+                    className="flex flex-wrap gap-1.5 px-4"
+                    role="radiogroup"
+                    aria-label="Color"
+                  >
                     {DEFAULT_CATEGORY_COLORS.map((c) => (
                       <button
                         key={c}
@@ -293,10 +363,16 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
                         role="radio"
                         aria-checked={newColor === c}
                         aria-label={c}
-                        onClick={() => inlineForm.setValue("color", c, { shouldValidate: true })}
+                        onClick={() =>
+                          inlineForm.setValue("color", c, {
+                            shouldValidate: true,
+                          })
+                        }
                         className={cn(
                           "h-7 w-7 rounded-full transition-transform focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-                          newColor === c ? "scale-110 ring-2 ring-white" : "hover:scale-105",
+                          newColor === c
+                            ? "scale-110 ring-2 ring-white"
+                            : "hover:scale-105",
                         )}
                         style={{ backgroundColor: c }}
                       />
@@ -312,12 +388,19 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
 
           <AmountInput
             className="mt-3"
-            assetCode={from?.assetCode ?? from?.assetId?.slice(0, 3).toUpperCase()}
+            assetCode={
+              from?.assetCode ?? from?.assetId?.slice(0, 3).toUpperCase()
+            }
             tone="foreground"
             value={amount.input}
             // cavetail: display-only formatting, not arithmetic
             display={formatMinor(minor, decimals)}
-            onChange={(v) => setAmount((s) => ({ ...s, input: sanitizeAmountInput(v, s.decimals) }))}
+            onChange={(v) =>
+              setAmount((s) => ({
+                ...s,
+                input: sanitizeAmountInput(v, s.decimals),
+              }))
+            }
             sanitize={(v) => v}
             decimals={decimals}
             aria-label="Amount"
@@ -329,7 +412,9 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
             className="mt-3 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
             placeholder="Fee (optional)"
             value={feeInput}
-            onChange={(e) => setValue("feeInput", e.target.value, { shouldValidate: true })}
+            onChange={(e) =>
+              setValue("feeInput", e.target.value, { shouldValidate: true })
+            }
           />
           <p aria-live="polite" className="mt-2 text-xs text-zinc-500">
             {feeMinor > 0n
@@ -354,9 +439,18 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
           />
         </div>
 
-        <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block">
-          <Button size="lg" className="w-full" disabled={!canSave} onClick={handleSubmit(onSubmit)}>
-            {canSave ? "Transfer" : fromId === toId ? validation : "Enter amount"}
+        <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block rounded-b-lg">
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={!canSave}
+            onClick={handleSubmit(onSubmit)}
+          >
+            {canSave
+              ? "Transfer"
+              : fromId === toId
+                ? validation
+                : "Enter amount"}
           </Button>
         </div>
       </SheetContent>

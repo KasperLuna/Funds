@@ -3,6 +3,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetContent,
   SheetTitle,
@@ -103,10 +110,12 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
   const { register, watch, setValue, handleSubmit, formState } = form;
   const name = watch("name");
   const amount = watch("amount");
+  const type = watch("type");
   const accountId = watch("accountId");
   const categoryIds = watch("categoryIds");
   const frequency = watch("frequency");
   const interval = watch("interval");
+  const timezoneOffset = watch("timezoneOffset");
   const startDate = watch("startDate");
 
   const [y, m, d] = startDate.split("-").map(Number);
@@ -191,13 +200,18 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
           <div className="flex gap-2">
             <label className="flex flex-col gap-1.5 flex-1">
               <span className="text-sm text-zinc-500">Type</span>
-              <select
-                {...register("type")}
-                className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              <Select
+                value={type}
+                onValueChange={(v) => setValue("type", v as "income" | "expense", { shouldValidate: true })}
               >
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-              </select>
+                <SelectTrigger aria-label="Type" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="income">Income</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <label className="flex flex-col gap-1.5 flex-1">
               <span className="text-sm text-zinc-500">Amount</span>
@@ -217,16 +231,19 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Account</span>
-            <select
-              {...register("accountId")}
-              className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+            <Select
+              value={accountId}
+              onValueChange={(v) => setValue("accountId", v, { shouldValidate: true })}
             >
-              {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Account" className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {formState.errors.accountId && (
               <span className="text-xs text-(--danger)">{formState.errors.accountId.message}</span>
             )}
@@ -241,16 +258,19 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
           <div className="flex gap-2">
             <label className="flex flex-col gap-1.5 flex-1">
               <span className="text-sm text-zinc-500">Frequency</span>
-              <select
-                {...register("frequency")}
-                className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              <Select
+                value={frequency}
+                onValueChange={(v) => setValue("frequency", v as Frequency, { shouldValidate: true })}
               >
-                {FREQUENCY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Frequency" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FREQUENCY_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
             <label className="flex flex-col gap-1.5 w-24">
               <span className="text-sm text-zinc-500">Every</span>
@@ -283,16 +303,21 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
             </label>
             <label className="flex flex-col gap-1.5 w-32">
               <span className="text-sm text-zinc-500">Timezone (UTC)</span>
-              <select
-                {...register("timezoneOffset", { valueAsNumber: true })}
-                className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              <Select
+                value={String(timezoneOffset)}
+                onValueChange={(v) => setValue("timezoneOffset", Number(v), { shouldValidate: true })}
               >
-                {TIMEZONE_OFFSETS.map((offset) => (
-                  <option key={offset} value={offset}>
-                    UTC{offset >= 0 ? "+" : ""}{offset}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger aria-label="Timezone (UTC)" className="h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONE_OFFSETS.map((offset) => (
+                    <SelectItem key={offset} value={String(offset)}>
+                      UTC{offset >= 0 ? "+" : ""}{offset}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
 

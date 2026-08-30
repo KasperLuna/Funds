@@ -75,7 +75,8 @@ describe("TransferSheet", () => {
   it("same from/to shows validation and blocks save", async () => {
     const user = userEvent.setup();
     render(<Harness onSave={() => {}} />);
-    await user.selectOptions(screen.getByRole("combobox", { name: "To account" }), "acc-1");
+    await user.click(screen.getByRole("combobox", { name: "To account" }));
+    await user.click(screen.getByRole("option", { name: "Checking" }));
     const btn = screen.getByRole("button", { name: /Origin and destination must differ/ });
     expect(btn).toBeDisabled();
   });

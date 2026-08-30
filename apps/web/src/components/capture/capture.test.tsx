@@ -175,8 +175,8 @@ describe("CaptureSheet", () => {
     render(withQueryClient(<Harness sync={sync} />));
 
     const readout = screen.getByTestId("amount-readout");
-    // Account selector is a popover chip; open it and pick the 8-decimal account.
-    await user.click(screen.getByRole("button", { name: "Account" }));
+    // Account selector is a shadcn Select; open it and pick the 8-decimal account.
+    await user.click(screen.getByRole("combobox", { name: "Account" }));
     await user.click(screen.getByRole("option", { name: "Wallet" }));
     await user.click(screen.getByRole("button", { name: "1" }));
     expect(readout).toHaveTextContent("1.00000000");
@@ -284,15 +284,56 @@ describe("CaptureSheet", () => {
       />,
     );
 
-    // No inline template chips; a single quiet trigger chip is shown.
+    // No inline template chips; a single quiet trigger is shown.
     expect(screen.queryByRole("group", { name: "Templates" })).not.toBeInTheDocument();
-    const trigger = screen.getByRole("button", { name: "Templates" });
+    const trigger = screen.getByRole("combobox", { name: "Templates" });
+    expect(trigger).toHaveTextContent("Templates");
     await user.click(trigger);
 
     // Popover lists the template; tap it to apply.
-    await user.click(screen.getByRole("button", { name: /Rent/ }));
-    expect(screen.getByRole("button", { name: "Templates" })).toHaveTextContent("Rent");
+    await user.click(screen.getByRole("option", { name: "Rent" }));
+    expect(screen.getByRole("combobox", { name: "Templates" })).toHaveTextContent("Rent");
     expect(screen.getByTestId("amount-readout")).toHaveTextContent("15000.00");
+  });
+
+  it("deselects the active template when the form drifts from it", async () => {
+    const user = userEvent.setup();
+    const templates = [
+      {
+        id: "tmpl-1",
+        name: "Rent",
+        accountId: "acc-1",
+        amountMinor: 1500000n,
+        type: "expense" as const,
+        description: "Rent",
+        categoryIds: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        deletedAt: null,
+      },
+    ] satisfies Template[];
+    render(
+      <CaptureSheet
+        isOpen
+        onOpenChange={() => {}}
+        userId="usr-1"
+        accounts={ACCOUNTS}
+        categories={CATS}
+        recentTxns={[]}
+        onSave={vi.fn()}
+        defaultAccountId="acc-1"
+        templates={templates}
+      />,
+    );
+
+    // Apply the template.
+    await user.click(screen.getByRole("combobox", { name: "Templates" }));
+    await user.click(screen.getByRole("option", { name: "Rent" }));
+    expect(screen.getByRole("combobox", { name: "Templates" })).toHaveTextContent("Rent");
+
+    // Drift the form by changing the description — template should deselect.
+    await user.type(screen.getByRole("textbox", { name: "Description" }), " (overridden)");
+    expect(screen.getByRole("combobox", { name: "Templates" })).toHaveTextContent("Templates");
   });
 
   it("selects a custom date from the calendar", async () => {

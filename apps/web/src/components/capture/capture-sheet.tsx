@@ -30,8 +30,18 @@ import {
 import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
 
-export type AccountOption = { id: string; name: string; assetId: string; decimals: number; assetCode?: string };
-export type CategoryOption = { id: string; name: string; color?: string | null };
+export type AccountOption = {
+  id: string;
+  name: string;
+  assetId: string;
+  decimals: number;
+  assetCode?: string;
+};
+export type CategoryOption = {
+  id: string;
+  name: string;
+  color?: string | null;
+};
 
 export type VoicePrefill = {
   accountId: string | null;
@@ -59,10 +69,12 @@ export interface CaptureSheetProps {
 
 const captureFormSchema = z.object({
   accountId: z.string().min(1, "Select an account"),
-  amountInput: z.string().refine(
-    (s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0,
-    "Enter a valid amount",
-  ),
+  amountInput: z
+    .string()
+    .refine(
+      (s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0,
+      "Enter a valid amount",
+    ),
   type: z.enum(["expense", "income"]),
   description: z.string().max(500),
   categoryIds: z.array(z.string()),
@@ -138,9 +150,19 @@ const CaptureForm = (props: CaptureFormProps) => {
     },
   });
 
-  const [amount, setAmount] = useState<AmountState>(() => emptyAmount(first?.decimals ?? 2));
+  const [amount, setAmount] = useState<AmountState>(() =>
+    emptyAmount(first?.decimals ?? 2),
+  );
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const templateFormRef = useRef<FormSnapshot | null>(null);
+  const [templateSnapshot, setTemplateSnapshot] = useState<{
+    templateId: string;
+    accountId: string;
+    amountInput: string;
+    type: "income" | "expense";
+    description: string;
+    categoryIds: string[];
+  } | null>(null);
 
   const accountId = form.watch("accountId");
   const type = form.watch("type");
@@ -151,6 +173,33 @@ const CaptureForm = (props: CaptureFormProps) => {
 
   const selected = accounts.find((a) => a.id === accountId) ?? first;
   const decimals = selected?.decimals ?? 2;
+
+  // cavetail: when a template is active and any of the form values drift
+  // from the snapshot the template applied, drop the template selection so
+  // the user is editing a fresh entry — not a silently-mutated template.
+  useEffect(() => {
+    if (!activeTemplateId || !templateSnapshot) return;
+    if (templateSnapshot.templateId !== activeTemplateId) return;
+    const drift =
+      templateSnapshot.accountId !== accountId ||
+      templateSnapshot.amountInput !== amount.input ||
+      templateSnapshot.type !== type ||
+      templateSnapshot.description !== description ||
+      templateSnapshot.categoryIds.length !== categoryIds.length ||
+      templateSnapshot.categoryIds.some((id, i) => categoryIds[i] !== id);
+    if (drift) {
+      setActiveTemplateId(null);
+      setTemplateSnapshot(null);
+    }
+  }, [
+    activeTemplateId,
+    templateSnapshot,
+    accountId,
+    amount.input,
+    type,
+    description,
+    categoryIds,
+  ]);
 
   useEffect(() => {
     form.setValue("amountInput", amount.input, { shouldValidate: true });
@@ -176,12 +225,16 @@ const CaptureForm = (props: CaptureFormProps) => {
   useEffect(() => {
     if (open) {
       setActiveTemplateId(null);
+      setTemplateSnapshot(null);
       templateFormRef.current = null;
       if (voicePrefill) {
-        const prefillAccountId = voicePrefill.accountId ?? accounts[0]?.id ?? "";
+        const prefillAccountId =
+          voicePrefill.accountId ?? accounts[0]?.id ?? "";
         const acc = accounts.find((a) => a.id === prefillAccountId);
         const dec = acc?.decimals ?? 2;
-        const preset = voicePrefill.date ? presetFromDate(voicePrefill.date) : "today";
+        const preset = voicePrefill.date
+          ? presetFromDate(voicePrefill.date)
+          : "today";
         const prefillAmount: AmountState = voicePrefill.amountInput
           ? { input: voicePrefill.amountInput, decimals: dec }
           : emptyAmount(dec);
@@ -197,7 +250,12 @@ const CaptureForm = (props: CaptureFormProps) => {
         setAmount(prefillAmount);
       } else {
         resetFormValues();
-        setAmount(emptyAmount(accounts.find((a) => a.id === (defaultAccountId ?? first?.id ?? ""))?.decimals ?? 2));
+        setAmount(
+          emptyAmount(
+            accounts.find((a) => a.id === (defaultAccountId ?? first?.id ?? ""))
+              ?.decimals ?? 2,
+          ),
+        );
       }
     }
   }, [open, voicePrefill]);
@@ -219,7 +277,10 @@ const CaptureForm = (props: CaptureFormProps) => {
   const minor = amountToMinor(amount);
   const canSave = minor > 0n && !!selected;
 
-  const suggestions = recentRepeats(recentTxns.filter((t) => t.amountMinor !== 0n), 3);
+  const suggestions = recentRepeats(
+    recentTxns.filter((t) => t.amountMinor !== 0n),
+    3,
+  );
 
   const applySuggestion = (txn: RecentTxn) => {
     // Suggestions carry signed minor units (expenses negative, income positive).
@@ -242,18 +303,31 @@ const CaptureForm = (props: CaptureFormProps) => {
     if (activeTemplateId === t.id) {
       const prev = templateFormRef.current;
       setActiveTemplateId(null);
+      setTemplateSnapshot(null);
       templateFormRef.current = null;
       if (prev) {
         form.setValue("accountId", prev.accountId, { shouldValidate: true });
         setAmount(prev.amount);
-        form.setValue("amountInput", prev.amount.input, { shouldValidate: true });
+        form.setValue("amountInput", prev.amount.input, {
+          shouldValidate: true,
+        });
         form.setValue("type", prev.type, { shouldValidate: true });
-        form.setValue("description", prev.description, { shouldValidate: true });
-        form.setValue("categoryIds", prev.categoryIds, { shouldValidate: true });
+        form.setValue("description", prev.description, {
+          shouldValidate: true,
+        });
+        form.setValue("categoryIds", prev.categoryIds, {
+          shouldValidate: true,
+        });
       }
       return;
     }
-    const snapshot: FormSnapshot = { accountId, amount, type, description, categoryIds };
+    const snapshot: FormSnapshot = {
+      accountId,
+      amount,
+      type,
+      description,
+      categoryIds,
+    };
     templateFormRef.current = snapshot;
     setActiveTemplateId(t.id);
     const acc = accounts.find((a) => a.id === t.accountId);
@@ -265,6 +339,14 @@ const CaptureForm = (props: CaptureFormProps) => {
     form.setValue("type", t.type, { shouldValidate: true });
     form.setValue("description", t.description, { shouldValidate: true });
     form.setValue("categoryIds", t.categoryIds, { shouldValidate: true });
+    setTemplateSnapshot({
+      templateId: t.id,
+      accountId: acc?.id ?? t.accountId,
+      amountInput: newAmount.input,
+      type: t.type,
+      description: t.description,
+      categoryIds: t.categoryIds,
+    });
   };
 
   const save = () => {
@@ -317,13 +399,19 @@ const CaptureForm = (props: CaptureFormProps) => {
           selected={selected}
           onAccountChange={handleAccountChange}
           description={description}
-          onDescriptionChange={(v) => form.setValue("description", v, { shouldValidate: true })}
+          onDescriptionChange={(v) =>
+            form.setValue("description", v, { shouldValidate: true })
+          }
           categoryIds={categoryIds}
-          onCategoryChange={(next) => form.setValue("categoryIds", next, { shouldValidate: true })}
+          onCategoryChange={(next) =>
+            form.setValue("categoryIds", next, { shouldValidate: true })
+          }
           datePreset={datePreset}
           dateOverride={dateOverride}
           onDatePreset={applyDatePreset}
-          onDateOverride={(ts) => form.setValue("dateOverride", ts, { shouldValidate: true })}
+          onDateOverride={(ts) =>
+            form.setValue("dateOverride", ts, { shouldValidate: true })
+          }
           activeTemplateId={activeTemplateId}
           onApplyTemplate={applyTemplate}
           activeTemplate={activeTemplate}
@@ -358,7 +446,7 @@ const CaptureForm = (props: CaptureFormProps) => {
           currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
         />
       </div>
-      <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block">
+      <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block rounded-b-xl">
         <Button
           size="lg"
           className="w-full"
