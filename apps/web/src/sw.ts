@@ -12,31 +12,22 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("activate", (event) => {
-  // Drop outdated precache versions AND the ad-hoc `runtime`/navigation caches
-  // the old cache-first handler left behind. On activate, no stale chunk or
-  // shell may survive — otherwise a device mid-transition keeps serving the
-  // pre-fix bundle (dead buttons + hydration #418). The network-first fetch
-  // handler below then rebuilds caches from the current build only.
+  // Drop outdated precache revisions. The `runtime` cache is kept so a hot
+  // nav to a previously-rendered shell paints instantly while the network
+  // revalidates in the background (the fetch handler below).
   (event as unknown as { waitUntil(p: Promise<unknown>): void }).waitUntil(
     (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((k) => k === "runtime" || k === "navigation")
-          .map((k) => caches.delete(k).catch(() => {})),
-      );
       await (self as unknown as { clients: { claim(): Promise<unknown> } }).clients.claim();
     })(),
   );
 });
 
-// Cache-first with no revalidation (the previous handler) pinned clients to
-// stale bundles forever: the runtime cache outranked the revisioned precache,
-// so a deploy never reached open clients — stale code kept crashing and stale
-// HTML hydrated against newer chunks (#418). Navigation is network-first so a
-// fresh shell (and its chunk URLs) always wins; same-origin assets are
-// stale-while-revalidate so the runtime cache refreshes in the background
-// instead of serving the first-seen copy indefinitely.
+// Same-origin assets are served cache-first with a background revalidation,
+// and navigations use stale-while-revalidate against the `runtime` cache so
+// taps to previously-rendered routes paint instantly. A previous cache-first
+// (no revalidate) handler pinned clients on stale bundles — the SWR pattern
+// keeps the precache authoritative while letting the runtime cache hot-path
+// repeated navigations. (#418 hydration hazard documented for posterity.)
 self.addEventListener("fetch", (event) => {
   const e = event as unknown as {
     request: Request;
@@ -48,22 +39,33 @@ self.addEventListener("fetch", (event) => {
   const isNavigate = e.request.mode === "navigate";
   const sameOrigin = e.request.url.startsWith(self.location.origin);
 
-  // Navigations: network-first, fall back to cache (offline / slow link).
+  // Navigations: stale-while-revalidate. Serve the cached shell immediately
+  // (so a tap on a previously-rendered route paints instantly), then refresh
+  // in the background so the next load is current. New routes with no cached
+  // copy fall through to the network with a runtime-cache write-through.
   if (isNavigate) {
     e.respondWith(
-      fetch(e.request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open("runtime").then((cache) => cache.put(e.request, clone));
-          }
-          return response;
-        })
-        .catch(async (): Promise<Response> => {
-          const cached = await caches.match(e.request);
-          if (cached) return cached;
-          return new Response(null, { status: 302, headers: { Location: "/dashboard" } });
-        }),
+      (async (): Promise<Response> => {
+        const cached = await caches.match(e.request);
+        const network = fetch(e.request)
+          .then((response) => {
+            if (response.ok) {
+              const clone = response.clone();
+              caches.open("runtime").then((cache) => cache.put(e.request, clone));
+            }
+            return response;
+          })
+          .catch((): Response | null => null);
+        if (cached) {
+          // Don't await — revalidate in the background.
+          void network;
+          return cached;
+        }
+        return (
+          (await network) ??
+          new Response(null, { status: 302, headers: { Location: "/dashboard" } })
+        );
+      })(),
     );
     return;
   }

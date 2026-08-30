@@ -11,6 +11,7 @@ import type { LlmEngine } from "@/lib/llm/types";
 import { runChat, inferUseCase, type ChatEngineDeps } from "@/lib/assistant/chat-engine";
 import type { ChatMessage, ChatStatus } from "@/lib/assistant/types";
 import { useAssets } from "@/lib/assets";
+import { AssistantSheetContext } from "./assistant-sheet-context";
 
 type State = {
   messages: ChatMessage[];
@@ -132,17 +133,22 @@ function toBudget(row: RowRecord): CategoryBudget {
   };
 }
 
-interface ChatProviderProps {
-  children: ReactNode;
+interface ChatDataLayerProps {
+  isEnabled: boolean;
 }
 
-export const ChatProvider = ({ children }: ChatProviderProps) => {
-  const [state, dispatch] = useReducer(reducer, initial);
-  const { userId } = useSync();
-  const { assets } = useAssets();
-  const engineRef = useRef<LlmEngine | null>(null);
+/**
+ * Cavetail: only mounts when the assistant sheet is open. Otherwise we would
+ * spin up four Dexie liveQuery subscriptions plus an OPFS / WebGPU probe on
+ * every dashboard render, doubling the liveQuery load with the dashboard's
+ * own watchers. Splits into Enabled/Disabled sub-components so hooks are only
+ * declared on the open path.
+ */
+function ChatDataLayer({ isEnabled }: ChatDataLayerProps) {
+  return isEnabled ? <ChatDataEnabled /> : null;
+}
 
-  // Raw rows — handlers do their own mapping; the engine doesn't see money.
+function ChatDataEnabled() {
   const accountsQ = useSyncQuery({
     key: queryKeys.accounts,
     sql: "SELECT * FROM accounts WHERE deleted_at IS NULL",
@@ -166,27 +172,63 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     select: toBudget,
   });
 
-  const accounts = accountsQ.data ?? [];
-  const txns = txnsQ.data ?? [];
-  const categories = categoriesQ.data ?? [];
-  const budgets = budgetsQ.data ?? [];
+  const value = useMemo<ChatDataValue>(
+    () => ({
+      accounts: accountsQ.data ?? [],
+      txns: txnsQ.data ?? [],
+      categories: categoriesQ.data ?? [],
+      budgets: budgetsQ.data ?? [],
+    }),
+    [accountsQ.data, txnsQ.data, categoriesQ.data, budgetsQ.data],
+  );
+
+  return <ChatDataContext.Provider value={value} />;
+}
+
+type ChatDataValue = {
+  accounts: Account[];
+  txns: Txn[];
+  categories: Category[];
+  budgets: CategoryBudget[];
+};
+
+const ChatDataContext = createContext<ChatDataValue | null>(null);
+
+function useChatData(): ChatDataValue {
+  const v = useContext(ChatDataContext);
+  // Before the sheet opens there is no provider — return empty defaults so
+  // the rest of the chat machinery (send/reset/setEngine) still functions.
+  return v ?? { accounts: [], txns: [], categories: [], budgets: [] };
+}
+
+interface ChatProviderProps {
+  children: ReactNode;
+}
+
+export const ChatProvider = ({ children }: ChatProviderProps) => {
+  const [state, dispatch] = useReducer(reducer, initial);
+  const { userId } = useSync();
+  const { assets } = useAssets();
+  const engineRef = useRef<LlmEngine | null>(null);
+  const { accounts, txns, categories, budgets } = useChatData();
 
   const assetsById = useMemo(
     () => new Map(assets.map((a) => [a.id, { code: a.code, decimals: a.decimals }])),
     [assets],
   );
 
-  // Probe device support on mount and when online status changes.
-  useEffect(() => {
-    let cancelled = false;
+  // Probe device support when the sheet first opens (not on every mount) so
+  // a closed sheet never blocks the dashboard render with an OPFS / WebGPU
+  // probe. The ref guards against repeated probes within this provider
+  // instance; re-mount resets it naturally.
+  const supportProbedRef = useRef(false);
+  const probeSupport = useCallback(() => {
+    if (supportProbedRef.current) return;
+    supportProbedRef.current = true;
     void (async () => {
       const support = await getLlmSupport();
-      if (cancelled) return;
       dispatch({ type: "support", support });
     })();
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   // Wipe chat on sign-out so a different user never sees the previous thread.
@@ -306,8 +348,35 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
     [state, send, reset, setEngine],
   );
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={value}>
+      <ChatDataBridge probeSupport={probeSupport} />
+      {children}
+    </Ctx.Provider>
+  );
 };
+
+/**
+ * Sits inside both Ctx and AssistantSheetProvider so it can flip the data
+ * layer on when the sheet opens. Calls `probeSupport()` (passed from
+ * ChatProvider) to trigger the OPFS / WebGPU probe only when needed.
+ */
+function ChatDataBridge({ probeSupport }: { probeSupport: () => void }) {
+  const { open } = useAssistantSheetSafe();
+  useEffect(() => {
+    if (open) probeSupport();
+  }, [open, probeSupport]);
+  return <ChatDataLayer isEnabled={open} />;
+}
+
+function useAssistantSheetSafe(): { open: boolean } {
+  // Cavetail: AssistantSheetProvider is rendered as a sibling-below of
+  // ChatProvider, so this hook only fires once the bridge is rendered under
+  // the provider. Without a provider we report closed so the data layer
+  // never mounts.
+  const ctx = useContext(AssistantSheetContext);
+  return { open: ctx?.open ?? false };
+}
 
 export const useChat = () => {
   const v = useContext(Ctx);

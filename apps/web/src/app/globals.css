@@ -51,6 +51,14 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  /* Disable the iOS Safari 300ms tap delay and the standalone-PWA double-tap
+     hesitation on every interactive element — bottom nav, FAB, dialog
+     triggers, list rows. Targets inherit; explicit per-button rules still win. */
+  a,
+  button,
+  [role="button"] {
+    touch-action: manipulation;
+  }
   * {
     border-color: var(--border);
   }

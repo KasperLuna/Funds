@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -17,14 +16,19 @@ export const ADD_MENU_TARGETS: AddMenuTarget[] = [
 
 type AddMenuRender = (controls: {
   open: boolean;
+  /** Stop the menu popover — call on every primary-action click. */
   onMain: () => void;
   onToggle: () => void;
+  /** Pre-fetched href to bind the primary action to a Next <Link> for instant nav. */
+  defaultHref: string;
 }) => React.ReactNode;
 
 /**
- * A two-part capture trigger: a primary action (tap → `defaultHref`) and a
- * toggle that opens a mini-menu of capture variants. The trigger composition
- * is owned by the caller via render props; menu popover behavior is shared.
+ * A two-part capture trigger: a primary action (navigate to `defaultHref`) and
+ * a toggle that opens a mini-menu of capture variants. The trigger composition
+ * is owned by the caller via render props — the primary action is expected to
+ * be a Next <Link> (with prefetch) so the destination chunk is warm before the
+ * tap lands; menu popover behavior is shared.
  *
  * No long-press anywhere — the toggle is an explicit, discoverable control
  * (split-button caret on desktop, caret cap on the mobile FAB).
@@ -44,16 +48,13 @@ export function AddMenu({
   menuClassName?: string;
   children: AddMenuRender;
 }) {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Cavetail: when the menu is open, the primary action becomes a close button
+  // (the user already sees the menu — the + shouldn't also navigate).
   const handleMain = () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    router.push(defaultHref);
+    if (open) setOpen(false);
   };
 
   const handleToggle = () => setOpen((o) => !o);
@@ -78,7 +79,7 @@ export function AddMenu({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      {children({ open, onMain: handleMain, onToggle: handleToggle })}
+      {children({ open, onMain: handleMain, onToggle: handleToggle, defaultHref })}
 
       {open && (
         <div

@@ -153,16 +153,17 @@ export function AddButton({
       className={className}
       menuClassName="left-0 top-full mt-2"
     >
-      {({ open, onMain, onToggle }) => (
+      {({ open, onMain, onToggle, defaultHref }) => (
         <div className="flex w-full items-stretch overflow-hidden rounded-(--radius-md) bg-(--accent) text-(--accent-foreground)">
-          <button
-            type="button"
+          <Link
+            href={defaultHref}
+            prefetch
             onClick={onMain}
             className="flex min-h-11 flex-1 items-center justify-center gap-1 px-3 transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
             <span className="text-sm font-semibold">{label}</span>
-          </button>
+          </Link>
           <span aria-hidden className="w-px bg-(--accent-foreground)/25" />
           <button
             type="button"

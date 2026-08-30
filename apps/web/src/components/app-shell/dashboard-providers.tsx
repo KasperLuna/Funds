@@ -167,7 +167,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
             className="self-center"
             menuClassName="bottom-full left-1/2 -translate-x-1/2 mb-2"
           >
-            {({ open, onMain, onToggle }) => (
+            {({ open, onMain, onToggle, defaultHref }) => (
               <div className="flex flex-col items-center -mt-6">
                 <button
                   type="button"
@@ -182,14 +182,15 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
                     aria-hidden
                   />
                 </button>
-                <button
-                  type="button"
+                <Link
+                  href={defaultHref}
+                  prefetch
                   onClick={onMain}
                   aria-label="Add transaction"
                   className="flex h-16 w-16 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) ring-4 ring-(--bg) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-95"
                 >
                   <Plus className="h-7 w-7" strokeWidth={2.5} aria-hidden />
-                </button>
+                </Link>
               </div>
             )}
           </AddMenu>

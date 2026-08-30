@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSync } from "@/lib/sync/sync-context";
@@ -94,6 +94,7 @@ export const DashboardScreen = () => {
     [assets],
   );
   const queryClient = useQueryClient();
+  const [, startTransition] = useTransition();
 
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
@@ -309,9 +310,12 @@ export const DashboardScreen = () => {
       [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
     [tokenHoldings],
   );
+  // Cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
+  // not visible behind the sheet, and the network round-trip + BigInt
+  // recompute add main-thread work on the same frame as the sheet opening.
   const pricesQuery = useQuery({
     queryKey: ["prices", coingeckoKey, primaryCode],
-    enabled: !!coingeckoKey,
+    enabled: !!coingeckoKey && !captureOpen,
     queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
   });
   const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
@@ -357,6 +361,40 @@ export const DashboardScreen = () => {
         date: editTxn.date,
       }
     : undefined;
+
+  // Cavetail: memoize so CaptureSheet's reset effect does not refire on every
+  // dashboard render — without stable references the form would re-reset on
+  // every sync tick and wipe in-progress input.
+  const captureAccounts = useMemo(
+    () =>
+      accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        assetId: a.assetId,
+        decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+        assetCode: assetsById.get(a.assetId)?.code ?? "",
+      })),
+    [accounts, assetsById],
+  );
+  const captureCategories = useMemo(
+    () => categories.map((c) => ({ id: c.id, name: c.name })),
+    [categories],
+  );
+  const captureRecent = recentForCapture;
+
+  const sheetOpen = captureOpen || !!draftToken || !!editTxn || !!assistantPrefill;
+  // Cavetail: only mount CaptureSheet when actually open. Dialog always
+  // renders its children otherwise, which would spin up useForm + Zod
+  // validation on every dashboard render.
+  const voicePrefillValue = voicePrefill ?? typePrefill ?? txnPrefill ?? assistantPrefill;
+  const handleClose = () => {
+    startTransition(() => {
+      setVoicePrefill(undefined);
+      setAssistantPrefill(undefined);
+      setEditTxn(null);
+      router.replace("/dashboard", { scroll: false });
+    });
+  };
 
   if (errorMessage) {
       return (
@@ -435,29 +473,22 @@ export const DashboardScreen = () => {
         onChanged={() => void queryClient.invalidateQueries({ queryKey: [...queryKeys.templates] })}
       />
 
-      <CaptureSheet
-        isOpen={captureOpen || !!draftToken || !!editTxn || !!assistantPrefill}
-        onOpenChange={() => {
-          setVoicePrefill(undefined);
-          setAssistantPrefill(undefined);
-          setEditTxn(null);
-          router.replace("/dashboard", { scroll: false });
-        }}
-        userId={uid}
-        accounts={accounts.map((a) => ({
-          id: a.id,
-          name: a.name,
-          assetId: a.assetId,
-          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
-          assetCode: assetsById.get(a.assetId)?.code ?? "",
-        }))}
-        categories={categories}
-        recentTxns={recentForCapture}
-        templates={templates}
-        onSave={handleSave}
-        voicePrefill={voicePrefill ?? typePrefill ?? txnPrefill ?? assistantPrefill}
-        editing={!!editTxn}
-      />
+      {sheetOpen && (
+        <CaptureSheet
+          isOpen={sheetOpen}
+          onOpenChange={(o) => {
+            if (!o) handleClose();
+          }}
+          userId={uid}
+          accounts={captureAccounts}
+          categories={captureCategories}
+          recentTxns={captureRecent}
+          templates={templates}
+          onSave={handleSave}
+          voicePrefill={voicePrefillValue}
+          editing={!!editTxn}
+        />
+      )}
     </div>
   );
 };

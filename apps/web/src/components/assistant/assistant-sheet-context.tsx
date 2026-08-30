@@ -22,7 +22,7 @@ interface AssistantSheetProviderProps {
  * — `AssistantOpener` reads it on mount, calls `open()`, and cleans the
  * param so a refresh doesn't re-trigger.
  */
-const AssistantSheetContext = createContext<AssistantSheetContextValue | null>(null);
+export const AssistantSheetContext = createContext<AssistantSheetContextValue | null>(null);
 
 export const AssistantSheetProvider = ({ children }: AssistantSheetProviderProps) => {
   const [open, setOpen] = useState(false);

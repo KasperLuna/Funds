@@ -28,7 +28,7 @@ const DialogContent = ({
         className={cn(
           // Mobile: bottom sheet, near-full height so content never feels clipped.
           "fixed inset-x-0 bottom-0 z-50 max-h-[calc(100dvh-1rem)] w-full overflow-y-auto rounded-t-(--radius-sheet) border border-(--border-strong) border-b-0 bg-(--bg) p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-          "data-[state=open]:animate-[funds-sheet-in_250ms_cubic-bezier(0.32,0.72,0,1)]",
+          "data-[state=open]:animate-[funds-sheet-in_180ms_cubic-bezier(0.32,0.72,0,1)]",
           // Desktop: centered plate dialog. Must clear the mobile bottom-anchor
           // (bottom-0/inset-x-0) or it pins the height to viewport − 50%.
           "sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:right-auto sm:max-h-[85vh] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-(--radius-lg) sm:border-b sm:data-[state=open]:animate-[funds-dialog-in_200ms_cubic-bezier(0.32,0.72,0,1)]",

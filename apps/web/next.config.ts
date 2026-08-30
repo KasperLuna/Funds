@@ -16,6 +16,5 @@ const nextConfig: NextConfig = {
 export default withSerwistInit({
   swSrc: "src/sw.ts",
   swDest: "public/sw.js",
-  cacheOnNavigation: true,
   disable: process.env.NODE_ENV === "development",
 })(nextConfig);

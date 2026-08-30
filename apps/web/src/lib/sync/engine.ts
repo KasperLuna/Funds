@@ -324,9 +324,20 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     visible = !document.hidden;
     if (visible && state.online) void syncNow();
   };
+  // Cavetail: pageshow fires constantly on iOS PWA (resume from notification,
+  // tab switch, unlock). An immediate syncNow() races the user tapping a nav
+  // item in the same tick and blocks IndexedDB writes behind the pull
+  // transaction. Debounce 200ms — long enough to coalesce the burst, short
+  // enough that the user never sees a stale sync indicator.
+  let pageshowTimer: ReturnType<typeof setTimeout> | null = null;
   const onPageshow = (): void => {
     visible = true;
-    if (state.online) void syncNow();
+    if (!state.online) return;
+    if (pageshowTimer) clearTimeout(pageshowTimer);
+    pageshowTimer = setTimeout(() => {
+      pageshowTimer = null;
+      void syncNow();
+    }, 200);
   };
 
   function start(): void {
@@ -354,6 +365,10 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     if (interval) {
       clearInterval(interval);
       interval = null;
+    }
+    if (pageshowTimer) {
+      clearTimeout(pageshowTimer);
+      pageshowTimer = null;
     }
     window.removeEventListener("online", onOnline);
     window.removeEventListener("offline", onOffline);
