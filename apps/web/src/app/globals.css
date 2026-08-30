@@ -1,10 +1,33 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 
 @theme inline {
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   --color-positive: #10b981;
   --color-negative: #ef4444;
+  /* shadcn semantic color utilities (bg-background, text-foreground, bg-popover,
+     border-border, etc.) require these --color-* aliases to exist in @theme.
+     The values are pulled from the :root aliases below — keep both in sync. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent-sh);
+  --color-accent-foreground: var(--accent-sh-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border-sh);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 /* Intaglio Plate — pure-black OLED page with engraved gray plates,
@@ -15,11 +38,19 @@
 :root {
   color-scheme: dark;
   --bg: #000000;
+  --fg: #f4f4f5;
   --surface-1: #0a0a0a;
   --surface-2: #141414;
   --surface-3: #1f1f1f;
   --border: rgba(255, 255, 255, 0.10);
   --border-strong: rgba(255, 255, 255, 0.22);
+  /* Plate surface for dialogs/sheets. Tinted glass at /92 sits on top of a
+     world-softening scrim, so the plate has presence without going fully
+     opaque. --plate-edge is the visible hairline; --plate-edge-inset is the
+     1px top inner highlight that gives the plate an engraved top edge. */
+  --plate-1: #0a0a0a;
+  --plate-edge: rgba(255, 255, 255, 0.30);
+  --plate-edge-inset: rgba(255, 255, 255, 0.07);
   --accent: #10b981;
   --accent-foreground: #000000;
   --danger: #ef4444;
@@ -34,6 +65,29 @@
      plus the protruding + button row = ~88pt. Desktop has neither. */
   --chrome-header-h: 0px;
   --chrome-footer-h: 0px;
+  /* shadcn token aliases. The Intaglio Plate token system is the source of
+     truth; shadcn primitives reference semantic names (background/foreground/
+     primary/etc.), so we alias them here. New pages/components should use
+     shadcn tokens; existing pages keep using the raw tokens. */
+  --background: #000000;
+  --foreground: #f4f4f5;
+  --card: #0a0a0a;
+  --card-foreground: #f4f4f5;
+  --popover: #1f1f1f;
+  --popover-foreground: #f4f4f5;
+  --primary: #10b981;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #f4f4f5;
+  --muted: #1f1f1f;
+  --muted-foreground: #a1a1aa;
+  --accent-sh: #10b981;
+  --accent-sh-foreground: #000000;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border-sh: rgba(255, 255, 255, 0.10);
+  --input: rgba(255, 255, 255, 0.22);
+  --ring: #10b981;
 }
 
 @media (max-width: 767px) {
@@ -108,58 +162,21 @@
   }
 }
 
-/* Authored motion (design.md §9): one moment — the sheet arriving */
-@keyframes funds-overlay-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-/* cavetail: animate the `translate`/`scale` properties, not `transform` —
-   Tailwind v4 centering uses the native translate property, so keyframing
-   `transform` would double-offset the dialog (spawn top-left, flicker). */
-@keyframes funds-sheet-in {
-  from {
-    opacity: 0;
-    translate: 0 32px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes funds-dialog-in {
-  from {
-    opacity: 0;
-    translate: -50% calc(-50% + 8px);
-    scale: 0.98;
-  }
-  to {
-    opacity: 1;
-    translate: -50% -50%;
-    scale: 1;
-  }
-}
-@keyframes funds-popover-in {
-  from {
-    opacity: 0;
-    translate: 0 4px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
-}
-@keyframes funds-popover-out {
-  from {
-    opacity: 1;
-    translate: 0 0;
-  }
-  to {
-    opacity: 0;
-    translate: 0 2px;
+/* shadcn Sheet/Dialog/Popover motion is provided by `animate-in`/`animate-out`
+   from `tailwindcss-animate` (the same keyframes the canonical shadcn ships).
+   Hand-rolled `funds-*` keyframes are removed — `apps/web/src/components/ui/`
+   is canonical shadcn now. */
+
+/* cavetail: assistant-sheet on mobile wants to occupy the space between the
+   dashboard's top header and bottom nav (not pinned to viewport bottom). On
+   desktop the Sheet centers itself as a dialog and this rule must not apply.
+   The custom property pattern keeps the offset logic in CSS, not inline JS. */
+@layer components {
+  @media (max-width: 767px) {
+    [data-mobile-frame] {
+      top: var(--chrome-header-h) !important;
+      bottom: var(--chrome-footer-h) !important;
+    }
   }
 }
 

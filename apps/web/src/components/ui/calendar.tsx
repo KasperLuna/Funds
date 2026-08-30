@@ -18,7 +18,7 @@ const CalendarChevron = ({
   size = 16,
   disabled,
 }: CalendarChevronProps) => {
-  const cls = cn("text-zinc-400", disabled && "opacity-40");
+  const cls = cn("text-zinc-300", disabled && "opacity-40");
   const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
   return <Icon className={cls} size={size} strokeWidth={2} aria-hidden />;
 };
@@ -26,13 +26,15 @@ const CalendarChevron = ({
 const calendarClassNames: Partial<ClassNames> = {
   [UI.Root]: "p-2",
   [UI.Months]: "flex flex-col sm:flex-row",
-  [UI.Month]: "flex flex-col gap-2",
+  [UI.Month]: "grid grid-cols-[auto_1fr_auto] items-center gap-y-1",
   [UI.MonthCaption]: "flex items-center justify-center pt-1",
   [UI.CaptionLabel]: "label-micro text-zinc-300",
-  [UI.Nav]: "absolute inset-x-1 top-1 flex items-center justify-between",
-  [UI.PreviousMonthButton]: "grid h-9 w-9 place-items-center rounded-(--radius-sm) text-zinc-400 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-40",
-  [UI.NextMonthButton]: "grid h-9 w-9 place-items-center rounded-(--radius-sm) text-zinc-400 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-40",
+  [UI.Nav]: "flex items-center gap-0.5",
+  [UI.PreviousMonthButton]: "grid h-9 w-9 place-items-center rounded-(--radius-sm) text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-40",
+  [UI.NextMonthButton]: "grid h-9 w-9 place-items-center rounded-(--radius-sm) text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-40",
+  [UI.MonthGrid]: "col-span-3",
   [UI.Weekdays]: "flex",
+  [UI.Weeks]: "flex flex-col",
   [UI.Weekday]: "w-10 text-center text-xs font-semibold text-zinc-500",
   [UI.Week]: "flex",
   [UI.Day]: "h-10 w-10 text-center text-sm",
@@ -51,6 +53,7 @@ const Calendar = (props: CalendarProps) => {
     <DayPicker
       classNames={calendarClassNames}
       components={{ Chevron: CalendarChevron }}
+      navLayout="around"
       {...props}
     />
   );

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,7 +51,10 @@ const RootLayout = ({ children }: RootLayoutProps) => {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="bg-black">{children}</body>
+      <body className="bg-black">
+        {children}
+        <Toaster richColors position="top-center" />
+      </body>
     </html>
   );
 };

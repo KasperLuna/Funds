@@ -7,6 +7,7 @@ export default defineConfig({
     passWithNoTests: true,
     globals: true, // enables RTL auto-cleanup + jest-dom matchers
     fileParallelism: false, // cavetail: suites share one test PG; serialize to avoid cleanup races
+    setupFiles: ["./src/test/setup.ts"],
     typecheck: {
       enabled: false, // cavetail: skip typecheck in vitest since these deps come via @funds/db
     },
