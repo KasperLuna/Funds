@@ -6,7 +6,6 @@ import {
   PopoverContent,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { SegmentedControl } from "@/components/ui/segmented";
 import { Input } from "@/components/ui/input";
 import { ContextPopover } from "@/components/capture/context-popover";
 import { cn } from "@/lib/utils";
@@ -53,10 +52,11 @@ export interface CaptureFormFieldsProps {
   accountId: string;
   selected: AccountOption | undefined;
   onAccountChange: (id: string) => void;
-  type: "income" | "expense";
-  onTypeChange: (next: "income" | "expense") => void;
   description: string;
   onDescriptionChange: (next: string) => void;
+  onDescriptionFocus: () => void;
+  onDescriptionBlur: () => void;
+  descriptionRef?: React.Ref<HTMLInputElement>;
   categoryIds: string[];
   onToggleCategory: (id: string) => void;
   datePreset: "today" | "yesterday";
@@ -67,7 +67,6 @@ export interface CaptureFormFieldsProps {
   onApplyTemplate: (t: Template) => void;
   activeTemplate: Template | undefined;
   dateLabel: string;
-  formatCustomDate: (ts: number) => string;
 }
 
 export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
@@ -78,10 +77,11 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     accountId,
     selected,
     onAccountChange,
-    type,
-    onTypeChange,
     description,
     onDescriptionChange,
+    onDescriptionFocus,
+    onDescriptionBlur,
+    descriptionRef,
     categoryIds,
     onToggleCategory,
     datePreset,
@@ -234,15 +234,18 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
       </div>
 
       <Input
+        ref={descriptionRef}
         aria-label="Description"
-        className="mt-4"
+        className="mt-3 h-11 text-base"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}
+        onFocus={onDescriptionFocus}
+        onBlur={onDescriptionBlur}
       />
 
       {categories.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1" role="group" aria-label="Categories">
+        <div className="mt-2 flex flex-wrap gap-1" role="group" aria-label="Categories">
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((c) => {
             const active = categoryIds.includes(c.id);
             return (
@@ -263,17 +266,6 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
           })}
         </div>
       )}
-
-      <div className="mt-4 flex justify-center">
-        <SegmentedControl
-          options={[
-            { value: "expense", label: "Expense" },
-            { value: "income", label: "Income" },
-          ]}
-          value={type}
-          onChange={(v) => onTypeChange(v)}
-        />
-      </div>
     </>
   );
 };

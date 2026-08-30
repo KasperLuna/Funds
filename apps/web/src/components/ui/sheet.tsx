@@ -125,19 +125,17 @@ const SheetContent = React.forwardRef<
           ref={ref}
           data-slot="sheet-content"
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96dvh] flex-col gap-4 rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96dvh] flex-col rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
             className,
           )}
           {...props}
         >
-          <div className="mx-auto mt-3 mb-1 h-1.5 w-14 shrink-0 rounded-full bg-white/30 opacity-70" />
+          <div className="mx-auto mt-3 h-1.5 w-14 shrink-0 rounded-full bg-white/30 opacity-70" />
+          <DrawerPrimitive.Close className="absolute right-3 top-3 z-10 rounded-(--radius-sm) p-1.5 opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-(--accent) disabled:pointer-events-none">
+            <XIcon className="size-4" />
+            <span className="sr-only">Close</span>
+          </DrawerPrimitive.Close>
           {children}
-          {showCloseButton && (
-            <DrawerPrimitive.Close className="absolute right-3 top-3 rounded-(--radius-sm) p-1.5 opacity-80 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-(--accent) disabled:pointer-events-none">
-              <XIcon className="size-4" />
-              <span className="sr-only">Close</span>
-            </DrawerPrimitive.Close>
-          )}
         </DrawerPrimitive.Content>
       </DrawerPrimitive.Portal>
     </DrawerPrimitive.Root>

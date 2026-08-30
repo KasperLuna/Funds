@@ -1,7 +1,6 @@
 "use client";
 
-import { Keypad, type DigitKey } from "@/components/capture/keypad";
-import { Button } from "@/components/ui/button";
+import type { DigitKey } from "@/components/capture/keypad";
 import { AmountInput } from "@/components/capture/amount-input";
 import {
   sanitizeAmountInput,
@@ -10,6 +9,7 @@ import {
   type RecentTxn,
 } from "@/lib/capture";
 import type { AccountOption } from "@/components/capture/capture-sheet";
+import { cn } from "@/lib/utils";
 
 export interface CaptureAmountKeypadProps {
   amount: AmountState;
@@ -24,29 +24,29 @@ export interface CaptureAmountKeypadProps {
   suggestions: RecentTxn[];
   onApplySuggestion: (txn: RecentTxn) => void;
   decimals: number;
+  /** When true, suppress top margin — used inside a scrollable sheet region. */
+  compact?: boolean;
+  /** Forwarded to the outer wrapper. Use to size the readout inside a flex row. */
+  className?: string;
 }
 
 export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
   const {
     amount,
     onAmountInputChange,
-    onKey,
-    onBackspace,
-    onClear,
-    onSave,
-    canSave,
     selected,
     type,
     suggestions,
     onApplySuggestion,
     decimals,
+    compact,
+    className,
   } = props;
 
   return (
-    <>
+    <div className={cn(compact ? "" : "mt-4", className)}>
       {/* Hero — the amount readout, the one dominant plate. */}
       <AmountInput
-        className="mt-4"
         assetCode={selected?.assetCode}
         tone={type === "expense" ? "danger" : "accent"}
         value={amount.input}
@@ -80,29 +80,6 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
           ))}
         </div>
       )}
-
-      <div className="mt-5 sm:hidden">
-        <Keypad
-          onKey={onKey}
-          onBackspace={onBackspace}
-          onClear={onClear}
-          onSave={onSave}
-          canSave={canSave}
-          currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
-        />
-      </div>
-
-      <div className="hidden sm:block">
-        <Button
-          size="lg"
-          className="mt-5 w-full"
-          disabled={!canSave}
-          onClick={onSave}
-          aria-label="Save transaction"
-        >
-          {canSave ? "Save" : "Enter amount"}
-        </Button>
-      </div>
-    </>
+    </div>
   );
 };

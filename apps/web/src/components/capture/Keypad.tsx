@@ -22,7 +22,7 @@ const ARIA_LABEL: Partial<Record<DigitKey | "back" | "clear" | "save", string>> 
 };
 
 const keyCls =
-  "min-h-14 rounded-(--radius-md) border border-(--border) bg-(--surface-2) font-display text-xl font-semibold tracking-tight text-zinc-100 hover:bg-(--surface-3) active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out";
+  "min-h-12 rounded-(--radius-md) border border-(--border) bg-(--surface-2) font-display text-xl font-semibold tracking-tight text-zinc-100 hover:bg-(--surface-3) active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out";
 
 export const Keypad = ({
   onKey,

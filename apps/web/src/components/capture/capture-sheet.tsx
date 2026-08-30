@@ -10,7 +10,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { type DigitKey } from "@/components/capture/keypad";
+import { type DigitKey, Keypad } from "@/components/capture/keypad";
+import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { CaptureFormFields } from "@/components/capture/capture-form-fields";
 import { CaptureAmountKeypad } from "@/components/capture/capture-amount-keypad";
 import {
@@ -28,6 +30,7 @@ import {
 } from "@/lib/capture";
 import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
+import { cn } from "@/lib/utils";
 
 export type AccountOption = { id: string; name: string; assetId: string; decimals: number; assetCode?: string };
 export type CategoryOption = { id: string; name: string; color?: string };
@@ -139,6 +142,8 @@ const CaptureForm = (props: CaptureFormProps) => {
 
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(first?.decimals ?? 2));
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+  const [textFocused, setTextFocused] = useState(false);
+  const descriptionRef = useRef<HTMLInputElement>(null);
   const templateFormRef = useRef<FormSnapshot | null>(null);
 
   const accountId = form.watch("accountId");
@@ -302,62 +307,118 @@ const CaptureForm = (props: CaptureFormProps) => {
     form.setValue("dateOverride", null, { shouldValidate: true });
   };
 
-  return (
-    <>
-      <CaptureFormFields
-        accounts={accounts}
-        categories={categories}
-        templates={templates}
-        accountId={accountId}
-        selected={selected}
-        onAccountChange={handleAccountChange}
-        type={type}
-        onTypeChange={handleTypeChange}
-        description={description}
-        onDescriptionChange={(v) => form.setValue("description", v, { shouldValidate: true })}
-        categoryIds={categoryIds}
-        onToggleCategory={toggleCategory}
-        datePreset={datePreset}
-        dateOverride={dateOverride}
-        onDatePreset={applyDatePreset}
-        onDateOverride={(ts) => form.setValue("dateOverride", ts, { shouldValidate: true })}
-        activeTemplateId={activeTemplateId}
-        onApplyTemplate={applyTemplate}
-        activeTemplate={activeTemplate}
-        dateLabel={dateLabel}
-        formatCustomDate={formatCustomDate}
-      />
-      <CaptureAmountKeypad
-        amount={amount}
-        onAmountInputChange={setAmount}
-        onKey={handleKey}
-        onBackspace={() => setAmount(backspace)}
-        onClear={() => setAmount(clearAmount)}
-        onSave={save}
-        canSave={canSave}
-        selected={selected}
-        type={type}
-        suggestions={suggestions}
-        onApplySuggestion={applySuggestion}
-        decimals={decimals}
-      />
-    </>
-  );
-};
+  // When the description input gains focus on mobile, the soft keyboard
+  // shrinks the viewport and the keypad below it must collapse so the field
+  // stays reachable. After the keypad finishes collapsing (200ms transition
+  // matches the CSS above), scroll the focused field into the visible area of
+  // the sheet's inner scroll region — iOS does not do this automatically
+  // inside a `position: fixed` drawer with an `overflow-y-auto` child.
+  useEffect(() => {
+    if (!textFocused || !descriptionRef.current) return;
+    const id = window.setTimeout(() => {
+      descriptionRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 220);
+    return () => window.clearTimeout(id);
+  }, [textFocused]);
 
-export const CaptureSheet = (props: CaptureSheetProps) => {
-  const { isOpen: open, onOpenChange, editing, recentTxns } = props;
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex flex-col gap-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-6 pt-1">
         <SheetTitle className="font-display text-lg font-bold tracking-tight">
-          {editing ? "Edit transaction" : "Log transaction"}
+          {props.editing ? "Edit transaction" : "Log transaction"}
         </SheetTitle>
         <SheetDescription>
           {recentTxns.length > 0
             ? `${recentTxns.length} recent match${recentTxns.length === 1 ? "" : "es"} available`
             : "New entry"}
         </SheetDescription>
+        <CaptureFormFields
+          accounts={accounts}
+          categories={categories}
+          templates={templates}
+          accountId={accountId}
+          selected={selected}
+          onAccountChange={handleAccountChange}
+          description={description}
+          onDescriptionChange={(v) => form.setValue("description", v, { shouldValidate: true })}
+          onDescriptionFocus={() => setTextFocused(true)}
+          onDescriptionBlur={() => setTextFocused(false)}
+          descriptionRef={descriptionRef}
+          categoryIds={categoryIds}
+          onToggleCategory={toggleCategory}
+          datePreset={datePreset}
+          dateOverride={dateOverride}
+          onDatePreset={applyDatePreset}
+          onDateOverride={(ts) => form.setValue("dateOverride", ts, { shouldValidate: true })}
+          activeTemplateId={activeTemplateId}
+          onApplyTemplate={applyTemplate}
+          activeTemplate={activeTemplate}
+          dateLabel={dateLabel}
+        />
+        <div className="mt-3 flex items-stretch gap-2">
+          <SegmentedControl
+            className="h-14 shrink-0"
+            options={[
+              { value: "expense", label: "Expense" },
+              { value: "income", label: "Income" },
+            ]}
+            value={type}
+            onChange={(v) => handleTypeChange(v)}
+          />
+          <CaptureAmountKeypad
+            className="flex-1"
+            amount={amount}
+            onAmountInputChange={setAmount}
+            onKey={handleKey}
+            onBackspace={() => setAmount(backspace)}
+            onClear={() => setAmount(clearAmount)}
+            onSave={save}
+            canSave={canSave}
+            selected={selected}
+            type={type}
+            suggestions={suggestions}
+            onApplySuggestion={applySuggestion}
+            decimals={decimals}
+            compact
+          />
+        </div>
+      </div>
+      <div
+        className={cn(
+          "shrink-0 overflow-hidden border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 transition-[max-height,opacity] duration-200 ease-out sm:hidden",
+          textFocused ? "max-h-0 border-t-0 opacity-0" : "max-h-96 opacity-100",
+        )}
+        aria-hidden={textFocused}
+      >
+        <Keypad
+          onKey={handleKey}
+          onBackspace={() => setAmount(backspace)}
+          onClear={() => setAmount(clearAmount)}
+          onSave={save}
+          canSave={canSave}
+          currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
+        />
+      </div>
+      <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!canSave}
+          onClick={save}
+          aria-label="Save transaction"
+        >
+          {canSave ? "Save" : "Enter amount"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export const CaptureSheet = (props: CaptureSheetProps) => {
+  const { isOpen: open, onOpenChange } = props;
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col">
         <CaptureForm {...props} open={open} />
       </SheetContent>
     </Sheet>
