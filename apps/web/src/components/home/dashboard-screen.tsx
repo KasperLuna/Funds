@@ -291,6 +291,27 @@ export const DashboardScreen = () => {
     saveTxn.mutate(row);
   };
 
+  const createCategoryMutation = useSyncMutation({
+    keys: [queryKeys.categories],
+    mutationFn: async (c: Category) => {
+      await db.table("categories").upsert({
+        id: c.id,
+        user_id: uid,
+        name: c.name,
+        color: c.color,
+        hideable: c.hideable ? 1 : 0,
+        exclude_from_analytics: c.excludeFromAnalytics ? 1 : 0,
+        monthly_budget_minor:
+          c.monthlyBudgetMinor != null ? Number(c.monthlyBudgetMinor) : null,
+        asset_id: c.assetId ?? null,
+        created_at: c.createdAt,
+        updated_at: c.updatedAt,
+        deleted_at: c.deletedAt ?? null,
+      });
+    },
+  });
+  const handleCreateCategory = (c: Category) => createCategoryMutation.mutate(c);
+
   const accountInfo = useMemo(() => {
     const map: Record<string, { name: string; code: string; decimals: number }> = {};
     for (const a of accounts) {
@@ -487,6 +508,7 @@ export const DashboardScreen = () => {
           onSave={handleSave}
           voicePrefill={voicePrefillValue}
           editing={!!editTxn}
+          onCreateCategory={handleCreateCategory}
         />
       )}
     </div>

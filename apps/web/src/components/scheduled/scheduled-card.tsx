@@ -15,6 +15,7 @@ import { ScheduledDialog } from "@/components/scheduled/scheduled-dialog";
 import { ScheduledRow } from "@/components/scheduled/scheduled-row";
 import { Button } from "@/components/ui/button";
 import { CaptureSheet, type VoicePrefill } from "@/components/capture/capture-sheet";
+import type { Category } from "@/lib/categories/categories-store";
 
 export type ScheduledCardAccount = {
   id: string;
@@ -138,6 +139,27 @@ export const ScheduledCard = ({
     if (!logItem) return;
     logOccurrenceMutation.mutate({ row, schedule: logItem });
   };
+
+  const createCategoryMutation = useSyncMutation({
+    keys: [queryKeys.categories],
+    mutationFn: async (c: Category) => {
+      await db.table("categories").upsert({
+        id: c.id,
+        user_id: uid,
+        name: c.name,
+        color: c.color,
+        hideable: c.hideable ? 1 : 0,
+        exclude_from_analytics: c.excludeFromAnalytics ? 1 : 0,
+        monthly_budget_minor:
+          c.monthlyBudgetMinor != null ? Number(c.monthlyBudgetMinor) : null,
+        asset_id: c.assetId ?? null,
+        created_at: c.createdAt,
+        updated_at: c.updatedAt,
+        deleted_at: c.deletedAt ?? null,
+      });
+    },
+  });
+  const handleCreateCategory = (c: Category) => createCategoryMutation.mutate(c);
 
   const captureAccounts = accounts.map((a) => ({
     id: a.id,
@@ -342,6 +364,7 @@ export const ScheduledCard = ({
         recentTxns={[]}
         onSave={handleOccurrenceSave}
         voicePrefill={occurrencePrefill}
+        onCreateCategory={handleCreateCategory}
       />
     </section>
   );

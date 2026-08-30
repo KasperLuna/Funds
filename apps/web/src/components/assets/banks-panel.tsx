@@ -711,6 +711,7 @@ export const BanksPanel = (props: BanksPanelProps) => {
         defaultAccountId={selectedAccountId ?? undefined}
         voicePrefill={txnPrefill}
         editing={!!editTxn}
+        onCreateCategory={handleCreateCategory}
       />
 
       <TransferSheet

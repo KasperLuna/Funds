@@ -31,7 +31,6 @@ export interface CaptureFormFieldsProps {
   categories: CategoryOption[];
   templates: Template[];
   accountId: string;
-  selected: AccountOption | undefined;
   onAccountChange: (id: string) => void;
   description: string;
   onDescriptionChange: (next: string) => void;
@@ -45,6 +44,7 @@ export interface CaptureFormFieldsProps {
   onApplyTemplate: (t: Template) => void;
   activeTemplate: Template | undefined;
   dateLabel: string;
+  onCreateCategory?: () => void;
 }
 
 export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
@@ -66,6 +66,7 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     onApplyTemplate,
     activeTemplate,
     dateLabel,
+    onCreateCategory,
   } = props;
 
   return (
@@ -192,6 +193,7 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
         categories={categories}
         value={categoryIds}
         onChange={onCategoryChange}
+        onCreateCategory={onCreateCategory}
       />
     </>
   );

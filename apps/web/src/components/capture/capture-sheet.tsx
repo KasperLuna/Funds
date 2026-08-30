@@ -4,14 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { type DigitKey, Keypad } from "@/components/capture/keypad";
 import { Button } from "@/components/ui/button";
+import { type DigitKey, Keypad } from "@/components/capture/keypad";
 import { CaptureFormFields } from "@/components/capture/capture-form-fields";
 import { CaptureAmountKeypad } from "@/components/capture/capture-amount-keypad";
 import {
@@ -29,6 +30,8 @@ import {
 } from "@/lib/capture";
 import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
+import { DEFAULT_CATEGORY_COLORS, type Category } from "@/lib/categories/categories-store";
+import { cn } from "@/lib/utils";
 
 export type AccountOption = {
   id: string;
@@ -65,6 +68,7 @@ export interface CaptureSheetProps {
   voicePrefill?: VoicePrefill;
   editing?: boolean;
   templates?: Template[];
+  onCreateCategory?: (c: Category) => void;
 }
 
 const captureFormSchema = z.object({
@@ -83,6 +87,12 @@ const captureFormSchema = z.object({
 });
 
 type CaptureFormValues = z.infer<typeof captureFormSchema>;
+
+const inlineCategorySchema = z.object({
+  name: z.string().trim().min(1, "Name required"),
+  color: z.string().min(1),
+});
+type InlineCategoryValues = z.infer<typeof inlineCategorySchema>;
 
 type FormSnapshot = {
   accountId: string;
@@ -119,6 +129,7 @@ interface CaptureFormProps {
   voicePrefill?: VoicePrefill;
   editing?: boolean;
   templates?: Template[];
+  onCreateCategory?: (c: Category) => void;
 }
 
 const CaptureForm = (props: CaptureFormProps) => {
@@ -133,6 +144,7 @@ const CaptureForm = (props: CaptureFormProps) => {
     defaultAccountId,
     voicePrefill,
     templates = [],
+    onCreateCategory,
   } = props;
   const first = accounts[0];
 
@@ -163,6 +175,46 @@ const CaptureForm = (props: CaptureFormProps) => {
     description: string;
     categoryIds: string[];
   } | null>(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const inlineForm = useForm<InlineCategoryValues>({
+    resolver: zodResolver(inlineCategorySchema),
+    mode: "onChange",
+    defaultValues: {
+      name: "",
+      color: DEFAULT_CATEGORY_COLORS[0]!,
+    },
+  });
+  const newName = inlineForm.watch("name") ?? "";
+  const newColor = inlineForm.watch("color") ?? DEFAULT_CATEGORY_COLORS[0]!;
+
+  const startCreating = () => {
+    inlineForm.reset({ name: "", color: DEFAULT_CATEGORY_COLORS[0]! });
+    setCreatingCategory(true);
+  };
+  const cancelCreating = () => setCreatingCategory(false);
+  const submitInlineCategory = (values: InlineCategoryValues) => {
+    if (!onCreateCategory) return;
+    const now = Date.now();
+    const created: Category = {
+      id: `cat-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      name: values.name.trim(),
+      color: values.color,
+      hideable: false,
+      excludeFromAnalytics: false,
+      monthlyBudgetMinor: null,
+      assetId: null,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+    };
+    onCreateCategory(created);
+    if (!categoryIds.includes(created.id)) {
+      form.setValue("categoryIds", [...categoryIds, created.id], {
+        shouldValidate: true,
+      });
+    }
+    setCreatingCategory(false);
+  };
 
   const accountId = form.watch("accountId");
   const type = form.watch("type");
@@ -227,6 +279,7 @@ const CaptureForm = (props: CaptureFormProps) => {
       setActiveTemplateId(null);
       setTemplateSnapshot(null);
       templateFormRef.current = null;
+      setCreatingCategory(false);
       if (voicePrefill) {
         const prefillAccountId =
           voicePrefill.accountId ?? accounts[0]?.id ?? "";
@@ -396,7 +449,6 @@ const CaptureForm = (props: CaptureFormProps) => {
           categories={categories}
           templates={templates}
           accountId={accountId}
-          selected={selected}
           onAccountChange={handleAccountChange}
           description={description}
           onDescriptionChange={(v) =>
@@ -416,7 +468,63 @@ const CaptureForm = (props: CaptureFormProps) => {
           onApplyTemplate={applyTemplate}
           activeTemplate={activeTemplate}
           dateLabel={dateLabel}
+          onCreateCategory={
+            onCreateCategory && !creatingCategory ? startCreating : undefined
+          }
         />
+        {creatingCategory && (
+          <form
+            onSubmit={inlineForm.handleSubmit(submitInlineCategory)}
+            className="mt-3 flex flex-col gap-4 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-3"
+          >
+            <div className="flex items-center gap-2">
+              <input
+                aria-label="New category name"
+                type="text"
+                {...inlineForm.register("name")}
+                placeholder="Category name"
+                autoFocus
+                className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--bg) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              />
+              <button
+                type="button"
+                aria-label="Cancel new category"
+                onClick={cancelCreating}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-(--radius-sm) text-zinc-500 hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </div>
+            <div
+              className="flex flex-wrap gap-1.5 px-4"
+              role="radiogroup"
+              aria-label="Color"
+            >
+              {DEFAULT_CATEGORY_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  role="radio"
+                  aria-checked={newColor === c}
+                  aria-label={c}
+                  onClick={() =>
+                    inlineForm.setValue("color", c, { shouldValidate: true })
+                  }
+                  className={cn(
+                    "h-7 w-7 rounded-full transition-transform focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
+                    newColor === c
+                      ? "scale-110 ring-2 ring-white"
+                      : "hover:scale-105",
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <Button type="submit" size="sm" disabled={!newName.trim()}>
+              Create
+            </Button>
+          </form>
+        )}
       </div>
       <div className="shrink-0 px-6 pb-1 pt-3">
         <CaptureAmountKeypad

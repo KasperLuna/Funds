@@ -351,4 +351,63 @@ describe("CaptureSheet", () => {
     await user.click(dayBtn!);
     expect(screen.getByRole("button", { name: "Date" })).not.toHaveTextContent("Today");
   });
+
+  it("inline-created category is persisted, auto-selected, and tagged on save", async () => {
+    const user = userEvent.setup();
+    const created: unknown[] = [];
+    const HarnessWithCreate = () => {
+      const [open, setOpen] = useState(true);
+      return (
+        <div>
+          <CaptureSheet
+            isOpen={open}
+            onOpenChange={setOpen}
+            userId="usr-1"
+            accounts={ACCOUNTS}
+            categories={CATS}
+            recentTxns={[]}
+            onSave={(row) => void sync.table("transactions").upsert(row)}
+            defaultAccountId="acc-1"
+            onCreateCategory={(c) => {
+              created.push(c);
+              void sync.table("categories").upsert({
+                id: c.id,
+                user_id: "usr-1",
+                name: c.name,
+                color: c.color,
+                hideable: 0,
+                exclude_from_analytics: 0,
+                monthly_budget_minor: null,
+                asset_id: null,
+                created_at: c.createdAt,
+                updated_at: c.updatedAt,
+                deleted_at: null,
+              });
+            }}
+          />
+        </div>
+      );
+    };
+    render(withQueryClient(<HarnessWithCreate />));
+
+    for (const k of ["5", "0"]) await user.click(screen.getByRole("button", { name: k }));
+    await user.click(screen.getByRole("button", { name: "New category" }));
+    await user.type(screen.getByRole("textbox", { name: "New category name" }), "Coffee");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ name: "Coffee" });
+    const newId = (created[0] as { id: string }).id;
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    const categories = (await sync.query("SELECT * FROM categories")).rows;
+    expect(categories).toHaveLength(1);
+    expect(categories[0]!.id).toBe(newId);
+    expect(categories[0]!.name).toBe("Coffee");
+
+    const txns = (await sync.query("select * from transactions")).rows;
+    expect(txns).toHaveLength(1);
+    expect(txns[0]!.category_ids).toEqual([newId]);
+  });
 });
