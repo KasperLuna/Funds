@@ -120,7 +120,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(first?.decimals ?? 2));
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
-  const [focusedField, setFocusedField] = useState<HTMLElement | null>(null);
   const inlineForm = useForm<InlineCategoryValues>({
     resolver: zodResolver(inlineCategorySchema),
     mode: "onChange",
@@ -165,22 +164,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   useEffect(() => {
     form.setValue("amountInput", amount.input, { shouldValidate: true });
   }, [amount, form]);
-
-  // On mobile, focusing a text input (description, fee, inline category name)
-  // brings up the soft keyboard and shrinks the viewport. The pinned Keypad
-  // below the form would otherwise cover the focused field, so the
-  // `max-h-0` transition on the keypad wrapper hides it. After the 220ms
-  // collapse animation, scroll the focused field into the visible area of
-  // the sheet's inner scroll region — iOS does not do this automatically
-  // inside a `position: fixed` drawer with an `overflow-y-auto` child.
-  useEffect(() => {
-    if (!focusedField) return;
-    const el = focusedField;
-    const id = window.setTimeout(() => {
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
-    }, 220);
-    return () => window.clearTimeout(id);
-  }, [focusedField]);
 
   const handleKey = (key: DigitKey) => setAmount((s) => applyDigit(s, key));
   const minor = amountToMinor(amount);
@@ -269,8 +252,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
             placeholder="Description (optional)"
             value={description}
             onChange={(e) => setValue("description", e.target.value, { shouldValidate: true })}
-            onFocus={(e) => setFocusedField(e.currentTarget)}
-            onBlur={() => setFocusedField(null)}
           />
 
           {(categories.length > 0 || onCreateCategory) && (
@@ -294,8 +275,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
                       placeholder="Category name"
                       autoFocus
                       className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--bg) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-                      onFocus={(e) => setFocusedField(e.currentTarget)}
-                      onBlur={() => setFocusedField(null)}
                     />
                     <button
                       type="button"
@@ -351,8 +330,6 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
             placeholder="Fee (optional)"
             value={feeInput}
             onChange={(e) => setValue("feeInput", e.target.value, { shouldValidate: true })}
-            onFocus={(e) => setFocusedField(e.currentTarget)}
-            onBlur={() => setFocusedField(null)}
           />
           <p aria-live="polite" className="mt-2 text-xs text-zinc-500">
             {feeMinor > 0n
@@ -367,13 +344,7 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
           )}
         </div>
 
-        <div
-          className={cn(
-            "shrink-0 overflow-hidden border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 transition-[max-height,opacity] duration-200 ease-out sm:hidden",
-            focusedField ? "max-h-0 border-t-0 opacity-0" : "max-h-96 opacity-100",
-          )}
-          aria-hidden={Boolean(focusedField)}
-        >
+        <div className="shrink-0 border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:hidden">
           <Keypad
             onKey={handleKey}
             onBackspace={() => setAmount(backspace)}

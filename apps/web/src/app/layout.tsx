@@ -38,6 +38,10 @@ export const viewport: Viewport = {
   // under the home indicator. (layout.tsx header + dashboard/layout.tsx nav
   // + dialog.tsx already consume the inset.)
   viewportFit: "cover",
+  // Chrome Android: treat the on-screen keyboard as part of the layout
+  // viewport so 100dvh tracks the visible (non-keyboard) area. iOS Safari
+  // ignores this; on iOS the sheet's own overflow region handles focus.
+  interactiveWidget: "resizes-content",
 };
 
 interface RootLayoutProps {

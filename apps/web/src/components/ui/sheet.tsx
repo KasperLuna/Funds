@@ -118,6 +118,7 @@ const SheetContent = React.forwardRef<
       open={open}
       onOpenChange={onOpenChange}
       shouldScaleBackground
+      repositionInputs={false}
     >
       <DrawerPrimitive.Portal>
         <DrawerPrimitive.Overlay className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
@@ -125,7 +126,7 @@ const SheetContent = React.forwardRef<
           ref={ref}
           data-slot="sheet-content"
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[96dvh] flex-col rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[100dvh] flex-col rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
             className,
           )}
           {...props}

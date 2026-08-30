@@ -201,19 +201,20 @@ describe("TransferSheet", () => {
     expect(tagged).toHaveLength(2);
   });
 
-  it("mobile keypad collapses when a text input gains focus", async () => {
+  it("mobile keypad stays visible when a text input gains focus", async () => {
     const user = userEvent.setup();
     render(<Harness onSave={() => {}} />);
-    // Keypad button is part of the mobile pinned region. It must be
-    // visible by default (sm:hidden)…
+    // The mobile keypad is pinned to the sheet footer and never collapses —
+    // previously the wrapper hid itself via max-h-0 + aria-hidden while a
+    // text input was focused, but vaul's repositionInputs handler left the
+    // drawer shrunken on blur. Now the keypad is always visible and the
+    // browser scrolls the focused field into view inside the sheet's
+    // overflow-y-auto region.
     const key = screen.getByRole("button", { name: "5" });
     expect(key).toBeVisible();
-    // …and hidden via aria-hidden once a text input is focused. jsdom does
-    // not run CSS, so the visual max-h-0 collapse is asserted via the
-    // aria-hidden attribute the wrapper exposes.
+
     const fee = screen.getByRole("textbox", { name: "Fee" });
     await user.click(fee);
-    const wrapper = key.parentElement!.parentElement!;
-    expect(wrapper).toHaveAttribute("aria-hidden", "true");
+    expect(key).toBeVisible();
   });
 });

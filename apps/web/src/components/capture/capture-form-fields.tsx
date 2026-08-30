@@ -55,9 +55,6 @@ export interface CaptureFormFieldsProps {
   onAccountChange: (id: string) => void;
   description: string;
   onDescriptionChange: (next: string) => void;
-  onDescriptionFocus: () => void;
-  onDescriptionBlur: () => void;
-  descriptionRef?: React.Ref<HTMLInputElement>;
   categoryIds: string[];
   onCategoryChange: (next: string[]) => void;
   datePreset: "today" | "yesterday";
@@ -80,9 +77,6 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     onAccountChange,
     description,
     onDescriptionChange,
-    onDescriptionFocus,
-    onDescriptionBlur,
-    descriptionRef,
     categoryIds,
     onCategoryChange,
     datePreset,
@@ -243,14 +237,11 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
       </div>
 
       <Input
-        ref={descriptionRef}
         aria-label="Description"
         className="mt-3 h-11 text-base"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}
-        onFocus={onDescriptionFocus}
-        onBlur={onDescriptionBlur}
       />
 
       <CategoryChipSelect
