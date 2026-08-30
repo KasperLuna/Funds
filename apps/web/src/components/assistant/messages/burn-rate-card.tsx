@@ -3,36 +3,49 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
 import type { BurnRatePayload } from "@/lib/assistant/types";
+import { cn } from "@/lib/utils";
+
+interface BurnRateCardProps {
+  payload: BurnRatePayload;
+  onViewData?: () => void;
+}
+
+type Verdict = "flat" | "up" | "down";
+
+function verdictFor(vsPrior: number | null): Verdict {
+  if (vsPrior === null) return "flat";
+  return vsPrior > 0 ? "up" : "down";
+}
+
+function verdictText(verdict: Verdict, vsPrior: number | null): string {
+  if (verdict === "flat") return "No comparable spend last period";
+  const abs = Math.abs(vsPrior ?? 0);
+  return verdict === "up"
+    ? `On pace to spend ${abs}% more than last month`
+    : `On pace to spend ${abs}% less than last month`;
+}
+
+function verdictColor(verdict: Verdict): string {
+  if (verdict === "flat") return "text-zinc-400";
+  if (verdict === "up") return "text-(--danger)";
+  return "text-(--accent)";
+}
 
 /**
  * "Am I on track this month?" — current pace, projected end-of-period total,
  * and a verdict vs the equivalent prior period.
  */
-export function BurnRateCard({
-  payload,
-  onViewData,
-}: {
-  payload: BurnRatePayload;
-  onViewData?: () => void;
-}) {
+export const BurnRateCard = ({ payload, onViewData }: BurnRateCardProps) => {
   const { masked } = usePrivacy();
   const current = BigInt(payload.currentMinor);
   const projected = BigInt(payload.projectedMinor);
   const prior = BigInt(payload.priorMonthMinor);
   const daily = BigInt(payload.dailyAverageMinor);
-  const vsPrior = payload.vsPriorPct;
-  const flat = vsPrior === null;
-
-  const upPace = !flat && vsPrior > 0;
-  const color = flat
-    ? "text-zinc-400"
-    : upPace
-    ? "text-(--danger)"
-    : "text-(--accent)";
-  const Arrow = upPace ? TrendingUp : TrendingDown;
+  const verdict = verdictFor(payload.vsPriorPct);
+  const Arrow = verdict === "up" ? TrendingUp : TrendingDown;
 
   const daysLeft = Math.max(0, payload.daysInPeriod - payload.daysElapsed);
   const pctElapsed = Math.min(
@@ -87,14 +100,10 @@ export function BurnRateCard({
       </div>
       <p className="mt-1 text-[10px] text-zinc-500">{daysLeft} days left in period</p>
 
-      <p className={`mt-2 inline-flex items-center gap-1 text-xs font-medium ${color}`}>
-        {!flat && <Arrow className="h-3 w-3" aria-hidden />}
-        {flat
-          ? "No comparable spend last period"
-          : upPace
-          ? `On pace to spend ${Math.abs(vsPrior)}% more than last month`
-          : `On pace to spend ${Math.abs(vsPrior)}% less than last month`}
-        {!flat && !masked && (
+      <p className={cn("mt-2 inline-flex items-center gap-1 text-xs font-medium", verdictColor(verdict))}>
+        {verdict !== "flat" && <Arrow className="h-3 w-3" aria-hidden />}
+        {verdictText(verdict, payload.vsPriorPct)}
+        {verdict !== "flat" && !masked && (
           <span className="ml-1 text-zinc-500">
             (prior {formatMoney(prior, payload.decimals, payload.assetCode)})
           </span>
@@ -104,4 +113,4 @@ export function BurnRateCard({
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

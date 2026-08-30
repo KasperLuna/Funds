@@ -2,6 +2,16 @@
 
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
+type AssistantSheetContextValue = {
+  open: boolean;
+  setOpen: (v: boolean) => void;
+  toggle: () => void;
+};
+
+interface AssistantSheetProviderProps {
+  children: ReactNode;
+}
+
 /**
  * Assistant sheet open state. The dashboard layout owns the state and
  * exposes a context so the FAB and any "open the assistant" link (e.g.
@@ -12,30 +22,24 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
  * — `AssistantOpener` reads it on mount, calls `open()`, and cleans the
  * param so a refresh doesn't re-trigger.
  */
-type AssistantSheetContextValue = {
-  open: boolean;
-  setOpen: (v: boolean) => void;
-  toggle: () => void;
-};
-
 const AssistantSheetContext = createContext<AssistantSheetContextValue | null>(null);
 
-export function AssistantSheetProvider({ children }: { children: ReactNode }) {
+export const AssistantSheetProvider = ({ children }: AssistantSheetProviderProps) => {
   const [open, setOpen] = useState(false);
   const value = useMemo<AssistantSheetContextValue>(
     () => ({ open, setOpen, toggle: () => setOpen((o) => !o) }),
     [open],
   );
   return <AssistantSheetContext.Provider value={value}>{children}</AssistantSheetContext.Provider>;
-}
+};
 
-export function useAssistantSheet(): AssistantSheetContextValue {
+export const useAssistantSheet = (): AssistantSheetContextValue => {
   const ctx = useContext(AssistantSheetContext);
   if (!ctx) {
     throw new Error("useAssistantSheet must be used inside <AssistantSheetProvider>");
   }
   return ctx;
-}
+};
 
 /** Convenience: call `open()` and don't throw if the provider is absent. */
 export function tryOpenAssistantSheet() {

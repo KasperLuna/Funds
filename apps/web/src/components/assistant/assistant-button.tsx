@@ -2,9 +2,13 @@
 
 import { useEffect } from "react";
 import { Sparkles } from "lucide-react";
-import { AssistantSheet } from "./AssistantSheet";
+import { AssistantSheet } from "./assistant-sheet";
 import { useAssistantSheet } from "./assistant-sheet-context";
 import { cn } from "@/lib/utils";
+
+interface AssistantButtonProps {
+  className?: string;
+}
 
 /**
  * Floating action button that opens the assistant chat sheet. The sheet
@@ -16,7 +20,7 @@ import { cn } from "@/lib/utils";
  * The button is always visible. Model download happens on first use; if
  * the device can't run the model the sheet surfaces a capability error.
  */
-export function AssistantButton({ className }: { className?: string }) {
+export const AssistantButton = ({ className }: AssistantButtonProps) => {
   const { setOpen } = useAssistantSheet();
   return (
     <button
@@ -31,23 +35,24 @@ export function AssistantButton({ className }: { className?: string }) {
       <Sparkles className="h-5 w-5" aria-hidden />
     </button>
   );
-}
+};
 
 /**
  * Mounts the assistant sheet once at the layout level. The FAB and any
  * deep link share this single instance via context.
  */
-export function AssistantSheetMount() {
+export const AssistantSheetMount = () => {
   const { open, setOpen } = useAssistantSheet();
   return <AssistantSheet open={open} onClose={() => setOpen(false)} />;
-}
+};
 
 /**
- * URL-param deep-link bridge. The Settings page links to
- * `?openAssistant=1`; on mount this effect opens the sheet and cleans
- * the param so a refresh doesn't re-trigger.
+ * cavetail: URL-param deep-link bridge. The Settings page links to
+ * `?openAssistant=1`; on mount this effect opens the sheet and rewrites
+ * history to strip the param so a refresh doesn't re-trigger. The mutation
+ * is a browser API outside React, so this is a real side effect.
  */
-export function AssistantOpener() {
+export const AssistantOpener = () => {
   const { setOpen } = useAssistantSheet();
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -60,4 +65,4 @@ export function AssistantOpener() {
     window.history.replaceState(null, "", url);
   }, [setOpen]);
   return null;
-}
+};

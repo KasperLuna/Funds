@@ -11,12 +11,14 @@ import { cn } from "@/lib/utils";
 
 export { PopoverRoot as Popover, PopoverTrigger, PopoverPortal };
 
-export function PopoverContent({
+type PopoverContentProps = ComponentProps<typeof PopoverContentPrimitive>;
+
+const PopoverContent = ({
   className,
   align = "start",
   sideOffset = 6,
   ...props
-}: ComponentProps<typeof PopoverContentPrimitive>) {
+}: PopoverContentProps) => {
   return (
     <PopoverPortal>
       <PopoverContentPrimitive
@@ -33,4 +35,6 @@ export function PopoverContent({
       />
     </PopoverPortal>
   );
-}
+};
+
+export { PopoverContent };

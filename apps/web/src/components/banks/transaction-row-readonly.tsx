@@ -4,6 +4,7 @@ import { Tag } from "lucide-react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { cn } from "@/lib/utils";
 
 type CategoryInfo = { id: string; name: string; color: string; hideable?: boolean };
 
@@ -14,19 +15,16 @@ function formatTime(ts: number): string {
   });
 }
 
-export function TransactionRowReadonly({
-  txn,
-  categories,
-  accountName,
-  assetCode,
-  assetDecimals,
-}: {
+interface TransactionRowReadonlyProps {
   txn: Txn;
   categories: CategoryInfo[];
   accountName?: string;
   assetCode?: string;
   assetDecimals?: number;
-}) {
+}
+
+export const TransactionRowReadonly = (props: TransactionRowReadonlyProps) => {
+  const { txn, categories, accountName, assetCode, assetDecimals } = props;
   const cats = txn.categoryIds
     .map((id) => categories.find((c) => c.id === id))
     .filter(Boolean) as CategoryInfo[];
@@ -69,7 +67,14 @@ export function TransactionRowReadonly({
         <div className="text-right">
           <span className="text-[11px] tabular-nums text-zinc-400">{formatTime(txn.date)}</span>
           <span
-            className={`block text-sm font-semibold tabular-nums ${maskedAmount ? "text-zinc-500" : isExpense ? "text-(--danger)" : "text-(--accent)"}`}
+            className={cn(
+              "block text-sm font-semibold tabular-nums",
+              maskedAmount
+                ? "text-zinc-500"
+                : isExpense
+                  ? "text-(--danger)"
+                  : "text-(--accent)",
+            )}
             aria-label={maskedAmount ? "Amount hidden" : undefined}
           >
             {maskedAmount ? "••••" : formatMoney(txn.amountMinor, decimals, assetCode)}
@@ -78,4 +83,4 @@ export function TransactionRowReadonly({
       </div>
     </div>
   );
-}
+};

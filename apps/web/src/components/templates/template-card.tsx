@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
@@ -8,6 +8,7 @@ import { templateRow, toTemplate, type Template } from "@/lib/templates/template
 import { TemplateDialog } from "@/components/templates/template-dialog";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 export type TemplateCardAccount = {
   id: string;
@@ -21,15 +22,17 @@ export type TemplateCardCategory = {
   name: string;
 };
 
-export function TemplateCard({
-  accounts,
-  categories,
-  onChanged,
-}: {
+interface TemplateCardProps {
   accounts: TemplateCardAccount[];
   categories: TemplateCardCategory[];
   onChanged?: () => void;
-}) {
+}
+
+export const TemplateCard = ({
+  accounts,
+  categories,
+  onChanged,
+}: TemplateCardProps) => {
   const { db, userId } = useSync();
   const uid = userId ?? "local";
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -48,6 +51,8 @@ export function TemplateCard({
   });
   const items = templatesQuery.data ?? [];
 
+  // cavetail: setTimeout + clearTimeout are imperative browser timers, not
+  // derived state. Auto-dismiss the error notice after 4s.
   useEffect(() => {
     if (!notice) return;
     const t = window.setTimeout(() => setNotice(null), 4000);
@@ -72,19 +77,13 @@ export function TemplateCard({
     onError: () => setNotice("Couldn't delete template"),
   });
 
-  const handleSave = useCallback(
-    (item: Template) => {
-      saveMutation.mutate(item, { onSuccess: () => onChanged?.() });
-    },
-    [saveMutation, onChanged],
-  );
+  const handleSave = (item: Template) => {
+    saveMutation.mutate(item, { onSuccess: () => onChanged?.() });
+  };
 
-  const handleDelete = useCallback(
-    (item: Template) => {
-      deleteMutation.mutate(item, { onSuccess: () => onChanged?.() });
-    },
-    [deleteMutation, onChanged],
-  );
+  const handleDelete = (item: Template) => {
+    deleteMutation.mutate(item, { onSuccess: () => onChanged?.() });
+  };
 
   return (
     <section
@@ -135,7 +134,7 @@ export function TemplateCard({
                   </span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-xs text-zinc-500">
-                  <span className={row.type === "expense" ? "text-(--danger)" : "text-(--accent)"}>
+                  <span className={cn(row.type === "expense" ? "text-(--danger)" : "text-(--accent)")}>
                     {row.type === "expense" ? "Expense" : "Income"}
                   </span>
                   <span aria-hidden>·</span>
@@ -178,7 +177,7 @@ export function TemplateCard({
       </div>
 
       <TemplateDialog
-        open={dialogOpen}
+        isOpen={dialogOpen}
         onOpenChange={setDialogOpen}
         onSave={handleSave}
         editTemplate={editItem}
@@ -187,4 +186,4 @@ export function TemplateCard({
       />
     </section>
   );
-}
+};

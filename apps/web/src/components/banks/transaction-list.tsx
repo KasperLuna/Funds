@@ -1,6 +1,7 @@
-import { Fragment, useMemo, useState, useCallback, useRef } from "react";
+import { Fragment, useMemo, useState, useRef } from "react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { groupByDay } from "@/lib/accounts/accounts-store";
+import { cn } from "@/lib/utils";
 import { TransactionRow } from "./transaction-row";
 
 type CategoryInfo = { id: string; name: string; color: string };
@@ -56,17 +57,15 @@ function getMonthOptions(txns: Txn[]): Array<{ value: string; label: string }> {
     });
 }
 
-function VirtualList({
-  groups,
-  categories,
-  onDuplicate,
-  onDelete,
-}: {
+interface VirtualListProps {
   groups: Array<{ day: string; items: Txn[] }>;
   categories: CategoryInfo[];
   onDuplicate?: (txn: Txn) => void;
   onDelete?: (txn: Txn) => void;
-}) {
+}
+
+const VirtualList = (props: VirtualListProps) => {
+  const { groups, categories, onDuplicate, onDelete } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
 
@@ -88,11 +87,14 @@ function VirtualList({
     [flatItems],
   );
 
-  const handleScroll = useCallback(() => {
+  // cavetail: handleScroll is the scroll listener for the virtual list; the
+  // div isn't memoized but the listener reference is cheap and React's
+  // event system handles identity changes. Inline.
+  const handleScroll = () => {
     if (containerRef.current) {
       setScrollTop(containerRef.current.scrollTop);
     }
-  }, []);
+  };
 
   const startIndex = useMemo(() => {
     let height = 0;
@@ -158,19 +160,17 @@ function VirtualList({
       </div>
     </div>
   );
-}
+};
 
-function DesktopTable({
-  groups,
-  categories,
-  onDuplicate,
-  onDelete,
-}: {
+interface DesktopTableProps {
   groups: Array<{ day: string; items: Txn[] }>;
   categories: CategoryInfo[];
   onDuplicate?: (txn: Txn) => void;
   onDelete?: (txn: Txn) => void;
-}) {
+}
+
+const DesktopTable = (props: DesktopTableProps) => {
+  const { groups, categories, onDuplicate, onDelete } = props;
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -227,9 +227,10 @@ function DesktopTable({
                       {formatDayHeader(group.day)}
                     </td>
                     <td
-                      className={`px-4 py-3 text-right text-sm font-semibold tabular-nums ${
-                        isExpense ? "text-(--danger)" : "text-(--accent)"
-                      }`}
+                      className={cn(
+                        "px-4 py-3 text-right text-sm font-semibold tabular-nums",
+                        isExpense ? "text-(--danger)" : "text-(--accent)",
+                      )}
                     >
                       {formatMinor(txn.amountMinor)}
                     </td>
@@ -256,19 +257,17 @@ function DesktopTable({
       </table>
     </div>
   );
-}
+};
 
-export function TransactionList({
-  txns,
-  categories,
-  onDuplicate,
-  onDelete,
-}: {
+interface TransactionListProps {
   txns: Txn[];
   categories: CategoryInfo[];
   onDuplicate?: (txn: Txn) => void;
   onDelete?: (txn: Txn) => void;
-}) {
+}
+
+export const TransactionList = (props: TransactionListProps) => {
+  const { txns, categories, onDuplicate, onDelete } = props;
   const [search, setSearch] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set(),
@@ -308,7 +307,7 @@ export function TransactionList({
 
   const groups = useMemo(() => groupByDay(filteredTxns), [filteredTxns]);
 
-  const toggleCategory = useCallback((catId: string) => {
+  const toggleCategory = (catId: string) => {
     setSelectedCategories((prev) => {
       const next = new Set(prev);
       if (next.has(catId)) {
@@ -318,7 +317,7 @@ export function TransactionList({
       }
       return next;
     });
-  }, []);
+  };
 
   return (
     <div className="flex h-full flex-col">
@@ -333,24 +332,26 @@ export function TransactionList({
         />
 
         <div className="flex flex-wrap gap-1" data-testid="category-filter">
-          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => toggleCategory(cat.id)}
-              className={`rounded-full px-2 py-1 text-xs font-medium transition-colors ${
-                selectedCategories.has(cat.id)
-                  ? "text-white"
-                  : "text-zinc-500 hover:text-zinc-200"
-              }`}
-              style={
-                selectedCategories.has(cat.id)
-                  ? { backgroundColor: cat.color }
-                  : { backgroundColor: "transparent" }
-              }
-            >
-              {cat.name}
-            </button>
-          ))}
+          {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => {
+            const isActive = selectedCategories.has(cat.id);
+            return (
+              <button
+                key={cat.id}
+                onClick={() => toggleCategory(cat.id)}
+                className={cn(
+                  "rounded-full px-2 py-1 text-xs font-medium transition-colors",
+                  isActive ? "text-white" : "text-zinc-500 hover:text-zinc-200",
+                )}
+                style={
+                  isActive
+                    ? { backgroundColor: cat.color }
+                    : { backgroundColor: "transparent" }
+                }
+              >
+                {cat.name}
+              </button>
+            );
+          })}
         </div>
 
         <select
@@ -387,4 +388,4 @@ export function TransactionList({
       </div>
     </div>
   );
-}
+};

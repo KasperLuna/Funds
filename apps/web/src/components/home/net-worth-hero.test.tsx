@@ -12,7 +12,7 @@ describe("NetWorthHero", () => {
         totalBalance={123456n}
         bankBalance={100000n}
         cryptoBalance={23456n}
-        privacy={false}
+        isPrivate={false}
         onTogglePrivacy={vi.fn()}
         lastSyncedAt={Date.now()}
       />,
@@ -28,7 +28,7 @@ describe("NetWorthHero", () => {
         totalBalance={123456n}
         bankBalance={100000n}
         cryptoBalance={23456n}
-        privacy={true}
+        isPrivate={true}
         onTogglePrivacy={vi.fn()}
         lastSyncedAt={Date.now()}
       />,
@@ -45,7 +45,7 @@ describe("NetWorthHero", () => {
         totalBalance={0n}
         bankBalance={0n}
         cryptoBalance={0n}
-        privacy={true}
+        isPrivate={true}
         onTogglePrivacy={toggle}
         lastSyncedAt={null}
       />,
@@ -60,7 +60,7 @@ describe("NetWorthHero", () => {
         totalBalance={-5000n}
         bankBalance={-5000n}
         cryptoBalance={0n}
-        privacy={false}
+        isPrivate={false}
         onTogglePrivacy={vi.fn()}
         lastSyncedAt={null}
       />,

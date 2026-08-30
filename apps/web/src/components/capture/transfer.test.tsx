@@ -5,9 +5,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { MemorySyncDatabase } from "@/lib/sync";
-import { TransferSheet, type TransferSheetProps } from "./TransferSheet";
+import { TransferSheet, type TransferSheetProps } from "./transfer-sheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
-import type { CategoryOption } from "./CaptureSheet";
+import type { CategoryOption } from "./capture-sheet";
 import type { TransferRows } from "@/lib/capture";
 
 class ResizeObserverStub {
@@ -30,18 +30,21 @@ const CATEGORIES: CategoryOption[] = [
 function Harness({
   onSave,
   categories = [],
+  onCreateCategory,
 }: {
   onSave: TransferSheetProps["onSave"];
   categories?: CategoryOption[];
+  onCreateCategory?: TransferSheetProps["onCreateCategory"];
 }) {
   const [open, setOpen] = useState(true);
   return (
     <TransferSheet
-      open={open}
+      isOpen={open}
       onOpenChange={setOpen}
       userId="usr-1"
       accounts={ACCOUNTS}
       categories={categories}
+      onCreateCategory={onCreateCategory}
       onSave={onSave}
       defaultFromAccountId="acc-1"
     />
@@ -139,5 +142,62 @@ describe("TransferSheet", () => {
     expect(saved).toHaveLength(1);
     expect(saved[0]!.fromLeg.category_ids).toEqual(["cat-food", "cat-rent"]);
     expect(saved[0]!.toLeg.category_ids).toEqual(["cat-food", "cat-rent"]);
+  });
+
+  it("inline-created category is persisted, auto-selected, and applied to both legs", async () => {
+    const user = userEvent.setup();
+    const created: unknown[] = [];
+    const saved: TransferRows[] = [];
+    render(
+      <Harness
+        categories={CATEGORIES}
+        onCreateCategory={(c) => {
+          created.push(c);
+          void sync.table("categories").upsert({
+            id: c.id,
+            user_id: "usr-1",
+            name: c.name,
+            color: c.color,
+            hideable: 0,
+            exclude_from_analytics: 0,
+            monthly_budget_minor: null,
+            asset_id: null,
+            created_at: c.createdAt,
+            updated_at: c.updatedAt,
+            deleted_at: null,
+          });
+        }}
+        onSave={(rows) => {
+          saved.push(rows);
+          void insertTransfer(sync, rows);
+        }}
+      />,
+    );
+
+    for (const k of ["5", "0"]) await user.click(screen.getByRole("button", { name: k }));
+    await user.click(screen.getByRole("button", { name: "New category" }));
+    await user.type(screen.getByRole("textbox", { name: "New category name" }), "Coffee");
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    await user.click(screen.getByRole("button", { name: "Transfer" }));
+
+    expect(created).toHaveLength(1);
+    expect(created[0]).toMatchObject({ name: "Coffee" });
+    const newId = (created[0] as { id: string }).id;
+
+    const categories = (await sync.query("SELECT * FROM categories")).rows;
+    expect(categories).toHaveLength(1);
+    expect(categories[0]!.id).toBe(newId);
+    expect(categories[0]!.name).toBe("Coffee");
+
+    expect(saved).toHaveLength(1);
+    expect(saved[0]!.fromLeg.category_ids).toEqual([newId]);
+    expect(saved[0]!.toLeg.category_ids).toEqual([newId]);
+
+    const txns = (await sync.query("select * from transactions")).rows;
+    const tagged = txns.filter((t) => {
+      const ids = (t.category_ids as unknown as string[] | undefined) ?? [];
+      return ids.includes(newId);
+    });
+    expect(tagged).toHaveLength(2);
   });
 });

@@ -1,7 +1,7 @@
-import { useMemo } from "react";
 import { CalendarClock, Pencil, Trash2, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ScheduledTxn } from "@/lib/scheduled/compute";
+import { cn } from "@/lib/utils";
 
 type AccountInfo = { id: string; name: string };
 
@@ -27,23 +27,22 @@ function formatAmount(minor: bigint, type: "income" | "expense"): string {
   return `${sign}$${(Number(abs) / 100).toFixed(2)}`;
 }
 
-export function ScheduledList({
-  items,
-  accounts,
-  onToggle,
-  onEdit,
-  onDelete,
-}: {
+export interface ScheduledListProps {
   items: ScheduledTxn[];
   accounts: AccountInfo[];
   onToggle: (item: ScheduledTxn) => void;
   onEdit: (item: ScheduledTxn) => void;
   onDelete: (item: ScheduledTxn) => void;
-}) {
-  const accountName = useMemo(
-    () => Object.fromEntries(accounts.map((a) => [a.id, a.name])),
-    [accounts],
-  );
+}
+
+export const ScheduledList = ({
+  items,
+  accounts,
+  onToggle,
+  onEdit,
+  onDelete,
+}: ScheduledListProps) => {
+  const accountName = Object.fromEntries(accounts.map((a) => [a.id, a.name]));
 
   if (items.length === 0) {
     return (
@@ -76,7 +75,10 @@ export function ScheduledList({
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-center gap-3 px-4 py-3 transition-opacity ${item.active ? "" : "opacity-50"}`}
+            className={cn(
+              "flex items-center gap-3 px-4 py-3 transition-opacity",
+              item.active ? "" : "opacity-50",
+            )}
           >
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -84,11 +86,12 @@ export function ScheduledList({
                   {item.name}
                 </span>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
                     item.type === "income"
                       ? "bg-(--accent)/10 text-(--accent)"
-                      : "bg-(--danger)/10 text-(--danger)"
-                  }`}
+                      : "bg-(--danger)/10 text-(--danger)",
+                  )}
                 >
                   {formatAmount(item.amountMinor, item.type)}
                 </span>
@@ -150,4 +153,4 @@ export function ScheduledList({
       </div>
     </section>
   );
-}
+};

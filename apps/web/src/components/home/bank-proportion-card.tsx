@@ -16,12 +16,12 @@ type AccountSlice = {
   pct: number;
 };
 
-type Props = {
+interface BankProportionCardProps {
   data: AccountSlice[];
   code?: string;
-};
+}
 
-export function BankProportionCard({ data, code = "USD" }: Props) {
+export const BankProportionCard = ({ data, code = "USD" }: BankProportionCardProps) => {
   const { masked } = usePrivacy();
 
   if (data.length === 0) return null;
@@ -77,6 +77,6 @@ export function BankProportionCard({ data, code = "USD" }: Props) {
       </div>
     </section>
   );
-}
+};
 
 export { FALLBACK_COLORS };

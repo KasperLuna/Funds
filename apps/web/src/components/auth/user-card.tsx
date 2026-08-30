@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
-export function UserCard() {
+export const UserCard = () => {
   const { data: session, isPending } = authClient.useSession();
 
   if (isPending) {
@@ -45,4 +45,4 @@ export function UserCard() {
       </div>
     </div>
   );
-}
+};

@@ -10,7 +10,11 @@ function rateColor(rate: number): string {
   return "#ef4444";
 }
 
-export function SavingsRateCard({ data }: { data: DataPoint[] }) {
+interface SavingsRateCardProps {
+  data: DataPoint[];
+}
+
+export const SavingsRateCard = ({ data }: SavingsRateCardProps) => {
   const current = data.at(-1)?.rate ?? 0;
   const color = rateColor(current);
 
@@ -36,4 +40,4 @@ export function SavingsRateCard({ data }: { data: DataPoint[] }) {
       </div>
     </section>
   );
-}
+};

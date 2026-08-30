@@ -1,7 +1,9 @@
 import { type SVGProps } from "react";
 
+type KasperLunaLogoProps = SVGProps<SVGSVGElement>;
+
 /** The KasperLuna wordmark — bottom "by" credit on the base route. */
-export const KasperLunaLogo = (props: SVGProps<SVGSVGElement>) => (
+const KasperLunaLogo = (props: KasperLunaLogoProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 1144 210.02"
@@ -54,3 +56,5 @@ export const KasperLunaLogo = (props: SVGProps<SVGSVGElement>) => (
     <polygon points="350.02 188.02 350.02 210.02 0 210.02 0 0.02 22 0.02 22 188.02 350.02 188.02" />
   </svg>
 );
+
+export { KasperLunaLogo };

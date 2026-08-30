@@ -3,15 +3,15 @@ import { cn } from "@/lib/utils";
 
 export type DigitKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "00" | ".";
 
-export type KeypadProps = {
+export interface KeypadProps {
   onKey: (k: DigitKey) => void;
   onBackspace: () => void;
   onClear: () => void;
   onSave: () => void;
   canSave?: boolean;
   currencySymbol?: string;
-  disabled?: boolean;
-};
+  isDisabled?: boolean;
+}
 
 const ARIA_LABEL: Partial<Record<DigitKey | "back" | "clear" | "save", string>> = {
   ".": "Decimal point",
@@ -24,15 +24,15 @@ const ARIA_LABEL: Partial<Record<DigitKey | "back" | "clear" | "save", string>> 
 const keyCls =
   "min-h-14 rounded-(--radius-md) border border-(--border) bg-(--surface-2) font-display text-xl font-semibold tracking-tight text-zinc-100 hover:bg-(--surface-3) active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out";
 
-export function Keypad({
+export const Keypad = ({
   onKey,
   onBackspace,
   onClear,
   onSave,
   canSave = false,
   currencySymbol,
-  disabled,
-}: KeypadProps) {
+  isDisabled,
+}: KeypadProps) => {
   const press = (k: DigitKey) => () => onKey(k);
   const digit = (label: DigitKey) => (
     <button
@@ -41,7 +41,7 @@ export function Keypad({
       aria-label={ARIA_LABEL[label] ?? label}
       className={keyCls}
       onClick={press(label)}
-      disabled={disabled}
+      disabled={isDisabled}
     >
       {label}
     </button>
@@ -53,7 +53,7 @@ export function Keypad({
       aria-label={ARIA_LABEL[label]}
       className={cn(keyCls, "text-zinc-400")}
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
     >
       {label === "back" ? (
         <Delete className="mx-auto h-5 w-5" aria-hidden />
@@ -89,7 +89,7 @@ export function Keypad({
             : "cursor-not-allowed border border-(--border) bg-(--surface-2) font-semibold text-zinc-500",
         )}
         onClick={onSave}
-        disabled={!canSave || disabled}
+        disabled={!canSave || isDisabled}
       >
         {canSave ? (
           <span className="inline-flex items-center gap-1.5">
@@ -102,4 +102,4 @@ export function Keypad({
       </button>
     </div>
   );
-}
+};

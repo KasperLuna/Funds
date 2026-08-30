@@ -8,19 +8,18 @@ import {
 } from "@/components/ui/dialog";
 import type { AssistantMessage } from "@/lib/assistant/types";
 
+interface DataInspectorProps {
+  message: AssistantMessage;
+  onClose: () => void;
+}
+
 /**
  * Transparency panel: shows the raw validated payload that drove the widget.
  * The user can verify the source of every number, and the "from this device"
  * footer in the widget itself makes clear the numbers were re-derived from
  * local rows, not copied verbatim from the model.
  */
-export function DataInspector({
-  message,
-  onClose,
-}: {
-  message: AssistantMessage;
-  onClose: () => void;
-}) {
+export const DataInspector = ({ message, onClose }: DataInspectorProps) => {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -36,7 +35,7 @@ export function DataInspector({
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 function stripForDisplay(message: AssistantMessage) {
   const out: Record<string, unknown> = {};

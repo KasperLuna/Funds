@@ -46,11 +46,11 @@ FIRST VIEWPORT: home = slim header with sync dot; a black plate whose guilloche 
 FORM: assigned direction 3 of 7 — Intaglio Plate — seed 2f8f7c9d.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md`;
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+const RootLayout = ({ children }: RootLayoutProps) => {
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <head>
@@ -68,4 +68,6 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
+};
+
+export default RootLayout;

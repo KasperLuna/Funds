@@ -3,19 +3,18 @@
 import { cn } from "@/lib/utils";
 import type { ScopeFlags } from "@/lib/assistant/types";
 
+interface DataScopeBadgeProps {
+  scope?: ScopeFlags;
+  className?: string;
+}
+
 /**
  * Tiny scope pill that surfaces when a widget intentionally includes archived
  * accounts or `excludeFromAnalytics` categories. Kept low-contrast so it does
  * not compete with the chart; collapses to nothing when nothing extra was
  * pulled in.
  */
-export function DataScopeBadge({
-  scope,
-  className,
-}: {
-  scope?: ScopeFlags;
-  className?: string;
-}) {
+export const DataScopeBadge = ({ scope, className }: DataScopeBadgeProps) => {
   if (!scope) return null;
   const parts: string[] = [];
   if (scope.includesArchived) parts.push("archived");
@@ -32,4 +31,4 @@ export function DataScopeBadge({
       includes {parts.join(" + ")}
     </span>
   );
-}
+};

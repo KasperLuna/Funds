@@ -4,23 +4,38 @@ import { useEffect, useRef, useState } from "react";
 import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw, Settings, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useChat } from "./use-chat";
-import { AssistantMessageView } from "./AssistantMessageView";
+import { AssistantMessageView } from "./assistant-message-view";
 import { cn } from "@/lib/utils";
 import { isIosStorageStale, isIosLikeDevice } from "@/lib/llm/capability";
 import { getLlmEngine } from "@/lib/llm";
 import { MODEL_LABELS } from "@/lib/llm/types";
+
+interface AssistantPanelProps {
+  onClose?: () => void;
+}
+
+type EmptyChatProps = { onPick: (text: string) => void };
+type ThinkingBlockProps = { text: string };
+type ModelLoadingIndicatorProps = {
+  support: { ok: true; engine: "webgpu" | "wasm"; recommendedModel: string } | null;
+};
+type UnsupportedViewProps = {
+  reason: "no-webgpu" | "no-cross-origin-isolation" | "no-storage" | "unsupported-environment";
+  onClose?: () => void;
+};
 
 /**
  * Chat thread + input + model-status banner. Used both inline on the
  * `/dashboard/assistant` page and inside the bottom-sheet variant on
  * dashboard pages.
  */
-export function AssistantPanel({ onClose }: { onClose?: () => void }) {
+export const AssistantPanel = ({ onClose }: AssistantPanelProps) => {
   const { messages, status, support, streamingText, send, reset } = useChat();
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const unsupported = support && support.ok === false ? support : null;
 
+  // cavetail: imperative scroll into a viewport coordinate outside React's render tree
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length, status]);
@@ -146,9 +161,9 @@ export function AssistantPanel({ onClose }: { onClose?: () => void }) {
       </form>
     </div>
   );
-}
+};
 
-function EmptyChat({ onPick }: { onPick: (text: string) => void }) {
+const EmptyChat = ({ onPick }: EmptyChatProps) => {
   const suggestions = [
     "How much did I spend on Food this month?",
     "Am I on track this month?",
@@ -180,26 +195,24 @@ function EmptyChat({ onPick }: { onPick: (text: string) => void }) {
       </ul>
     </div>
   );
-}
+};
 
-function TypingIndicator() {
-  return (
-    <div
-      role="status"
-      aria-label="Assistant is thinking"
-      className="inline-flex items-center gap-1 rounded-(--radius-md) bg-(--surface-2) px-3 py-2 text-xs text-zinc-500"
-    >
-      Thinking on-device
-      <span aria-hidden className="ml-1 inline-flex gap-0.5">
-        <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500" />
-        <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:120ms]" />
-        <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:240ms]" />
-      </span>
-    </div>
-  );
-}
+const TypingIndicator = () => (
+  <div
+    role="status"
+    aria-label="Assistant is thinking"
+    className="inline-flex items-center gap-1 rounded-(--radius-md) bg-(--surface-2) px-3 py-2 text-xs text-zinc-500"
+  >
+    Thinking on-device
+    <span aria-hidden className="ml-1 inline-flex gap-0.5">
+      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500" />
+      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:120ms]" />
+      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:240ms]" />
+    </span>
+  </div>
+);
 
-function ThinkingBlock({ text }: { text: string }) {
+const ThinkingBlock = ({ text }: ThinkingBlockProps) => {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-xs">
@@ -226,36 +239,28 @@ function ThinkingBlock({ text }: { text: string }) {
       )}
     </div>
   );
-}
+};
 
-function ModelLoadingIndicator({ support }: { support: { ok: true; engine: "webgpu" | "wasm"; recommendedModel: string } | null }) {
-  return (
-    <div
-      role="status"
-      aria-label="Downloading model"
-      className="flex items-center gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2 text-xs text-zinc-300"
-    >
-      <Download className="h-3.5 w-3.5 animate-pulse text-(--accent)" aria-hidden />
-      <div>
-        <p>Downloading model on this device</p>
-        <p className="text-[10px] text-zinc-500">
-          {support?.ok
-            ? `${support.recommendedModel} · ${support.engine}`
-            : "probing…"}
-        </p>
-      </div>
+const ModelLoadingIndicator = ({ support }: ModelLoadingIndicatorProps) => (
+  <div
+    role="status"
+    aria-label="Downloading model"
+    className="flex items-center gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2 text-xs text-zinc-300"
+  >
+    <Download className="h-3.5 w-3.5 animate-pulse text-(--accent)" aria-hidden />
+    <div>
+      <p>Downloading model on this device</p>
+      <p className="text-[10px] text-zinc-500">
+        {support?.ok
+          ? `${support.recommendedModel} · ${support.engine}`
+          : "probing…"}
+      </p>
     </div>
-  );
-}
+  </div>
+);
 
-function UnsupportedView({
-  reason,
-  onClose,
-}: {
-  reason: "no-webgpu" | "no-cross-origin-isolation" | "no-storage" | "unsupported-environment";
-  onClose?: () => void;
-}) {
-  const messages: Record<typeof reason, { title: string; body: string }> = {
+const UnsupportedView = ({ reason, onClose }: UnsupportedViewProps) => {
+  const messages: Record<UnsupportedViewProps["reason"], { title: string; body: string }> = {
     "no-webgpu": {
       title: "WebGPU not available",
       body: "Your browser does not expose WebGPU. The on-device assistant needs a recent Chrome, Edge, or Safari Technology Preview.",
@@ -299,14 +304,10 @@ function UnsupportedView({
       </div>
     </div>
   );
-}
+};
 
-function ModelChip() {
-  const [modelId, setModelId] = useState<string | null>(null);
-  useEffect(() => {
-    const engine = getLlmEngine();
-    setModelId(engine.currentModelId());
-  }, []);
+const ModelChip = () => {
+  const [modelId] = useState<string | null>(() => getLlmEngine().currentModelId());
   if (!modelId) return null;
   const label = MODEL_LABELS[modelId as keyof typeof MODEL_LABELS] ?? modelId;
   return (
@@ -319,14 +320,15 @@ function ModelChip() {
       {label}
     </Link>
   );
-}
+};
 
 /**
  * Stale-storage banner. Shown when the device is iOS-like AND the last
  * successful load was more than 5 days ago. Tap to redownload.
  */
-export function StaleBanner() {
+export const StaleBanner = () => {
   const [visible, setVisible] = useState(false);
+  // cavetail: OPFS read is async + browser-side; can't be a useState initializer
   useEffect(() => {
     if (!isIosLikeDevice()) return;
     void getLlmEngine()
@@ -354,4 +356,4 @@ export function StaleBanner() {
       </button>
     </div>
   );
-}
+};

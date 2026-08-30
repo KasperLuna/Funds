@@ -277,7 +277,7 @@ describe("AccountDialog", () => {
   it("renders empty form for new account", () => {
     renderDialog(
       <AccountDialog
-        open={true}
+        isOpen={true}
         onOpenChange={vi.fn()}
         onSave={vi.fn()}
       />,
@@ -290,7 +290,7 @@ describe("AccountDialog", () => {
     const acc = makeAccount({ name: "My Bank", kind: "cash" });
     renderDialog(
       <AccountDialog
-        open={true}
+        isOpen={true}
         onOpenChange={vi.fn()}
         onSave={vi.fn()}
         editAccount={acc}
@@ -303,7 +303,7 @@ describe("AccountDialog", () => {
 
   it("shows kind selector with all options", () => {
     renderDialog(
-      <AccountDialog open={true} onOpenChange={vi.fn()} onSave={vi.fn()} />,
+      <AccountDialog isOpen={true} onOpenChange={vi.fn()} onSave={vi.fn()} />,
     );
     const select = screen.getByDisplayValue("Bank");
     expect(select).toBeInTheDocument();
@@ -429,5 +429,67 @@ describe("TransactionRow - Swipe Actions", () => {
     });
 
     expect(screen.getByText("Delete")).toBeInTheDocument();
+  });
+});
+
+describe("TransactionRow - Icon Actions", () => {
+  it("clicking the edit icon calls onEdit", () => {
+    const txn = makeTxn();
+    const onEdit = vi.fn();
+    render(
+      <TransactionRow txn={txn} categories={[]} onEdit={onEdit} />,
+    );
+    fireEvent.click(screen.getByLabelText("Edit transaction"));
+    expect(onEdit).toHaveBeenCalledWith(txn);
+  });
+
+  it("clicking the duplicate icon calls onDuplicate", () => {
+    const txn = makeTxn();
+    const onDuplicate = vi.fn();
+    render(
+      <TransactionRow txn={txn} categories={[]} onDuplicate={onDuplicate} />,
+    );
+    fireEvent.click(screen.getByLabelText("Duplicate transaction"));
+    expect(onDuplicate).toHaveBeenCalledWith(txn);
+  });
+
+  it("clicking the delete icon calls onDelete", () => {
+    const txn = makeTxn();
+    const onDelete = vi.fn();
+    render(
+      <TransactionRow txn={txn} categories={[]} onDelete={onDelete} />,
+    );
+    fireEvent.click(screen.getByLabelText("Delete transaction"));
+    expect(onDelete).toHaveBeenCalledWith(txn);
+  });
+
+  it("gates the action icon group on pointer-fine + row hover/focus, not viewport width", () => {
+    const txn = makeTxn();
+    const { container } = render(
+      <TransactionRow
+        txn={txn}
+        categories={[]}
+        onEdit={vi.fn()}
+        onDuplicate={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    const iconGroup = container.querySelector(".pointer-fine\\:group-hover\\:flex");
+    expect(iconGroup).toBeInTheDocument();
+    expect(iconGroup?.className).toContain("group-focus-within:flex");
+    expect(iconGroup?.className).toContain("hidden");
+    expect(iconGroup?.className).not.toContain("lg:flex");
+  });
+
+  it("row declares cursor-pointer and a hover tint to signal clickability on desktop", () => {
+    const txn = makeTxn();
+    const { container } = render(
+      <TransactionRow txn={txn} categories={[]} onEdit={vi.fn()} />,
+    );
+    const row = container.querySelector("#txn-t1 > div");
+    expect(row).toBeInTheDocument();
+    expect(row?.className).toContain("cursor-pointer");
+    expect(row?.className).toContain("hover:bg-(--surface-3)");
+    expect(row?.className).toContain("group");
   });
 });

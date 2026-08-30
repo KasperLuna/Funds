@@ -1,6 +1,7 @@
 import { Pencil, Trash2, Archive, ArchiveRestore, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 import type { Account } from "@/lib/accounts/accounts-store";
 
@@ -11,16 +12,7 @@ const KIND_LABEL: Record<Account["kind"], string> = {
   exchange: "Exchange",
 };
 
-export function AccountCard({
-  account,
-  balance,
-  assetCode,
-  assetDecimals,
-  onRename,
-  onDelete,
-  onArchive,
-  onAdjust,
-}: {
+interface AccountCardProps {
   account: Account;
   balance: bigint;
   assetCode?: string;
@@ -29,7 +21,19 @@ export function AccountCard({
   onDelete: (account: Account) => void;
   onArchive?: (account: Account) => void;
   onAdjust?: (account: Account) => void;
-}) {
+}
+
+export const AccountCard = (props: AccountCardProps) => {
+  const {
+    account,
+    balance,
+    assetCode,
+    assetDecimals,
+    onRename,
+    onDelete,
+    onArchive,
+    onAdjust,
+  } = props;
   const isArchived = !!account.archived;
   const colorStyle = account.primaryColor
     ? { backgroundColor: account.primaryColor }
@@ -37,7 +41,10 @@ export function AccountCard({
 
   return (
     <div
-      className={`flex items-center justify-between rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-4 py-3 ${isArchived ? "opacity-60" : ""}`}
+      className={cn(
+        "flex items-center justify-between rounded-(--radius-lg) border border-(--border) bg-(--surface-1) px-4 py-3",
+        isArchived && "opacity-60",
+      )}
     >
       <div className="flex items-center gap-3 min-w-0">
         <span
@@ -101,4 +108,4 @@ export function AccountCard({
       </div>
     </div>
   );
-}
+};

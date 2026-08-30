@@ -18,27 +18,33 @@ const sizeCls: Record<Size, string> = {
   lg: "h-12 px-6 text-base rounded-(--radius-md)",
 };
 
-export function Button({
+interface ButtonProps extends ComponentProps<"button"> {
+  variant?: Variant;
+  size?: Size;
+}
+
+const Button = ({
   variant = "primary",
   size = "default",
   className,
   children,
   ...props
-}: ComponentProps<"button"> & { variant?: Variant; size?: Size }) {
+}: ButtonProps) => {
   return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center gap-2 transition-[color,background-color,filter,transform] duration-150 ease-out active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
-          variantCls[variant],
-          sizeCls[size],
-          className,
-        )}
-        {...props}
-      >
+    <button
+      className={cn(
+        "inline-flex items-center justify-center gap-2 transition-[color,background-color,filter,transform] duration-150 ease-out active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+        variantCls[variant],
+        sizeCls[size],
+        className,
+      )}
+      {...props}
+    >
       {children}
     </button>
   );
-}
+};
 
+export { Button };
 export type { Variant as ButtonVariant, Size as ButtonSize };
-export type ButtonProps = ComponentProps<typeof Button>;
+export type { ButtonProps };

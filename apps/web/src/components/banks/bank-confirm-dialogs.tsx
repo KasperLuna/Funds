@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,46 +13,61 @@ export type AccountConfirmAction = "archive" | "unarchive" | "delete";
 const inputCls =
   "h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none";
 
-export function AccountConfirmDialog({
-  account,
-  action,
-  onOpenChange,
-  onConfirm,
-}: {
+interface AccountConfirmDialogProps {
   account: Account | null;
   action: AccountConfirmAction | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: (account: Account) => void;
-}) {
+}
+
+interface AccountConfirmFormProps {
+  account: Account;
+  action: AccountConfirmAction;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: (account: Account) => void;
+}
+
+interface ActionCopy {
+  title: string;
+  description: string;
+  confirmLabel: string;
+}
+
+function getActionCopy(action: AccountConfirmAction): ActionCopy {
+  if (action === "delete") {
+    return {
+      title: "Delete account?",
+      description: "This permanently hides the account and its transactions. This cannot be undone.",
+      confirmLabel: "Delete",
+    };
+  }
+  if (action === "unarchive") {
+    return {
+      title: "Unarchive account?",
+      description: "This restores the account and its transactions to your active views and net worth.",
+      confirmLabel: "Unarchive",
+    };
+  }
+  return {
+    title: "Archive account?",
+    description: "This account and its transactions will be hidden from all views and excluded from your net worth. You can unarchive it later.",
+    confirmLabel: "Archive",
+  };
+}
+
+const AccountConfirmForm = ({
+  account,
+  action,
+  onOpenChange,
+  onConfirm,
+}: AccountConfirmFormProps) => {
   const [typed, setTyped] = useState("");
-  const open = account != null && action != null;
-
-  useEffect(() => {
-    if (!open) setTyped("");
-  }, [open, account?.id]);
-
-  if (!account || !action) return null;
-
   const isDelete = action === "delete";
-  const isUnarchive = action === "unarchive";
-
-  const title = isDelete
-    ? "Delete account?"
-    : isUnarchive
-      ? "Unarchive account?"
-      : "Archive account?";
-
-  const description = isDelete
-    ? "This permanently hides the account and its transactions. This cannot be undone."
-    : isUnarchive
-      ? "This restores the account and its transactions to your active views and net worth."
-      : "This account and its transactions will be hidden from all views and excluded from your net worth. You can unarchive it later.";
-
-  const confirmLabel = isDelete ? "Delete" : isUnarchive ? "Unarchive" : "Archive";
+  const { title, description, confirmLabel } = getActionCopy(action);
   const disabled = isDelete && typed.trim() !== account.name;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogContentTitle>{title}</DialogContentTitle>
         <DialogContentDescription>{description}</DialogContentDescription>
@@ -87,4 +102,10 @@ export function AccountConfirmDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const AccountConfirmDialog = (props: AccountConfirmDialogProps) => {
+  const { account, action, onOpenChange, onConfirm } = props;
+  if (!account || !action) return null;
+  return <AccountConfirmForm account={account} action={action} onOpenChange={onOpenChange} onConfirm={onConfirm} />;
+};

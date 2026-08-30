@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,15 +29,15 @@ export type AccountOption = {
 
 type TradeSide = "buy" | "sell";
 
-export type TradeCaptureProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface TradeCaptureProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   userId: string;
   accounts: AccountOption[];
   tokens: Token[];
   prices: Map<string, CoinPrice>;
   onSave: (trade: TradePayload) => void;
-};
+}
 
 export type TradePayload = {
   side: TradeSide;
@@ -54,6 +57,15 @@ export type TradePayload = {
   userId: string;
 };
 
+interface TradeFormProps {
+  onOpenChange: (isOpen: boolean) => void;
+  userId: string;
+  accounts: AccountOption[];
+  tokens: Token[];
+  prices: Map<string, CoinPrice>;
+  onSave: (trade: TradePayload) => void;
+}
+
 function parseFeeInput(input: string, decimals: number): bigint {
   const trimmed = input.trim();
   if (!trimmed) return 0n;
@@ -68,80 +80,74 @@ function formatMinor(minor: bigint, decimals: number): string {
   return (Number(minor) / 10 ** decimals).toFixed(decimals);
 }
 
-export function TradeCapture({
-  open,
-  onOpenChange,
-  userId,
-  accounts,
-  tokens,
-  prices,
-  onSave,
-}: TradeCaptureProps) {
-  const [side, setSide] = useState<TradeSide>("buy");
+const tradeFormSchema = z.object({
+  side: z.enum(["buy", "sell"]),
+  sellAccountId: z.string(),
+  sellTokenId: z.string(),
+  buyAccountId: z.string(),
+  buyTokenId: z.string(),
+  rateInput: z.string(),
+  feeInput: z.string(),
+  feeAccountId: z.string(),
+  description: z.string().max(500),
+  datePreset: z.enum(["today", "yesterday"]),
+});
 
+type TradeFormValues = z.infer<typeof tradeFormSchema>;
+
+const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: TradeFormProps) => {
   const fiatAccounts = accounts.filter((a) => a.kind !== "exchange" && a.kind !== "wallet");
   const cryptoTokens = tokens.filter((t) => !t.deletedAt);
 
-  const [sellAccountId, setSellAccountId] = useState("");
-  const [sellTokenId, setSellTokenId] = useState("");
-  const [buyAccountId, setBuyAccountId] = useState("");
-  const [buyTokenId, setBuyTokenId] = useState("");
+  const form = useForm<TradeFormValues>({
+    resolver: zodResolver(tradeFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      side: "buy",
+      sellAccountId: fiatAccounts[0]?.id ?? "",
+      sellTokenId: "",
+      buyAccountId: "",
+      buyTokenId: cryptoTokens[0]?.id ?? "",
+      rateInput: "",
+      feeInput: "",
+      feeAccountId: fiatAccounts[0]?.id ?? "",
+      description: "",
+      datePreset: "today",
+    },
+  });
 
-  const [amount, setAmount] = useState<AmountState>(() => emptyAmount(8));
-  const [rateInput, setRateInput] = useState("");
-  const [feeInput, setFeeInput] = useState("");
-  const [feeAccountId, setFeeAccountId] = useState("");
-  const [description, setDescription] = useState("");
-  const [datePreset, setDatePreset] = useState<"today" | "yesterday">("today");
+  const { watch, setValue, register } = form;
+  const side = watch("side");
+  const sellAccountId = watch("sellAccountId");
+  const sellTokenId = watch("sellTokenId");
+  const buyAccountId = watch("buyAccountId");
+  const buyTokenId = watch("buyTokenId");
+  const rateInput = watch("rateInput") ?? "";
+  const feeInput = watch("feeInput") ?? "";
+  const feeAccountId = watch("feeAccountId");
+  const description = watch("description");
+  const datePreset = watch("datePreset");
 
-  const reset = () => {
-    setSide("buy");
-    setSellAccountId(fiatAccounts[0]?.id ?? "");
-    setSellTokenId("");
-    setBuyAccountId("");
-    setBuyTokenId(cryptoTokens[0]?.id ?? "");
-    setAmount(emptyAmount(8));
-    setRateInput("");
-    setFeeInput("");
-    setFeeAccountId(fiatAccounts[0]?.id ?? "");
-    setDescription("");
-    setDatePreset("today");
-  };
+  const [amount] = useState<AmountState>(() => emptyAmount(8));
 
-  useEffect(() => {
-    if (open) reset();
-  }, [open]);
+  const sellAccount = accounts.find((a) => a.id === sellAccountId);
+  const buyToken = cryptoTokens.find((t) => t.id === buyTokenId);
+  const sellToken = cryptoTokens.find((t) => t.id === sellTokenId);
 
-  const sellAccount = useMemo(
-    () => accounts.find((a) => a.id === sellAccountId),
-    [accounts, sellAccountId],
-  );
-  const buyToken = useMemo(
-    () => cryptoTokens.find((t) => t.id === buyTokenId),
-    [cryptoTokens, buyTokenId],
-  );
-  const sellToken = useMemo(
-    () => cryptoTokens.find((t) => t.id === sellTokenId),
-    [cryptoTokens, sellTokenId],
-  );
-
-  const autoRate = useMemo(() => {
-    if (side === "buy" && buyToken?.coingeckoId) {
-      const p = prices.get(buyToken.coingeckoId);
-      return p?.current_price ?? 0;
-    }
-    if (side === "sell" && sellToken?.coingeckoId) {
-      const p = prices.get(sellToken.coingeckoId);
-      return p?.current_price ?? 0;
-    }
-    return 0;
-  }, [side, buyToken, sellToken, prices]);
+  const autoRate =
+    side === "buy" && buyToken?.coingeckoId
+      ? (prices.get(buyToken.coingeckoId)?.current_price ?? 0)
+      : side === "sell" && sellToken?.coingeckoId
+        ? (prices.get(sellToken.coingeckoId)?.current_price ?? 0)
+        : 0;
 
   const effectiveRate = rateInput ? Number(rateInput) : autoRate;
 
   const minor = amountToMinor(amount);
   const feeMinor = parseFeeInput(feeInput, sellAccount?.decimals ?? 2);
 
+  // cavetail: BigInt materialization + Math.round on every keystroke; keep
+  // memoization to avoid re-computing when only unrelated state changes.
   const computedBuyAmount = useMemo(() => {
     if (minor <= 0n || effectiveRate <= 0) return 0n;
     if (side === "buy") {
@@ -184,11 +190,11 @@ export function TradeCapture({
       userId,
     };
     onSave(payload);
-    reset();
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogContentTitle>Log trade</DialogContentTitle>
         <DialogContentDescription>
@@ -202,7 +208,7 @@ export function TradeCapture({
               { value: "sell", label: "Sell" },
             ]}
             value={side}
-            onChange={(v) => setSide(v as TradeSide)}
+            onChange={(v) => setValue("side", v as TradeSide, { shouldValidate: true })}
           />
         </div>
 
@@ -213,69 +219,64 @@ export function TradeCapture({
         )}
 
         {side === "buy" ? (
-          <>
-            <div className="mt-2 flex items-center gap-2">
-              <select
-                aria-label="Spend from"
-                className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-                value={sellAccountId}
-                onChange={(e) => setSellAccountId(e.target.value)}
-              >
-                <option value="">Spend from…</option>
-                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
-              <span aria-hidden className="text-zinc-500">→</span>
-              <select
-                aria-label="Buy token"
-                className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-                value={buyTokenId}
-                onChange={(e) => setBuyTokenId(e.target.value)}
-              >
-                <option value="">Select token…</option>
-                {cryptoTokens.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
-                ))}
-              </select>
-            </div>
-          </>
+          <div className="mt-2 flex items-center gap-2">
+            <select
+              aria-label="Spend from"
+              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
+              value={sellAccountId}
+              onChange={(e) => setValue("sellAccountId", e.target.value, { shouldValidate: true })}
+            >
+              <option value="">Spend from…</option>
+              {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+            <span aria-hidden className="text-zinc-500">→</span>
+            <select
+              aria-label="Buy token"
+              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
+              value={buyTokenId}
+              onChange={(e) => setValue("buyTokenId", e.target.value, { shouldValidate: true })}
+            >
+              <option value="">Select token…</option>
+              {cryptoTokens.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
+              ))}
+            </select>
+          </div>
         ) : (
-          <>
-            <div className="mt-2 flex items-center gap-2">
-              <select
-                aria-label="Sell token"
-                className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-                value={sellTokenId}
-                onChange={(e) => setSellTokenId(e.target.value)}
-              >
-                <option value="">Select token…</option>
-                {cryptoTokens.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
-                ))}
-              </select>
-              <span aria-hidden className="text-zinc-500">→</span>
-              <select
-                aria-label="Receive to"
-                className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
-                value={buyAccountId}
-                onChange={(e) => setBuyAccountId(e.target.value)}
-              >
-                <option value="">Receive to…</option>
-                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
-              </select>
-            </div>
-          </>
+          <div className="mt-2 flex items-center gap-2">
+            <select
+              aria-label="Sell token"
+              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
+              value={sellTokenId}
+              onChange={(e) => setValue("sellTokenId", e.target.value, { shouldValidate: true })}
+            >
+              <option value="">Select token…</option>
+              {cryptoTokens.map((t) => (
+                <option key={t.id} value={t.id}>{t.name} ({t.symbol})</option>
+              ))}
+            </select>
+            <span aria-hidden className="text-zinc-500">→</span>
+            <select
+              aria-label="Receive to"
+              className="h-11 flex-1 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200"
+              value={buyAccountId}
+              onChange={(e) => setValue("buyAccountId", e.target.value, { shouldValidate: true })}
+            >
+              <option value="">Receive to…</option>
+              {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
         )}
 
         <input
           aria-label="Description"
           className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
           placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          {...register("description")}
         />
 
         <div className="mt-2 flex items-center gap-2">
@@ -285,7 +286,7 @@ export function TradeCapture({
               { value: "yesterday", label: "Yesterday" },
             ]}
             value={datePreset}
-            onChange={(v) => setDatePreset(v)}
+            onChange={(v) => setValue("datePreset", v, { shouldValidate: true })}
           />
           {autoRate > 0 && !rateInput && (
             <span className="text-[10px] text-emerald-400">
@@ -321,8 +322,7 @@ export function TradeCapture({
           inputMode="decimal"
           className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
           placeholder={`Rate (auto: $${autoRate.toLocaleString()})`}
-          value={rateInput}
-          onChange={(e) => setRateInput(e.target.value)}
+          {...register("rateInput")}
         />
 
         <input
@@ -330,15 +330,14 @@ export function TradeCapture({
           inputMode="decimal"
           className="mt-2 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500"
           placeholder="Fee (optional)"
-          value={feeInput}
-          onChange={(e) => setFeeInput(e.target.value)}
+          {...register("feeInput")}
         />
         {feeMinor > 0n && (
           <select
             aria-label="Fee asset"
             className="mt-1 h-9 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-xs text-zinc-200"
             value={feeAccountId}
-            onChange={(e) => setFeeAccountId(e.target.value)}
+            onChange={(e) => setValue("feeAccountId", e.target.value, { shouldValidate: true })}
           >
             {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -352,4 +351,10 @@ export function TradeCapture({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const TradeCapture = (props: TradeCaptureProps) => {
+  const { isOpen: open, onOpenChange, userId, accounts, tokens, prices, onSave } = props;
+  if (!open) return null;
+  return <TradeForm onOpenChange={onOpenChange} userId={userId} accounts={accounts} tokens={tokens} prices={prices} onSave={onSave} />;
+};

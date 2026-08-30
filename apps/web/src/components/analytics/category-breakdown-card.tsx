@@ -3,7 +3,7 @@
 import { PieChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import type { AssetInfo } from "@/app/dashboard/analytics/page";
+import type { AssetInfo } from "@/app/dashboard/analytics/analytics-screen";
 
 type CategorySlice = {
   name: string;
@@ -12,12 +12,12 @@ type CategorySlice = {
   pct: number;
 };
 
-type Props = {
+interface CategoryBreakdownCardProps {
   data: CategorySlice[];
   accountInfo?: Record<string, AssetInfo>;
-};
+}
 
-export function CategoryBreakdownCard({ data, accountInfo }: Props) {
+export const CategoryBreakdownCard = ({ data, accountInfo }: CategoryBreakdownCardProps) => {
   const { masked } = usePrivacy();
 
   const code = accountInfo ? Object.values(accountInfo)[0]?.code : undefined;
@@ -77,4 +77,4 @@ export function CategoryBreakdownCard({ data, accountInfo }: Props) {
       </div>
     </section>
   );
-}
+};

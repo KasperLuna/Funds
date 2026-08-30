@@ -6,17 +6,19 @@ export type SegmentOption<T extends string> = {
   ariaLabel?: string;
 };
 
-export function SegmentedControl<T extends string>({
-  options,
-  value,
-  onChange,
-  className,
-}: {
+interface SegmentedControlProps<T extends string> {
   options: SegmentOption<T>[];
   value: T;
   onChange: (v: T) => void;
   className?: string;
-}) {
+}
+
+const SegmentedControl = <T extends string>({
+  options,
+  value,
+  onChange,
+  className,
+}: SegmentedControlProps<T>) => {
   return (
     <div
       role="group"
@@ -47,4 +49,6 @@ export function SegmentedControl<T extends string>({
       })}
     </div>
   );
-}
+};
+
+export { SegmentedControl };

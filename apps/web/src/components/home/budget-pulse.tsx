@@ -5,6 +5,7 @@ import { PiggyBank } from "lucide-react";
 import type { Category } from "@/lib/categories/categories-store";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { cn } from "@/lib/utils";
 
 function usageColor(pct: number): string {
   if (pct > 90) return "bg-(--danger)";
@@ -26,12 +27,12 @@ export type BudgetUsageItem = {
   pct: number;
 };
 
-export type BudgetPulseProps = {
+interface BudgetPulseProps {
   items: BudgetUsageItem[];
   assetsById: Map<string, { code: string; decimals: number }>;
-};
+}
 
-export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
+export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
   const { masked: privacy } = usePrivacy();
   const asset = items[0]?.budgetAssetId ? assetsById.get(items[0].budgetAssetId) : undefined;
   const decimals = asset?.decimals ?? 2;
@@ -75,35 +76,14 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
       className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-6"
     >
       {homogeneous ? (
-        <>
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-base font-bold tracking-tight">Budget pulse</h2>
-            <span className={`font-display text-2xl font-bold tabular-nums ${usageLabel(totalPct)}`}>
-              {Math.round(totalPct)}
-              <span className="text-sm font-semibold">%</span>
-            </span>
-          </div>
-
-          <p className="mt-0.5 text-xs text-zinc-500" aria-label={privacy ? "Budget usage masked" : undefined}>
-            {privacy
-              ? `${Math.round(totalPct)}% of budget used`
-              : `${formatMoney(totalSpentMinor, decimals, code)} of ${formatMoney(totalBudgetMinor, decimals, code)} spent`}
-          </p>
-
-          <div
-            className="mt-3 h-1 overflow-hidden rounded-full bg-(--surface-3)"
-            role="progressbar"
-            aria-valuenow={Math.round(totalPct)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Budget usage ${Math.round(totalPct)}%`}
-          >
-            <div
-              className={`h-full rounded-full transition-all ${usageColor(totalPct)}`}
-              style={{ width: `${Math.min(totalPct, 100)}%` }}
-            />
-          </div>
-        </>
+        <BudgetPulseSummary
+          totalPct={totalPct}
+          totalSpentMinor={totalSpentMinor}
+          totalBudgetMinor={totalBudgetMinor}
+          decimals={decimals}
+          code={code}
+          isPrivate={privacy}
+        />
       ) : (
         <h2 className="font-display text-base font-bold tracking-tight">Budget pulse</h2>
       )}
@@ -133,11 +113,11 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
                   <div className="mt-1 flex items-center gap-2">
                     <div className="h-1 flex-1 overflow-hidden rounded-full bg-(--surface-3)">
                       <div
-                        className={`h-full rounded-full ${usageColor(item.pct)}`}
+                        className={cn("h-full rounded-full", usageColor(item.pct))}
                         style={{ width: `${Math.min(item.pct, 100)}%` }}
                       />
                     </div>
-                    <span className={`shrink-0 text-xs font-semibold tabular-nums ${usageLabel(item.pct)}`}>
+                    <span className={cn("shrink-0 text-xs font-semibold tabular-nums", usageLabel(item.pct))}>
                       {Math.round(item.pct)}%
                     </span>
                   </div>
@@ -148,4 +128,52 @@ export function BudgetPulse({ items, assetsById }: BudgetPulseProps) {
       </div>
     </section>
   );
+};
+
+interface BudgetPulseSummaryProps {
+  totalPct: number;
+  totalSpentMinor: bigint;
+  totalBudgetMinor: bigint;
+  decimals: number;
+  code?: string;
+  isPrivate: boolean;
 }
+
+const BudgetPulseSummary = ({
+  totalPct,
+  totalSpentMinor,
+  totalBudgetMinor,
+  decimals,
+  code,
+  isPrivate,
+}: BudgetPulseSummaryProps) => (
+  <>
+    <div className="flex items-baseline justify-between">
+      <h2 className="font-display text-base font-bold tracking-tight">Budget pulse</h2>
+      <span className={cn("font-display text-2xl font-bold tabular-nums", usageLabel(totalPct))}>
+        {Math.round(totalPct)}
+        <span className="text-sm font-semibold">%</span>
+      </span>
+    </div>
+
+    <p className="mt-0.5 text-xs text-zinc-500" aria-label={isPrivate ? "Budget usage masked" : undefined}>
+      {isPrivate
+        ? `${Math.round(totalPct)}% of budget used`
+        : `${formatMoney(totalSpentMinor, decimals, code)} of ${formatMoney(totalBudgetMinor, decimals, code)} spent`}
+    </p>
+
+    <div
+      className="mt-3 h-1 overflow-hidden rounded-full bg-(--surface-3)"
+      role="progressbar"
+      aria-valuenow={Math.round(totalPct)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Budget usage ${Math.round(totalPct)}%`}
+    >
+      <div
+        className={cn("h-full rounded-full transition-all", usageColor(totalPct))}
+        style={{ width: `${Math.min(totalPct, 100)}%` }}
+      />
+    </div>
+  </>
+);

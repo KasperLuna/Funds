@@ -21,17 +21,17 @@ import {
 
 type DataPoint = Record<string, string | number | boolean>;
 
-type BarConfig = {
+interface BarConfig {
   key: string;
   color?: string;
   radius?: [number, number, number, number];
-};
+}
 
 // cavetail: recharts' Formatter type is overly strict; cast at the boundary
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TooltipFormatter = (value: any, name: any) => string;
 
-type Props = {
+interface BarChartProps {
   data: DataPoint[];
   xKey: string;
   bars: BarConfig[];
@@ -40,9 +40,9 @@ type Props = {
   yFormatter?: (v: string | number) => string;
   tooltipFormatter?: TooltipFormatter;
   referenceLine?: { value: number; color?: string; label?: string };
-};
+}
 
-export function BarChart({
+const BarChart = ({
   data,
   xKey,
   bars,
@@ -51,7 +51,7 @@ export function BarChart({
   yFormatter,
   tooltipFormatter,
   referenceLine,
-}: Props) {
+}: BarChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsBarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -98,4 +98,6 @@ export function BarChart({
       </RechartsBarChart>
     </ResponsiveContainer>
   );
-}
+};
+
+export { BarChart };

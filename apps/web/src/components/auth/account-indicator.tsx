@@ -8,7 +8,7 @@ function useUser() {
   return { user: session?.user ?? null, isPending };
 }
 
-export function AccountChip() {
+export const AccountChip = () => {
   const { user, isPending } = useUser();
 
   if (isPending) {
@@ -48,9 +48,9 @@ export function AccountChip() {
       {initial}
     </Link>
   );
-}
+};
 
-export function SignedOutBanner() {
+export const SignedOutBanner = () => {
   const { user, isPending } = useUser();
 
   if (isPending || user) return null;
@@ -69,4 +69,4 @@ export function SignedOutBanner() {
       </Link>
     </div>
   );
-}
+};

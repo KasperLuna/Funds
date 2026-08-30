@@ -11,12 +11,12 @@ type CashFlowPoint = {
   projected: boolean;
 };
 
-type Props = {
+interface CashFlowForecastCardProps {
   data: CashFlowPoint[];
   code?: string;
-};
+}
 
-export function CashFlowForecastCard({ data, code }: Props) {
+export const CashFlowForecastCard = ({ data, code }: CashFlowForecastCardProps) => {
   const { masked } = usePrivacy();
 
   const chartData = data.map((d) => ({
@@ -51,4 +51,4 @@ export function CashFlowForecastCard({ data, code }: Props) {
       </div>
     </section>
   );
-}
+};

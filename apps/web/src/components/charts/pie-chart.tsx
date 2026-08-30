@@ -13,31 +13,31 @@ import {
   TOOLTIP_ITEM_STYLE,
 } from "./chart-theme";
 
-type Slice = {
+interface Slice {
   name: string;
   value: number;
   color: string;
-};
+}
 
 // cavetail: recharts' Formatter type is overly strict; cast at the boundary
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TooltipFormatter = (value: any, name: any) => string;
 
-type Props = {
+interface PieChartProps {
   data: Slice[];
   height?: number;
   innerRadius?: number;
   outerRadius?: number;
   tooltipFormatter?: TooltipFormatter;
-};
+}
 
-export function PieChart({
+const PieChart = ({
   data,
   height = 240,
   innerRadius = 55,
   outerRadius = 75,
   tooltipFormatter,
-}: Props) {
+}: PieChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsPieChart>
@@ -64,4 +64,6 @@ export function PieChart({
       </RechartsPieChart>
     </ResponsiveContainer>
   );
-}
+};
+
+export { PieChart };

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -6,6 +8,7 @@ import {
   DialogContentTitle,
   DialogContentDescription,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import type { Account } from "@/lib/accounts/accounts-store";
 import { useAssets } from "@/lib/assets";
 
@@ -42,70 +45,76 @@ function parseMajor(val: string): bigint {
 const inputCls =
   "h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none";
 
-export function AccountDialog({
-  open,
-  onOpenChange,
-  onSave,
-  editAccount,
-}: {
-  open: boolean;
+interface AccountDialogProps {
+  isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (account: Account) => void;
   editAccount?: Account | null;
-}) {
+}
+
+interface AccountFormProps {
+  onOpenChange: (open: boolean) => void;
+  onSave: (account: Account) => void;
+  editAccount: Account | null;
+}
+
+const accountFormSchema = z.object({
+  name: z.string().trim().min(1, "Name required"),
+  kind: z.enum(["bank", "cash", "wallet", "exchange"]),
+  assetId: z.string().min(1, "Select asset"),
+  openingBalance: z
+    .string()
+    .refine((s) => s === "" || /^\d+(\.\d+)?$/.test(s), "Invalid number")
+    .optional(),
+  primaryColor: z.string().nullable(),
+});
+
+type AccountFormValues = z.infer<typeof accountFormSchema>;
+
+const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) => {
   const { assets } = useAssets();
   const assetOptions = assets.map((a) => ({ id: a.id, label: a.code }));
-  const [name, setName] = useState("");
-  const [kind, setKind] = useState<Kind>("bank");
-  const [assetId, setAssetId] = useState("");
-  const [openingBalance, setOpeningBalance] = useState("");
-  const [primaryColor, setPrimaryColor] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
+  const form = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: editAccount?.name ?? "",
+      kind: editAccount?.kind ?? "bank",
+      assetId: editAccount?.assetId ?? assets[0]?.id ?? "",
+      openingBalance:
+        editAccount && editAccount.openingBalanceMinor !== 0n
+          ? (Number(editAccount.openingBalanceMinor) / 100).toFixed(2)
+          : "",
+      primaryColor: editAccount?.primaryColor ?? null,
+    },
+  });
 
-      if (editAccount) {
-        setName(editAccount.name);
-        setKind(editAccount.kind);
-        setAssetId(editAccount.assetId);
-        setOpeningBalance(
-          editAccount.openingBalanceMinor !== 0n
-            ? (Number(editAccount.openingBalanceMinor) / 100).toFixed(2)
-            : "",
-        );
-        setPrimaryColor(editAccount.primaryColor ?? null);
-      } else {
-        setName("");
-        setKind("bank");
-        setAssetId(assets[0]?.id ?? "");
-        setOpeningBalance("");
-        setPrimaryColor(null);
-      }
-    }
-  }, [open, editAccount, assets]);
+  const { register, handleSubmit, watch, setValue, formState } = form;
+  const name = watch("name");
+  const primaryColor = watch("primaryColor");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
+  const isEditing = !!editAccount;
+
+  const onSubmit = (values: AccountFormValues) => {
     const now = Date.now();
     if (editAccount) {
       onSave({
         ...editAccount,
-        name: trimmed,
-        kind,
-        assetId,
-        primaryColor,
+        name: values.name.trim(),
+        kind: values.kind,
+        assetId: values.assetId,
+        primaryColor: values.primaryColor,
         updatedAt: now,
       });
     } else {
       onSave({
         id: `acc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        name: trimmed,
-        kind,
-        assetId,
-        openingBalanceMinor: parseMajor(openingBalance),
-        primaryColor,
+        name: values.name.trim(),
+        kind: values.kind,
+        assetId: values.assetId,
+        openingBalanceMinor: parseMajor(values.openingBalance ?? ""),
+        primaryColor: values.primaryColor,
         createdAt: now,
         updatedAt: now,
       } as Account);
@@ -113,10 +122,8 @@ export function AccountDialog({
     onOpenChange(false);
   };
 
-  const isEditing = !!editAccount;
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogContentTitle>
           {isEditing ? "Edit account" : "New account"}
@@ -126,24 +133,25 @@ export function AccountDialog({
             ? "Update account details."
             : "Create a new account to track transactions."}
         </DialogContentDescription>
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register("name")}
               placeholder="e.g. Main Checking"
               className={inputCls}
               autoFocus
             />
+            {formState.errors.name && (
+              <span className="text-xs text-(--danger)">{formState.errors.name.message}</span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Type</span>
             <select
-              value={kind}
-              onChange={(e) => setKind(e.target.value as Kind)}
+              {...register("kind")}
               className={inputCls}
             >
               {KIND_OPTIONS.map((opt) => (
@@ -157,8 +165,7 @@ export function AccountDialog({
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Asset</span>
             <select
-              value={assetId}
-              onChange={(e) => setAssetId(e.target.value)}
+              {...register("assetId")}
               className={inputCls}
             >
               {assetOptions.map((opt) => (
@@ -167,6 +174,9 @@ export function AccountDialog({
                 </option>
               ))}
             </select>
+            {formState.errors.assetId && (
+              <span className="text-xs text-(--danger)">{formState.errors.assetId.message}</span>
+            )}
           </label>
 
           {!isEditing && (
@@ -175,11 +185,13 @@ export function AccountDialog({
               <input
                 type="text"
                 inputMode="decimal"
-                value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
+                {...register("openingBalance")}
                 placeholder="0.00"
                 className={inputCls}
               />
+              {formState.errors.openingBalance && (
+                <span className="text-xs text-(--danger)">{formState.errors.openingBalance.message}</span>
+              )}
             </label>
           )}
 
@@ -193,12 +205,13 @@ export function AccountDialog({
                   role="radio"
                   aria-checked={primaryColor === c}
                   aria-label={c}
-                  onClick={() => setPrimaryColor(c)}
-                  className={`h-8 w-8 rounded-full transition-transform ${
+                  onClick={() => setValue("primaryColor", c, { shouldValidate: true })}
+                  className={cn(
+                    "h-8 w-8 rounded-full transition-transform",
                     primaryColor === c
                       ? "scale-110 ring-2 ring-(--border-strong)"
-                      : "hover:scale-105"
-                  }`}
+                      : "hover:scale-105",
+                  )}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -213,7 +226,7 @@ export function AccountDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={!name.trim()}>
+            <Button type="submit" disabled={!name?.trim()}>
               {isEditing ? "Save" : "Create"}
             </Button>
           </div>
@@ -221,4 +234,10 @@ export function AccountDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const AccountDialog = (props: AccountDialogProps) => {
+  const { isOpen, onOpenChange, onSave, editAccount } = props;
+  if (!isOpen) return null;
+  return <AccountForm onOpenChange={onOpenChange} onSave={onSave} editAccount={editAccount ?? null} />;
+};

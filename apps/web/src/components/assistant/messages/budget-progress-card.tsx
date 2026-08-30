@@ -3,8 +3,14 @@
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import type { BudgetProgressPayload } from "@/lib/assistant/types";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
+import { cn } from "@/lib/utils";
+
+interface BudgetProgressCardProps {
+  payload: BudgetProgressPayload;
+  onViewData?: () => void;
+}
 
 function usageColor(pct: number): string {
   if (pct > 100) return "bg-(--danger)";
@@ -26,22 +32,16 @@ function statusCopy(status: "under" | "near" | "over"): string {
   return "On track";
 }
 
-export function BudgetProgressCard({
-  payload,
-  onViewData,
-}: {
-  payload: BudgetProgressPayload;
-  onViewData?: () => void;
-}) {
+export const BudgetProgressCard = ({ payload, onViewData }: BudgetProgressCardProps) => {
   const { masked } = usePrivacy();
   const spent = BigInt(payload.spentMinor);
   const limit = BigInt(payload.limitMinor);
   const pct = Math.min(100, Math.max(0, Math.round(payload.pctUsed)));
   const overBy = spent - limit;
-  const overText =
-    payload.pctUsed > 100
-      ? `${Math.round(payload.pctUsed - 100)}% over · ${formatMoney(overBy > 0n ? overBy : 0n, payload.decimals, payload.assetCode)} above limit`
-      : `${pct}% used`;
+  const isOver = payload.pctUsed > 100;
+  const overText = isOver
+    ? `${Math.round(payload.pctUsed - 100)}% over · ${formatMoney(overBy > 0n ? overBy : 0n, payload.decimals, payload.assetCode)} above limit`
+    : `${pct}% used`;
 
   return (
     <section
@@ -52,7 +52,7 @@ export function BudgetProgressCard({
         <h3 className="text-sm font-semibold text-zinc-300">{payload.category}</h3>
         <div className="flex items-baseline gap-2">
           <DataScopeBadge scope={payload.scope} />
-          <span className={`text-xs font-medium ${usageLabel(payload.pctUsed)}`}>
+          <span className={cn("text-xs font-medium", usageLabel(payload.pctUsed))}>
             {statusCopy(payload.status)}
           </span>
         </div>
@@ -78,16 +78,21 @@ export function BudgetProgressCard({
         className="mt-2 h-2 w-full overflow-hidden rounded-full bg-(--surface-3)"
       >
         <div
-          className={`h-full rounded-full transition-[width] duration-300 ease-out ${usageColor(payload.pctUsed)}`}
+          className={cn("h-full rounded-full transition-[width] duration-300 ease-out", usageColor(payload.pctUsed))}
           style={{ width: `${pct}%` }}
         />
       </div>
 
-      <p className={`mt-2 text-xs ${payload.pctUsed > 100 ? "font-semibold text-(--danger)" : "text-zinc-500"}`}>
+      <p
+        className={cn(
+          "mt-2 text-xs",
+          isOver ? "font-semibold text-(--danger)" : "text-zinc-500",
+        )}
+      >
         {masked ? "••••" : overText}
       </p>
 
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

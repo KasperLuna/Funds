@@ -1,22 +1,25 @@
 import { Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
 import type { Holding } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
+import { cn } from "@/lib/utils";
 
 function formatUsdFromNumber(value: number): string {
   return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export function HoldingRow({
-  holding,
-  price,
-  allocationPct,
-  masked = false,
-}: {
+export interface HoldingRowProps {
   holding: Holding;
   price?: CoinPrice;
   allocationPct?: number;
-  masked?: boolean;
-}) {
+  isMasked?: boolean;
+}
+
+export const HoldingRow = ({
+  holding,
+  price,
+  allocationPct,
+  isMasked: masked = false,
+}: HoldingRowProps) => {
   const { token, qtyMinor, avgCostMinor } = holding;
   const dec = Number(token.decimals) || 0;
   const qty = Number(qtyMinor) / 10 ** dec;
@@ -33,6 +36,13 @@ export function HoldingRow({
 
   const change24h = price?.price_change_percentage_24h ?? 0;
   const isUp = change24h >= 0;
+
+  const changeBadgeClass = isUp ? "text-(--accent)" : "text-(--danger)";
+  const plClass = masked
+    ? "text-zinc-500"
+    : unrealizedPL >= 0
+      ? "text-(--accent)"
+      : "text-(--danger)";
 
   return (
     <div className="flex items-center justify-between px-4 py-3">
@@ -61,7 +71,7 @@ export function HoldingRow({
             <p className="truncate text-xs text-zinc-500">{token.symbol}</p>
             {price && (
               <span
-                className={`flex items-center gap-0.5 text-[10px] tabular-nums ${isUp ? "text-(--accent)" : "text-(--danger)"}`}
+                className={cn("flex items-center gap-0.5 text-[10px] tabular-nums", changeBadgeClass)}
               >
                 {isUp ? (
                   <TrendingUp className="h-2.5 w-2.5" />
@@ -85,7 +95,7 @@ export function HoldingRow({
               {masked ? "••••" : formatUsdFromNumber(valueUsd)}
             </p>
             <p
-              className={`text-[10px] font-medium tabular-nums ${masked ? "text-zinc-500" : unrealizedPL >= 0 ? "text-(--accent)" : "text-(--danger)"}`}
+              className={cn("text-[10px] font-medium tabular-nums", plClass)}
               aria-label={masked ? "Profit or loss masked" : undefined}
             >
               {masked
@@ -102,4 +112,4 @@ export function HoldingRow({
       </div>
     </div>
   );
-}
+};

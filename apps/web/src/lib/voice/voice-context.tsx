@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { VoicePrefill } from "@/components/capture/CaptureSheet";
+import type { VoicePrefill } from "@/components/capture/capture-sheet";
 
 /**
  * Tiny shared prefill slot between the assistant's voice-to-txn card and the

@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
 import {
@@ -7,84 +9,91 @@ import {
   DialogContentTitle,
   DialogContentDescription,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import type { Template } from "@/lib/templates/templates-store";
 
 type AccountOption = { id: string; name: string; decimals: number };
 type CategoryOption = { id: string; name: string };
 
-export function TemplateDialog({
-  open,
-  onOpenChange,
-  onSave,
-  editTemplate,
-  accounts,
-  categories,
-}: {
-  open: boolean;
+interface TemplateDialogProps {
+  isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (t: Template) => void;
   editTemplate?: Template | null;
   accounts: AccountOption[];
   categories: CategoryOption[];
-}) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"income" | "expense">("expense");
-  const [amount, setAmount] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+}
+
+interface TemplateFormProps {
+  onOpenChange: (open: boolean) => void;
+  onSave: (t: Template) => void;
+  editTemplate: Template | null;
+  accounts: AccountOption[];
+  categories: CategoryOption[];
+}
+
+const templateFormSchema = z.object({
+  name: z.string().trim().min(1, "Name required"),
+  description: z.string().max(500),
+  type: z.enum(["income", "expense"]),
+  accountId: z.string().min(1, "Select account"),
+  categoryIds: z.array(z.string()),
+  amount: z.string().refine((s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0, "Enter a valid amount"),
+});
+
+type TemplateFormValues = z.infer<typeof templateFormSchema>;
+
+const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories }: TemplateFormProps) => {
+  const initDec = accounts.find((a) => a.id === (editTemplate?.accountId ?? accounts[0]?.id))?.decimals ?? 2;
+  const form = useForm<TemplateFormValues>({
+    resolver: zodResolver(templateFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: editTemplate?.name ?? "",
+      description: editTemplate?.description ?? "",
+      type: editTemplate?.type ?? "expense",
+      accountId: editTemplate?.accountId ?? accounts[0]?.id ?? "",
+      categoryIds: editTemplate?.categoryIds ?? [],
+      amount: editTemplate
+        ? (() => {
+            // cavetail: display-only formatting, not arithmetic
+            // eslint-disable-next-line local/no-money-float
+            return (Number(editTemplate.amountMinor) / 10 ** initDec).toFixed(initDec);
+          })()
+        : "",
+    },
+  });
+
+  const { register, watch, setValue, handleSubmit, formState } = form;
+  const name = watch("name");
+  const type = watch("type");
+  const accountId = watch("accountId");
+  const categoryIds = watch("categoryIds");
+  const amount = watch("amount");
 
   const decimals = accounts.find((a) => a.id === accountId)?.decimals ?? 2;
 
-  useEffect(() => {
-    if (open) {
-      if (editTemplate) {
-        setName(editTemplate.name);
-        setDescription(editTemplate.description);
-        setType(editTemplate.type);
-        const dec = accounts.find((a) => a.id === editTemplate.accountId)?.decimals ?? 2;
-        // cavetail: display-only formatting, not arithmetic
-        // eslint-disable-next-line local/no-money-float
-        setAmount((Number(editTemplate.amountMinor) / 10 ** dec).toFixed(dec));
-        setAccountId(editTemplate.accountId);
-        setSelectedCategories(editTemplate.categoryIds);
-      } else {
-        setName("");
-        setDescription("");
-        setType("expense");
-        setAmount("");
-        setAccountId(accounts[0]?.id ?? "");
-        setSelectedCategories([]);
-      }
-    }
-  }, [open, editTemplate, accounts]);
-
   const toggleCategory = (catId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(catId)
-        ? prev.filter((c) => c !== catId)
-        : [...prev, catId],
-    );
+    const next = categoryIds.includes(catId)
+      ? categoryIds.filter((c) => c !== catId)
+      : [...categoryIds, catId];
+    setValue("categoryIds", next, { shouldValidate: true });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed || !accountId || !amount) return;
-
+  const onSubmit = (values: TemplateFormValues) => {
     // cavetail: display-only formatting, not arithmetic
     // eslint-disable-next-line local/no-money-float
-    const amountMinor = BigInt(Math.round(Number(amount) * 10 ** decimals));
+    const amountMinor = BigInt(Math.round(Number(values.amount) * 10 ** decimals));
     const now = Date.now();
 
     const item: Template = {
       id: editTemplate?.id ?? `tpl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      name: trimmed,
-      type,
+      name: values.name.trim(),
+      type: values.type,
       amountMinor,
-      description: description.trim(),
-      accountId,
-      categoryIds: selectedCategories,
+      description: values.description.trim(),
+      accountId: values.accountId,
+      categoryIds: values.categoryIds,
       createdAt: editTemplate?.createdAt ?? now,
       updatedAt: now,
       deletedAt: null,
@@ -95,7 +104,7 @@ export function TemplateDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogContentTitle>
           {editTemplate ? "Edit template" : "New template"}
@@ -105,17 +114,19 @@ export function TemplateDialog({
             ? "Update the template details."
             : "Save a reusable prefill for quick transaction entry."}
         </DialogContentDescription>
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register("name")}
               placeholder="e.g. Coffee"
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               autoFocus
             />
+            {formState.errors.name && (
+              <span className="text-xs text-(--danger)">{formState.errors.name.message}</span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1.5">
@@ -126,7 +137,7 @@ export function TemplateDialog({
                 { value: "income", label: "Income" },
               ]}
               value={type}
-              onChange={(v) => setType(v)}
+              onChange={(v) => setValue("type", v, { shouldValidate: true })}
             />
           </label>
 
@@ -136,19 +147,20 @@ export function TemplateDialog({
               <input
                 type="text"
                 inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                {...register("amount")}
                 placeholder="0.00"
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               />
+              {formState.errors.amount && (
+                <span className="text-xs text-(--danger)">{formState.errors.amount.message}</span>
+              )}
             </label>
           </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Account</span>
             <select
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              {...register("accountId")}
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             >
               {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
@@ -157,6 +169,9 @@ export function TemplateDialog({
                 </option>
               ))}
             </select>
+            {formState.errors.accountId && (
+              <span className="text-xs text-(--danger)">{formState.errors.accountId.message}</span>
+            )}
           </label>
 
           {categories.length > 0 && (
@@ -168,11 +183,12 @@ export function TemplateDialog({
                     key={c.id}
                     type="button"
                     onClick={() => toggleCategory(c.id)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                      selectedCategories.includes(c.id)
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                      categoryIds.includes(c.id)
                         ? "bg-(--accent) text-(--accent-foreground)"
-                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit"
-                    }`}
+                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit",
+                    )}
                   >
                     {c.name}
                   </button>
@@ -185,8 +201,7 @@ export function TemplateDialog({
             <span className="text-sm text-zinc-500">Description</span>
             <input
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              {...register("description")}
               placeholder="Optional note"
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             />
@@ -202,7 +217,7 @@ export function TemplateDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim() || !accountId || !amount}
+              disabled={!name?.trim() || !accountId || !amount}
             >
               {editTemplate ? "Save" : "Create"}
             </Button>
@@ -211,4 +226,16 @@ export function TemplateDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const TemplateDialog = ({
+  isOpen,
+  onOpenChange,
+  onSave,
+  editTemplate,
+  accounts,
+  categories,
+}: TemplateDialogProps) => {
+  if (!isOpen) return null;
+  return <TemplateForm onOpenChange={onOpenChange} onSave={onSave} editTemplate={editTemplate ?? null} accounts={accounts} categories={categories} />;
+};

@@ -26,7 +26,7 @@ const ACCOUNT: Account = {
 function harness(currentBalance: bigint, onSave = vi.fn()) {
   const utils = render(
     <ReconcileSheet
-      open
+      isOpen
       onOpenChange={vi.fn()}
       account={ACCOUNT}
       currentBalance={currentBalance}
@@ -85,7 +85,7 @@ describe("ReconcileSheet", () => {
   it("guards against an undefined account", () => {
     const { container } = render(
       <ReconcileSheet
-        open
+        isOpen
         onOpenChange={vi.fn()}
         account={undefined as unknown as Account}
         currentBalance={0n}
@@ -105,7 +105,7 @@ describe("ReconcileSheet", () => {
     const onOpenChange = vi.fn();
     const { rerender } = render(
       <ReconcileSheet
-        open
+        isOpen
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}
@@ -118,7 +118,7 @@ describe("ReconcileSheet", () => {
     expect(input).toHaveValue("42");
     rerender(
       <ReconcileSheet
-        open={false}
+        isOpen={false}
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}
@@ -128,7 +128,7 @@ describe("ReconcileSheet", () => {
     );
     rerender(
       <ReconcileSheet
-        open
+        isOpen
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}

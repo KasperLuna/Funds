@@ -3,6 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { formatMoney } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 type Anomaly = {
   description: string;
@@ -12,10 +13,10 @@ type Anomaly = {
   date: number;
 };
 
-type Props = {
+interface AnomalyAlertsCardProps {
   data: Anomaly[];
   code?: string;
-};
+}
 
 function relativeDate(ms: number): string {
   const days = Math.floor((Date.now() - ms) / 86_400_000);
@@ -33,7 +34,7 @@ function zBadgeClass(z: number): string {
   return "bg-(--surface-3) text-zinc-400";
 }
 
-export function AnomalyAlertsCard({ data, code }: Props) {
+export const AnomalyAlertsCard = ({ data, code }: AnomalyAlertsCardProps) => {
   const { masked } = usePrivacy();
 
   if (data.length === 0) return null;
@@ -43,8 +44,8 @@ export function AnomalyAlertsCard({ data, code }: Props) {
       <p className="label-micro">Anomaly alerts</p>
 
       <ul className="mt-4 space-y-3">
-        {data.map((a, i) => (
-          <li key={i} className="flex items-start gap-3">
+        {data.map((a) => (
+          <li key={`${a.description}-${a.date}`} className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">
@@ -56,7 +57,7 @@ export function AnomalyAlertsCard({ data, code }: Props) {
                   {masked ? "••••" : formatMoney(a.amount, 2, code)}
                 </span>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${zBadgeClass(a.zScore)}`}
+                  className={cn("rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums", zBadgeClass(a.zScore))}
                 >
                   z {a.zScore.toFixed(1)}
                 </span>
@@ -70,4 +71,4 @@ export function AnomalyAlertsCard({ data, code }: Props) {
       </ul>
     </section>
   );
-}
+};

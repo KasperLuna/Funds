@@ -14,11 +14,13 @@ import { cn } from "@/lib/utils";
 
 export { DialogRoot as Dialog, DialogTrigger, DialogClose };
 
-export function DialogContent({
+type DialogContentProps = ComponentProps<typeof DialogContentPrimitive>;
+
+const DialogContent = ({
   className,
   children,
   ...props
-}: ComponentProps<typeof DialogContentPrimitive>) {
+}: DialogContentProps) => {
   return (
     <DialogPortal>
       <DialogOverlay className="fixed inset-0 z-40 bg-black/80 data-[state=open]:animate-[funds-overlay-in_200ms_ease-out]" />
@@ -48,28 +50,34 @@ export function DialogContent({
       </DialogContentPrimitive>
     </DialogPortal>
   );
-}
+};
 
-export function DialogContentTitle({
+type DialogContentTitleProps = ComponentProps<typeof DialogTitle>;
+
+const DialogContentTitle = ({
   className,
   ...props
-}: ComponentProps<typeof DialogTitle>) {
+}: DialogContentTitleProps) => {
   return (
     <DialogTitle
       className={cn("pr-8 text-lg font-semibold", className)}
       {...props}
     />
   );
-}
+};
 
-export function DialogContentDescription({
+type DialogContentDescriptionProps = ComponentProps<typeof DialogDescription>;
+
+const DialogContentDescription = ({
   className,
   ...props
-}: ComponentProps<typeof DialogDescription>) {
+}: DialogContentDescriptionProps) => {
   return (
     <DialogDescription
       className={cn("text-sm text-zinc-500", className)}
       {...props}
     />
   );
-}
+};
+
+export { DialogContent, DialogContentTitle, DialogContentDescription };

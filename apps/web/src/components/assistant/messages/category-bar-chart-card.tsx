@@ -3,9 +3,14 @@
 import { AreaChart, BarChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
 import type { SpendingBreakdownPayload } from "@/lib/assistant/types";
+
+interface CategoryBarChartCardProps {
+  payload: SpendingBreakdownPayload;
+  onViewData?: () => void;
+}
 
 /**
  * Spending breakdown. Two stacked charts in one view:
@@ -20,13 +25,7 @@ import type { SpendingBreakdownPayload } from "@/lib/assistant/types";
  * category" subline was removed too — most users do not think in averages
  * of categories.
  */
-export function CategoryBarChartCard({
-  payload,
-  onViewData,
-}: {
-  payload: SpendingBreakdownPayload;
-  onViewData?: () => void;
-}) {
+export const CategoryBarChartCard = ({ payload, onViewData }: CategoryBarChartCardProps) => {
   const { masked } = usePrivacy();
   const data = payload.slices.map((s) => ({
     name: s.category,
@@ -106,4 +105,4 @@ export function CategoryBarChartCard({
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

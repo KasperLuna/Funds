@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { CalendarDays, Search, Tag } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -8,15 +8,14 @@ import { cn } from "@/lib/utils";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
 
-/** Controlled popover exposing open state to the trigger (active styling). */
-function FilterPopover({
-  children,
-}: {
-  children: (controls: { open: boolean; setOpen: (open: boolean) => void }) => React.ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return <Popover open={open} onOpenChange={setOpen}>{children({ open, setOpen })}</Popover>;
+interface FilterPopoverProps {
+  children: (controls: { isOpen: boolean; setIsOpen: (open: boolean) => void }) => React.ReactNode;
 }
+
+const FilterPopover = ({ children }: FilterPopoverProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  return <Popover open={isOpen} onOpenChange={setIsOpen}>{children({ isOpen, setIsOpen })}</Popover>;
+};
 
 export type DateRangeFilter = { from: number; to: number } | null;
 
@@ -77,17 +76,15 @@ function fmtRange(from: number, to: number): string {
   return `${fromStr} – ${toStr}`;
 }
 
-export function TransactionFilters({
-  filters,
-  onChange,
-  categories,
-  accounts,
-}: {
+interface TransactionFiltersProps {
   filters: TxnFilters;
   onChange: (filters: TxnFilters) => void;
   categories: Category[];
   accounts: Array<{ id: string; name: string }>;
-}) {
+}
+
+export const TransactionFilters = (props: TransactionFiltersProps) => {
+  const { filters, onChange, categories, accounts } = props;
   const [query, setQuery] = useState(filters.query);
   const hasQuery = filters.query !== "";
   const hasCategory = filters.categoryIds.length > 0;
@@ -95,10 +92,7 @@ export function TransactionFilters({
   const activeCount =
     (hasQuery ? 1 : 0) + (hasCategory ? 1 : 0) + (hasDate ? 1 : 0);
 
-  const dateLabel = useMemo(() => {
-    if (!filters.date) return "All dates";
-    return fmtRange(filters.date.from, filters.date.to);
-  }, [filters.date]);
+  const dateLabel = !filters.date ? "All dates" : fmtRange(filters.date.from, filters.date.to);
 
   const commitQuery = (v: string) => {
     setQuery(v);
@@ -146,13 +140,13 @@ export function TransactionFilters({
 
       <div className="flex items-center gap-1.5">
         <FilterPopover>
-          {({ open: catOpen }) => (
+          {({ isOpen: catIsOpen }) => (
             <>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   aria-label="Filter by category"
-                  aria-expanded={catOpen}
+                  aria-expanded={catIsOpen}
                   className={cn(
                     "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
                     hasCategory
@@ -206,13 +200,13 @@ export function TransactionFilters({
         </FilterPopover>
 
         <FilterPopover>
-          {({ open: dateOpen, setOpen: setDateOpen }) => (
+          {({ isOpen: dateIsOpen, setIsOpen: setDateIsOpen }) => (
             <>
               <PopoverTrigger asChild>
                 <button
                   type="button"
                   aria-label="Filter by date"
-                  aria-expanded={dateOpen}
+                  aria-expanded={dateIsOpen}
                   className={cn(
                     "inline-flex min-h-11 items-center gap-1.5 rounded-(--radius-md) border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
                     hasDate
@@ -230,7 +224,7 @@ export function TransactionFilters({
                     type="button"
                     onClick={() => {
                       onChange({ ...filters, date: null });
-                      setDateOpen(false);
+                      setDateIsOpen(false);
                     }}
                     className={cn(
                       "min-h-11 flex-1 rounded-(--radius-sm) px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
@@ -246,7 +240,7 @@ export function TransactionFilters({
                       const from = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
                       const to = now.getTime();
                       onChange({ ...filters, date: { from, to } });
-                      setDateOpen(false);
+                      setDateIsOpen(false);
                     }}
                     className="min-h-11 flex-1 rounded-(--radius-sm) px-3 text-sm font-medium text-zinc-400 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
                   >
@@ -284,4 +278,4 @@ export function TransactionFilters({
       </div>
     </div>
   );
-}
+};

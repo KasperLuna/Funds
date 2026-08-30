@@ -1,13 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useSync } from "@/lib/sync/sync-context";
-import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import type { TransferRows } from "@/lib/capture";
 import {
   computeBalance,
@@ -25,19 +22,25 @@ import {
   type AccountConfirmAction,
 } from "@/components/banks/bank-confirm-dialogs";
 import { ReconcileSheet } from "@/components/banks/reconcile-sheet";
-import { TransactionRow } from "@/components/banks/transaction-row";
 import {
-  TransactionFilters,
   filterTxns,
   type TxnFilters,
 } from "@/components/banks/transaction-filters";
-import { CaptureSheet } from "@/components/capture/CaptureSheet";
-import { TransferSheet } from "@/components/capture/TransferSheet";
+import { CaptureSheet } from "@/components/capture/capture-sheet";
+import { TransferSheet } from "@/components/capture/transfer-sheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { type VoicePrefill } from "@/components/capture/CaptureSheet";
+import { type VoicePrefill } from "@/components/capture/capture-sheet";
+import { useSync } from "@/lib/sync/sync-context";
+import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
+import { BankList } from "@/components/assets/bank-list";
+import {
+  BankTransactionsList,
+  type CategoryInfo,
+  type AccountInfo,
+} from "@/components/assets/bank-transactions-list";
 
 const PAGE_SIZE = 50;
 
@@ -160,7 +163,12 @@ function formatDayHeader(day: string): string {
   });
 }
 
-export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean }) {
+interface BanksPanelProps {
+  autoOpenTransfer?: boolean;
+}
+
+export const BanksPanel = (props: BanksPanelProps) => {
+  const { autoOpenTransfer } = props;
   const { db, userId } = useSync();
   const queryClient = useQueryClient();
   const { masked: privacy } = usePrivacy();
@@ -298,10 +306,7 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
     return monthStats(visibleTxns, now.getFullYear(), now.getMonth());
   }, [visibleTxns]);
 
-  const selectedAccount = useMemo(
-    () => accounts.find((a) => a.id === selectedAccountId) ?? null,
-    [accounts, selectedAccountId],
-  );
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId) ?? null;
 
   const categoryOptions = categories.map((c) => ({
     id: c.id,
@@ -309,7 +314,7 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
     color: c.color,
   }));
 
-  const categoryInfoList = categories.map((c) => ({
+  const categoryInfoList: CategoryInfo[] = categories.map((c) => ({
     id: c.id,
     name: c.name,
     color: c.color,
@@ -393,10 +398,10 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
   });
   const handleTxnSave = (row: Record<string, unknown>) => txnSaveMutation.mutate(row);
 
-  const handleTxnEdit = useCallback((txn: Txn) => {
+  const handleTxnEdit = (txn: Txn) => {
     setEditTxn(txn);
     setCaptureOpen(true);
-  }, []);
+  };
 
   const txnDeleteMutation = useSyncMutation({
     keys: [],
@@ -480,7 +485,7 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
   const handleTxnDuplicate = (txn: Txn) => txnDuplicateMutation.mutate(txn);
 
   const accountInfo = useMemo(() => {
-    const map: Record<string, { name: string; code: string; decimals: number }> = {};
+    const map: Record<string, AccountInfo> = {};
     for (const a of accounts) {
       const asset = assetsById.get(a.assetId);
       map[a.id] = { name: a.name, code: asset?.code ?? "", decimals: asset?.decimals ?? 2 };
@@ -520,6 +525,26 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
   });
   const handleTransferSave = (rows: TransferRows) => transferSaveMutation.mutate(rows);
 
+  const createCategoryMutation = useSyncMutation({
+    keys: [queryKeys.categories],
+    mutationFn: async (c: Category) => {
+      await db.table("categories").upsert({
+        id: c.id,
+        user_id: uid,
+        name: c.name,
+        color: c.color,
+        hideable: c.hideable ? 1 : 0,
+        exclude_from_analytics: c.excludeFromAnalytics ? 1 : 0,
+        monthly_budget_minor: c.monthlyBudgetMinor != null ? Number(c.monthlyBudgetMinor) : null,
+        asset_id: c.assetId ?? null,
+        created_at: c.createdAt,
+        updated_at: c.updatedAt,
+        deleted_at: c.deletedAt ?? null,
+      });
+    },
+  });
+  const handleCreateCategory = (c: Category) => createCategoryMutation.mutate(c);
+
   const reconcileSaveMutation = useSyncMutation({
     keys: [queryKeys.transactions],
     mutationFn: async (row: Record<string, unknown>) => {
@@ -529,13 +554,10 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
   });
   const handleReconcileSave = (row: Record<string, unknown>) => reconcileSaveMutation.mutate(row);
 
-  const openRename = useCallback(
-    (a: Account) => {
-      setEditAccount(a);
-      setDialogOpen(true);
-    },
-    [],
-  );
+  const openRename = (a: Account) => {
+    setEditAccount(a);
+    setDialogOpen(true);
+  };
 
   const accountOptions = accounts
     .filter((a) => !a.deletedAt)
@@ -549,56 +571,16 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2 pb-1">
-        <button
-          onClick={() => setSelectedAccountId(null)}
-          className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-            selectedAccountId === null
-              ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
-              : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
-          }`}
-        >
-          All
-        </button>
-        {[...accounts]
-          .filter((a) => !a.deletedAt)
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setSelectedAccountId(a.id)}
-              className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-                selectedAccountId === a.id
-                  ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
-                  : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
-              }`}
-            >
-              {a.name}
-            </button>
-          ))}
-        <button
-          onClick={() => { setEditAccount(null); setDialogOpen(true); }}
-          aria-label="New account"
-          className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md border border-dashed border-(--border-strong) px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:text-inherit"
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          New
-        </button>
-        {archivedAccounts.length > 0 && (
-          <button
-            onClick={() => setShowArchived((s) => !s)}
-            aria-label={showArchived ? "Hide archived accounts" : "Show archived accounts"}
-            aria-pressed={showArchived}
-            className={`shrink-0 min-h-11 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors ${
-              showArchived
-                ? "border-(--accent) bg-(--accent) text-(--accent-foreground)"
-                : "border-(--border) bg-(--surface-2) text-zinc-500 hover:text-inherit"
-            }`}
-          >
-            Archived ({archivedAccounts.length})
-          </button>
-        )}
-      </div>
+      <BankList
+        accounts={accounts}
+        archivedAccounts={archivedAccounts}
+        selectedAccountId={selectedAccountId}
+        showArchived={showArchived}
+        onSelectAll={() => setSelectedAccountId(null)}
+        onSelectAccount={setSelectedAccountId}
+        onNewAccount={() => { setEditAccount(null); setDialogOpen(true); }}
+        onToggleArchived={() => setShowArchived((s) => !s)}
+      />
 
       {showArchived && (
         <section className="flex flex-col gap-2">
@@ -640,7 +622,7 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
           </div>
           <div>
             <p className="label-micro">Net</p>
-            <p className={`mt-0.5 font-display text-lg font-bold tabular-nums ${stats.net >= 0n ? "text-zinc-50" : "text-(--danger)"}`} aria-label={privacy ? "Net masked" : undefined}>
+            <p className={cn("mt-0.5 font-display text-lg font-bold tabular-nums", stats.net >= 0n ? "text-zinc-50" : "text-(--danger)")} aria-label={privacy ? "Net masked" : undefined}>
               {privacy ? "••••" : fmt(stats.net)}
             </p>
           </div>
@@ -674,102 +656,30 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
         </div>
       )}
 
-      <div className="sticky top-[65px] z-20 -mx-4 border-y border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
-        <TransactionFilters
-          filters={filters}
-          onChange={setFilters}
-          categories={categories}
-          accounts={accounts}
-        />
-      </div>
-
-      <section className="overflow-clip rounded-(--radius-lg) border border-(--border) bg-(--surface-1) divide-y divide-(--border)">
-        {grouped.length === 0 ? (
-          dataPending ? (
-            <div className="flex items-center justify-center py-10 text-sm text-zinc-500" aria-label="Loading">
-              Loading…
-            </div>
-          ) : (
-          <div className="flex flex-col items-center gap-3 py-10 text-center">
-            {accounts.length === 0 ? (
-              <>
-                <p className="text-sm font-semibold text-zinc-200">Add your first account</p>
-                <p className="max-w-xs text-sm text-zinc-400">
-                  Create a bank, cash, wallet, or exchange account to start tracking.
-                </p>
-                <Button onClick={() => { setEditAccount(null); setDialogOpen(true); }}>
-                  <Plus className="h-4 w-4" aria-hidden /> New account
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-zinc-500">No transactions yet</p>
-                <Button size="sm" className="hidden md:inline-flex" onClick={() => setCaptureOpen(true)}>
-                  <Plus className="h-4 w-4" aria-hidden /> Add transaction
-                </Button>
-              </>
-            )}
-          </div>
-          )
-        ) : (
-          <>
-            <div className="hidden justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2 md:flex">
-              <Button size="sm" onClick={() => setCaptureOpen(true)}>
-                <Plus className="h-4 w-4" aria-hidden /> Add transaction
-              </Button>
-            </div>
-            {grouped.map((g) => (
-              <div key={g.day}>
-                <p className="label-micro sticky top-[182px] z-10 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
-                  {formatDayHeader(g.day)}
-                </p>
-                {g.items.flatMap((t, i) => {
-                  const info = accountInfo[t.accountId];
-                  const next = g.items[i + 1];
-                  const linked = !!t.transferId && next?.transferId === t.transferId;
-                  const row = (
-                    <TransactionRow
-                      key={t.id}
-                      txn={t}
-                      categories={categoryInfoList}
-                      accountName={info?.name}
-                      assetCode={info?.code}
-                      assetDecimals={info?.decimals}
-                      onEdit={handleTxnEdit}
-                      onDuplicate={handleTxnDuplicate}
-                      onDelete={handleTxnDelete}
-                      onUndoDelete={handleTxnUndoDelete}
-                    />
-                  );
-                  if (!linked) return [row];
-                  return [
-                    row,
-                    <span
-                      key={`link-${t.id}`}
-                      aria-hidden
-                      className="pointer-events-none relative z-10 -mt-px block h-3.5"
-                    >
-                      <span className="absolute left-[17px] top-0 h-full w-px bg-(--accent)/30" />
-                    </span>,
-                  ];
-                })}
-              </div>
-            ))}
-            {sortedDesc.length > visibleCount && (
-              <div
-                ref={loadMoreRef}
-                className="flex justify-center py-3 text-xs text-zinc-500"
-                aria-hidden
-              >
-                Loading more…
-              </div>
-            )}
-          </>
-        )}
-      </section>
+      <BankTransactionsList
+        grouped={grouped}
+        sortedDesc={sortedDesc}
+        visibleCount={visibleCount}
+        filters={filters}
+        onFiltersChange={setFilters}
+        categories={categories}
+        accounts={accounts}
+        categoryInfoList={categoryInfoList}
+        accountInfo={accountInfo}
+        dataPending={dataPending}
+        hasAccounts={accounts.length > 0}
+        loadMoreRef={loadMoreRef}
+        onAddTransaction={() => setCaptureOpen(true)}
+        onNewAccount={() => { setEditAccount(null); setDialogOpen(true); }}
+        onEditTxn={handleTxnEdit}
+        onDuplicateTxn={handleTxnDuplicate}
+        onDeleteTxn={handleTxnDelete}
+        onUndoDeleteTxn={handleTxnUndoDelete}
+        formatDayHeader={formatDayHeader}
+      />
 
       <AccountDialog
-        open={dialogOpen}
+        isOpen={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditAccount(null);
@@ -788,10 +698,10 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
       />
 
       <CaptureSheet
-        open={captureOpen}
-        onOpenChange={(open) => {
-          setCaptureOpen(open);
-          if (!open) setEditTxn(null);
+        isOpen={captureOpen}
+        onOpenChange={(isOpen) => {
+          setCaptureOpen(isOpen);
+          if (!isOpen) setEditTxn(null);
         }}
         userId={uid}
         accounts={accountOptions}
@@ -804,16 +714,18 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
       />
 
       <TransferSheet
-        open={transferOpen}
+        isOpen={transferOpen}
         onOpenChange={setTransferOpen}
         userId={uid}
         accounts={accountOptions}
+        categories={categoryOptions}
+        onCreateCategory={handleCreateCategory}
         onSave={(rows) => void handleTransferSave(rows)}
         defaultFromAccountId={selectedAccountId ?? undefined}
       />
 
       <ReconcileSheet
-        open={reconcileAccount !== null}
+        isOpen={reconcileAccount !== null}
         onOpenChange={(open) => { if (!open) setReconcileAccount(null); }}
         account={reconcileAccount ?? (accounts[0] as Account)}
         currentBalance={reconcileAccount ? computeBalance(reconcileAccount, txns) : 0n}
@@ -824,4 +736,4 @@ export function BanksPanel({ autoOpenTransfer }: { autoOpenTransfer?: boolean })
       />
     </div>
   );
-}
+};

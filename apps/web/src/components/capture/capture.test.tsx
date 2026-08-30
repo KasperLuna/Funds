@@ -6,7 +6,7 @@ import { render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { MemorySyncDatabase } from "@/lib/sync";
-import { CaptureSheet, type AccountOption, type CategoryOption } from "./CaptureSheet";
+import { CaptureSheet, type AccountOption, type CategoryOption } from "./capture-sheet";
 import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
 import { useSaveUndo } from "./use-save-undo";
@@ -38,7 +38,7 @@ function Harness({ sync }: { sync: MemorySyncDatabase }) {
   return (
     <div>
       <CaptureSheet
-        open={open}
+        isOpen={open}
         onOpenChange={setOpen}
         userId="usr-1"
         accounts={ACCOUNTS}
@@ -79,7 +79,7 @@ function HarnessWithSuggestions({
   return (
     <div>
       <CaptureSheet
-        open={open}
+        isOpen={open}
         onOpenChange={setOpen}
         userId="usr-1"
         accounts={ACCOUNTS}
@@ -260,7 +260,7 @@ describe("CaptureSheet", () => {
     ] satisfies Template[];
     render(
       <CaptureSheet
-        open
+        isOpen
         onOpenChange={() => {}}
         userId="usr-1"
         accounts={ACCOUNTS}

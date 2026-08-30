@@ -132,7 +132,11 @@ function toBudget(row: RowRecord): CategoryBudget {
   };
 }
 
-export function ChatProvider({ children }: { children: ReactNode }) {
+interface ChatProviderProps {
+  children: ReactNode;
+}
+
+export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [state, dispatch] = useReducer(reducer, initial);
   const { userId } = useSync();
   const { assets } = useAssets();
@@ -303,10 +307,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
-}
+};
 
-export function useChat() {
+export const useChat = () => {
   const v = useContext(Ctx);
   if (!v) throw new Error("useChat must be used within a ChatProvider");
   return v;
-}
+};

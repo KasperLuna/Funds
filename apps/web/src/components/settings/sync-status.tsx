@@ -3,7 +3,7 @@
 import { Cloud, CloudOff } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 
-export function SyncStatus() {
+export const SyncStatus = () => {
   const { syncStatus, userId } = useSync();
   const isConnected = syncStatus.online;
 
@@ -30,4 +30,4 @@ export function SyncStatus() {
       </div>
     </div>
   );
-}
+};

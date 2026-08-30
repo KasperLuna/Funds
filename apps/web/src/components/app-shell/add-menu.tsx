@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -48,17 +48,18 @@ export function AddMenu({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const handleMain = useCallback(() => {
+  const handleMain = () => {
     if (open) {
       setOpen(false);
       return;
     }
     router.push(defaultHref);
-  }, [router, defaultHref, open]);
+  };
 
-  const handleToggle = useCallback(() => setOpen((o) => !o), []);
+  const handleToggle = () => setOpen((o) => !o);
 
-  // Close on outside pointerdown / Escape; never trap the user.
+  // cavetail: pointerdown + Escape listeners are browser DOM APIs outside
+  // React's tree; tear them down on close. Genuine side effect, not derived state.
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {

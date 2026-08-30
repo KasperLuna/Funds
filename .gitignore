@@ -13,6 +13,7 @@ infra/web-buildcache/
 apps/web/public/sw.js
 apps/web/public/swe-worker-*.js
 .impeccable/
+.serena/memories/
 apps/web/.agents/
 apps/web/.claude/
 apps/web/agent/

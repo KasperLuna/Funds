@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { signOutAndWipe } from "@/lib/sync/sign-out";
 import { Button } from "@/components/ui/button";
 
-export function SignOutButton() {
+export const SignOutButton = () => {
   const router = useRouter();
 
   async function handleSignOut() {
@@ -18,4 +18,4 @@ export function SignOutButton() {
       Sign out
     </Button>
   );
-}
+};

@@ -13,17 +13,17 @@ export type AccountDisplay = {
   decimals: number;
 };
 
-export type RecentActivityProps = {
+interface RecentActivityProps {
   txns: Txn[];
   categories: CategoryInfo[];
   accounts?: Record<string, AccountDisplay>;
-};
+}
 
-export function RecentActivity({
+export const RecentActivity = ({
   txns,
   categories,
   accounts,
-}: RecentActivityProps) {
+}: RecentActivityProps) => {
   if (txns.length === 0) {
     return (
       <section
@@ -73,4 +73,4 @@ export function RecentActivity({
       </div>
     </section>
   );
-}
+};

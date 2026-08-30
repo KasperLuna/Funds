@@ -2,6 +2,12 @@
 
 import type { UseCaseId } from "@/lib/assistant/types";
 
+interface UnsupportedAffordanceProps {
+  suggestedUseCases: UseCaseId[];
+  onPick: (text: string) => void;
+  isDisabled?: boolean;
+}
+
 /**
  * Chip-row affordance for the "I can help with…" path. When the user's
  * question is outside the assistant's capability set, the chat engine
@@ -20,15 +26,7 @@ const EXAMPLES: Partial<Record<UseCaseId, string>> = {
   voice_to_txn: "Log a 42.50 lunch at BPI.",
 };
 
-export function UnsupportedAffordance({
-  suggestedUseCases,
-  onPick,
-  disabled,
-}: {
-  suggestedUseCases: UseCaseId[];
-  onPick: (text: string) => void;
-  disabled?: boolean;
-}) {
+export const UnsupportedAffordance = ({ suggestedUseCases, onPick, isDisabled }: UnsupportedAffordanceProps) => {
   if (suggestedUseCases.length === 0) return null;
 
   return (
@@ -40,7 +38,7 @@ export function UnsupportedAffordance({
           <li key={uc}>
             <button
               type="button"
-              disabled={disabled}
+              disabled={isDisabled}
               onClick={() => onPick(text)}
               className="rounded-full border border-(--border) bg-(--surface-2) px-2.5 py-1 text-xs text-zinc-300 transition-colors hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none disabled:opacity-50"
             >
@@ -51,4 +49,4 @@ export function UnsupportedAffordance({
       })}
     </ul>
   );
-}
+};

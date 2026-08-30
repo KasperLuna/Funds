@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Bitcoin, Plus } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import type { SyncDatabase } from "@/lib/sync/types";
@@ -14,8 +16,9 @@ import {
   type Holding,
 } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
-import { HoldingRow } from "@/components/crypto/holding-row";
 import { AllocationBar } from "@/components/crypto/allocation-bar";
+import { HoldingsTotals } from "@/components/crypto/holdings-totals";
+import { HoldingsTable } from "@/components/crypto/holdings-table";
 import {
   TradeCapture,
   type TradePayload,
@@ -114,17 +117,20 @@ async function persistTrade(
   }
 }
 
-export function HoldingsList({
-  accounts = [],
-  userId,
-  autoOpenTrade = false,
-  masked = false,
-}: {
+export interface HoldingsListProps {
   accounts?: AccountOption[];
   userId?: string;
-  autoOpenTrade?: boolean;
-  masked?: boolean;
-}) {
+  isAutoOpenTrade?: boolean;
+  isMasked?: boolean;
+}
+
+export const HoldingsList = (props: HoldingsListProps) => {
+  const {
+    accounts = [],
+    userId,
+    isAutoOpenTrade: autoOpenTrade = false,
+    isMasked: masked = false,
+  } = props;
   const { db } = useSync();
   const uid = userId ?? "dev-user";
   const [tradeOpen, setTradeOpen] = useState(false);
@@ -144,11 +150,14 @@ export function HoldingsList({
   });
   const txns = txnsQuery.data ?? [];
 
-  // Deep link from the long-press Add menu: open the trade sheet once.
+  // cavetail: deep-link bridge — opens the trade sheet once when the page
+  // is opened via the long-press Add menu's ?trade=1 entry.
   useEffect(() => {
     if (autoOpenTrade) setTradeOpen(true);
   }, [autoOpenTrade]);
 
+  // cavetail: setTimeout + clearTimeout are imperative browser timers, not
+  // derived state. Auto-dismiss the error notice after 4s.
   useEffect(() => {
     if (!notice) return;
     const t = window.setTimeout(() => setNotice(null), 4000);
@@ -163,21 +172,20 @@ export function HoldingsList({
     onError: () => setNotice("Couldn't log trade"),
   });
 
-  const handleTradeSave = useCallback(
-    (trade: TradePayload) => {
-      tradeMutation.mutate(trade, {
-        onSuccess: () => {
-          setTradeOpen(false);
-          setNotice(`Trade logged (${trade.side})`);
-        },
-      });
-    },
-    [tradeMutation],
-  );
+  const handleTradeSave = (trade: TradePayload) => {
+    tradeMutation.mutate(trade, {
+      onSuccess: () => {
+        setTradeOpen(false);
+        setNotice(`Trade logged (${trade.side})`);
+      },
+    });
+  };
 
   const holdings = useMemo(() => computeHoldings(tokens, txns), [tokens, txns]);
   const allocation = useMemo(() => portfolioAllocation(holdings), [holdings]);
 
+  // cavetail: coingeckoIds feeds the react-query key; allocating a fresh
+  // array per render would re-key the query and re-fetch prices. KEEP.
   const coingeckoIds = useMemo(
     () => tokens.map((t) => t.coingeckoId).filter((id): id is string => !!id),
     [tokens],
@@ -209,37 +217,15 @@ export function HoldingsList({
     }, 0);
   }, [holdings, prices]);
 
-  const allocationWithPct = useMemo(() => {
-    return holdings.map((h) => ({
-      ...h,
-      allocationPct: allocation.find((a) => a.symbol === h.token.symbol)?.pct ?? 0,
-    }));
-  }, [holdings, allocation]);
+  const allocationWithPct = holdings.map((h) => ({
+    ...h,
+    allocationPct: allocation.find((a) => a.symbol === h.token.symbol)?.pct ?? 0,
+  }));
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-zinc-500">Total value</p>
-          <p
-            className="text-2xl font-semibold tabular-nums"
-            aria-label={masked ? "Total value masked" : undefined}
-          >
-            {masked
-              ? "••••••"
-              : `$${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          </p>
-          {totalPL !== 0 && (
-            <p
-              className={`text-xs tabular-nums ${masked ? "text-zinc-500" : totalPL >= 0 ? "text-emerald-400" : "text-rose-400"}`}
-              aria-label={masked ? "Profit or loss masked" : undefined}
-            >
-              {masked
-                ? "••••"
-                : `${totalPL >= 0 ? "+" : ""}$${totalPL.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            </p>
-          )}
-        </div>
+        <HoldingsTotals totalValue={totalValue} totalPL={totalPL} isMasked={masked} />
         <Button size="sm" onClick={() => setTradeOpen(true)}>
           <Plus className="h-4 w-4" />
           Trade
@@ -256,36 +242,15 @@ export function HoldingsList({
         <AllocationBar allocation={allocation} />
       )}
 
-      <div className="divide-y divide-(--border) rounded-(--radius-lg) border border-(--border) bg-(--surface-1)">
-        {allocationWithPct.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <div className="text-(--accent)" aria-hidden>
-              <Bitcoin className="h-8 w-8" />
-            </div>
-            <h2 className="text-base font-semibold">No holdings yet</h2>
-            <p className="max-w-md text-sm text-zinc-500">
-              Log a trade to start tracking your crypto portfolio.
-            </p>
-            <Button size="sm" className="mt-2" onClick={() => setTradeOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Log first trade
-            </Button>
-          </div>
-        ) : (
-          allocationWithPct.map((h) => (
-            <HoldingRow
-              key={h.token.id}
-              holding={h}
-              price={h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined}
-              allocationPct={h.allocationPct}
-              masked={masked}
-            />
-          ))
-        )}
-      </div>
+      <HoldingsTable
+        rows={allocationWithPct}
+        prices={prices}
+        isMasked={masked}
+        onLogFirstTrade={() => setTradeOpen(true)}
+      />
 
       <TradeCapture
-        open={tradeOpen}
+        isOpen={tradeOpen}
         onOpenChange={setTradeOpen}
         userId={uid}
         accounts={accounts}
@@ -295,4 +260,4 @@ export function HoldingsList({
       />
     </div>
   );
-}
+};

@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Copy, Link2, Pencil, Trash2, Tag } from "lucide-react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { cn } from "@/lib/utils";
 
 type CategoryInfo = { id: string; name: string; color: string; hideable?: boolean };
 
@@ -23,17 +24,7 @@ function formatTime(ts: number): string {
   });
 }
 
-export function TransactionRow({
-  txn,
-  categories,
-  accountName,
-  assetCode,
-  assetDecimals,
-  onEdit,
-  onDuplicate,
-  onDelete,
-  onUndoDelete,
-}: {
+interface TransactionRowProps {
   txn: Txn;
   categories: CategoryInfo[];
   accountName?: string;
@@ -43,7 +34,20 @@ export function TransactionRow({
   onDuplicate?: (txn: Txn) => void;
   onDelete?: (txn: Txn) => void;
   onUndoDelete?: (txn: Txn) => void;
-}) {
+}
+
+export const TransactionRow = (props: TransactionRowProps) => {
+  const {
+    txn,
+    categories,
+    accountName,
+    assetCode,
+    assetDecimals,
+    onEdit,
+    onDuplicate,
+    onDelete,
+    onUndoDelete,
+  } = props;
   const cats = txn.categoryIds
     .map((id) => categories.find((c) => c.id === id))
     .filter(Boolean) as CategoryInfo[];
@@ -60,16 +64,16 @@ export function TransactionRow({
   const swiping = useRef(false);
   const isHorizontal = useRef<boolean | null>(null);
 
-  const clearToast = useCallback(() => setToast(null), []);
+  const clearToast = () => setToast(null);
 
-  const runDuplicate = useCallback(() => {
+  const runDuplicate = () => {
     if (!onDuplicate) return;
     onDuplicate(txn);
     setToast({ message: "Transaction duplicated", onUndo: undefined });
     setTimeout(clearToast, UNDO_WINDOW_MS);
-  }, [txn, onDuplicate, clearToast]);
+  };
 
-  const runDelete = useCallback(() => {
+  const runDelete = () => {
     if (!onDelete) return;
     onDelete(txn);
     setToast({
@@ -81,22 +85,19 @@ export function TransactionRow({
       },
     });
     setTimeout(clearToast, UNDO_WINDOW_MS);
-  }, [txn, onDelete, onUndoDelete, onDuplicate, clearToast]);
+  };
 
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      if (toast) return;
-      const touch = e.touches[0];
-      if (!touch) return;
-      startX.current = touch.clientX;
-      startY.current = touch.clientY;
-      swiping.current = true;
-      isHorizontal.current = null;
-    },
-    [toast],
-  );
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (toast) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    startX.current = touch.clientX;
+    startY.current = touch.clientY;
+    swiping.current = true;
+    isHorizontal.current = null;
+  };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!swiping.current) return;
     const touch = e.touches[0];
     if (!touch) return;
@@ -115,9 +116,9 @@ export function TransactionRow({
 
     e.preventDefault();
     setOffsetX(dx);
-  }, []);
+  };
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = () => {
     if (!swiping.current) return;
     swiping.current = false;
 
@@ -126,12 +127,12 @@ export function TransactionRow({
       else runDelete();
     }
     setOffsetX(0);
-  }, [offsetX, runDuplicate, runDelete]);
+  };
 
-  const handleTouchCancel = useCallback(() => {
+  const handleTouchCancel = () => {
     swiping.current = false;
     setOffsetX(0);
-  }, []);
+  };
 
   return (
     <div id={`txn-${txn.id}`} className="relative overflow-hidden">
@@ -153,7 +154,7 @@ export function TransactionRow({
       )}
 
       <div
-        className="relative flex items-center justify-between bg-(--surface-1) px-4 py-3 touch-pan-y transition-colors lg:hover:bg-(--surface-3)/40"
+        className="group relative flex cursor-pointer items-center justify-between bg-(--surface-1) px-4 py-3 touch-pan-y transition-colors hover:bg-(--surface-3)"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -223,7 +224,7 @@ export function TransactionRow({
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
-          <div className="hidden items-center gap-1 lg:flex">
+          <div className="hidden items-center gap-1 pointer-fine:group-hover:flex group-focus-within:flex">
             {onEdit && (
               <button
                 type="button"
@@ -267,7 +268,14 @@ export function TransactionRow({
           <div className="text-right">
             <span className="text-[11px] tabular-nums text-zinc-400">{formatTime(txn.date)}</span>
             <span
-              className={`block text-sm font-semibold tabular-nums ${maskedAmount ? "text-zinc-500" : isExpense ? "text-(--danger)" : "text-(--accent)"}`}
+              className={cn(
+                "block text-sm font-semibold tabular-nums",
+                maskedAmount
+                  ? "text-zinc-500"
+                  : isExpense
+                    ? "text-(--danger)"
+                    : "text-(--accent)",
+              )}
               aria-label={maskedAmount ? "Amount hidden" : undefined}
             >
               {maskedAmount ? "••••" : formatMoney(txn.amountMinor, decimals, assetCode)}
@@ -291,4 +299,4 @@ export function TransactionRow({
       )}
     </div>
   );
-}
+};

@@ -13,25 +13,25 @@ function freshnessLabel(ts: number | null): string {
   return `${days}d ago`;
 }
 
-export type NetWorthHeroProps = {
+export interface NetWorthHeroProps {
   totalBalance: bigint;
   bankBalance: bigint;
   cryptoBalance: bigint;
-  privacy: boolean;
+  isPrivate: boolean;
   onTogglePrivacy: () => void;
   lastSyncedAt: number | null;
   currencyCode?: string;
-};
+}
 
-export function NetWorthHero({
+export const NetWorthHero = ({
   totalBalance,
   bankBalance,
   cryptoBalance,
-  privacy,
+  isPrivate,
   onTogglePrivacy,
   lastSyncedAt,
   currencyCode = "USD",
-}: NetWorthHeroProps) {
+}: NetWorthHeroProps) => {
   const bankAbs = bankBalance < 0n ? -bankBalance : bankBalance;
   const cryptoAbs = cryptoBalance < 0n ? -cryptoBalance : cryptoBalance;
   const totalAbs = bankAbs + cryptoAbs;
@@ -50,23 +50,23 @@ export function NetWorthHero({
           <p className="label-micro">Net worth</p>
           <p
             className="text-display mt-1 text-zinc-50 [font-variant-numeric:tabular-nums]"
-            aria-label={privacy ? "Net worth masked" : `Net worth ${formatMoney(totalBalance, 2, currencyCode)}`}
+            aria-label={isPrivate ? "Net worth masked" : `Net worth ${formatMoney(totalBalance, 2, currencyCode)}`}
           >
-            {privacy ? "••••••" : formatMoney(totalBalance, 2, currencyCode)}
+            {isPrivate ? "••••••" : formatMoney(totalBalance, 2, currencyCode)}
           </p>
         </div>
         <button
           type="button"
           onClick={onTogglePrivacy}
-          aria-label={privacy ? "Reveal balances" : "Hide balances"}
+          aria-label={isPrivate ? "Reveal balances" : "Hide balances"}
           className="mt-1 shrink-0 rounded-(--radius-md) border border-(--border) p-1.5 text-zinc-500 transition-colors hover:bg-(--surface-3) hover:text-inherit"
         >
-          {privacy ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          {isPrivate ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
       </div>
 
       <p className="relative mt-2 text-[11px] font-medium tabular-nums text-zinc-500">
-        {privacy ? "Masked" : freshnessLabel(lastSyncedAt)}
+        {isPrivate ? "Masked" : freshnessLabel(lastSyncedAt)}
       </p>
 
       <div className="relative mt-5 flex items-center gap-6 border-t border-(--border) pt-4">
@@ -74,14 +74,14 @@ export function NetWorthHero({
           <span className="h-1.5 w-1.5 rounded-full bg-(--accent)" aria-hidden />
           <span className="label-micro !tracking-[0.08em]">Banks</span>
           <span className="font-semibold tabular-nums text-zinc-200">
-            {privacy ? "••••" : formatMoney(bankBalance, 2, currencyCode)}
+            {isPrivate ? "••••" : formatMoney(bankBalance, 2, currencyCode)}
           </span>
         </span>
         <span className="flex items-center gap-2 text-xs text-zinc-500">
           <span className="h-1.5 w-1.5 rounded-full bg-violet-400" aria-hidden />
           <span className="label-micro !tracking-[0.08em]">Crypto</span>
           <span className="font-semibold tabular-nums text-zinc-200">
-            {privacy ? "••••" : formatMoney(cryptoBalance, 2, currencyCode)}
+            {isPrivate ? "••••" : formatMoney(cryptoBalance, 2, currencyCode)}
           </span>
         </span>
       </div>
@@ -103,4 +103,4 @@ export function NetWorthHero({
       </div>
     </section>
   );
-}
+};

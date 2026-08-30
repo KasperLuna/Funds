@@ -2,22 +2,21 @@
 
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
 import type { MerchantBreakdownPayload } from "@/lib/assistant/types";
+
+interface MerchantListCardProps {
+  payload: MerchantBreakdownPayload;
+  onViewData?: () => void;
+}
 
 /**
  * "Where does my Food money go?" — top description strings within an
  * optional category. Horizontal bar list with a count subtitle so the user
  * can spot both big tickets and high-frequency small charges.
  */
-export function MerchantListCard({
-  payload,
-  onViewData,
-}: {
-  payload: MerchantBreakdownPayload;
-  onViewData?: () => void;
-}) {
+export const MerchantListCard = ({ payload, onViewData }: MerchantListCardProps) => {
   const { masked } = usePrivacy();
   const total = BigInt(payload.totalMinor);
   const max = payload.merchants.reduce(
@@ -70,4 +69,4 @@ export function MerchantListCard({
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

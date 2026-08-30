@@ -3,9 +3,15 @@
 import { Search } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
 import type { SearchResultsPayload } from "@/lib/assistant/types";
+import { cn } from "@/lib/utils";
+
+interface SearchResultsCardProps {
+  payload: SearchResultsPayload;
+  onViewData?: () => void;
+}
 
 /**
  * Free-text search over transaction descriptions. Surfaces up to N hits
@@ -14,13 +20,7 @@ import type { SearchResultsPayload } from "@/lib/assistant/types";
  * matching key is the txn `description` ("Payroll Corp") not the category
  * ("Work"). The resolver decides the pattern; the executor runs the filter.
  */
-export function SearchResultsCard({
-  payload,
-  onViewData,
-}: {
-  payload: SearchResultsPayload;
-  onViewData?: () => void;
-}) {
+export const SearchResultsCard = ({ payload, onViewData }: SearchResultsCardProps) => {
   const { masked } = usePrivacy();
   const total = BigInt(payload.totalMinor);
 
@@ -64,9 +64,10 @@ export function SearchResultsCard({
                 </div>
               </div>
               <span
-                className={`shrink-0 tabular-nums ${
-                  BigInt(h.amountMinor) < 0n ? "text-(--danger)" : "text-(--accent)"
-                }`}
+                className={cn(
+                  "shrink-0 tabular-nums",
+                  BigInt(h.amountMinor) < 0n ? "text-(--danger)" : "text-(--accent)",
+                )}
               >
                 {masked
                   ? "••••"
@@ -80,4 +81,4 @@ export function SearchResultsCard({
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

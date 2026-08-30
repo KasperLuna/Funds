@@ -24,7 +24,7 @@ type DataPoint = Record<string, string | number>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type TooltipFormatter = (value: any, name: any) => string;
 
-type Props = {
+interface AreaChartProps {
   data: DataPoint[];
   xKey: string;
   series: Array<{
@@ -37,9 +37,9 @@ type Props = {
   xFormatter?: (v: string | number) => string;
   yFormatter?: (v: string | number) => string;
   tooltipFormatter?: TooltipFormatter;
-};
+}
 
-export function AreaChart({
+const AreaChart = ({
   data,
   xKey,
   series,
@@ -47,7 +47,7 @@ export function AreaChart({
   xFormatter,
   yFormatter,
   tooltipFormatter,
-}: Props) {
+}: AreaChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsAreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -89,4 +89,6 @@ export function AreaChart({
       </RechartsAreaChart>
     </ResponsiveContainer>
   );
-}
+};
+
+export { AreaChart };

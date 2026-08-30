@@ -33,7 +33,7 @@ export function CryptoPanel({ autoOpenTrade }: { autoOpenTrade?: boolean }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <HoldingsList accounts={accounts} userId={uid} autoOpenTrade={autoOpenTrade} masked={privacy} />
+      <HoldingsList accounts={accounts} userId={uid} isAutoOpenTrade={autoOpenTrade} isMasked={privacy} />
     </div>
   );
 }

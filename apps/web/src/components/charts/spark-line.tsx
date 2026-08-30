@@ -9,19 +9,19 @@ import { COLORS } from "./chart-theme";
 
 type DataPoint = Record<string, string | number>;
 
-type Props = {
+interface SparkLineProps {
   data: DataPoint[];
   dataKey: string;
   color?: string;
   height?: number;
-};
+}
 
-export function SparkLine({
+const SparkLine = ({
   data,
   dataKey,
   color = COLORS.accent,
   height = 32,
-}: Props) {
+}: SparkLineProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -42,4 +42,6 @@ export function SparkLine({
       </AreaChart>
     </ResponsiveContainer>
   );
-}
+};
+
+export { SparkLine };

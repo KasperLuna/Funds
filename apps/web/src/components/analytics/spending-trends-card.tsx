@@ -8,7 +8,12 @@ type DataPoint = { month: string; income: bigint; expense: bigint; net: bigint }
 
 const MASKED = "••••";
 
-export function SpendingTrendsCard({ data, code }: { data: DataPoint[]; code?: string }) {
+interface SpendingTrendsCardProps {
+  data: DataPoint[];
+  code?: string;
+}
+
+export const SpendingTrendsCard = ({ data, code }: SpendingTrendsCardProps) => {
   const { masked } = usePrivacy();
 
   const chartData = data.map((d) => ({
@@ -45,4 +50,4 @@ export function SpendingTrendsCard({ data, code }: { data: DataPoint[]; code?: s
       </div>
     </section>
   );
-}
+};

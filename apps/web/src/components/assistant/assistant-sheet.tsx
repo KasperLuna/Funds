@@ -6,7 +6,12 @@ import {
   Portal as DialogPortal,
   Overlay as DialogOverlay,
 } from "@radix-ui/react-dialog";
-import { AssistantPanel } from "./AssistantPanel";
+import { AssistantPanel } from "./assistant-panel";
+
+interface AssistantSheetProps {
+  open: boolean;
+  onClose: () => void;
+}
 
 /**
  * Bottom-sheet chat panel. On mobile it fills the viewport between the
@@ -16,15 +21,9 @@ import { AssistantPanel } from "./AssistantPanel";
  * shared Dialog's X (it would duplicate) and we don't render the drag
  * handle (the panel header is the sheet's primary handle).
  */
-export function AssistantSheet({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
-  // Mirror the previous mount-on-open lifecycle so test ids and state
-  // behave the same as the old Dialog-wrapped version.
+export const AssistantSheet = ({ open, onClose }: AssistantSheetProps) => {
+  // cavetail: mirror `open` → `mounted` so Radix's exit animation can play
+  // before we unmount; without this delay the sheet snaps shut.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     if (open) setMounted(true);
@@ -48,4 +47,4 @@ export function AssistantSheet({
       </DialogPortal>
     </DialogRoot>
   );
-}
+};

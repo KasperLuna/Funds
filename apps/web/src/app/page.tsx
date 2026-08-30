@@ -10,7 +10,7 @@ const FACTS = [
   { label: "Private by design" },
 ];
 
-export default function LandingPage() {
+const LandingPage = () => {
   return (
     <main className="relative mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center gap-8 overflow-hidden px-4 text-center">
       <div className="guilloche absolute inset-0 opacity-40" aria-hidden />
@@ -54,4 +54,6 @@ export default function LandingPage() {
       </footer>
     </main>
   );
-}
+};
+
+export default LandingPage;

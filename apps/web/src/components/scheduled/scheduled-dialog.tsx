@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { advanceRecurrence, type Frequency, type Schedule } from "@funds/core";
 import type { ScheduledTxn } from "@/lib/scheduled/compute";
+import { cn } from "@/lib/utils";
 
 type AccountOption = { id: string; name: string };
 type CategoryOption = { id: string; name: string };
@@ -39,93 +42,91 @@ function previewNextDate(
   }
 }
 
-export function ScheduledDialog({
-  open,
-  onOpenChange,
-  onSave,
-  onDelete,
-  editItem,
-  accounts,
-  categories,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface ScheduledDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   onSave: (item: ScheduledTxn) => void;
   onDelete?: (item: ScheduledTxn) => void;
   editItem?: ScheduledTxn | null;
   accounts: AccountOption[];
   categories: CategoryOption[];
-}) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<"income" | "expense">("expense");
-  const [amount, setAmount] = useState("");
-  const [accountId, setAccountId] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [frequency, setFrequency] = useState<Frequency>("monthly");
-  const [interval, setInterval] = useState(1);
-  const [timezoneOffset, setTimezoneOffset] = useState(0);
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    return d.toISOString().slice(0, 10);
+}
+
+interface ScheduledFormProps {
+  onOpenChange: (isOpen: boolean) => void;
+  onSave: (item: ScheduledTxn) => void;
+  onDelete?: (item: ScheduledTxn) => void;
+  editItem: ScheduledTxn | null;
+  accounts: AccountOption[];
+  categories: CategoryOption[];
+}
+
+const scheduledFormSchema = z.object({
+  name: z.string().trim().min(1, "Name required"),
+  description: z.string().max(500),
+  type: z.enum(["income", "expense"]),
+  amount: z
+    .string()
+    .refine((s) => s !== "" && !isNaN(Number(s)) && Number(s) > 0, "Enter a valid amount"),
+  accountId: z.string().min(1, "Select account"),
+  categoryIds: z.array(z.string()),
+  frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  interval: z.number().int().min(1, "Must be at least 1"),
+  timezoneOffset: z.number().int().min(-12).max(12),
+  startDate: z.string().min(1, "Pick a start date"),
+});
+
+type ScheduledFormValues = z.infer<typeof scheduledFormSchema>;
+
+const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, categories }: ScheduledFormProps) => {
+  const form = useForm<ScheduledFormValues>({
+    resolver: zodResolver(scheduledFormSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: editItem?.name ?? "",
+      description: editItem?.description ?? "",
+      type: editItem?.type ?? "expense",
+      amount: editItem
+        ? String(Number(editItem.amountMinor < 0n ? -editItem.amountMinor : editItem.amountMinor) / 100)
+        : "",
+      accountId: editItem?.accountId ?? accounts[0]?.id ?? "",
+      categoryIds: editItem?.categoryIds ?? [],
+      frequency: editItem?.recurrence?.frequency ?? "monthly",
+      interval: editItem?.recurrence?.interval ?? 1,
+      timezoneOffset: 0,
+      startDate: editItem?.invokeDate
+        ? new Date(editItem.invokeDate).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    },
   });
 
-  useEffect(() => {
-    if (open) {
-      if (editItem) {
-        setName(editItem.name);
-        setDescription(editItem.description);
-        setType(editItem.type);
-        setAmount(String(Number(editItem.amountMinor < 0n ? -editItem.amountMinor : editItem.amountMinor) / 100));
-        setAccountId(editItem.accountId);
-        setSelectedCategories(editItem.categoryIds);
-        setFrequency(editItem.recurrence?.frequency ?? "monthly");
-        setInterval(editItem.recurrence?.interval ?? 1);
-        setTimezoneOffset(0);
-        if (editItem.invokeDate) {
-          const d = new Date(editItem.invokeDate);
-          setStartDate(d.toISOString().slice(0, 10));
-        }
-      } else {
-        setName("");
-        setDescription("");
-        setType("expense");
-        setAmount("");
-        setAccountId(accounts[0]?.id ?? "");
-        setSelectedCategories([]);
-        setFrequency("monthly");
-        setInterval(1);
-        setTimezoneOffset(0);
-        setStartDate(new Date().toISOString().slice(0, 10));
-      }
-    }
-  }, [open, editItem, accounts]);
+  const { register, watch, setValue, handleSubmit, formState } = form;
+  const name = watch("name");
+  const amount = watch("amount");
+  const accountId = watch("accountId");
+  const categoryIds = watch("categoryIds");
+  const frequency = watch("frequency");
+  const interval = watch("interval");
+  const startDate = watch("startDate");
 
   const toggleCategory = (catId: string) => {
-    setSelectedCategories((prev) =>
-      prev.includes(catId)
-        ? prev.filter((c) => c !== catId)
-        : [...prev, catId],
-    );
+    const next = categoryIds.includes(catId)
+      ? categoryIds.filter((c) => c !== catId)
+      : [...categoryIds, catId];
+    setValue("categoryIds", next, { shouldValidate: true });
   };
 
-  const nextPreview = useMemo(() => {
-    const [y, m, d] = startDate.split("-").map(Number);
-    const from = new Date(y!, m! - 1, d);
-    return previewNextDate(frequency, interval, from);
-  }, [frequency, interval, startDate]);
+  const [y, m, d] = startDate.split("-").map(Number);
+  const from = new Date(y!, m! - 1, d);
+  const nextPreview = previewNextDate(frequency, interval, from);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed || !accountId || !amount) return;
-
+  const onSubmit = (values: ScheduledFormValues) => {
     // cavetail: display-only formatting, not arithmetic
     // eslint-disable-next-line local/no-money-float
-    const amountCents = Math.round(parseFloat(amount) * 100);
-    const signedAmount = type === "expense" ? -Math.abs(amountCents) : Math.abs(amountCents);
+    const amountCents = Math.round(parseFloat(values.amount) * 100);
+    const signedAmount = values.type === "expense" ? -Math.abs(amountCents) : Math.abs(amountCents);
 
-    const [sy, sm, sd] = startDate.split("-").map(Number);
+    const [sy, sm, sd] = values.startDate.split("-").map(Number);
     const computedInvokeDate = new Date(sy!, sm! - 1, sd).getTime();
     const now = Date.now();
 
@@ -135,14 +136,14 @@ export function ScheduledDialog({
     const item: ScheduledTxn = {
       id: editItem?.id ?? `sch-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       userId: editItem?.userId ?? "dev-user",
-      name: trimmed,
-      description: description.trim(),
-      type,
+      name: values.name.trim(),
+      description: values.description.trim(),
+      type: values.type,
       amountMinor: BigInt(signedAmount),
-      accountId,
-      categoryIds: selectedCategories,
-      recurrence: { frequency, interval },
-      timezone: String(timezoneOffset),
+      accountId: values.accountId,
+      categoryIds: values.categoryIds,
+      recurrence: { frequency: values.frequency, interval: values.interval },
+      timezone: String(values.timezoneOffset),
       invokeDate: startDateChanged ? computedInvokeDate : (editItem?.invokeDate ?? computedInvokeDate),
       previousDate: startDateChanged ? null : (editItem?.previousDate ?? null),
       lastNotifiedAt: editItem?.lastNotifiedAt ?? null,
@@ -157,7 +158,7 @@ export function ScheduledDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <DialogContentTitle>
           {editItem ? "Edit scheduled transaction" : "New scheduled transaction"}
@@ -167,25 +168,26 @@ export function ScheduledDialog({
             ? "Update the recurrence schedule and details."
             : "Set up a recurring transaction entry."}
         </DialogContentDescription>
-        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register("name")}
               placeholder="e.g. Rent payment"
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               autoFocus
             />
+            {formState.errors.name && (
+              <span className="text-xs text-(--danger)">{formState.errors.name.message}</span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Description</span>
             <input
               type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              {...register("description")}
               placeholder="Optional note"
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             />
@@ -195,8 +197,7 @@ export function ScheduledDialog({
             <label className="flex flex-col gap-1.5 flex-1">
               <span className="text-sm text-zinc-500">Type</span>
               <select
-                value={type}
-                onChange={(e) => setType(e.target.value as "income" | "expense")}
+                {...register("type")}
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               >
                 <option value="expense">Expense</option>
@@ -209,19 +210,20 @@ export function ScheduledDialog({
                 type="number"
                 step="0.01"
                 min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                {...register("amount")}
                 placeholder="0.00"
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               />
+              {formState.errors.amount && (
+                <span className="text-xs text-(--danger)">{formState.errors.amount.message}</span>
+              )}
             </label>
           </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Account</span>
             <select
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              {...register("accountId")}
               className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             >
               {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
@@ -230,6 +232,9 @@ export function ScheduledDialog({
                 </option>
               ))}
             </select>
+            {formState.errors.accountId && (
+              <span className="text-xs text-(--danger)">{formState.errors.accountId.message}</span>
+            )}
           </label>
 
           {categories.length > 0 && (
@@ -241,11 +246,12 @@ export function ScheduledDialog({
                     key={c.id}
                     type="button"
                     onClick={() => toggleCategory(c.id)}
-                    className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                      selectedCategories.includes(c.id)
+                    className={cn(
+                      "rounded-full px-2.5 py-1 text-xs font-medium transition-colors",
+                      categoryIds.includes(c.id)
                         ? "bg-(--accent) text-(--accent-foreground)"
-                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit"
-                    }`}
+                        : "bg-(--surface-2) text-zinc-500 hover:text-inherit",
+                    )}
                   >
                     {c.name}
                   </button>
@@ -258,8 +264,7 @@ export function ScheduledDialog({
             <label className="flex flex-col gap-1.5 flex-1">
               <span className="text-sm text-zinc-500">Frequency</span>
               <select
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value as Frequency)}
+                {...register("frequency")}
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               >
                 {FREQUENCY_OPTIONS.map((opt) => (
@@ -274,10 +279,18 @@ export function ScheduledDialog({
               <input
                 type="number"
                 min="1"
-                value={interval}
-                onChange={(e) => setInterval(Math.max(1, parseInt(e.target.value) || 1))}
+                {...register("interval", {
+                  valueAsNumber: true,
+                  onChange: (e) => {
+                    const v = Math.max(1, parseInt(e.target.value) || 1);
+                    setValue("interval", v, { shouldValidate: true });
+                  },
+                })}
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               />
+              {formState.errors.interval && (
+                <span className="text-xs text-(--danger)">{formState.errors.interval.message}</span>
+              )}
             </label>
           </div>
 
@@ -286,16 +299,14 @@ export function ScheduledDialog({
               <span className="text-sm text-zinc-500">Start date</span>
               <input
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                {...register("startDate")}
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               />
             </label>
             <label className="flex flex-col gap-1.5 w-32">
               <span className="text-sm text-zinc-500">Timezone (UTC)</span>
               <select
-                value={timezoneOffset}
-                onChange={(e) => setTimezoneOffset(parseInt(e.target.value))}
+                {...register("timezoneOffset", { valueAsNumber: true })}
                 className="h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
               >
                 {TIMEZONE_OFFSETS.map((offset) => (
@@ -341,7 +352,7 @@ export function ScheduledDialog({
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim() || !accountId || !amount}
+              disabled={!name?.trim() || !accountId || !amount}
             >
               {editItem ? "Save" : "Create"}
             </Button>
@@ -350,4 +361,10 @@ export function ScheduledDialog({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export const ScheduledDialog = (props: ScheduledDialogProps) => {
+  const { isOpen: open, onOpenChange, onSave, onDelete, editItem, accounts, categories } = props;
+  if (!open) return null;
+  return <ScheduledForm onOpenChange={onOpenChange} onSave={onSave} onDelete={onDelete} editItem={editItem ?? null} accounts={accounts} categories={categories} />;
+};

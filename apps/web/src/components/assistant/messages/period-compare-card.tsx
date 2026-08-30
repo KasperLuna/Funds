@@ -3,33 +3,46 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { formatMoney } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
-import { GenUiFooter } from "../GenUiFooter";
-import { DataScopeBadge } from "./DataScopeBadge";
+import { GenUiFooter } from "../gen-ui-footer";
+import { DataScopeBadge } from "./data-scope-badge";
 import type { PeriodComparePayload } from "@/lib/assistant/types";
+import { cn } from "@/lib/utils";
+
+interface PeriodCompareCardProps {
+  payload: PeriodComparePayload;
+  onViewData?: () => void;
+}
+
+type Delta = "flat" | "up" | "down";
+
+function deltaFor(deltaPct: number | null): Delta {
+  if (deltaPct === null) return "flat";
+  return deltaPct > 0 ? "up" : "down";
+}
+
+function deltaText(delta: Delta, pct: number | null): string {
+  if (delta === "flat") return "No comparable spend last period";
+  return delta === "up"
+    ? `Up ${Math.abs(pct!)}% vs prior`
+    : `Down ${Math.abs(pct!)}% vs prior`;
+}
+
+function deltaColor(delta: Delta): string {
+  if (delta === "flat") return "text-zinc-400";
+  if (delta === "up") return "text-(--danger)";
+  return "text-(--accent)";
+}
 
 /**
  * "Did I spend more or less than last period?" Side-by-side totals with a
  * delta verdict. Color-coded arrow for instant read.
  */
-export function PeriodCompareCard({
-  payload,
-  onViewData,
-}: {
-  payload: PeriodComparePayload;
-  onViewData?: () => void;
-}) {
+export const PeriodCompareCard = ({ payload, onViewData }: PeriodCompareCardProps) => {
   const { masked } = usePrivacy();
   const current = BigInt(payload.currentMinor);
   const prior = BigInt(payload.priorMinor);
-  const delta = payload.deltaPct;
-  const flat = delta === null;
-  const up = !flat && delta > 0;
-  const color = flat
-    ? "text-zinc-400"
-    : up
-    ? "text-(--danger)"
-    : "text-(--accent)";
-  const Arrow = up ? ArrowUp : ArrowDown;
+  const delta = deltaFor(payload.deltaPct);
+  const Arrow = delta === "up" ? ArrowUp : ArrowDown;
 
   return (
     <section
@@ -61,16 +74,12 @@ export function PeriodCompareCard({
         </div>
       </div>
 
-      <p className={`mt-3 inline-flex items-center gap-1 text-sm font-semibold ${color}`}>
-        {!flat && <Arrow className="h-3.5 w-3.5" aria-hidden />}
-        {flat
-          ? "No comparable spend last period"
-          : up
-          ? `Up ${Math.abs(delta!)}% vs prior`
-          : `Down ${Math.abs(delta!)}% vs prior`}
+      <p className={cn("mt-3 inline-flex items-center gap-1 text-sm font-semibold", deltaColor(delta))}>
+        {delta !== "flat" && <Arrow className="h-3.5 w-3.5" aria-hidden />}
+        {deltaText(delta, payload.deltaPct)}
       </p>
 
       <GenUiFooter updatedAt={Date.now()} onViewData={onViewData} />
     </section>
   );
-}
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
   DialogContentTitle,
   DialogContentDescription,
 } from "@/components/ui/dialog";
-import { Keypad, type DigitKey } from "@/components/capture/Keypad";
+import { Keypad, type DigitKey } from "@/components/capture/keypad";
 import {
   emptyAmount,
   digit as applyDigit,
@@ -22,8 +22,8 @@ import {
 import { formatMoney } from "@/lib/money";
 import type { Account } from "@/lib/accounts/accounts-store";
 
-export type ReconcileSheetProps = {
-  open: boolean;
+interface ReconcileSheetProps {
+  isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   account: Account;
   currentBalance: bigint;
@@ -31,7 +31,7 @@ export type ReconcileSheetProps = {
   assetDecimals?: number;
   userId: string;
   onSave: (row: Record<string, unknown>) => void;
-};
+}
 
 function deltaLabel(delta: bigint): "income" | "expense" | null {
   if (delta > 0n) return "income";
@@ -39,13 +39,17 @@ function deltaLabel(delta: bigint): "income" | "expense" | null {
   return null;
 }
 
-/**
- * Balance reconciliation (logic.md §4.4). The user enters their observed
- * real-world balance; a single income/expense transaction is posted for the
- * difference so the recorded balance matches reality.
- */
-export function ReconcileSheet({
-  open,
+interface ReconcileFormProps {
+  onOpenChange: (open: boolean) => void;
+  account: Account;
+  currentBalance: bigint;
+  assetCode?: string;
+  assetDecimals: number;
+  userId: string;
+  onSave: (row: Record<string, unknown>) => void;
+}
+
+const ReconcileForm = ({
   onOpenChange,
   account,
   currentBalance,
@@ -53,17 +57,9 @@ export function ReconcileSheet({
   assetDecimals,
   userId,
   onSave,
-}: ReconcileSheetProps) {
-  // Hooks must run unconditionally. Guard the render output instead, so an
-  // undefined account (e.g. empty account list) can never break the rules.
-  const decimals = assetDecimals ?? 2;
+}: ReconcileFormProps) => {
+  const decimals = assetDecimals;
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(decimals));
-
-  useEffect(() => {
-    if (open) setAmount(emptyAmount(decimals));
-  }, [open, decimals]);
-
-  if (!account) return null;
 
   const enteredMinor = amountToMinor(amount);
   const delta = enteredMinor - currentBalance;
@@ -92,7 +88,7 @@ export function ReconcileSheet({
   const enteredLabel = formatMoney(enteredMinor, decimals, assetCode);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogContentTitle>Adjust balance</DialogContentTitle>
         <DialogContentDescription>
@@ -185,4 +181,29 @@ export function ReconcileSheet({
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+/**
+ * Balance reconciliation (logic.md §4.4). The user enters their observed
+ * real-world balance; a single income/expense transaction is posted for the
+ * difference so the recorded balance matches reality.
+ */
+export const ReconcileSheet = (props: ReconcileSheetProps) => {
+  const { isOpen, onOpenChange, account, currentBalance, assetCode, assetDecimals, userId, onSave } = props;
+  // Hooks must run unconditionally. Guard the render output instead, so an
+  // undefined account (e.g. empty account list) can never break the rules.
+  const decimals = assetDecimals ?? 2;
+  if (!account) return null;
+  if (!isOpen) return null;
+  return (
+    <ReconcileForm
+      onOpenChange={onOpenChange}
+      account={account}
+      currentBalance={currentBalance}
+      assetCode={assetCode}
+      assetDecimals={decimals}
+      userId={userId}
+      onSave={onSave}
+    />
+  );
+};

@@ -4,6 +4,12 @@ import { Sparkles, Database } from "lucide-react";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { cn } from "@/lib/utils";
 
+interface GenUiFooterProps {
+  updatedAt: number;
+  onViewData?: () => void;
+  className?: string;
+}
+
 /**
  * Footer shown on every GenUI widget. Two pieces of metadata, no more:
  *   1. Data source — explicit "from this device" so the user never confuses
@@ -13,15 +19,7 @@ import { cn } from "@/lib/utils";
  * Spec §8 calls out "transparency: allow user to view/edit underlying data
  * behind any GenUI widget" — the ViewDataButton slot is the seam for that.
  */
-export function GenUiFooter({
-  updatedAt,
-  onViewData,
-  className,
-}: {
-  updatedAt: number;
-  onViewData?: () => void;
-  className?: string;
-}) {
+export const GenUiFooter = ({ updatedAt, onViewData, className }: GenUiFooterProps) => {
   const { masked } = usePrivacy();
   return (
     <div
@@ -57,7 +55,7 @@ export function GenUiFooter({
       </span>
     </div>
   );
-}
+};
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts;

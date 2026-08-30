@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Wallet, Tag, BarChart3, Plus, Check, CloudOff, ChevronDown, type LucideIcon } from "lucide-react";
+import {
+  Home,
+  Wallet,
+  Tag,
+  BarChart3,
+  Plus,
+  Check,
+  CloudOff,
+  ChevronDown,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
 import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
@@ -21,7 +31,13 @@ function isActive(href: string, pathname: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+export function NavLink({
+  item,
+  onNavigate,
+}: {
+  item: NavItem;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const active = isActive(item.href, pathname);
   const Icon = item.icon;
@@ -43,13 +59,22 @@ export function NavLink({ item, onNavigate }: { item: NavItem; onNavigate?: () =
           className="absolute top-1/2 -left-1.5 h-4 w-0.5 -translate-y-1/2 rounded-sm bg-(--accent)"
         />
       )}
-      <Icon className={cn("h-5 w-5", active && "text-(--accent)")} aria-hidden />
+      <Icon
+        className={cn("h-5 w-5", active && "text-(--accent)")}
+        aria-hidden
+      />
       <span className="hidden md:inline">{item.label}</span>
     </Link>
   );
 }
 
-export function MobileTab({ item, onNavigate }: { item: NavItem; onNavigate?: () => void }) {
+export function MobileTab({
+  item,
+  onNavigate,
+}: {
+  item: NavItem;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
   const active = isActive(item.href, pathname);
   const Icon = item.icon;
@@ -70,7 +95,10 @@ export function MobileTab({ item, onNavigate }: { item: NavItem; onNavigate?: ()
           className="absolute inset-x-3 top-0 h-0.5 rounded-b-sm bg-(--accent)"
         />
       )}
-      <Icon className={cn("h-6 w-6", active && "text-(--accent)")} aria-hidden />
+      <Icon
+        className={cn("h-6 w-6", active && "text-(--accent)")}
+        aria-hidden
+      />
     </Link>
   );
 }
@@ -82,10 +110,20 @@ export function SyncPill() {
   return (
     <span
       role="status"
-      aria-label={offline ? "Sync status: offline" : syncing ? "Sync status: syncing" : "Sync status: synced"}
+      aria-label={
+        offline
+          ? "Sync status: offline"
+          : syncing
+            ? "Sync status: syncing"
+            : "Sync status: synced"
+      }
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border border-(--border) bg-(--surface-2) px-2.5 py-1 text-xs font-medium",
-        offline ? "text-(--warning)" : syncing ? "text-(--warning)" : "text-(--accent)",
+        offline
+          ? "text-(--warning)"
+          : syncing
+            ? "text-(--warning)"
+            : "text-(--accent)",
       )}
     >
       {offline || syncing ? (
@@ -100,7 +138,13 @@ export function SyncPill() {
   );
 }
 
-export function AddButton({ label = "Add", className }: { label?: string; className?: string }) {
+export function AddButton({
+  label = "Add",
+  className,
+}: {
+  label?: string;
+  className?: string;
+}) {
   return (
     <AddMenu
       defaultHref="/dashboard?capture=1"
@@ -117,7 +161,7 @@ export function AddButton({ label = "Add", className }: { label?: string; classN
             className="flex min-h-11 flex-1 items-center justify-center gap-1 px-3 transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
-            <span className="hidden text-sm font-semibold lg:inline">{label}</span>
+            <span className="text-sm font-semibold">{label}</span>
           </button>
           <span aria-hidden className="w-px bg-(--accent-foreground)/25" />
           <button
@@ -129,7 +173,10 @@ export function AddButton({ label = "Add", className }: { label?: string; classN
             className="flex min-h-11 w-9 shrink-0 items-center justify-center transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
           >
             <ChevronDown
-              className={cn("h-4 w-4 transition-transform duration-150 ease-out", open && "rotate-180")}
+              className={cn(
+                "h-4 w-4 transition-transform duration-150 ease-out",
+                open && "rotate-180",
+              )}
               aria-hidden
             />
           </button>

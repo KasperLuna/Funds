@@ -11,11 +11,17 @@ import {
 } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
-function CalendarChevron({ orientation, size = 16, disabled }: ChevronProps) {
+type CalendarChevronProps = ChevronProps;
+
+const CalendarChevron = ({
+  orientation,
+  size = 16,
+  disabled,
+}: CalendarChevronProps) => {
   const cls = cn("text-zinc-400", disabled && "opacity-40");
   const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
   return <Icon className={cls} size={size} strokeWidth={2} aria-hidden />;
-}
+};
 
 const calendarClassNames: Partial<ClassNames> = {
   [UI.Root]: "p-2",
@@ -38,7 +44,9 @@ const calendarClassNames: Partial<ClassNames> = {
     "bg-(--accent) text-(--accent-foreground) font-semibold hover:bg-(--accent) hover:brightness-110",
 };
 
-export function Calendar(props: React.ComponentProps<typeof DayPicker>) {
+type CalendarProps = React.ComponentProps<typeof DayPicker>;
+
+const Calendar = (props: CalendarProps) => {
   return (
     <DayPicker
       classNames={calendarClassNames}
@@ -46,4 +54,6 @@ export function Calendar(props: React.ComponentProps<typeof DayPicker>) {
       {...props}
     />
   );
-}
+};
+
+export { Calendar };

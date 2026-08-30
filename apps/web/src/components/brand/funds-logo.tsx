@@ -1,6 +1,8 @@
 import { type SVGProps } from "react";
 
-export const FundsLogo = (props: SVGProps<SVGSVGElement>) => {
+type FundsLogoProps = SVGProps<SVGSVGElement>;
+
+const FundsLogo = (props: FundsLogoProps) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -17,3 +19,5 @@ export const FundsLogo = (props: SVGProps<SVGSVGElement>) => {
     </svg>
   );
 };
+
+export { FundsLogo };
