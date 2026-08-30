@@ -18,7 +18,7 @@ export const SignInForm = ({ isGoogleEnabled = false }: SignInFormProps) => {
   if (!isGoogleEnabled) return null;
 
   return (
-    <Button type="button" variant="outline" onClick={() => void handleGoogle()}>
+    <Button type="button" variant="outline" onClick={() => void handleGoogle()} className="mx-auto flex justify-center">
       <GoogleG aria-hidden />
       Continue with Google
     </Button>

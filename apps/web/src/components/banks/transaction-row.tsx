@@ -154,7 +154,7 @@ export const TransactionRow = (props: TransactionRowProps) => {
       )}
 
       <div
-        className="group relative flex cursor-pointer items-center justify-between bg-(--surface-1) px-4 py-3 touch-pan-y transition-colors hover:bg-(--surface-3)"
+        className="group relative flex cursor-pointer items-center justify-between bg-(--bg) px-4 py-3 touch-pan-y transition-colors hover:bg-(--surface-3)"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

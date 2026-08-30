@@ -97,7 +97,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
   return (
     <div className="mx-auto min-h-dvh max-w-[1920px] bg-(--bg)">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--surface-1) p-3 md:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-(--border) bg-(--bg) p-3 md:flex">
         {/* 1 · Account */}
         <UserCard />
 
@@ -155,7 +155,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
       {/* Mobile bottom bar */}
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-(--border) bg-(--surface-1) px-4 pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-(--border) bg-(--bg) px-4 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <div className="grid grid-cols-5 items-center">
           <MobileTab item={NAV_ITEMS[0]!} />

@@ -186,7 +186,7 @@ Checklist flow preserved (logic.md §14); add sync-status row + push-permission 
 ## 9. Visual Language (Intaglio Plate — replacement world, built & approved 2026-08-23)
 
 Tokens (CSS variables, dark-only; OLED-optimized):
-- Surfaces: `bg` #000000 (true black — OLED pixels off) → `surface-1` #000000 → `surface-2` #050505 → `surface-3` #0d0d0d; separation via 1px engraved hairlines (`--border: rgba(255,255,255,0.13)`), never elevation.
+- **Page = true black, plates = engraved gray.** Surfaces form a 4-step ladder: `bg` #000000 (true OLED black — pixels off) is the *page and all chrome* (sidebar, bottom nav, dialog/sheet backgrounds, list rows). `surface-1` #0a0a0a is the **card tier** (rounded card containers lift visibly off the page). `surface-2` #141414 is the **control tier** (inputs, chips, keypad keys resting). `surface-3` #1f1f1f is the **hover/selected tier** (segmented active, list row hover, etc.). Hairline borders (`--border: rgba(255,255,255,0.10)`, `--border-strong: rgba(255,255,255,0.22)`) reinforce every step; no elevation, no shadows. Rationale: the previous steps (#000000 / #050505 / #0d0d0d) were 0%/2%/5% white — visually indistinguishable on OLED — so cards separated only by their hairline, and inputs vanished into the same plane. The new ladder still reads as black plates (no decorative gradients) but gives every tier a perceivable boundary.
 - Accent: emerald-500 family — reserved for capture, sync-ok, positive delta. Never decorative.
 - Semantic: red-500 negative/danger · amber-400 warning/pending · sky/blue informational.
 - Type scale: 12/13/15/18/24/36; numerics tabular-nums everywhere.

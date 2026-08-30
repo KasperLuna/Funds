@@ -303,7 +303,7 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
                     {...inlineForm.register("name")}
                     placeholder="Category name"
                     autoFocus
-                    className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--surface-1) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+                    className="h-10 flex-1 rounded-(--radius-sm) border border-(--border) bg-(--bg) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
                   />
                   <button
                     type="button"

@@ -49,7 +49,7 @@ export const AssistantPanel = ({ onClose }: AssistantPanelProps) => {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-2.5">
+      <header className="flex items-center justify-between border-b border-(--border) bg-(--bg) px-4 py-2.5">
         <span className="inline-flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
           Assistant
@@ -139,7 +139,7 @@ export const AssistantPanel = ({ onClose }: AssistantPanelProps) => {
           void send(draft);
           setDraft("");
         }}
-        className="flex items-center gap-2 border-t border-(--border) bg-(--surface-1) px-3 py-2.5"
+        className="flex items-center gap-2 border-t border-(--border) bg-(--bg) px-3 py-2.5"
       >
         <input
           type="text"
@@ -281,7 +281,7 @@ const UnsupportedView = ({ reason, onClose }: UnsupportedViewProps) => {
   const m = messages[reason];
   return (
     <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--surface-1) px-4 py-2.5">
+      <header className="flex items-center justify-between border-b border-(--border) bg-(--bg) px-4 py-2.5">
         <span className="inline-flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
           Assistant

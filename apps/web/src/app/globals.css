@@ -7,17 +7,19 @@
   --color-negative: #ef4444;
 }
 
-/* Intaglio Plate — pure-black OLED plates, hairline engraved borders,
-   guilloche lattice behind figures, microtext labels, one emerald thread.
+/* Intaglio Plate — pure-black OLED page with engraved gray plates,
+   hairline borders, guilloche lattice behind figures, microtext labels,
+   one emerald thread. The page is true black; cards/chrome lift via
+   a three-step gray ladder so surfaces separate without elevation.
    (design.md §9 — replacement world, approved 2026-08-23) */
 :root {
   color-scheme: dark;
   --bg: #000000;
-  --surface-1: #000000;
-  --surface-2: #050505;
-  --surface-3: #0d0d0d;
-  --border: rgba(255, 255, 255, 0.13);
-  --border-strong: rgba(255, 255, 255, 0.26);
+  --surface-1: #0a0a0a;
+  --surface-2: #141414;
+  --surface-3: #1f1f1f;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.22);
   --accent: #10b981;
   --accent-foreground: #000000;
   --danger: #ef4444;
