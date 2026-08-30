@@ -11,13 +11,25 @@ import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
 import { useSaveUndo } from "./use-save-undo";
 
-// cavetail: jsdom lacks ResizeObserver used by radix primitives
+// cavetail: jsdom lacks ResizeObserver used by radix primitives + vaul
 class ResizeObserverStub {
   observe() {}
   unobserve() {}
   disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {};
+}
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
 
 const ACCOUNTS: AccountOption[] = [
   { id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2 },

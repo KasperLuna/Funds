@@ -4,11 +4,11 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { Template } from "@/lib/templates/templates-store";
 
@@ -104,16 +104,16 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
   };
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogContentTitle>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4 max-h-[96dvh] overflow-y-auto">
+        <SheetTitle>
           {editTemplate ? "Edit template" : "New template"}
-        </DialogContentTitle>
-        <DialogContentDescription>
+        </SheetTitle>
+        <SheetDescription>
           {editTemplate
             ? "Update the template details."
             : "Save a reusable prefill for quick transaction entry."}
-        </DialogContentDescription>
+        </SheetDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
@@ -223,8 +223,8 @@ const TemplateForm = ({ onOpenChange, onSave, editTemplate, accounts, categories
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

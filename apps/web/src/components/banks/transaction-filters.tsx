@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CalendarDays, Search, Tag } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
@@ -114,13 +115,13 @@ export const TransactionFilters = (props: TransactionFiltersProps) => {
             className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
             aria-hidden
           />
-          <input
+          <Input
             type="search"
             aria-label="Search transactions"
             value={query}
             onChange={(e) => commitQuery(e.target.value)}
             placeholder="Search transactions…"
-            className="h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) pl-9 pr-3 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="h-11 w-full pl-9 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
 

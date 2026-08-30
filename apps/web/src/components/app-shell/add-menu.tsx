@@ -71,7 +71,7 @@ export function AddMenu({
 
   const handleToggle = () => setOpen((o) => !o);
 
-  // Cavetail: menu items hit the same next/link startTransition deferral as the
+  // cavetail: menu items hit the same next/link startTransition deferral as the
   // primary FAB on cold PWA open. Force a synchronous router.push so the click
   // always schedules navigation; close the popover on the same tick.
   const handleItem = (href: string) => (e: React.SyntheticEvent) => {

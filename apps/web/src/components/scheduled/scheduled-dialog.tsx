@@ -3,11 +3,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { advanceRecurrence, type Frequency, type Schedule } from "@funds/core";
 import type { ScheduledTxn } from "@/lib/scheduled/compute";
 import { cn } from "@/lib/utils";
@@ -158,16 +158,16 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
   };
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogContentTitle>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4 max-h-[96dvh] overflow-y-auto">
+        <SheetTitle>
           {editItem ? "Edit scheduled transaction" : "New scheduled transaction"}
-        </DialogContentTitle>
-        <DialogContentDescription>
+        </SheetTitle>
+        <SheetDescription>
           {editItem
             ? "Update the recurrence schedule and details."
             : "Set up a recurring transaction entry."}
-        </DialogContentDescription>
+        </SheetDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
@@ -358,8 +358,8 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

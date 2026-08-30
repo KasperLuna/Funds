@@ -4,11 +4,15 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAssistantSheet } from "@/components/assistant/assistant-sheet-context";
 import type { ModelId } from "@/lib/llm/types";
@@ -248,34 +252,41 @@ export const AssistantStatus = () => {
       </Section>
 
       {deleteTarget && (
-        <Dialog open onOpenChange={() => setDeleteTarget(null)}>
-          <DialogContent>
-            <DialogContentTitle>Delete model?</DialogContentTitle>
-            <DialogContentDescription>
-              This will remove the model's cached weights from the device.
-              The model will need to be re-downloaded to use it again.
-            </DialogContentDescription>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={deleteMutation.isPending}
-                onClick={() => {
-                  const target = deleteTarget;
-                  if (!target) return;
-                  deleteMutation.mutate(target, {
-                    onSettled: () => setDeleteTarget(null),
-                  });
-                }}
-              >
-                {deleteMutation.isPending ? "Deleting…" : "Delete"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <AlertDialog open onOpenChange={() => setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete model?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the model's cached weights from the device.
+                The model will need to be re-downloaded to use it again.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel asChild>
+                <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+                  Cancel
+                </Button>
+              </AlertDialogCancel>
+              <AlertDialogAction asChild>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={deleteMutation.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const target = deleteTarget;
+                    if (!target) return;
+                    deleteMutation.mutate(target, {
+                      onSettled: () => setDeleteTarget(null),
+                    });
+                  }}
+                >
+                  {deleteMutation.isPending ? "Deleting…" : "Delete"}
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

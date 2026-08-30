@@ -3,11 +3,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import type { Account } from "@/lib/accounts/accounts-store";
 import { useAssets } from "@/lib/assets";
@@ -123,16 +123,16 @@ const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) =>
   };
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle>
           {isEditing ? "Edit account" : "New account"}
-        </DialogContentTitle>
-        <DialogContentDescription>
+        </SheetTitle>
+        <SheetDescription>
           {isEditing
             ? "Update account details."
             : "Create a new account to track transactions."}
-        </DialogContentDescription>
+        </SheetDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
@@ -231,8 +231,8 @@ const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) =>
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

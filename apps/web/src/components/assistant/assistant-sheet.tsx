@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
-  Root as DialogRoot,
-  Portal as DialogPortal,
-  Overlay as DialogOverlay,
-} from "@radix-ui/react-dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 import { AssistantPanel } from "./assistant-panel";
 
 interface AssistantSheetProps {
@@ -18,41 +19,32 @@ interface AssistantSheetProps {
  * top header and the bottom nav, so the assistant's thread gets the
  * full dvh to work with. On desktop it's a centered plate dialog. The
  * assistant's own header has a Close button — we don't render the
- * shared Dialog's X (it would duplicate) and we don't render the drag
+ * shared Sheet's X (it would duplicate) and we don't render the drag
  * handle (the panel header is the sheet's primary handle).
+ *
+ * Backed by vaul on mobile (real iOS drag-to-dismiss — fixes the half-
+ * press bug the previous Radix-Dialog-as-sheet had) and Radix Dialog
+ * on desktop. The mobile-only chrome-height offset lives in globals.css
+ * under `[data-mobile-frame]` and only fires below the sm: breakpoint,
+ * so the desktop dialog stays centered.
  */
 export const AssistantSheet = ({ open, onClose }: AssistantSheetProps) => {
-  // cavetail: mirror `open` → `mounted` so Radix's exit animation can play
-  // before we unmount; without this delay the sheet snaps shut.
-  const [mounted, setMounted] = useState(open);
-  useEffect(() => {
-    // Cavetail: previous version only ever flipped mounted → true. Combined
-    // with the JSX `open` shorthand below (a literal true) the DialogRoot
-    // became permanently open after the first open — every screen tap was
-    // eaten by the stuck z-40 overlay. Track both edges.
-    if (open) setMounted(true);
-    if (!open && mounted) {
-      const t = setTimeout(() => setMounted(false), 200);
-      return () => clearTimeout(t);
-    }
-  }, [open, mounted]);
-
-  if (!mounted) return null;
-
   return (
-    <DialogRoot open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogPortal>
-        <DialogOverlay className="fixed inset-0 z-40 bg-black/80 data-[state=open]:animate-[funds-overlay-in_200ms_ease-out]" />
-        <div
-          className="fixed inset-x-0 z-50 flex min-h-0 flex-col overflow-hidden border border-b-0 border-(--border-strong) bg-(--bg) data-[state=open]:animate-[funds-sheet-in_180ms_cubic-bezier(0.32,0.72,0,1)] sm:left-1/2 sm:right-auto sm:top-1/2 sm:max-h-[85vh] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-(--radius-lg) sm:border-b"
-          style={{
-            top: "var(--chrome-header-h)",
-            bottom: "var(--chrome-footer-h)",
-          }}
-        >
-          <AssistantPanel onClose={onClose} />
-        </div>
-      </DialogPortal>
-    </DialogRoot>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        showCloseButton={false}
+        className={cn(
+          "flex min-h-0 flex-col overflow-hidden p-0",
+          "max-sm:rounded-none max-sm:border-0",
+        )}
+        data-mobile-frame
+      >
+        <SheetTitle className="sr-only">Assistant</SheetTitle>
+        <SheetDescription className="sr-only">
+          Chat with the on-device finance assistant.
+        </SheetDescription>
+        <AssistantPanel onClose={onClose} />
+      </SheetContent>
+    </Sheet>
   );
 };

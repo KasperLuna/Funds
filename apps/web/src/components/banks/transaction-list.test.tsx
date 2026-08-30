@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { TransactionList } from "./transaction-list";
 import type { Txn } from "@/lib/accounts/accounts-store";
@@ -63,13 +64,15 @@ describe("TransactionList", () => {
     expect(within(mobileList).queryByText("Bus")).not.toBeInTheDocument();
   });
 
-  it("filters by month", () => {
+  it("filters by month", async () => {
+    const user = userEvent.setup();
     const txns = [
       makeTxn({ id: "t1", description: "Jan item", date: new Date(2025, 0, 15).getTime() }),
       makeTxn({ id: "t2", description: "Feb item", date: new Date(2025, 1, 15).getTime() }),
     ];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    fireEvent.change(screen.getByTestId("month-picker"), { target: { value: "2025-01" } });
+    await user.click(screen.getByTestId("month-picker"));
+    await user.click(screen.getByRole("option", { name: /Jan 2025/ }));
     const mobileList = screen.getByTestId("mobile-list");
     expect(within(mobileList).getByText("Jan item")).toBeInTheDocument();
     expect(within(mobileList).queryByText("Feb item")).not.toBeInTheDocument();

@@ -5,11 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { type DigitKey } from "@/components/capture/keypad";
 import { CaptureFormFields } from "@/components/capture/capture-form-fields";
 import { CaptureAmountKeypad } from "@/components/capture/capture-amount-keypad";
@@ -78,11 +78,6 @@ type FormSnapshot = {
   description: string;
   categoryIds: string[];
 };
-
-function formatReadout(state: AmountState): string {
-  const major = Number(amountToMinor(state)) / 10 ** state.decimals;
-  return major.toFixed(state.decimals);
-}
 
 function templateAmount(t: Template, dec: number): AmountState {
   // cavetail: display-only formatting, not arithmetic
@@ -345,7 +340,6 @@ const CaptureForm = (props: CaptureFormProps) => {
         suggestions={suggestions}
         onApplySuggestion={applySuggestion}
         decimals={decimals}
-        formatReadout={formatReadout}
       />
     </>
   );
@@ -354,18 +348,18 @@ const CaptureForm = (props: CaptureFormProps) => {
 export const CaptureSheet = (props: CaptureSheetProps) => {
   const { isOpen: open, onOpenChange, editing, recentTxns } = props;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle className="font-display text-lg font-bold tracking-tight">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle className="font-display text-lg font-bold tracking-tight">
           {editing ? "Edit transaction" : "Log transaction"}
-        </DialogContentTitle>
-        <DialogContentDescription>
+        </SheetTitle>
+        <SheetDescription>
           {recentTxns.length > 0
             ? `${recentTxns.length} recent match${recentTxns.length === 1 ? "" : "es"} available`
             : "New entry"}
-        </DialogContentDescription>
+        </SheetDescription>
         <CaptureForm {...props} open={open} />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };

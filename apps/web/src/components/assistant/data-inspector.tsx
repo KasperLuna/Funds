@@ -3,8 +3,8 @@
 import {
   Dialog,
   DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import type { AssistantMessage } from "@/lib/assistant/types";
 
@@ -23,12 +23,12 @@ export const DataInspector = ({ message, onClose }: DataInspectorProps) => {
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogContentTitle>Underlying data</DialogContentTitle>
-        <DialogContentDescription>
+        <DialogTitle>Underlying data</DialogTitle>
+        <DialogDescription>
           This widget was generated on this device. Money and totals are
           re-derived from your local transaction rows after the assistant
           named the category or period.
-        </DialogContentDescription>
+        </DialogDescription>
         <pre className="mt-3 max-h-72 overflow-auto rounded-(--radius-md) bg-(--surface-2) p-3 text-[11px] text-zinc-300">
           {JSON.stringify(stripForDisplay(message), null, 2)}
         </pre>

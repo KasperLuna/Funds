@@ -10,6 +10,26 @@ import { AccountConfirmDialog } from "./bank-confirm-dialogs";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import { computeBalance } from "@/lib/accounts/accounts-store";
 
+// cavetail: jsdom lacks ResizeObserver (radix) + pointer-capture/scrollIntoView (vaul)
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function () {};
+}
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {};
+}
+
 function makeAccount(overrides: Partial<Account> = {}): Account {
   return {
     id: "a1",

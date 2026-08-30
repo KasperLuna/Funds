@@ -5,12 +5,13 @@ import { z } from "zod";
 import { Check, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { AmountInput } from "@/components/capture/amount-input";
 import { Keypad, type DigitKey } from "./keypad";
 import type { AccountOption, CategoryOption } from "./capture-sheet";
 import type { Category } from "@/lib/categories/categories-store";
@@ -222,12 +223,12 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
   );
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>Transfer</DialogContentTitle>
-        <DialogContentDescription>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle>Transfer</SheetTitle>
+        <SheetDescription>
           Moves money between two accounts
-        </DialogContentDescription>
+        </SheetDescription>
 
         <div className="mt-3 flex items-center gap-1.5">
           {accountSelect("From account", fromId, (id) => {
@@ -339,29 +340,18 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
           </div>
         )}
 
-        <div
-          className="guilloche relative mt-4 rounded-(--radius-md) border border-(--border) px-3 py-3"
-        >
-          <div
-            data-testid="amount-readout"
-            aria-live="polite"
-            className="text-right text-4xl font-semibold tabular-nums text-zinc-50"
-          >
-            {/* cavetail: display-only formatting, not arithmetic */}
-            {/* eslint-disable-next-line local/no-money-float */}
-            <span className="sm:hidden">{(Number(minor) / 10 ** decimals).toFixed(decimals)}</span>
-            <input
-              aria-label="Amount"
-              inputMode="decimal"
-              value={amount.input}
-              onChange={(e) =>
-                setAmount((s) => ({ ...s, input: sanitizeAmountInput(e.target.value, s.decimals) }))
-              }
-              placeholder="0"
-              className="hidden w-full min-w-0 bg-transparent text-right font-display outline-none placeholder:text-zinc-600 sm:inline-block"
-            />
-          </div>
-        </div>
+        <AmountInput
+          className="mt-4"
+          assetCode={from?.assetCode ?? from?.assetId?.slice(0, 3).toUpperCase()}
+          tone="foreground"
+          value={amount.input}
+          // cavetail: display-only formatting, not arithmetic
+          display={formatMinor(minor, decimals)}
+          onChange={(v) => setAmount((s) => ({ ...s, input: sanitizeAmountInput(v, s.decimals) }))}
+          sanitize={(v) => v}
+          decimals={decimals}
+          aria-label="Amount"
+        />
 
         <input
           aria-label="Fee"
@@ -393,11 +383,11 @@ const TransferForm = ({ onOpenChange, userId, accounts, categories, onSave, onCr
           />
         </div>
 
-        <Button size="lg" className="mt-5 w-full" disabled={!canSave} onClick={handleSubmit(onSubmit)}>
+        <Button size="lg" className="mt-5 hidden w-full sm:block" disabled={!canSave} onClick={handleSubmit(onSubmit)}>
           {canSave ? "Transfer" : fromId === toId ? validation : "Enter amount"}
         </Button>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

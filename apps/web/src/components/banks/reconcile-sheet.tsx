@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Keypad, type DigitKey } from "@/components/capture/keypad";
 import {
   emptyAmount,
@@ -88,12 +88,12 @@ const ReconcileForm = ({
   const enteredLabel = formatMoney(enteredMinor, decimals, assetCode);
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>Adjust balance</DialogContentTitle>
-        <DialogContentDescription>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle>Adjust balance</SheetTitle>
+        <SheetDescription>
           Match {account.name} to your real balance
-        </DialogContentDescription>
+        </SheetDescription>
 
         <div className="mt-3 flex items-center justify-between rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2.5">
           <span className="text-sm text-zinc-400">Recorded balance</span>
@@ -178,8 +178,8 @@ const ReconcileForm = ({
             {canSave ? "Save adjustment" : "Enter new balance"}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

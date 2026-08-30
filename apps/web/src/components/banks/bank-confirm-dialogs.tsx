@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Account } from "@/lib/accounts/accounts-store";
 
 export type AccountConfirmAction = "archive" | "unarchive" | "delete";
-
-const inputCls =
-  "h-11 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none";
 
 interface AccountConfirmDialogProps {
   account: Account | null;
@@ -67,40 +70,51 @@ const AccountConfirmForm = ({
   const disabled = isDelete && typed.trim() !== account.name;
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>{title}</DialogContentTitle>
-        <DialogContentDescription>{description}</DialogContentDescription>
+    <AlertDialog open onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
         {isDelete && (
-          <label className="mt-4 flex flex-col gap-1.5">
-            <span className="text-sm text-zinc-500">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-zinc-500">
               Type <span className="font-medium text-zinc-200">{account.name}</span> to confirm
-            </span>
-            <input
+            </Label>
+            <Input
               type="text"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               placeholder={account.name}
-              className={inputCls}
               autoFocus
             />
-          </label>
+          </div>
         )}
-        <div className="mt-4 flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant={isDelete ? "destructive" : "primary"}
+        <AlertDialogFooter>
+          <AlertDialogCancel asChild>
+            <Button type="button" variant="ghost">
+              Cancel
+            </Button>
+          </AlertDialogCancel>
+          <AlertDialogAction
+            asChild
             disabled={disabled}
-            onClick={() => onConfirm(account)}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!disabled) onConfirm(account);
+            }}
           >
-            {confirmLabel}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+            <Button
+              type="button"
+              variant={isDelete ? "destructive" : "default"}
+              disabled={disabled}
+            >
+              {confirmLabel}
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

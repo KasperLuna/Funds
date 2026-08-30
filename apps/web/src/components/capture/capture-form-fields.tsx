@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { Input } from "@/components/ui/input";
 import { ContextPopover } from "@/components/capture/context-popover";
 import { cn } from "@/lib/utils";
 import type { Template } from "@/lib/templates/templates-store";
@@ -232,9 +233,9 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
         )}
       </div>
 
-      <input
+      <Input
         aria-label="Description"
-        className="mt-4 h-11 w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 text-sm text-zinc-200 placeholder:text-zinc-500 transition-colors focus-visible:outline-2 focus-visible:outline-(--accent)"
+        className="mt-4"
         placeholder="Description (optional)"
         value={description}
         onChange={(e) => onDescriptionChange(e.target.value)}

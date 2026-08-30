@@ -1,6 +1,14 @@
 import { Fragment, useMemo, useState, useRef } from "react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { groupByDay } from "@/lib/accounts/accounts-store";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { TransactionRow } from "./transaction-row";
 
@@ -322,12 +330,12 @@ export const TransactionList = (props: TransactionListProps) => {
   return (
     <div className="flex h-full flex-col">
       <div className="flex flex-wrap items-center gap-3 border-b border-(--border) px-4 py-3">
-        <input
+        <Input
           type="text"
           placeholder="Search transactions..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[200px] rounded-md border border-(--border) bg-(--surface-2) px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-(--accent) focus:outline-none"
+          className="flex-1 min-w-[200px]"
           data-testid="search-input"
         />
 
@@ -354,19 +362,22 @@ export const TransactionList = (props: TransactionListProps) => {
           })}
         </div>
 
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="rounded-md border border-(--border) bg-(--surface-2) px-3 py-2 text-sm text-zinc-200 focus:border-(--accent) focus:outline-none"
-          data-testid="month-picker"
+        <Select
+          value={selectedMonth || "__all__"}
+          onValueChange={(v) => setSelectedMonth(v === "__all__" ? "" : v)}
         >
-          <option value="">All months</option>
-          {monthOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="h-11 w-[160px]" data-testid="month-picker">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">All months</SelectItem>
+            {monthOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex-1 overflow-hidden lg:hidden" data-testid="mobile-list">

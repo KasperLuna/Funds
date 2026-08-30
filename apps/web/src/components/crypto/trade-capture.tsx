@@ -4,12 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { SegmentedControl } from "@/components/ui/segmented";
+import { AmountInput } from "@/components/capture/amount-input";
 import {
   emptyAmount,
   amountToMinor,
@@ -194,12 +195,12 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
   };
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>Log trade</DialogContentTitle>
-        <DialogContentDescription>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle>Log trade</SheetTitle>
+        <SheetDescription>
           Record a crypto buy or sell
-        </DialogContentDescription>
+        </SheetDescription>
 
         <div className="mt-2 flex justify-center">
           <SegmentedControl
@@ -295,18 +296,16 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
           )}
         </div>
 
-        <div className="guilloche relative mt-4 rounded-(--radius-md) border border-(--border) px-3 py-3">
-          <div
-            data-testid="amount-readout"
-            aria-live="polite"
-            className="text-right text-4xl font-semibold tabular-nums text-zinc-50"
-          >
-            {formatMinor(minor, 8)}
-            <span className="ml-1 text-lg text-zinc-500">
-              {side === "buy" ? (sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD") : (buyToken?.symbol ?? "CRYPTO")}
-            </span>
-          </div>
-        </div>
+        <AmountInput
+          className="mt-4"
+          assetCode={side === "buy" ? (sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD") : (buyToken?.symbol ?? "CRYPTO")}
+          tone="foreground"
+          value=""
+          onChange={() => {}}
+          sanitize={(v) => v}
+          decimals={8}
+          aria-label="Amount"
+        />
 
         {minor > 0n && effectiveRate > 0 && (
           <p className="mt-1 text-center text-xs text-zinc-500">
@@ -348,8 +347,8 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         <Button size="lg" className="mt-3 w-full" disabled={!canSave} onClick={save}>
           {canSave ? `Log ${side}` : "Enter amount"}
         </Button>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

@@ -2,8 +2,13 @@
 
 import { Keypad, type DigitKey } from "@/components/capture/keypad";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { sanitizeAmountInput, type AmountState, type RecentTxn } from "@/lib/capture";
+import { AmountInput } from "@/components/capture/amount-input";
+import {
+  sanitizeAmountInput,
+  amountToMinor,
+  type AmountState,
+  type RecentTxn,
+} from "@/lib/capture";
 import type { AccountOption } from "@/components/capture/capture-sheet";
 
 export interface CaptureAmountKeypadProps {
@@ -19,7 +24,6 @@ export interface CaptureAmountKeypadProps {
   suggestions: RecentTxn[];
   onApplySuggestion: (txn: RecentTxn) => void;
   decimals: number;
-  formatReadout: (state: AmountState) => string;
 }
 
 export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
@@ -36,48 +40,24 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
     suggestions,
     onApplySuggestion,
     decimals,
-    formatReadout,
   } = props;
 
   return (
     <>
       {/* Hero — the amount readout, the one dominant plate. */}
-      <div className="guilloche relative mt-4 rounded-(--radius-md) border border-(--border) px-4 py-4">
-        <div className="flex items-baseline justify-end gap-2">
-          {selected?.assetCode && (
-            <span
-              aria-hidden
-              className={cn(
-                "font-display text-2xl font-semibold",
-                type === "expense" ? "text-(--danger)/70" : "text-(--accent)/70",
-              )}
-            >
-              {selected.assetCode === "USD" ? "$" : `${selected.assetCode} `}
-            </span>
-          )}
-          <div
-            data-testid="amount-readout"
-            aria-live="polite"
-            className={cn(
-              "text-display-sm [font-variant-numeric:tabular-nums]",
-              type === "expense" ? "text-(--danger)" : "text-(--accent)",
-            )}
-          >
-            <span className="sm:hidden">{formatReadout(amount)}</span>
-            <input
-              aria-label="Amount"
-              inputMode="decimal"
-              autoFocus
-              value={amount.input}
-              onChange={(e) =>
-                onAmountInputChange({ ...amount, input: sanitizeAmountInput(e.target.value, amount.decimals) })
-              }
-              placeholder="0"
-              className="hidden w-full min-w-0 bg-transparent text-right font-display outline-none placeholder:text-(--accent)/40 sm:inline-block"
-            />
-          </div>
-        </div>
-      </div>
+      <AmountInput
+        className="mt-4"
+        assetCode={selected?.assetCode}
+        tone={type === "expense" ? "danger" : "accent"}
+        value={amount.input}
+        // cavetail: display-only formatting, not arithmetic
+        display={(Number(amountToMinor(amount)) / 10 ** decimals).toFixed(decimals)}
+        onChange={(v) => onAmountInputChange({ ...amount, input: sanitizeAmountInput(v, amount.decimals) })}
+        sanitize={(v) => v}
+        decimals={decimals}
+        aria-label="Amount"
+        autoFocus
+      />
 
       {/* Quick-fill zone — suggestions (recent repeats) below the hero. */}
       {suggestions.length > 0 && (

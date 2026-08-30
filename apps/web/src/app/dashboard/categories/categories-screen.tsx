@@ -24,11 +24,11 @@ import { formatMoney, assetSymbol } from "@/lib/money";
 import { usePrivacy } from "@/lib/privacy/privacy-context";
 import { cn } from "@/lib/utils";
 import {
-  Dialog,
-  DialogContent,
-  DialogContentTitle,
-  DialogContentDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 
 function toCategory(row: Record<string, unknown>): Category {
   const name = String(row.name);
@@ -486,13 +486,13 @@ export const CategoriesScreen = () => {
         />
       )}
 
-      <Dialog open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
-        <DialogContent>
-          <DialogContentTitle>Delete category?</DialogContentTitle>
-          <DialogContentDescription>
+      <Sheet open={pendingDelete !== null} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+        <SheetContent className="flex flex-col gap-4">
+          <SheetTitle>Delete category?</SheetTitle>
+          <SheetDescription>
             This deletes the category and removes it from all tagged transactions.
             Past transactions keep their amounts but lose this category tag.
-          </DialogContentDescription>
+          </SheetDescription>
           <div className="mt-4 flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setPendingDelete(null)}>
               Cancel
@@ -501,8 +501,8 @@ export const CategoriesScreen = () => {
               Delete
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
@@ -600,14 +600,14 @@ const CategoryForm = ({
   };
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogContentTitle>
+    <Sheet open onOpenChange={onOpenChange}>
+      <SheetContent className="flex flex-col gap-4">
+        <SheetTitle>
           {editCategory ? "Edit category" : "New category"}
-        </DialogContentTitle>
-        <DialogContentDescription>
+        </SheetTitle>
+        <SheetDescription>
           {editCategory ? "Update category details." : "Create a spending category."}
-        </DialogContentDescription>
+        </SheetDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
@@ -712,8 +712,8 @@ const CategoryForm = ({
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 

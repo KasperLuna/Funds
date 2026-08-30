@@ -6,12 +6,28 @@ import "@testing-library/jest-dom/vitest";
 import { ReconcileSheet } from "./reconcile-sheet";
 import type { Account } from "@/lib/accounts/accounts-store";
 
+// cavetail: jsdom lacks ResizeObserver (radix) + pointer-capture/scrollIntoView (vaul)
 class ResizeObserverStub {
   observe() {}
   unobserve() {}
   disconnect() {}
 }
 globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+const elementProto = Element.prototype as unknown as Record<string, unknown>;
+if (typeof elementProto.scrollIntoView !== "function") {
+  elementProto.scrollIntoView = function () {};
+}
+if (typeof elementProto.hasPointerCapture !== "function") {
+  elementProto.hasPointerCapture = function () {
+    return false;
+  };
+}
+if (typeof elementProto.setPointerCapture !== "function") {
+  elementProto.setPointerCapture = function () {};
+}
+if (typeof elementProto.releasePointerCapture !== "function") {
+  elementProto.releasePointerCapture = function () {};
+}
 
 const ACCOUNT: Account = {
   id: "a1",
