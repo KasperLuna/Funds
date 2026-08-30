@@ -184,8 +184,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
                 </button>
                 <Link
                   href={defaultHref}
-                  prefetch
-                  onClick={onMain}
+                  onClick={(e) => onMain(e)}
                   aria-label="Add transaction"
                   className="flex h-16 w-16 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) ring-4 ring-(--bg) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-95"
                 >

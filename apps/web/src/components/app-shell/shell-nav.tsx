@@ -157,8 +157,7 @@ export function AddButton({
         <div className="flex w-full items-stretch overflow-hidden rounded-(--radius-md) bg-(--accent) text-(--accent-foreground)">
           <Link
             href={defaultHref}
-            prefetch
-            onClick={onMain}
+            onClick={(e) => onMain(e)}
             className="flex min-h-11 flex-1 items-center justify-center gap-1 px-3 transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />

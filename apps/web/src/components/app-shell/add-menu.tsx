@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -16,8 +17,10 @@ export const ADD_MENU_TARGETS: AddMenuTarget[] = [
 
 type AddMenuRender = (controls: {
   open: boolean;
-  /** Stop the menu popover — call on every primary-action click. */
-  onMain: () => void;
+  /** Synchronous primary action — call from a click handler with the event
+   *  so handleMain can preventDefault before navigating. Bypasses next/link's
+   *  startTransition deferral so the first tap always wins on cold PWA open. */
+  onMain: (e: React.SyntheticEvent) => void;
   onToggle: () => void;
   /** Pre-fetched href to bind the primary action to a Next <Link> for instant nav. */
   defaultHref: string;
@@ -26,9 +29,7 @@ type AddMenuRender = (controls: {
 /**
  * A two-part capture trigger: a primary action (navigate to `defaultHref`) and
  * a toggle that opens a mini-menu of capture variants. The trigger composition
- * is owned by the caller via render props — the primary action is expected to
- * be a Next <Link> (with prefetch) so the destination chunk is warm before the
- * tap lands; menu popover behavior is shared.
+ * is owned by the caller via render props; menu popover behavior is shared.
  *
  * No long-press anywhere — the toggle is an explicit, discoverable control
  * (split-button caret on desktop, caret cap on the mobile FAB).
@@ -48,16 +49,36 @@ export function AddMenu({
   menuClassName?: string;
   children: AddMenuRender;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Cavetail: when the menu is open, the primary action becomes a close button
-  // (the user already sees the menu — the + shouldn't also navigate).
-  const handleMain = () => {
-    if (open) setOpen(false);
+  // Cavetail: navigate synchronously, not via <Link onClick>. next/link wraps
+  // its onClick in startTransition, which the React scheduler can defer past a
+  // cold iOS PWA open while hydration is still settling — the click is consumed
+  // by e.preventDefault() and the navigation never fires, so the user has to
+  // tap again (and again). A direct router.push runs in the same task as the
+  // click and is guaranteed to schedule the nav. The surrounding <Link> still
+  // warms the destination chunk via prefetch on hover/touch.
+  const handleMain = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    router.push(defaultHref, { scroll: false });
   };
 
   const handleToggle = () => setOpen((o) => !o);
+
+  // Cavetail: menu items hit the same next/link startTransition deferral as the
+  // primary FAB on cold PWA open. Force a synchronous router.push so the click
+  // always schedules navigation; close the popover on the same tick.
+  const handleItem = (href: string) => (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setOpen(false);
+    router.push(href, { scroll: false });
+  };
 
   // cavetail: pointerdown + Escape listeners are browser DOM APIs outside
   // React's tree; tear them down on close. Genuine side effect, not derived state.
@@ -95,7 +116,7 @@ export function AddMenu({
               key={item.href}
               href={item.href}
               role="menuitem"
-              onClick={() => setOpen(false)}
+              onClick={handleItem(item.href)}
               className="flex min-h-11 items-center px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             >
               {item.label}

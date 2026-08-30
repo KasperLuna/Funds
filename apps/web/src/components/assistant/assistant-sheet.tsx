@@ -24,15 +24,23 @@ interface AssistantSheetProps {
 export const AssistantSheet = ({ open, onClose }: AssistantSheetProps) => {
   // cavetail: mirror `open` → `mounted` so Radix's exit animation can play
   // before we unmount; without this delay the sheet snaps shut.
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(open);
   useEffect(() => {
+    // Cavetail: previous version only ever flipped mounted → true. Combined
+    // with the JSX `open` shorthand below (a literal true) the DialogRoot
+    // became permanently open after the first open — every screen tap was
+    // eaten by the stuck z-40 overlay. Track both edges.
     if (open) setMounted(true);
-  }, [open]);
+    if (!open && mounted) {
+      const t = setTimeout(() => setMounted(false), 200);
+      return () => clearTimeout(t);
+    }
+  }, [open, mounted]);
 
   if (!mounted) return null;
 
   return (
-    <DialogRoot open onOpenChange={(o) => !o && onClose()}>
+    <DialogRoot open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-40 bg-black/80 data-[state=open]:animate-[funds-overlay-in_200ms_ease-out]" />
         <div
