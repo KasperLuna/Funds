@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/sheet";
 import { type DigitKey, Keypad } from "@/components/capture/keypad";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented";
 import { CaptureFormFields } from "@/components/capture/capture-form-fields";
 import { CaptureAmountKeypad } from "@/components/capture/capture-amount-keypad";
 import {
@@ -339,6 +338,8 @@ const CaptureForm = (props: CaptureFormProps) => {
           accountId={accountId}
           selected={selected}
           onAccountChange={handleAccountChange}
+          type={type}
+          onTypeChange={handleTypeChange}
           description={description}
           onDescriptionChange={(v) => form.setValue("description", v, { shouldValidate: true })}
           onDescriptionFocus={() => setTextFocused(true)}
@@ -355,18 +356,8 @@ const CaptureForm = (props: CaptureFormProps) => {
           activeTemplate={activeTemplate}
           dateLabel={dateLabel}
         />
-        <div className="mt-3 flex items-stretch gap-2">
-          <SegmentedControl
-            className="h-14 shrink-0"
-            options={[
-              { value: "expense", label: "Expense" },
-              { value: "income", label: "Income" },
-            ]}
-            value={type}
-            onChange={(v) => handleTypeChange(v)}
-          />
+        <div className="mt-4">
           <CaptureAmountKeypad
-            className="flex-1"
             amount={amount}
             onAmountInputChange={setAmount}
             onKey={handleKey}

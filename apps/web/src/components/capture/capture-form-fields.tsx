@@ -52,6 +52,8 @@ export interface CaptureFormFieldsProps {
   accountId: string;
   selected: AccountOption | undefined;
   onAccountChange: (id: string) => void;
+  type: "income" | "expense";
+  onTypeChange: (next: "income" | "expense") => void;
   description: string;
   onDescriptionChange: (next: string) => void;
   onDescriptionFocus: () => void;
@@ -77,6 +79,8 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
     accountId,
     selected,
     onAccountChange,
+    type,
+    onTypeChange,
     description,
     onDescriptionChange,
     onDescriptionFocus,
@@ -266,6 +270,35 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
           })}
         </div>
       )}
+
+      {/* Type — Expense | Income. A small modifier row above the amount
+          hero, not a sibling of it: the type colours the amount readout
+          (red/green) so the two read as one statement without competing
+          for width on mobile. */}
+      <div role="group" aria-label="Type" className="mt-4 flex justify-center">
+        <div className="inline-flex items-center gap-0.5 rounded-(--radius-md) border border-(--border) bg-(--surface-2) p-0.5">
+          {(["expense", "income"] as const).map((value) => {
+            const active = type === value;
+            const activeColor = value === "expense" ? "text-(--danger)" : "text-(--accent)";
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onTypeChange(value)}
+                className={cn(
+                  "min-h-9 rounded-(--radius-sm) px-4 text-sm transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
+                  active
+                    ? cn("bg-(--surface-3) font-semibold", activeColor)
+                    : "font-medium text-zinc-500 hover:text-inherit",
+                )}
+              >
+                {value === "expense" ? "Expense" : "Income"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 };
