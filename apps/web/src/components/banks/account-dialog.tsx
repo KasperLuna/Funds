@@ -73,7 +73,7 @@ type AccountFormValues = z.infer<typeof accountFormSchema>;
 
 const AccountForm = ({ onOpenChange, onSave, editAccount }: AccountFormProps) => {
   const { assets } = useAssets();
-  const assetOptions = assets.map((a) => ({ id: a.id, label: a.code }));
+  const assetOptions = assets.filter((a) => a.kind === "fiat").map((a) => ({ id: a.id, label: a.code }));
 
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),

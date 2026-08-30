@@ -16,6 +16,7 @@ const assetsRouter = router({
       name: a.name,
       kind: a.kind,
       decimals: a.decimals,
+      coingeckoId: a.coingeckoId,
     }));
   }),
 });

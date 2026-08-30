@@ -10,6 +10,7 @@ export type Asset = {
   name: string;
   kind: string;
   decimals: number;
+  coingeckoId: string | null;
 };
 
 export function useAssets(): { assets: Asset[]; loading: boolean } {

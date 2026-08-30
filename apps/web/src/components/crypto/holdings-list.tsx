@@ -25,6 +25,7 @@ import {
   type AccountOption,
 } from "@/components/crypto/trade-capture";
 import { Button } from "@/components/ui/button";
+import { TokenAddSheet, TokenAddTrigger } from "@/components/crypto/token-add-sheet";
 
 function computeValueUsd(holding: Holding, prices: Map<string, CoinPrice>): number {
   const dec = Number(holding.token.decimals) || 0;
@@ -134,6 +135,7 @@ export const HoldingsList = (props: HoldingsListProps) => {
   const { db } = useSync();
   const uid = userId ?? "dev-user";
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [addTokenOpen, setAddTokenOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const tokensQuery = useSyncQuery<Token>({
@@ -226,10 +228,13 @@ export const HoldingsList = (props: HoldingsListProps) => {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <HoldingsTotals totalValue={totalValue} totalPL={totalPL} isMasked={masked} />
-        <Button size="sm" onClick={() => setTradeOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Trade
-        </Button>
+        <div className="flex items-center gap-2">
+          <TokenAddTrigger onClick={() => setAddTokenOpen(true)} />
+          <Button size="sm" onClick={() => setTradeOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Trade
+          </Button>
+        </div>
       </div>
 
       {notice && (
@@ -257,6 +262,13 @@ export const HoldingsList = (props: HoldingsListProps) => {
         tokens={tokens}
         prices={prices}
         onSave={handleTradeSave}
+      />
+
+      <TokenAddSheet
+        isOpen={addTokenOpen}
+        onOpenChange={setAddTokenOpen}
+        userId={uid}
+        existingTokens={tokens}
       />
     </div>
   );
