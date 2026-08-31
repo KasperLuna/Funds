@@ -22,7 +22,6 @@ export const SyncProvider = ({ children }: { children: React.ReactNode }) => {
   const engine = useSyncStore((s) => s._engine);
   const setSyncStatus = useSyncStore((s) => s._setSyncStatus);
   const setUserId = useSyncStore((s) => s.setUserId);
-  const setReady = useSyncStore((s) => s.setReady);
 
   const userIdRef = useRef(userId);
   userIdRef.current = userId;
@@ -35,10 +34,6 @@ export const SyncProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     setUserId(userId);
   }, [userId, setUserId]);
-
-  useEffect(() => {
-    setReady(!isPending);
-  }, [isPending, setReady]);
 
   useEffect(() => {
     if (!engine) return;
