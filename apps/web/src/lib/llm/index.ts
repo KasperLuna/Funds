@@ -2,6 +2,7 @@ import type { LlmEngine, ModelId } from "./types";
 import { WebLlmEngine } from "./webllm-engine";
 import { detectSupport, type LlmSupport } from "./capability";
 import { isModelCached } from "./opfs-cache";
+import { useLlmStore } from "./llm-store";
 
 export type { LlmSupport } from "./capability";
 
@@ -21,27 +22,29 @@ const ALL_MODELS: ModelId[] = [
  * happens. Tests reach in via `setLlmEngineForTest` to inject a mock; UI code
  * never imports the mock.
  */
-let cached: LlmEngine | null = null;
-let support: LlmSupport | null = null;
-
 export async function getLlmSupport(): Promise<LlmSupport> {
-  if (support) return support;
-  support = await detectSupport();
-  return support;
+  const existing = useLlmStore.getState().support;
+  if (existing) return existing;
+  const result = await detectSupport();
+  useLlmStore.getState().setSupport(result);
+  return result;
 }
 
 export function getLlmEngine(): LlmEngine {
-  if (!cached) cached = new WebLlmEngine();
-  return cached;
+  const existing = useLlmStore.getState().engine;
+  if (existing) return existing;
+  const engine = new WebLlmEngine();
+  useLlmStore.getState().setEngine(engine);
+  return engine;
 }
 
 export function setLlmEngineForTest(engine: LlmEngine | null): void {
-  cached = engine;
+  useLlmStore.getState().setEngine(engine);
 }
 
 /** Reset cached support state so the next getLlmSupport re-probes (e.g. on resume). */
 export function resetLlmSupport(): void {
-  support = null;
+  useLlmStore.getState().setSupport(null);
 }
 
 /** Check whether a model's weights are cached in OPFS. */

@@ -9,7 +9,6 @@ import { MemorySyncDatabase } from "@/lib/sync";
 import { CaptureSheet, type AccountOption, type CategoryOption } from "./capture-sheet";
 import type { RecentTxn } from "@/lib/capture";
 import type { Template } from "@/lib/templates/templates-store";
-import { useSaveUndo } from "./use-save-undo";
 
 // cavetail: jsdom lacks ResizeObserver used by radix primitives + vaul
 class ResizeObserverStub {
@@ -50,17 +49,16 @@ interface HarnessProps {
 
 const Harness = ({ sync }: HarnessProps) => {
   const [open, setOpen] = useState(true);
-  const { save } = useSaveUndo(sync);
   return (
     <div>
       <CaptureSheet
         isOpen={open}
         onOpenChange={setOpen}
-        userId="usr-1"
+
         accounts={ACCOUNTS}
         categories={CATS}
         recentTxns={[]}
-        onSave={(row) => void save(row)}
+        onSave={(row) => void sync.table("transactions").upsert(row)}
         defaultAccountId="acc-1"
       />
     </div>
@@ -68,14 +66,32 @@ const Harness = ({ sync }: HarnessProps) => {
 };
 
 const UndoHarness = ({ sync }: HarnessProps) => {
-  const { save, canUndo, undo } = useSaveUndo(sync);
+  const [saved, setSaved] = useState<Record<string, unknown> | null>(null);
   return (
     <div>
-      <button type="button" onClick={() => void save({ id: "u1", user_id: "usr-1" })}>
+      <button
+        type="button"
+        onClick={() => {
+          const row = { id: "u1", user_id: "usr-1" };
+          void sync.table("transactions").upsert(row);
+          setSaved(row);
+        }}
+      >
         DoSave
       </button>
-      {canUndo && (
-        <button type="button" onClick={() => void undo()}>
+      {saved && (
+        <button
+          type="button"
+          onClick={() => {
+            const ts = Date.now();
+            void sync.table("transactions").upsert({
+              ...saved,
+              deleted_at: ts,
+              updated_at: ts,
+            });
+            setSaved(null);
+          }}
+        >
           Undo
         </button>
       )}
@@ -93,17 +109,16 @@ const HarnessWithSuggestions = ({
   recentTxns,
 }: HarnessWithSuggestionsProps) => {
   const [open, setOpen] = useState(true);
-  const { save } = useSaveUndo(sync);
   return (
     <div>
       <CaptureSheet
         isOpen={open}
         onOpenChange={setOpen}
-        userId="usr-1"
+
         accounts={ACCOUNTS}
         categories={CATS}
         recentTxns={recentTxns}
-        onSave={(row) => void save(row)}
+        onSave={(row) => void sync.table("transactions").upsert(row)}
         defaultAccountId="acc-1"
       />
     </div>
@@ -280,7 +295,7 @@ describe("CaptureSheet", () => {
       <CaptureSheet
         isOpen
         onOpenChange={() => {}}
-        userId="usr-1"
+
         accounts={ACCOUNTS}
         categories={CATS}
         recentTxns={[]}
@@ -322,7 +337,7 @@ describe("CaptureSheet", () => {
       <CaptureSheet
         isOpen
         onOpenChange={() => {}}
-        userId="usr-1"
+
         accounts={ACCOUNTS}
         categories={CATS}
         recentTxns={[]}
@@ -368,7 +383,7 @@ describe("CaptureSheet", () => {
           <CaptureSheet
             isOpen={open}
             onOpenChange={setOpen}
-            userId="usr-1"
+    
             accounts={ACCOUNTS}
             categories={CATS}
             recentTxns={[]}

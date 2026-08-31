@@ -1,17 +1,15 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useReducer, type ReactNode } from "react";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category, CategoryBudget } from "@/lib/categories/categories-store";
-import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import type { RowRecord } from "@/lib/sync";
-import { getLlmEngine, getLlmSupport, setLlmEngineForTest, type LlmSupport } from "@/lib/llm";
+import type { LlmSupport } from "@/lib/llm";
 import type { LlmEngine } from "@/lib/llm/types";
-import { runChat, inferUseCase, type ChatEngineDeps } from "@/lib/assistant/chat-engine";
 import type { ChatMessage, ChatStatus } from "@/lib/assistant/types";
-import { useAssets } from "@/lib/assets";
-import { AssistantSheetContext } from "./assistant-sheet-context";
+import { useAssistantSheetStore } from "./assistant-sheet-store";
+import { useChatSend, type ChatSendAction } from "./use-chat-send";
 
 type State = {
   messages: ChatMessage[];
@@ -68,6 +66,13 @@ type ChatContextValue = {
   streamingText: string | null;
   send: (text: string) => Promise<void>;
   reset: () => void;
+  /**
+   * Probe device support (OPFS / WebGPU). Idempotent — only the first call
+   * does work; subsequent calls are no-ops. Wire to the assistant sheet's
+   * `onOpen` so a closed sheet never blocks the dashboard render with a
+   * probe.
+   */
+  probeSupport: () => void;
   /** Test seam: inject a mock engine. */
   setEngine: (engine: LlmEngine | null) => void;
 };
@@ -207,131 +212,18 @@ interface ChatProviderProps {
 
 export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [state, dispatch] = useReducer(reducer, initial);
-  const { userId } = useSync();
-  const { assets } = useAssets();
-  const engineRef = useRef<LlmEngine | null>(null);
   const { accounts, txns, categories, budgets } = useChatData();
 
-  const assetsById = useMemo(
-    () => new Map(assets.map((a) => [a.id, { code: a.code, decimals: a.decimals }])),
-    [assets],
-  );
-
-  // Probe device support when the sheet first opens (not on every mount) so
-  // a closed sheet never blocks the dashboard render with an OPFS / WebGPU
-  // probe. The ref guards against repeated probes within this provider
-  // instance; re-mount resets it naturally.
-  const supportProbedRef = useRef(false);
-  const probeSupport = useCallback(() => {
-    if (supportProbedRef.current) return;
-    supportProbedRef.current = true;
-    void (async () => {
-      const support = await getLlmSupport();
-      dispatch({ type: "support", support });
-    })();
-  }, []);
-
-  // Wipe chat on sign-out so a different user never sees the previous thread.
-  useEffect(() => {
-    if (userId == null) dispatch({ type: "reset" });
-  }, [userId]);
-
-  const setEngine = useCallback((engine: LlmEngine | null) => {
-    setLlmEngineForTest(engine);
-    engineRef.current = engine;
-  }, []);
-
-  const streamingBufRef = useRef("");
-
-  const send = useCallback(
-    async (text: string) => {
-      if (!text.trim()) return;
-      const engine = engineRef.current ?? getLlmEngine();
-      engineRef.current = engine;
-      const status = engine.status();
-
-      // Auto-load the recommended model when nothing is loaded yet. A load
-      // failure is NOT swallowed silently: engine.loadError flows into
-      // complete()'s throw, and runChat attaches it to the fallback notice.
-      if (status === "not-loaded" || status === "error") {
-        dispatch({ type: "status", status: "loading-model" });
-        dispatch({ type: "load-progress", progress: { loaded: 0, total: 1 } });
-        try {
-          const support = await getLlmSupport();
-          const modelId = support.ok ? support.recommendedModel : "SmolLM2-360M-Instruct-q4f16_1-MLC";
-          await engine.load(modelId, (p) => {
-            dispatch({ type: "load-progress", progress: p });
-          });
-        } catch {
-          // runChat's fallback path renders the reason via the engine's
-          // loadError; nothing else to do here.
-        }
-        dispatch({ type: "load-progress", progress: null });
-      }
-
-      dispatch({ type: "status", status: "thinking" });
-      // Append user message immediately so the bubble appears while the model runs.
-      dispatch({
-        type: "append",
-        message: {
-          id: crypto.randomUUID().replace(/-/g, "").slice(0, 26),
-          role: "user",
-          content: text,
-          ts: Date.now(),
-        },
-      });
-      streamingBufRef.current = "";
-      const deps: ChatEngineDeps = {
-        engine,
-        accounts,
-        categories,
-        categoryBudgets: budgets,
-        txns,
-        assetsById,
-        inferUseCase,
-        onToken: (token) => {
-          streamingBufRef.current += token;
-          dispatch({ type: "stream-text", text: streamingBufRef.current });
-        },
-      };
-      try {
-        const result = await runChat(
-          { text, now: Date.now(), userId: userId ?? "local" },
-          deps,
-        );
-        dispatch({ type: "stream-text", text: null });
-        dispatch({ type: "append", message: result.assistant });
-        dispatch({ type: "status", status: "idle" });
-      } catch (err) {
-      // Safety net: if runChat itself throws (e.g. an uncaught iOS crash
-      // escapes the engine's own error handling), surface a user-friendly
-      // message and reset the UI to idle instead of leaving it stuck in
-      // "thinking" forever.
-      dispatch({ type: "stream-text", text: null });
-      const reason =
-        err instanceof DOMException && err.name === "AbortError"
-          ? "Request cancelled."
-          : err instanceof Error
-            ? `Model crashed: ${err.message}`
-            : "Model crashed unexpectedly. Try again.";
-      dispatch({
-        type: "append",
-        message: {
-          id: crypto.randomUUID().replace(/-/g, "").slice(0, 26),
-          role: "assistant",
-          type: "error",
-          reason,
-          ts: Date.now(),
-          usedCase: "fallback_text",
-        },
-      });
-      dispatch({ type: "status", status: "idle" });
-    }
-  },
-    [accounts, categories, budgets, txns, assetsById, userId],
-  );
-
-  const reset = useCallback(() => dispatch({ type: "reset" }), []);
+  // cavetail: ChatSendAction is the subset of Action the send path dispatches.
+  // The reducer's Action union is a strict superset, so the call site widens
+  // with a single cast — no runtime behavior change.
+  const { send, reset, probeSupport, setEngine } = useChatSend({
+    accounts,
+    txns,
+    categories,
+    budgets,
+    dispatch: dispatch as (action: ChatSendAction) => void,
+  });
 
   const value: ChatContextValue = useMemo(
     () => ({
@@ -343,39 +235,30 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       streamingText: state.streamingText,
       send,
       reset,
+      probeSupport,
       setEngine,
     }),
-    [state, send, reset, setEngine],
+    [state, send, reset, probeSupport, setEngine],
   );
 
   return (
     <Ctx.Provider value={value}>
-      <ChatDataBridge probeSupport={probeSupport} />
+      <ChatDataLayerOnOpen />
       {children}
     </Ctx.Provider>
   );
 };
 
 /**
- * Sits inside both Ctx and AssistantSheetProvider so it can flip the data
- * layer on when the sheet opens. Calls `probeSupport()` (passed from
- * ChatProvider) to trigger the OPFS / WebGPU probe only when needed.
+ * cavetail: child of both Ctx and AssistantSheetProvider. The probe and the
+ * data layer are gated by the sheet's open state — calling them from the
+ * provider directly isn't possible because AssistantSheetProvider is a
+ * sibling-below of ChatProvider (see dashboard-providers.tsx), so the chat
+ * provider can't observe the sheet's open flag itself.
  */
-function ChatDataBridge({ probeSupport }: { probeSupport: () => void }) {
-  const { open } = useAssistantSheetSafe();
-  useEffect(() => {
-    if (open) probeSupport();
-  }, [open, probeSupport]);
+function ChatDataLayerOnOpen() {
+  const open = useAssistantSheetStore((s) => s.open);
   return <ChatDataLayer isEnabled={open} />;
-}
-
-function useAssistantSheetSafe(): { open: boolean } {
-  // Cavetail: AssistantSheetProvider is rendered as a sibling-below of
-  // ChatProvider, so this hook only fires once the bridge is rendered under
-  // the provider. Without a provider we report closed so the data layer
-  // never mounts.
-  const ctx = useContext(AssistantSheetContext);
-  return { open: ctx?.open ?? false };
 }
 
 export const useChat = () => {

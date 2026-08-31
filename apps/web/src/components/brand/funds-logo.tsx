@@ -1,6 +1,8 @@
 import { type SVGProps } from "react";
 
-type FundsLogoProps = SVGProps<SVGSVGElement>;
+// cavetail: empty interface to keep `interface XProps` shape per style guide; lint sees it as equivalent to SVGProps
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface FundsLogoProps extends SVGProps<SVGSVGElement> {}
 
 const FundsLogo = (props: FundsLogoProps) => {
   return (

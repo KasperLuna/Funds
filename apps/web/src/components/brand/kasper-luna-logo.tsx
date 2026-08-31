@@ -1,6 +1,8 @@
 import { type SVGProps } from "react";
 
-type KasperLunaLogoProps = SVGProps<SVGSVGElement>;
+// cavetail: empty interface to keep `interface XProps` shape per style guide; lint sees it as equivalent to SVGProps
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface KasperLunaLogoProps extends SVGProps<SVGSVGElement> {}
 
 /** The KasperLuna wordmark — bottom "by" credit on the base route. */
 const KasperLunaLogo = (props: KasperLunaLogoProps) => (

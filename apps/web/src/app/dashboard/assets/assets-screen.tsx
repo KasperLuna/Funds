@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { BanksPanel, toAccount } from "@/components/assets/banks-panel";
 import { CryptoPanel } from "@/components/assets/crypto-panel";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { useAssets } from "@/lib/assets";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { computeBalance, type Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
 
@@ -21,7 +21,7 @@ const TABS: SegmentOption<Tab>[] = [
 export const AssetsScreen = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { masked: privacy } = usePrivacy();
+  const privacy = usePrivacyStore((s) => s.masked);
   const { assets } = useAssets();
   const assetsById = useMemo(
     () => new Map(assets.map((a) => [a.id, a])),
@@ -30,22 +30,6 @@ export const AssetsScreen = () => {
 
   const initialTab = (searchParams.get("tab") === "crypto" ? "crypto" : "banks") as Tab;
   const [tab, setTab] = useState<Tab>(initialTab);
-  const autoOpenTransfer = searchParams.get("transfer") === "1";
-  const autoOpenTrade = searchParams.get("trade") === "1";
-
-  // cavetail: deep-link bridge — rewrites URL search params (a browser API
-  // outside React's tree) when the page is opened via /dashboard/assets?transfer=1
-  // or ?trade=1, so the param doesn't linger on refresh.
-  useEffect(() => {
-    if (autoOpenTransfer) {
-      setTab("banks");
-      router.replace("/dashboard/assets?tab=banks", { scroll: false });
-    }
-    if (autoOpenTrade) {
-      setTab("crypto");
-      router.replace("/dashboard/assets?tab=crypto", { scroll: false });
-    }
-  }, [autoOpenTransfer, autoOpenTrade, router]);
 
   const handleTabChange = (v: Tab) => {
     setTab(v);
@@ -114,11 +98,7 @@ export const AssetsScreen = () => {
 
       <SegmentedControl options={TABS} value={tab} onChange={handleTabChange} />
 
-      {tab === "banks" ? (
-        <BanksPanel isAutoOpenTransfer={autoOpenTransfer} />
-      ) : (
-        <CryptoPanel autoOpenTrade={autoOpenTrade} />
-      )}
+      {tab === "banks" ? <BanksPanel /> : <CryptoPanel />}
     </div>
   );
 };

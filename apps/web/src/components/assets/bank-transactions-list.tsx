@@ -7,29 +7,24 @@ import {
   type TxnFilters,
 } from "@/components/banks/transaction-filters";
 import { TransactionRow } from "@/components/banks/transaction-row";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
-
-export interface CategoryInfo {
-  id: string;
-  name: string;
-  color: string;
-  hideable: boolean;
-}
-
-export interface AccountInfo {
-  name: string;
-  code: string;
-  decimals: number;
-}
+import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
+import { useAssets } from "@/lib/assets";
 
 export interface GroupedDay {
   day: string;
   items: Txn[];
 }
+
+type AccountInfo = {
+  name: string;
+  code: string;
+  decimals: number;
+};
 
 export interface BankTransactionsListProps {
   grouped: GroupedDay[];
@@ -37,10 +32,6 @@ export interface BankTransactionsListProps {
   visibleCount: number;
   filters: TxnFilters;
   onFiltersChange: (next: TxnFilters) => void;
-  categories: Category[];
-  accounts: Account[];
-  categoryInfoList: CategoryInfo[];
-  accountInfo: Record<string, AccountInfo | undefined>;
   dataPending: boolean;
   hasAccounts: boolean;
   loadMoreRef: React.RefObject<HTMLDivElement | null>;
@@ -60,10 +51,6 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
     visibleCount,
     filters,
     onFiltersChange,
-    categories,
-    accounts,
-    categoryInfoList,
-    accountInfo,
     dataPending,
     hasAccounts,
     loadMoreRef,
@@ -75,7 +62,44 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
     onUndoDeleteTxn,
     formatDayHeader,
   } = props;
-  const { masked: privacy } = usePrivacy();
+  const privacy = usePrivacyStore((s) => s.masked);
+  const { assets } = useAssets();
+  const assetsById = new Map(assets.map((a) => [a.id, a]));
+
+  const accountsQuery = useSyncQuery({
+    key: queryKeys.accounts,
+    sql: `SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0`,
+    select: (r) => ({
+      id: String(r.id),
+      name: String(r.name),
+      kind: String(r.kind) as Account["kind"],
+      assetId: String(r.asset_id),
+      openingBalanceMinor: BigInt(r.opening_balance_minor as number | string),
+      createdAt: Number(r.created_at),
+      updatedAt: Number(r.updated_at),
+      archived: Boolean(r.archived),
+      deletedAt: r.deleted_at != null ? Number(r.deleted_at) : null,
+    } satisfies Account),
+  });
+  const categoriesQuery = useSyncQuery({
+    key: queryKeys.categories,
+    sql: `SELECT * FROM categories WHERE deleted_at IS NULL`,
+  });
+  const accounts = accountsQuery.data ?? [];
+  const categories = (categoriesQuery.data ?? []) as Category[];
+
+  const accountInfo: Record<string, { name: string; code: string; decimals: number } | undefined> = {};
+  for (const a of accounts) {
+    const asset = assetsById.get(a.assetId);
+    accountInfo[a.id] = { name: a.name, code: asset?.code ?? "", decimals: asset?.decimals ?? 2 };
+  }
+
+  const categoryInfoList = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    color: c.color,
+    hideable: c.hideable,
+  }));
 
   const primaryDecimals = primaryAssetDecimals(accountInfo, accounts);
   const primaryCode = primaryAssetCode(accountInfo, accounts);

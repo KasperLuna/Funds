@@ -2,7 +2,7 @@
 
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
 import type { BurnRatePayload } from "@/lib/assistant/types";
@@ -39,7 +39,7 @@ function verdictColor(verdict: Verdict): string {
  * and a verdict vs the equivalent prior period.
  */
 export const BurnRateCard = ({ payload, onViewData }: BurnRateCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const current = BigInt(payload.currentMinor);
   const projected = BigInt(payload.projectedMinor);
   const prior = BigInt(payload.priorMonthMinor);

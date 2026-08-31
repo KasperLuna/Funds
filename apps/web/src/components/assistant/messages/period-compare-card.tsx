@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
 import type { PeriodComparePayload } from "@/lib/assistant/types";
@@ -38,7 +38,7 @@ function deltaColor(delta: Delta): string {
  * delta verdict. Color-coded arrow for instant read.
  */
 export const PeriodCompareCard = ({ payload, onViewData }: PeriodCompareCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const current = BigInt(payload.currentMinor);
   const prior = BigInt(payload.priorMinor);
   const delta = deltaFor(payload.deltaPct);

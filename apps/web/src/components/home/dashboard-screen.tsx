@@ -1,26 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { computeBalance } from "@/lib/accounts/accounts-store";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
-import type { Category } from "@/lib/categories/categories-store";
-import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
+import type { RowRecord } from "@/lib/sync";
+import { CaptureSheet } from "@/components/capture/capture-sheet";
 import type { VoicePrefill } from "@/components/capture/capture-sheet";
-import { redeemDraft } from "@/lib/voice/redeem";
-import { resolvePrefill } from "@/lib/voice/resolve";
-import { useVoicePrefill } from "@/lib/voice/voice-context";
-import { NetWorthHero } from "@/components/home/net-worth-hero";
-import { BankProportionCard, FALLBACK_COLORS } from "@/components/home/bank-proportion-card";
-import { RecentActivity } from "@/components/home/recent-activity";
-import { BudgetPulse } from "@/components/home/budget-pulse";
-import { ScheduledCard } from "@/components/scheduled/scheduled-card";
-import { TemplateCard } from "@/components/templates/template-card";
-import { toTemplate } from "@/lib/templates/templates-store";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import type { RecentTxn } from "@/lib/capture";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
+import type { Category } from "@/lib/categories/categories-store";
 import { computeBudgetUsage, resolveCategoryColor } from "@/lib/categories/categories-store";
 import { useAssets } from "@/lib/assets";
 import { computeHoldings, toToken, toTokenTxn } from "@/lib/crypto/crypto-store";
@@ -28,34 +19,77 @@ import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
 import { spendingByMonth } from "@/lib/analytics/compute";
 import { SparkLine } from "@/components/charts";
 import Link from "next/link";
+import { NetWorthHero } from "@/components/home/net-worth-hero";
+import { BankProportionCard, FALLBACK_COLORS } from "@/components/home/bank-proportion-card";
+import { RecentActivity } from "@/components/home/recent-activity";
+import { BudgetPulse } from "@/components/home/budget-pulse";
+import { ScheduledCard } from "@/components/scheduled/scheduled-card";
+import { TemplateCard } from "@/components/templates/template-card";
+import { toTemplate } from "@/lib/templates/templates-store";
+import { useCaptureSheetTriggers } from "./dashboard-screen.hooks";
+
+function toAccount(row: RowRecord): Account {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    kind: String(row.kind) as Account["kind"],
+    assetId: String(row.asset_id),
+    openingBalanceMinor: BigInt(row.opening_balance_minor as string | bigint),
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+    deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
+  };
+}
+
+function toTxn(row: RowRecord): Txn {
+  return {
+    id: String(row.id),
+    accountId: String(row.account_id),
+    assetId: String(row.asset_id ?? ""),
+    amountMinor: BigInt(row.amount_minor as string | bigint),
+    type: String(row.type) as Txn["type"],
+    description: String(row.description ?? ""),
+    categoryIds: Array.isArray(row.category_ids)
+      ? (row.category_ids as string[])
+      : [],
+    date: Number(row.date),
+    transferId: row.transfer_id != null ? String(row.transfer_id) : null,
+    deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
+  };
+}
+
+function toCategory(row: RowRecord): Category {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    color: resolveCategoryColor(row),
+    hideable: Boolean(row.hideable),
+    excludeFromAnalytics: Boolean(row.exclude_from_analytics),
+    monthlyBudgetMinor: row.monthly_budget_minor != null
+      ? BigInt(row.monthly_budget_minor as string | bigint)
+      : null,
+    assetId: row.asset_id != null ? String(row.asset_id) : null,
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at),
+    deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
+  };
+}
 
 const CRYPTO_KINDS = new Set(["wallet", "exchange"]);
 
 export const DashboardScreen = () => {
-  const searchParams = useSearchParams();
-  const draftToken = searchParams.get("draftToken");
-  const { syncStatus } = useSync();
+  const { userId } = useSync();
+  const uid = userId ?? "local";
   const { assets } = useAssets();
   const assetsById = useMemo(
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
   );
-  const queryClient = useQueryClient();
-  const captureSheet = useCaptureSheet();
 
   const accountsQuery = useSyncQuery({
     key: queryKeys.accounts,
     sql: "SELECT * FROM accounts WHERE deleted_at IS NULL AND archived = 0",
-    select: (row): Account => ({
-      id: String(row.id),
-      name: String(row.name),
-      kind: String(row.kind) as Account["kind"],
-      assetId: String(row.asset_id),
-      openingBalanceMinor: BigInt(row.opening_balance_minor as string | bigint),
-      createdAt: Number(row.created_at),
-      updatedAt: Number(row.updated_at),
-      deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
-    }),
+    select: toAccount,
   });
   const accounts = accountsQuery.data ?? [];
 
@@ -63,20 +97,7 @@ export const DashboardScreen = () => {
     key: queryKeys.transactions,
     scope: "all",
     sql: "SELECT * FROM transactions",
-    select: (row): Txn => ({
-      id: String(row.id),
-      accountId: String(row.account_id),
-      assetId: String(row.asset_id ?? ""),
-      amountMinor: BigInt(row.amount_minor as string | bigint),
-      type: String(row.type) as Txn["type"],
-      description: String(row.description ?? ""),
-      categoryIds: Array.isArray(row.category_ids)
-        ? (row.category_ids as string[])
-        : [],
-      date: Number(row.date),
-      transferId: row.transfer_id != null ? String(row.transfer_id) : null,
-      deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
-    }),
+    select: toTxn,
   });
   const txns = txnsQuery.data ?? [];
 
@@ -84,20 +105,7 @@ export const DashboardScreen = () => {
     key: queryKeys.categories,
     scope: "all",
     sql: "SELECT * FROM categories",
-    select: (row): Category => ({
-      id: String(row.id),
-      name: String(row.name),
-      color: resolveCategoryColor(row),
-      hideable: Boolean(row.hideable),
-      excludeFromAnalytics: Boolean(row.exclude_from_analytics),
-      monthlyBudgetMinor: row.monthly_budget_minor != null
-        ? BigInt(row.monthly_budget_minor as string | bigint)
-        : null,
-      assetId: row.asset_id != null ? String(row.asset_id) : null,
-      createdAt: Number(row.created_at),
-      updatedAt: Number(row.updated_at),
-      deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
-    }),
+    select: toCategory,
   });
   const categories = categoriesQuery.data ?? [];
 
@@ -124,6 +132,7 @@ export const DashboardScreen = () => {
     sql: "SELECT * FROM templates WHERE deleted_at IS NULL",
     select: toTemplate,
   });
+  const templates = templatesQuery.data ?? [];
 
   const tokensQuery = useSyncQuery({
     key: queryKeys.tokens,
@@ -139,10 +148,17 @@ export const DashboardScreen = () => {
   });
   const tokenTxns = tokenTxnsQuery.data ?? [];
 
-  const { masked: privacy, toggle: togglePrivacy } = usePrivacy();
-  const { prefill: assistantPrefill, setPrefill: setAssistantPrefill } = useVoicePrefill();
-  const [voicePrefill, setVoicePrefill] = useState<VoicePrefill | undefined>();
-  const [editTxn, setEditTxn] = useState<Txn | null>(null);
+  const privacy = usePrivacyStore((s) => s.masked);
+  const togglePrivacy = usePrivacyStore((s) => s.toggle);
+  const {
+    captureOpen,
+    editTxn,
+    sheetOpen,
+    voicePrefillValue: hookVoicePrefillValue,
+    handleSave,
+    handleCreateCategory,
+    handleClose,
+  } = useCaptureSheetTriggers(uid, accounts, categories);
 
   const failedQuery = [
     accountsQuery,
@@ -162,44 +178,8 @@ export const DashboardScreen = () => {
     if (failedQuery) console.error("Sync error:", failedQuery.error);
   }, [failedQuery]);
 
-  // cavetail: redeemDraft mutates server state (consumes the one-shot voice
-  // draft token) and rewrites the URL — both live outside React, so this
-  // reaction to a search-param change is a real side effect.
-  useEffect(() => {
-    if (!draftToken) return;
-    let cancelled = false;
-    (async () => {
-      const result = await redeemDraft(draftToken);
-      if (cancelled || !result) return;
-      const prefillAccounts = accounts.map((a) => ({
-        id: a.id,
-        name: a.name,
-        decimals: 2,
-      }));
-      const prefillCategories = categories.map((c) => ({
-        id: c.id,
-        name: c.name,
-      }));
-      const prefill = resolvePrefill(result.preview, prefillAccounts, prefillCategories);
-      const next: VoicePrefill = {
-        accountId: prefill.accountId,
-        amountInput: prefill.amountInput,
-        categoryIds: prefill.categoryIds,
-        description: prefill.description,
-      };
-      setVoicePrefill(next);
-      captureSheet.setPrefill(next);
-      captureSheet.setOpen(true);
-      // Clean up URL params
-      const params = new URLSearchParams(window.location.search);
-      params.delete("draftToken");
-      const qs = params.toString();
-      const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-      window.history.replaceState(null, "", url);
-    })();
-    return () => { cancelled = true; };
-  }, [draftToken, accounts, categories, captureSheet]);
-
+  // honey: txns is the full transaction set (scoped 'all'); pre-filter once
+  // for downstream balance + recent + budget consumers that only want actives.
   const activeTxns = useMemo(
     () => txns.filter((t) => !t.deletedAt),
     [txns],
@@ -241,12 +221,26 @@ export const DashboardScreen = () => {
     .sort((a, b) => b.date - a.date)
     .slice(0, 5);
 
+  const recentForCapture: RecentTxn[] = recentTxns.map((t) => ({
+    id: t.id,
+    description: t.description,
+    amountMinor: t.amountMinor,
+    categoryIds: t.categoryIds,
+    date: t.date,
+  }));
+
   const now = new Date();
+  // honey: budgetUsage is computed once per month/categories/budgets/activeTxns
+  // change; BudgetPulse renders one bar per category so re-running it on every
+  // render would touch every row.
   const budgetUsage = useMemo(
     () => computeBudgetUsage(categories, budgets, activeTxns, now.getFullYear(), now.getMonth()),
     [categories, budgets, activeTxns, now.getFullYear(), now.getMonth()],
   );
 
+  // honey: accountInfo is consumed by RecentActivity + ScheduledCard + TemplateCard
+  // + edit-amount prefill; rebuilding per render would force those to remount or
+  // re-derive formatting on every render.
   const accountInfo = useMemo(() => {
     const map: Record<string, { name: string; code: string; decimals: number }> = {};
     for (const a of accounts) {
@@ -266,24 +260,21 @@ export const DashboardScreen = () => {
       [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
     [tokenHoldings],
   );
-  // cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
+  // Cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
   // not visible behind the sheet, and the network round-trip + BigInt
   // recompute add main-thread work on the same frame as the sheet opening.
-  // Also defer it past the first interactive frame: the request competes with
-  // TTI on a cold iOS load and only feeds the crypto net-worth line.
-  const [pricesReady, setPricesReady] = useState(false);
-  useEffect(() => {
-    const id = window.setTimeout(() => setPricesReady(true), 1500);
-    return () => window.clearTimeout(id);
-  }, []);
+  // honey: shared cache slot with holdings-list.tsx — same key shape dedupes
+  // the CoinGecko request across the home dashboard and the crypto page.
   const pricesQuery = useQuery({
     queryKey: ["prices", coingeckoKey, primaryCode],
-    enabled: pricesReady && !!coingeckoKey && !captureSheet.open,
+    enabled: !!coingeckoKey && !captureOpen,
     queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
   });
   const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
 
   // cavetail: display valuation only (float price × qty → fiat minor)
+  // honey: net-worth hero re-renders on every price tick; BigInt reduce over
+  // all holdings must not re-run on unrelated state changes.
   const tokenValueMinor = useMemo(
     () =>
       tokenHoldings.reduce((sum, h) => {
@@ -299,61 +290,49 @@ export const DashboardScreen = () => {
 
   const totalBalance = bankBalance + cryptoBalance;
 
-  // Drive the shell-owned capture sheet from the dashboard's prefill
-  // triggers (edit txn, voice draft, assistant). URL-param deep links
-  // (`?capture=1`, `?type=...`) are handled by CaptureOpener at the layout
-  // level; this effect only fires for in-app triggers.
-  const editPrefill: VoicePrefill | undefined = useMemo(() => {
-    if (!editTxn) return undefined;
-    const dec = accountInfo[editTxn.accountId]?.decimals ?? 2;
-    const abs = editTxn.amountMinor < 0n ? -editTxn.amountMinor : editTxn.amountMinor;
-    return {
-      accountId: editTxn.accountId,
-      amountInput: (Number(abs) / 10 ** dec).toFixed(dec),
-      categoryIds: editTxn.categoryIds,
-      description: editTxn.description,
-      type: editTxn.type,
-      date: editTxn.date,
-    };
-  }, [editTxn, accountInfo]);
-  useEffect(() => {
-    if (editTxn) {
-      captureSheet.setEditingTxnId(editTxn.id);
-      captureSheet.setPrefill(editPrefill);
-      captureSheet.setOpen(true);
-    } else if (voicePrefill) {
-      captureSheet.setPrefill(voicePrefill);
-      captureSheet.setOpen(true);
-    } else if (assistantPrefill) {
-      captureSheet.setPrefill(assistantPrefill);
-      captureSheet.setOpen(true);
-    }
-    // editPrefill's identity changes only when its inputs change; the
-    // effect intentionally re-pushes the prefill so a decimal re-mapping
-    // lands in the open sheet. Without useMemo, the object would be new
-    // every render and the sheet's reset effect would wipe user input.
-  }, [editTxn, voicePrefill, assistantPrefill, editPrefill, captureSheet]);
+  const editAmountInput = editTxn
+    ? (() => {
+        const dec = accountInfo[editTxn.accountId]?.decimals ?? 2;
+        const abs = editTxn.amountMinor < 0n ? -editTxn.amountMinor : editTxn.amountMinor;
+        return (Number(abs) / 10 ** dec).toFixed(dec);
+      })()
+    : null;
 
-  // When the sheet closes, clear the dashboard's local prefill triggers so
-  // the next open is a clean entry. Compare against the previous open value
-  // via a ref to detect the true->false transition. The `hadTrigger` guard
-  // means a shell-button open that the user dismisses without going through
-  // any dashboard trigger leaves editTxn/voicePrefill/assistantPrefill alone
-  // — only the provider's transient slots get reset.
-  const wasOpenRef = useRef(false);
-  useEffect(() => {
-    if (wasOpenRef.current && !captureSheet.open) {
-      const hadTrigger = !!(editTxn || voicePrefill || assistantPrefill);
-      if (hadTrigger) {
-        if (editTxn) setEditTxn(null);
-        if (voicePrefill) setVoicePrefill(undefined);
-        if (assistantPrefill) setAssistantPrefill(undefined);
+  const txnPrefill: VoicePrefill | undefined = editTxn
+    ? {
+        accountId: editTxn.accountId,
+        amountInput: editAmountInput!,
+        categoryIds: editTxn.categoryIds,
+        description: editTxn.description,
+        type: editTxn.type,
+        date: editTxn.date,
       }
-      captureSheet.setPrefill(undefined);
-      captureSheet.setEditingTxnId(undefined);
-    }
-    wasOpenRef.current = captureSheet.open;
-  }, [captureSheet.open, editTxn, voicePrefill, assistantPrefill, captureSheet]);
+    : undefined;
+
+  // Cavetail: memoize so CaptureSheet's reset effect does not refire on every
+  // dashboard render — without stable references the form would re-reset on
+  // every sync tick and wipe in-progress input.
+  const captureAccounts = useMemo(
+    () =>
+      accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        assetId: a.assetId,
+        decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+        assetCode: assetsById.get(a.assetId)?.code ?? "",
+      })),
+    [accounts, assetsById],
+  );
+  const captureCategories = useMemo(
+    () => categories.map((c) => ({ id: c.id, name: c.name, color: c.color })),
+    [categories],
+  );
+  const captureRecent = recentForCapture;
+
+  // Cavetail: only mount CaptureSheet when actually open. Dialog always
+  // renders its children otherwise, which would spin up useForm + Zod
+  // validation on every dashboard render.
+  const voicePrefillValue = hookVoicePrefillValue ?? txnPrefill;
 
   if (errorMessage) {
       return (
@@ -373,9 +352,7 @@ export const DashboardScreen = () => {
         totalBalance={totalBalance}
         bankBalance={bankBalance}
         cryptoBalance={cryptoBalance}
-        isPrivate={privacy}
         onTogglePrivacy={togglePrivacy}
-        lastSyncedAt={syncStatus.lastSyncedAt}
         currencyCode={primaryCode}
       />
 
@@ -429,8 +406,24 @@ export const DashboardScreen = () => {
           assetCode: assetsById.get(a.assetId)?.code,
         }))}
         categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
-        onChanged={() => void queryClient.invalidateQueries({ queryKey: [...queryKeys.templates] })}
       />
+
+      {sheetOpen && (
+        <CaptureSheet
+          isOpen={sheetOpen}
+          onOpenChange={(o) => {
+            if (!o) handleClose();
+          }}
+          accounts={captureAccounts}
+          categories={captureCategories}
+          recentTxns={captureRecent}
+          templates={templates}
+          onSave={handleSave}
+          voicePrefill={voicePrefillValue}
+          editing={!!editTxn}
+          onCreateCategory={handleCreateCategory}
+        />
+      )}
     </div>
   );
 };

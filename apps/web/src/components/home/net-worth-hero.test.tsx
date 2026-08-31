@@ -1,20 +1,25 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
+import { useSyncStore } from "@/lib/sync/sync-store";
 import { NetWorthHero } from "./net-worth-hero";
 
 describe("NetWorthHero", () => {
+  beforeEach(() => {
+    usePrivacyStore.setState({ masked: false });
+    useSyncStore.setState({ syncStatus: { online: true, syncing: false, lastSyncedAt: Date.now(), failedCount: 0 } });
+  });
+
   it("renders total balance when privacy is off", () => {
     render(
       <NetWorthHero
         totalBalance={123456n}
         bankBalance={100000n}
         cryptoBalance={23456n}
-        isPrivate={false}
         onTogglePrivacy={vi.fn()}
-        lastSyncedAt={Date.now()}
       />,
     );
     expect(screen.getByText("$1,234.56")).toBeInTheDocument();
@@ -23,14 +28,13 @@ describe("NetWorthHero", () => {
   });
 
   it("masks balance when privacy is on", () => {
+    usePrivacyStore.setState({ masked: true });
     render(
       <NetWorthHero
         totalBalance={123456n}
         bankBalance={100000n}
         cryptoBalance={23456n}
-        isPrivate={true}
         onTogglePrivacy={vi.fn()}
-        lastSyncedAt={Date.now()}
       />,
     );
     expect(screen.getByText("••••••")).toBeInTheDocument();
@@ -38,6 +42,7 @@ describe("NetWorthHero", () => {
   });
 
   it("calls onTogglePrivacy when eye button clicked", async () => {
+    usePrivacyStore.setState({ masked: true });
     const user = userEvent.setup();
     const toggle = vi.fn();
     render(
@@ -45,9 +50,7 @@ describe("NetWorthHero", () => {
         totalBalance={0n}
         bankBalance={0n}
         cryptoBalance={0n}
-        isPrivate={true}
         onTogglePrivacy={toggle}
-        lastSyncedAt={null}
       />,
     );
     await user.click(screen.getByRole("button", { name: "Reveal balances" }));
@@ -60,9 +63,7 @@ describe("NetWorthHero", () => {
         totalBalance={-5000n}
         bankBalance={-5000n}
         cryptoBalance={0n}
-        isPrivate={false}
         onTogglePrivacy={vi.fn()}
-        lastSyncedAt={null}
       />,
     );
     expect(screen.getByLabelText("Net worth -$50.00")).toBeInTheDocument();

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Copy, Link2, Pencil, Trash2, Tag } from "lucide-react";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { cn } from "@/lib/utils";
 
 type CategoryInfo = { id: string; name: string; color: string; hideable?: boolean };
@@ -54,8 +54,14 @@ export const TransactionRow = (props: TransactionRowProps) => {
 
   const isExpense = txn.amountMinor < 0n;
   const decimals = assetDecimals ?? 2;
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const maskedAmount = masked && cats.some((c) => c.hideable);
+
+  const amountColor = maskedAmount
+    ? "text-zinc-500"
+    : isExpense
+      ? "text-(--danger)"
+      : "text-(--accent)";
 
   const [offsetX, setOffsetX] = useState(0);
   const [toast, setToast] = useState<SwipeToast | null>(null);
@@ -193,9 +199,9 @@ export const TransactionRow = (props: TransactionRowProps) => {
               <span className="truncate text-[11px] text-zinc-400">{accountName}</span>
             )}
             {cats.length > 0 ? (
-              cats.map((cat, i) => (
+              cats.map((cat) => (
                 <span
-                  key={`${cat.name}-${i}`}
+                  key={cat.id}
                   className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
                   style={{ backgroundColor: cat.color, color: "#fff" }}
                 >
@@ -268,14 +274,7 @@ export const TransactionRow = (props: TransactionRowProps) => {
           <div className="text-right">
             <span className="text-[11px] tabular-nums text-zinc-400">{formatTime(txn.date)}</span>
             <span
-              className={cn(
-                "block text-sm font-semibold tabular-nums",
-                maskedAmount
-                  ? "text-zinc-500"
-                  : isExpense
-                    ? "text-(--danger)"
-                    : "text-(--accent)",
-              )}
+              className={cn("block text-sm font-semibold tabular-nums", amountColor)}
               aria-label={maskedAmount ? "Amount hidden" : undefined}
             >
               {maskedAmount ? "••••" : formatMoney(txn.amountMinor, decimals, assetCode)}

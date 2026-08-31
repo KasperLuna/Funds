@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles, Database } from "lucide-react";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { cn } from "@/lib/utils";
 
 interface GenUiFooterProps {
@@ -20,7 +20,7 @@ interface GenUiFooterProps {
  * behind any GenUI widget" — the ViewDataButton slot is the seam for that.
  */
 export const GenUiFooter = ({ updatedAt, onViewData, className }: GenUiFooterProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   return (
     <div
       className={cn(

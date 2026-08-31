@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PiggyBank } from "lucide-react";
 import type { Category } from "@/lib/categories/categories-store";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { cn } from "@/lib/utils";
 
 function usageColor(pct: number): string {
@@ -33,7 +33,7 @@ interface BudgetPulseProps {
 }
 
 export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
-  const { masked: privacy } = usePrivacy();
+  const privacy = usePrivacyStore((s) => s.masked);
   const asset = items[0]?.budgetAssetId ? assetsById.get(items[0].budgetAssetId) : undefined;
   const decimals = asset?.decimals ?? 2;
   const code = asset?.code;
@@ -82,7 +82,6 @@ export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
           totalBudgetMinor={totalBudgetMinor}
           decimals={decimals}
           code={code}
-          isPrivate={privacy}
         />
       ) : (
         <h2 className="font-display text-base font-bold tracking-tight">Budget pulse</h2>
@@ -136,7 +135,6 @@ interface BudgetPulseSummaryProps {
   totalBudgetMinor: bigint;
   decimals: number;
   code?: string;
-  isPrivate: boolean;
 }
 
 const BudgetPulseSummary = ({
@@ -145,8 +143,9 @@ const BudgetPulseSummary = ({
   totalBudgetMinor,
   decimals,
   code,
-  isPrivate,
-}: BudgetPulseSummaryProps) => (
+}: BudgetPulseSummaryProps) => {
+  const isPrivate = usePrivacyStore((s) => s.masked);
+  return (
   <>
     <div className="flex items-baseline justify-between">
       <h2 className="font-display text-base font-bold tracking-tight">Budget pulse</h2>
@@ -176,4 +175,5 @@ const BudgetPulseSummary = ({
       />
     </div>
   </>
-);
+  );
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import type { BudgetProgressPayload } from "@/lib/assistant/types";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
@@ -33,7 +33,7 @@ function statusCopy(status: "under" | "near" | "over"): string {
 }
 
 export const BudgetProgressCard = ({ payload, onViewData }: BudgetProgressCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const spent = BigInt(payload.spentMinor);
   const limit = BigInt(payload.limitMinor);
   const pct = Math.min(100, Math.max(0, Math.round(payload.pctUsed)));

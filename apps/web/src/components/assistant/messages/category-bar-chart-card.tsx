@@ -2,7 +2,7 @@
 
 import { AreaChart, BarChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
 import type { SpendingBreakdownPayload } from "@/lib/assistant/types";
@@ -26,7 +26,7 @@ interface CategoryBarChartCardProps {
  * of categories.
  */
 export const CategoryBarChartCard = ({ payload, onViewData }: CategoryBarChartCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const data = payload.slices.map((s) => ({
     name: s.category,
     amount: Number(BigInt(s.amountMinor)) / 10 ** payload.decimals,

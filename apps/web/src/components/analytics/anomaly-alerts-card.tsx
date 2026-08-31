@@ -1,11 +1,12 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type Anomaly = {
+  txnId: string;
   description: string;
   amount: bigint;
   categoryName: string;
@@ -35,7 +36,7 @@ function zBadgeClass(z: number): string {
 }
 
 export const AnomalyAlertsCard = ({ data, code }: AnomalyAlertsCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
 
   if (data.length === 0) return null;
 
@@ -45,7 +46,7 @@ export const AnomalyAlertsCard = ({ data, code }: AnomalyAlertsCardProps) => {
 
       <ul className="mt-4 space-y-3">
         {data.map((a) => (
-          <li key={`${a.description}-${a.date}`} className="flex items-start gap-3">
+          <li key={a.txnId} className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">

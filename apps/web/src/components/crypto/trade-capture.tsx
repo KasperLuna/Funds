@@ -35,6 +35,9 @@ import {
 import type { Token } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
 import { cn } from "@/lib/utils";
+import { useSyncStore } from "@/lib/sync/sync-store";
+import { BuySideControls, SellSideControls } from "./trade-side-controls";
+import { computeTradeQuote, type TradeSide } from "./trade-quote";
 
 export type AccountOption = {
   id: string;
@@ -44,12 +47,9 @@ export type AccountOption = {
   kind: string;
 };
 
-type TradeSide = "buy" | "sell";
-
 export interface TradeCaptureProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  userId: string;
   accounts: AccountOption[];
   tokens: Token[];
   prices: Map<string, CoinPrice>;
@@ -76,7 +76,6 @@ export type TradePayload = {
 
 interface TradeFormProps {
   onOpenChange: (isOpen: boolean) => void;
-  userId: string;
   accounts: AccountOption[];
   tokens: Token[];
   prices: Map<string, CoinPrice>;
@@ -112,93 +111,9 @@ const tradeFormSchema = z.object({
 
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
 
-type UseFormSetValue = ReturnType<typeof useForm<TradeFormValues>>["setValue"];
-
-interface BuySideControlsProps {
-  fiatAccounts: AccountOption[];
-  cryptoTokens: Token[];
-  sellAccountId: string;
-  buyTokenId: string;
-  setValue: UseFormSetValue;
-}
-
-const BuySideControls = ({ fiatAccounts, cryptoTokens, sellAccountId, buyTokenId, setValue }: BuySideControlsProps) => (
-  <div className="flex items-center gap-2">
-    <Select
-      value={sellAccountId || "__placeholder__"}
-      onValueChange={(v) => setValue("sellAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-    >
-      <SelectTrigger aria-label="Spend from" className="h-11 flex-1">
-        <SelectValue placeholder="Spend from…" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__placeholder__">Spend from…</SelectItem>
-        {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    <span aria-hidden className="text-zinc-500">→</span>
-    <Select
-      value={buyTokenId || "__placeholder__"}
-      onValueChange={(v) => setValue("buyTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-    >
-      <SelectTrigger aria-label="Buy token" className="h-11 flex-1">
-        <SelectValue placeholder="Select token…" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__placeholder__">Select token…</SelectItem>
-        {cryptoTokens.map((t) => (
-          <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-);
-
-interface SellSideControlsProps {
-  fiatAccounts: AccountOption[];
-  cryptoTokens: Token[];
-  sellTokenId: string;
-  buyAccountId: string;
-  setValue: UseFormSetValue;
-}
-
-const SellSideControls = ({ fiatAccounts, cryptoTokens, sellTokenId, buyAccountId, setValue }: SellSideControlsProps) => (
-  <div className="flex items-center gap-2">
-    <Select
-      value={sellTokenId || "__placeholder__"}
-      onValueChange={(v) => setValue("sellTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-    >
-      <SelectTrigger aria-label="Sell token" className="h-11 flex-1">
-        <SelectValue placeholder="Select token…" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__placeholder__">Select token…</SelectItem>
-        {cryptoTokens.map((t) => (
-          <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    <span aria-hidden className="text-zinc-500">→</span>
-    <Select
-      value={buyAccountId || "__placeholder__"}
-      onValueChange={(v) => setValue("buyAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-    >
-      <SelectTrigger aria-label="Receive to" className="h-11 flex-1">
-        <SelectValue placeholder="Receive to…" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="__placeholder__">Receive to…</SelectItem>
-        {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-);
-
-const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: TradeFormProps) => {
+const TradeForm = ({ onOpenChange, accounts, tokens, prices, onSave }: TradeFormProps) => {
+  const userId = useSyncStore((s) => s.userId);
+  const uid = userId ?? "dev-user";
   const fiatAccounts = accounts.filter((a) => a.kind !== "exchange" && a.kind !== "wallet");
   const cryptoTokens = tokens.filter((t) => !t.deletedAt);
 
@@ -238,35 +153,25 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
   const buyToken = cryptoTokens.find((t) => t.id === buyTokenId);
   const sellToken = cryptoTokens.find((t) => t.id === sellTokenId);
 
-  const autoRate =
-    side === "buy" && buyToken?.coingeckoId
-      ? (prices.get(buyToken.coingeckoId)?.current_price ?? 0)
-      : side === "sell" && sellToken?.coingeckoId
-        ? (prices.get(sellToken.coingeckoId)?.current_price ?? 0)
-        : 0;
-
-  const effectiveRate = rateInput ? Number(rateInput) : autoRate;
-
   const minor = amountToMinor(amount);
   const feeMinor = parseFeeInput(feeInput, sellAccount?.decimals ?? 2);
 
   // cavetail: BigInt materialization + Math.round on every keystroke; keep
   // memoization to avoid re-computing when only unrelated state changes.
-  const computedBuyAmount = useMemo(() => {
-    if (minor <= 0n || effectiveRate <= 0) return 0n;
-    if (side === "buy") {
-      // cavetail: display-only formatting, not arithmetic
-      // eslint-disable-next-line local/no-money-float
-      const usdValue = Number(minor) / 10 ** (sellAccount?.decimals ?? 2);
-      const cryptoQty = usdValue / effectiveRate;
-      return BigInt(Math.round(cryptoQty * 10 ** 8));
-    }
-    // cavetail: display-only formatting, not arithmetic
-    // eslint-disable-next-line local/no-money-float
-    const cryptoQty = Number(minor) / 10 ** 8;
-    const usdValue = cryptoQty * effectiveRate;
-    return BigInt(Math.round(usdValue * 10 ** (sellAccount?.decimals ?? 2)));
-  }, [side, minor, effectiveRate, sellAccount?.decimals]);
+  const { autoRate, computedBuyMinor } = useMemo(
+    () =>
+      computeTradeQuote(
+        side,
+        minor,
+        rateInput,
+        sellToken,
+        buyToken,
+        prices,
+        sellAccount?.decimals ?? 2,
+      ),
+    [side, minor, rateInput, sellToken, buyToken, prices, sellAccount?.decimals],
+  );
+  const effectiveRate = rateInput ? Number(rateInput) : autoRate;
 
   const canSave =
     minor > 0n &&
@@ -301,14 +206,14 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
       sellTokenId: side === "sell" ? sellTokenId : "",
       buyAccountId: side === "sell" ? buyAccountId : "",
       buyAssetId: side === "sell" ? (accounts.find((a) => a.id === buyAccountId)?.assetId ?? "") : "",
-      buyAmountMinor: side === "sell" ? computedBuyAmount : 0n,
+      buyAmountMinor: side === "sell" ? computedBuyMinor : 0n,
       buyTokenId: side === "buy" ? buyTokenId : "",
       rate: effectiveRate,
       feeMinor,
       feeAssetId: feeAccountId,
       description,
       date: presetDate(datePreset),
-      userId,
+      userId: uid,
     };
     onSave(payload);
     onOpenChange(false);
@@ -347,7 +252,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
             cryptoTokens={cryptoTokens}
             sellAccountId={sellAccountId}
             buyTokenId={buyTokenId}
-            setValue={setValue}
+            setValue={setValue as never}
           />
         ) : (
           <SellSideControls
@@ -355,7 +260,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
             cryptoTokens={cryptoTokens}
             sellTokenId={sellTokenId}
             buyAccountId={buyAccountId}
-            setValue={setValue}
+            setValue={setValue as never}
           />
         )}
 
@@ -404,8 +309,8 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         {minor > 0n && effectiveRate > 0 && (
           <p className="text-center text-xs text-zinc-500">
             ≈ {side === "buy"
-              ? `${(Number(computedBuyAmount) / 10 ** 8).toFixed(8)} ${buyToken?.symbol ?? ""}`
-              : `${formatMinor(computedBuyAmount, sellAccount?.decimals ?? 2)} ${sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD"}`
+              ? `${(Number(computedBuyMinor) / 10 ** 8).toFixed(8)} ${buyToken?.symbol ?? ""}`
+              : `${formatMinor(computedBuyMinor, sellAccount?.decimals ?? 2)} ${sellAccount?.assetId?.slice(0, 3).toUpperCase() ?? "USD"}`
             }
           </p>
         )}
@@ -475,7 +380,7 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
 };
 
 export const TradeCapture = (props: TradeCaptureProps) => {
-  const { isOpen: open, onOpenChange, userId, accounts, tokens, prices, onSave } = props;
+  const { isOpen: open, onOpenChange, accounts, tokens, prices, onSave } = props;
   if (!open) return null;
-  return <TradeForm onOpenChange={onOpenChange} userId={userId} accounts={accounts} tokens={tokens} prices={prices} onSave={onSave} />;
+  return <TradeForm onOpenChange={onOpenChange} accounts={accounts} tokens={tokens} prices={prices} onSave={onSave} />;
 };

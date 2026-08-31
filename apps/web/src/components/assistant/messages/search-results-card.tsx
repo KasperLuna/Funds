@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
 import type { SearchResultsPayload } from "@/lib/assistant/types";
@@ -21,7 +21,7 @@ interface SearchResultsCardProps {
  * ("Work"). The resolver decides the pattern; the executor runs the filter.
  */
 export const SearchResultsCard = ({ payload, onViewData }: SearchResultsCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const total = BigInt(payload.totalMinor);
 
   return (
@@ -53,8 +53,8 @@ export const SearchResultsCard = ({ payload, onViewData }: SearchResultsCardProp
 
       {payload.hits.length > 0 && (
         <ul className="mt-3 divide-y divide-(--border)">
-          {payload.hits.map((h, i) => (
-            <li key={`${h.description}-${h.dateLabel}-${i}`} className="flex items-baseline justify-between gap-2 py-1.5 text-xs">
+          {payload.hits.map((h) => (
+            <li key={h.txnId} className="flex items-baseline justify-between gap-2 py-1.5 text-xs">
               <div className="min-w-0">
                 <div className="truncate text-zinc-200">{h.description}</div>
                 <div className="text-[10px] text-zinc-500">

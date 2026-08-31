@@ -1,10 +1,48 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as React from "react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { TransactionList } from "./transaction-list";
 import type { Txn } from "@/lib/accounts/accounts-store";
+
+// Mutable shared params + a `useState` tick that re-runs the consumer on
+// every `router.replace`. `useUrlState` would otherwise see the new params
+// but never re-execute its memo because the router mock doesn't drive a
+// real Next.js context.
+const routerState = vi.hoisted(() => ({
+  params: new URLSearchParams(""),
+}));
+
+beforeEach(() => {
+  routerState.params = new URLSearchParams("");
+});
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => ({
+    get: (k: string) => routerState.params.get(k),
+    toString: () => routerState.params.toString(),
+    [Symbol.iterator]: () => routerState.params[Symbol.iterator](),
+    entries: () => routerState.params.entries(),
+    keys: () => routerState.params.keys(),
+    values: () => routerState.params.values(),
+    forEach: (cb: (v: string, k: string) => void) => routerState.params.forEach(cb),
+    has: (k: string) => routerState.params.has(k),
+  }),
+  usePathname: () => "/",
+  useRouter: () => {
+    const [, setTick] = React.useState(0);
+    return {
+      replace: (url: string) => {
+        const [path, query] = url.split("?");
+        void path;
+        routerState.params = new URLSearchParams(query ?? "");
+        setTick((n) => n + 1);
+      },
+    };
+  },
+}));
 
 function makeTxn(overrides: Partial<Txn> = {}): Txn {
   return {
@@ -39,7 +77,7 @@ describe("TransactionList", () => {
     expect(within(mobileList).getByText("Dinner")).toBeInTheDocument();
   });
 
-  it("filters by search text", () => {
+  it("filters by search text", async () => {
     const txns = [
       makeTxn({ id: "t1", description: "Coffee Shop" }),
       makeTxn({ id: "t2", description: "Grocery Store" }),
@@ -47,11 +85,14 @@ describe("TransactionList", () => {
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
     fireEvent.change(screen.getByPlaceholderText("Search transactions..."), { target: { value: "coffee" } });
     const mobileList = screen.getByLabelText("Transaction list");
-    expect(within(mobileList).getByText("Coffee Shop")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(mobileList).getByText("Coffee Shop")).toBeInTheDocument(),
+    );
+    expect(routerState.params.toString()).toContain("q=coffee");
     expect(within(mobileList).queryByText("Grocery Store")).not.toBeInTheDocument();
   });
 
-  it("filters by category", () => {
+  it("filters by category", async () => {
     const txns = [
       makeTxn({ id: "t1", description: "Coffee", categoryIds: ["cat-1"] }),
       makeTxn({ id: "t2", description: "Bus", categoryIds: ["cat-2"] }),
@@ -60,7 +101,9 @@ describe("TransactionList", () => {
     const categoryFilter = screen.getByLabelText("Category filter");
     fireEvent.click(within(categoryFilter).getByText("Food"));
     const mobileList = screen.getByLabelText("Transaction list");
-    expect(within(mobileList).getByText("Coffee")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(mobileList).getByText("Coffee")).toBeInTheDocument(),
+    );
     expect(within(mobileList).queryByText("Bus")).not.toBeInTheDocument();
   });
 
@@ -74,7 +117,9 @@ describe("TransactionList", () => {
     await user.click(screen.getByLabelText("Month"));
     await user.click(screen.getByRole("option", { name: /Jan 2025/ }));
     const mobileList = screen.getByLabelText("Transaction list");
-    expect(within(mobileList).getByText("Jan item")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(mobileList).getByText("Jan item")).toBeInTheDocument(),
+    );
     expect(within(mobileList).queryByText("Feb item")).not.toBeInTheDocument();
   });
 

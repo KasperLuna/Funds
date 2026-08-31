@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { Sparkles } from "lucide-react";
 import { AssistantSheet } from "./assistant-sheet";
-import { useAssistantSheet } from "./assistant-sheet-context";
+import { useAssistantSheetStore } from "./assistant-sheet-store";
+import { useChat } from "./use-chat";
 import { cn } from "@/lib/utils";
 
 interface AssistantButtonProps {
@@ -21,7 +22,7 @@ interface AssistantButtonProps {
  * the device can't run the model the sheet surfaces a capability error.
  */
 export const AssistantButton = ({ className }: AssistantButtonProps) => {
-  const { setOpen } = useAssistantSheet();
+  const setOpen = useAssistantSheetStore((s) => s.setOpen);
   return (
     <button
       type="button"
@@ -40,10 +41,17 @@ export const AssistantButton = ({ className }: AssistantButtonProps) => {
 /**
  * Mounts the assistant sheet once at the layout level. The FAB and any
  * deep link share this single instance via context.
+ *
+ * cavetail: call `probeSupport` from the render body (not an effect) when
+ * the sheet opens. The probe is idempotent — the first call dispatches the
+ * support state, subsequent calls are no-ops. Doing it on render keeps the
+ * call site at the point of `setOpen(true)` and avoids a second `useEffect`.
  */
 export const AssistantSheetMount = () => {
-  const { open, setOpen } = useAssistantSheet();
-  return <AssistantSheet isOpen={open} onClose={() => setOpen(false)} />;
+  const open = useAssistantSheetStore((s) => s.open);
+  const { probeSupport } = useChat();
+  if (open) probeSupport();
+  return <AssistantSheet />;
 };
 
 /**
@@ -53,7 +61,7 @@ export const AssistantSheetMount = () => {
  * is a browser API outside React, so this is a real side effect.
  */
 export const AssistantOpener = () => {
-  const { setOpen } = useAssistantSheet();
+  const setOpen = useAssistantSheetStore((s) => s.setOpen);
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);

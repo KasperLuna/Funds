@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ vi.mock("@/lib/sync/sync-context", () => ({
 }));
 
 import { useSync } from "@/lib/sync/sync-context";
+import { useSyncStore } from "@/lib/sync/sync-store";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
 
@@ -46,6 +47,18 @@ beforeEach(() => {
       lastSyncedAt: Date.now(),
       failedCount: 0,
     },
+    isReady: true,
+    userId: "dev-user",
+  });
+  useSyncStore.setState({
+    db: {
+      query: mockQuery,
+      watch: vi.fn(() => (async function* () {})()),
+      table: vi.fn(() => ({
+        upsert: vi.fn(),
+        update: vi.fn(),
+      })),
+    } as never,
     isReady: true,
     userId: "dev-user",
   });
@@ -93,6 +106,15 @@ describe("ScheduledCard occurrence logging", () => {
         lastSyncedAt: now,
         failedCount: 0,
       },
+      isReady: true,
+      userId: "dev-user",
+    });
+    useSyncStore.setState({
+      db: {
+        query: mockQuery,
+        watch: vi.fn(() => (async function* () {})()),
+        table: vi.fn(() => ({ upsert, update })),
+      } as never,
       isReady: true,
       userId: "dev-user",
     });

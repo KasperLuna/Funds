@@ -11,7 +11,9 @@ import {
 } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
-type CalendarChevronProps = ChevronProps;
+// cavetail: empty interface to keep `interface XProps` shape per style guide; lint sees it as equivalent to ChevronProps
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface CalendarChevronProps extends ChevronProps {}
 
 const CalendarChevron = ({
   orientation,
@@ -46,6 +48,7 @@ const calendarClassNames: Partial<ClassNames> = {
     "bg-(--accent) text-(--accent-foreground) font-semibold hover:bg-(--accent) hover:brightness-110",
 };
 
+// cavetail: DayPickerProps is a discriminated union (PropsSingle | PropsRange | ...); interface cannot extend a union, so keep as `type`
 type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 const Calendar = (props: CalendarProps) => {

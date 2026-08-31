@@ -8,11 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AssistantPanel } from "./assistant-panel";
-
-interface AssistantSheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+import { useAssistantSheetStore } from "./assistant-sheet-store";
 
 /**
  * Bottom-sheet chat panel. On mobile it fills the viewport between the
@@ -28,9 +24,12 @@ interface AssistantSheetProps {
  * under `[data-mobile-frame]` and only fires below the sm: breakpoint,
  * so the desktop dialog stays centered.
  */
-export const AssistantSheet = ({ isOpen, onClose }: AssistantSheetProps) => {
+export const AssistantSheet = () => {
+  const open = useAssistantSheetStore((s) => s.open);
+  const setOpen = useAssistantSheetStore((s) => s.setOpen);
+  const onClose = () => setOpen(false);
   return (
-    <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         showCloseButton={false}
         className={cn(

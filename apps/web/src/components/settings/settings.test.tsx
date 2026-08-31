@@ -4,7 +4,9 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@testing-library/jest-dom/vitest";
 import SettingsPage from "@/app/dashboard/settings/page";
-import { AssistantSheetProvider } from "@/components/assistant/assistant-sheet-context";
+import { ChatProvider } from "@/components/assistant/use-chat";
+import { MemorySyncDatabase } from "@/lib/sync";
+import { useSyncStore } from "@/lib/sync/sync-store";
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
@@ -19,24 +21,33 @@ vi.mock("next/navigation", () => ({
 
 describe("SettingsPage", () => {
   let queryClient: QueryClient;
+  let db: MemorySyncDatabase;
 
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+    db = new MemorySyncDatabase();
     vi.unstubAllGlobals();
     // Stub Notification for jsdom
     vi.stubGlobal("Notification", { permission: "default" });
   });
 
-  const renderSettings = () =>
-    render(
+  const renderSettings = () => {
+    useSyncStore.setState({
+      db,
+      syncStatus: { online: false, syncing: false, lastSyncedAt: null, failedCount: 0 },
+      isReady: true,
+      userId: null,
+    });
+    return render(
       <QueryClientProvider client={queryClient}>
-        <AssistantSheetProvider>
+        <ChatProvider>
           <SettingsPage />
-        </AssistantSheetProvider>
+        </ChatProvider>
       </QueryClientProvider>,
     );
+  };
 
   it("renders all sections", () => {
     renderSettings();

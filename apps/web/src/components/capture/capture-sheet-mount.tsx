@@ -180,7 +180,6 @@ export const CaptureSheetMount = () => {
           setOpen(false);
         }
       }}
-      userId={uid}
       accounts={captureAccounts}
       categories={captureCategories}
       recentTxns={captureRecent}

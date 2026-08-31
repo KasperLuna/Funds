@@ -5,7 +5,8 @@ import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
-import type { SyncDatabase } from "@/lib/sync/types";
+import { useSyncStore } from "@/lib/sync/sync-store";
+import { useUrlBridge } from "@/lib/url/use-url-bridge";
 import {
   computeHoldings,
   portfolioAllocation,
@@ -16,6 +17,8 @@ import {
   type Holding,
 } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
+import { persistTrade } from "@/lib/crypto/persist-trade";
+import { useAssets } from "@/lib/assets";
 import { AllocationBar } from "@/components/crypto/allocation-bar";
 import { HoldingsTotals } from "@/components/crypto/holdings-totals";
 import { HoldingsTable } from "@/components/crypto/holdings-table";
@@ -34,105 +37,18 @@ function computeValueUsd(holding: Holding, prices: Map<string, CoinPrice>): numb
   return qty * (price?.current_price ?? 0);
 }
 
-// Rescale a minor-unit qty from one decimal base to another, keeping integer math.
-function rescaleMinor(minor: bigint, fromDecimals: number, toDecimals: number): bigint {
-  if (fromDecimals === toDecimals) return minor;
-  const diff = toDecimals - fromDecimals;
-  if (diff > 0) return minor * 10n ** BigInt(diff);
-  const divisor = 10n ** BigInt(-diff);
-  return (minor + divisor / 2n) / divisor;
-}
-
-async function persistTrade(
-  db: SyncDatabase,
-  uid: string,
-  tokens: Token[],
-  accounts: AccountOption[],
-  trade: TradePayload,
-): Promise<void> {
-  const now = Date.now();
-  const tokenId = trade.side === "buy" ? trade.buyTokenId : trade.sellTokenId;
-  const token = tokens.find((t) => t.id === tokenId && !t.deletedAt);
-  if (!token) return;
-
-  // The capture stores crypto qty on a 10^8 base; rescale to the token's decimals.
-  const capturedQtyMinor = trade.side === "buy" ? trade.buyAmountMinor : trade.sellAmountMinor;
-  const qtyMinor = rescaleMinor(capturedQtyMinor, 8, token.decimals);
-  // cavetail: CoinGecko rate is a plain USD float; store scaled integer minor units
-  const priceExecMinor = BigInt(Math.round(trade.rate * 10 ** token.decimals));
-
-  await db.table("token_transactions").upsert({
-    id: `tt-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-    token_id: tokenId,
-    user_id: uid,
-    amount_minor: Number(qtyMinor),
-    // cavetail: rate scaled to token decimals, integer minor units
-    // eslint-disable-next-line local/no-money-float
-    price_at_execution_minor: Number(priceExecMinor),
-    fee_minor: Number(trade.feeMinor),
-    side: trade.side,
-    timestamp: trade.date.getTime(),
-    created_at: now,
-    updated_at: now,
-    deleted_at: null,
-  });
-
-  // Fiat leg — the money actually leaves/enters the linked fiat account.
-  const fiatAccountId = trade.side === "buy" ? trade.sellAccountId : trade.buyAccountId;
-  const fiatAssetId = trade.side === "buy" ? trade.sellAssetId : trade.buyAssetId;
-  const fiatAmountMinor = trade.side === "buy" ? -trade.sellAmountMinor : trade.buyAmountMinor;
-  await db.table("transactions").upsert({
-    id: `txn-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-    user_id: uid,
-    account_id: fiatAccountId,
-    asset_id: fiatAssetId,
-    // cavetail: integer fiat minor units; stored as number for SQLite
-    amount_minor: Number(fiatAmountMinor),
-    type: trade.side === "buy" ? "expense" : "income",
-    description: trade.description || (trade.side === "buy" ? `Bought ${token.symbol}` : `Sold ${token.symbol}`),
-    category_ids: [],
-    date: trade.date.getTime(),
-    created_at: now,
-    updated_at: now,
-    deleted_at: null,
-  });
-
-  const feeAccount =
-    trade.feeMinor > 0n ? accounts.find((a) => a.id === trade.feeAssetId) : undefined;
-  if (feeAccount) {
-    await db.table("transactions").upsert({
-      id: `txn-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}-fee`,
-      user_id: uid,
-      account_id: feeAccount.id,
-      asset_id: feeAccount.assetId,
-      // cavetail: fee is integer fiat minor units from capture
-      amount_minor: Number(-trade.feeMinor),
-      type: "expense",
-      description: "Trade fee",
-      category_ids: [],
-      date: trade.date.getTime(),
-      created_at: now,
-      updated_at: now,
-      deleted_at: null,
-    });
-  }
-}
-
 export interface HoldingsListProps {
   accounts?: AccountOption[];
-  userId?: string;
-  isAutoOpenTrade?: boolean;
-  isMasked?: boolean;
 }
 
 export const HoldingsList = (props: HoldingsListProps) => {
   const {
     accounts = [],
-    userId,
-    isAutoOpenTrade: autoOpenTrade = false,
-    isMasked: masked = false,
   } = props;
   const { db } = useSync();
+  const userId = useSyncStore((s) => s.userId);
+  const { assets } = useAssets();
+  const assetsById = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
   const uid = userId ?? "dev-user";
   const [tradeOpen, setTradeOpen] = useState(false);
   const [addTokenOpen, setAddTokenOpen] = useState(false);
@@ -152,11 +68,10 @@ export const HoldingsList = (props: HoldingsListProps) => {
   });
   const txns = txnsQuery.data ?? [];
 
-  // cavetail: deep-link bridge — opens the trade sheet once when the page
-  // is opened via the long-press Add menu's ?trade=1 entry.
-  useEffect(() => {
-    if (autoOpenTrade) setTradeOpen(true);
-  }, [autoOpenTrade]);
+  // cavetail: deep-link bridge — opens the trade sheet when the page is
+  // opened via /dashboard/assets?tab=crypto&trade=1. Reads the URL itself
+  // (and strips the param) so the parent doesn't have to plumb a prop.
+  useUrlBridge({ param: "trade", onMatch: () => setTradeOpen(true) });
 
   // cavetail: setTimeout + clearTimeout are imperative browser timers, not
   // derived state. Auto-dismiss the error notice after 4s.
@@ -193,10 +108,19 @@ export const HoldingsList = (props: HoldingsListProps) => {
     [tokens],
   );
 
+  const coingeckoKey = useMemo(
+    () => [...new Set(coingeckoIds)].sort().join(","),
+    [coingeckoIds],
+  );
+  const primaryCode = accounts.length > 0 ? assetsById.get(accounts[0]!.assetId)?.code ?? "USD" : "USD";
+
+  // honey: shared cache slot with dashboard-screen.tsx — both screens fetch
+  // the same CoinGecko prices; keying on the same (coingeckoKey, primaryCode)
+  // dedupes the request in the TanStack cache.
   const pricesQuery = useQuery({
-    queryKey: ["crypto-prices", coingeckoIds.join(",")],
+    queryKey: ["prices", coingeckoKey, primaryCode],
     enabled: coingeckoIds.length > 0,
-    queryFn: () => fetchPrices(coingeckoIds),
+    queryFn: () => fetchPrices(coingeckoIds, (primaryCode || "USD").toLowerCase()),
   });
   const prices = pricesQuery.data ?? new Map();
 
@@ -222,7 +146,7 @@ export const HoldingsList = (props: HoldingsListProps) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <HoldingsTotals totalValue={totalValue} totalPL={totalPL} isMasked={masked} />
+        <HoldingsTotals totalValue={totalValue} totalPL={totalPL} />
         <div className="flex items-center gap-2">
           <TokenAddTrigger onClick={() => setAddTokenOpen(true)} />
           <Button size="sm" onClick={() => setTradeOpen(true)}>
@@ -245,14 +169,12 @@ export const HoldingsList = (props: HoldingsListProps) => {
       <HoldingsTable
         rows={allocationWithPct}
         prices={prices}
-        isMasked={masked}
         onLogFirstTrade={() => setTradeOpen(true)}
       />
 
       <TradeCapture
         isOpen={tradeOpen}
         onOpenChange={setTradeOpen}
-        userId={uid}
         accounts={accounts}
         tokens={tokens}
         prices={prices}
@@ -262,7 +184,6 @@ export const HoldingsList = (props: HoldingsListProps) => {
       <TokenAddSheet
         isOpen={addTokenOpen}
         onOpenChange={setAddTokenOpen}
-        userId={uid}
         existingTokens={tokens}
       />
     </div>

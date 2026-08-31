@@ -1,6 +1,7 @@
 import { Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
 import type { Holding } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { cn } from "@/lib/utils";
 
 function formatUsdFromNumber(value: number): string {
@@ -11,15 +12,14 @@ export interface HoldingRowProps {
   holding: Holding;
   price?: CoinPrice;
   allocationPct?: number;
-  isMasked?: boolean;
 }
 
 export const HoldingRow = ({
   holding,
   price,
   allocationPct,
-  isMasked: masked = false,
 }: HoldingRowProps) => {
+  const masked = usePrivacyStore((s) => s.masked);
   const { token, qtyMinor, avgCostMinor } = holding;
   const dec = Number(token.decimals) || 0;
   const qty = Number(qtyMinor) / 10 ** dec;

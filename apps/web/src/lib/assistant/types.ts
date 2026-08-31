@@ -88,6 +88,7 @@ export type PeriodComparePayload = {
 };
 
 export type MerchantItemPayload = {
+  key: string;
   description: string;
   amountMinor: string;
   count: number;
@@ -122,6 +123,7 @@ export type BurnRatePayload = {
 };
 
 export type SearchHitPayload = {
+  txnId: string;
   description: string;
   amountMinor: string;
   dateLabel: string;

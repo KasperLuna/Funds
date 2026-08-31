@@ -8,11 +8,11 @@ const COLORS = [
   "bg-rose-400",
 ];
 
-export function AllocationBar({
+export const AllocationBar = ({
   allocation,
 }: {
   allocation: Array<{ symbol: string; pct: number }>;
-}) {
+}) => {
   if (allocation.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
@@ -36,4 +36,4 @@ export function AllocationBar({
       </div>
     </div>
   );
-}
+};

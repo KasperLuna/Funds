@@ -2,7 +2,7 @@
 
 import { PieChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 const FALLBACK_COLORS = [
   "#10b981", "#38bdf8", "#a78bfa", "#f472b6",
@@ -22,7 +22,7 @@ interface BankProportionCardProps {
 }
 
 export const BankProportionCard = ({ data, code = "USD" }: BankProportionCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
 
   if (data.length === 0) return null;
 

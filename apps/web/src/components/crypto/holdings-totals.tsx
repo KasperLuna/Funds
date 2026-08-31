@@ -1,14 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 export interface HoldingsTotalsProps {
   totalValue: number;
   totalPL: number;
-  isMasked: boolean;
 }
 
-export const HoldingsTotals = ({ totalValue, totalPL, isMasked }: HoldingsTotalsProps) => {
+export const HoldingsTotals = ({ totalValue, totalPL }: HoldingsTotalsProps) => {
+  const isMasked = usePrivacyStore((s) => s.masked);
   const totalPLClass = isMasked
     ? "text-zinc-500"
     : totalPL >= 0
