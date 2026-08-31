@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  AreaChart,
-  Area,
-  ResponsiveContainer,
-} from "recharts";
+import dynamic from "next/dynamic";
 import { COLORS } from "./chart-theme";
 
 type DataPoint = Record<string, string | number>;
@@ -16,32 +12,23 @@ interface SparkLineProps {
   height?: number;
 }
 
-const SparkLine = ({
-  data,
-  dataKey,
-  color = COLORS.accent,
-  height = 32,
-}: SparkLineProps) => {
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-        <defs>
-          <linearGradient id={`spark-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area
-          type="monotone"
-          dataKey={dataKey}
-          stroke={color}
-          fill={`url(#spark-${dataKey})`}
-          strokeWidth={1.5}
-          dot={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-};
+// cavetail: recharts is heavy (~100KB+ parse) and sits in the dashboard's
+// critical chunk. Lazy-load it so the PWA's first paint — and the capture
+// FAB's tap responsiveness — isn't blocked behind top-level recharts eval.
+const SparkLineImpl = dynamic(
+  () => import("./spark-line-impl").then((m) => m.SparkLineImpl),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{ height: 48 }}
+        className="animate-pulse rounded-(--radius-md) bg-(--surface-2)"
+        aria-hidden
+      />
+    ),
+  },
+);
 
-export { SparkLine };
+export const SparkLine = (props: SparkLineProps) => (
+  <SparkLineImpl {...props} color={props.color ?? COLORS.accent} height={props.height ?? 32} />
+);

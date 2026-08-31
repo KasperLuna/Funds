@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import {
-  TOOLTIP_CONTENT_STYLE,
-  TOOLTIP_LABEL_STYLE,
-  TOOLTIP_ITEM_STYLE,
-} from "./chart-theme";
+import dynamic from "next/dynamic";
 
 interface Slice {
   name: string;
@@ -31,39 +20,13 @@ interface PieChartProps {
   tooltipFormatter?: TooltipFormatter;
 }
 
-const PieChart = ({
-  data,
-  height = 240,
-  innerRadius = 55,
-  outerRadius = 75,
-  tooltipFormatter,
-}: PieChartProps) => {
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <RechartsPieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          innerRadius={innerRadius}
-          outerRadius={outerRadius}
-          paddingAngle={2}
-          dataKey="value"
-          stroke="none"
-        >
-          {data.map((entry) => (
-            <Cell key={entry.name} fill={entry.color} />
-          ))}
-        </Pie>
-        <Tooltip
-          contentStyle={TOOLTIP_CONTENT_STYLE}
-          labelStyle={TOOLTIP_LABEL_STYLE}
-          itemStyle={TOOLTIP_ITEM_STYLE}
-          formatter={tooltipFormatter}
-        />
-      </RechartsPieChart>
-    </ResponsiveContainer>
-  );
-};
+// cavetail: recharts is heavy; lazy-load so it stays out of the dashboard's
+// critical chunk (used by BankProportionCard on the home route).
+const PieChartImpl = dynamic(
+  () => import("./pie-chart-impl").then((m) => m.PieChartImpl),
+  { ssr: false },
+);
+
+const PieChart = (props: PieChartProps) => <PieChartImpl {...props} />;
 
 export { PieChart };

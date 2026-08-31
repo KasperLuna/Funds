@@ -25,9 +25,13 @@ type SyncContextValue = {
   db: SyncDatabase;
   syncStatus: SyncStatus;
   /**
-   * True once the session has resolved (signed in or signed out). Local-first
-   * store is always available, so pages render local data immediately and sync
-   * fills in as checkpoints land — no flash of a false empty state.
+   * True from the moment the local Dexie store is constructed — it does NOT
+   * wait on the session fetch. Every local read keys on `isReady` so data
+   * paints from IndexedDB immediately (tap-to-interactive on the PWA's first
+   * frame) while the network session + sync fill in behind it.
+   *
+   * The session gate for *pushing* lives inside the engine (it bails when
+   * userId is null), not here. No false empty state, no flash.
    */
   isReady: boolean;
   /** Authenticated user id used to stamp rows for sync; null until session loads. */
@@ -64,7 +68,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     createSyncEngine({ store, getUserId: () => userIdRef.current }),
   );
 
-  const isReady = !isPending;
+  // cavetail: local reads must NOT wait on the session round-trip — on a cold
+  // iOS PWA launch that is a full network hop that delays TTI and makes the
+  // capture sheet (Plus FAB) appear dead. IndexedDB is available synchronously
+  // on mount, so the store is ready immediately; sync push/pull is already
+  // gated by userId inside the engine.
+  const isReady = true;
 
   useEffect(() => {
     const unsub = engine.onStateChange((s) => setSyncStatus(s));

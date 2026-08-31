@@ -266,12 +266,19 @@ export const DashboardScreen = () => {
       [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
     [tokenHoldings],
   );
-  // Cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
+  // cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
   // not visible behind the sheet, and the network round-trip + BigInt
   // recompute add main-thread work on the same frame as the sheet opening.
+  // Also defer it past the first interactive frame: the request competes with
+  // TTI on a cold iOS load and only feeds the crypto net-worth line.
+  const [pricesReady, setPricesReady] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setPricesReady(true), 1500);
+    return () => window.clearTimeout(id);
+  }, []);
   const pricesQuery = useQuery({
     queryKey: ["prices", coingeckoKey, primaryCode],
-    enabled: !!coingeckoKey && !captureSheet.open,
+    enabled: pricesReady && !!coingeckoKey && !captureSheet.open,
     queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
   });
   const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
