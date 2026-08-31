@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import { DataScopeBadge } from "./data-scope-badge";
 import type { MerchantBreakdownPayload } from "@/lib/assistant/types";
@@ -17,7 +17,7 @@ interface MerchantListCardProps {
  * can spot both big tickets and high-frequency small charges.
  */
 export const MerchantListCard = ({ payload, onViewData }: MerchantListCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
   const total = BigInt(payload.totalMinor);
   const max = payload.merchants.reduce(
     (m, x) => (BigInt(x.amountMinor) > m ? BigInt(x.amountMinor) : m),
@@ -41,11 +41,11 @@ export const MerchantListCard = ({ payload, onViewData }: MerchantListCardProps)
       </p>
 
       <ul className="mt-3 space-y-1.5">
-        {payload.merchants.map((m, i) => {
+        {payload.merchants.map((m) => {
           const amt = BigInt(m.amountMinor);
           const pct = max > 0n ? Number((amt * 1000n) / max) / 10 : 0;
           return (
-            <li key={`${m.description}-${i}`} className="space-y-0.5">
+            <li key={m.key} className="space-y-0.5">
               <div className="flex items-baseline justify-between gap-2 text-xs">
                 <span className="truncate text-zinc-300">{m.description}</span>
                 <span className="shrink-0 tabular-nums text-zinc-500">

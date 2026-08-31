@@ -1,5 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { formatMoney } from "@/lib/money";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
+import { useSyncStore } from "@/lib/sync/sync-store";
 
 function freshnessLabel(ts: number | null): string {
   if (!ts) return "Never synced";
@@ -17,9 +19,7 @@ export interface NetWorthHeroProps {
   totalBalance: bigint;
   bankBalance: bigint;
   cryptoBalance: bigint;
-  isPrivate: boolean;
   onTogglePrivacy: () => void;
-  lastSyncedAt: number | null;
   currencyCode?: string;
 }
 
@@ -27,11 +27,11 @@ export const NetWorthHero = ({
   totalBalance,
   bankBalance,
   cryptoBalance,
-  isPrivate,
   onTogglePrivacy,
-  lastSyncedAt,
   currencyCode = "USD",
 }: NetWorthHeroProps) => {
+  const isPrivate = usePrivacyStore((s) => s.masked);
+  const lastSyncedAt = useSyncStore((s) => s.syncStatus.lastSyncedAt);
   const bankAbs = bankBalance < 0n ? -bankBalance : bankBalance;
   const cryptoAbs = cryptoBalance < 0n ? -cryptoBalance : cryptoBalance;
   const totalAbs = bankAbs + cryptoAbs;

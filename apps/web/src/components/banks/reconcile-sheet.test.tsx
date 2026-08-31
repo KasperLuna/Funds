@@ -48,7 +48,7 @@ function harness(currentBalance: bigint, onSave = vi.fn()) {
       currentBalance={currentBalance}
       assetCode="USD"
       assetDecimals={2}
-      userId="usr-1"
+      
       onSave={onSave}
     />,
   );
@@ -105,7 +105,7 @@ describe("ReconcileSheet", () => {
         onOpenChange={vi.fn()}
         account={undefined as unknown as Account}
         currentBalance={0n}
-        userId="usr-1"
+        
         onSave={vi.fn()}
       />,
     );
@@ -125,7 +125,7 @@ describe("ReconcileSheet", () => {
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}
-        userId="usr-1"
+        
         onSave={vi.fn()}
       />,
     );
@@ -138,7 +138,7 @@ describe("ReconcileSheet", () => {
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}
-        userId="usr-1"
+        
         onSave={vi.fn()}
       />,
     );
@@ -148,7 +148,7 @@ describe("ReconcileSheet", () => {
         onOpenChange={onOpenChange}
         account={ACCOUNT}
         currentBalance={0n}
-        userId="usr-1"
+        
         onSave={vi.fn()}
       />,
     );

@@ -3,15 +3,10 @@
 import { useMemo } from "react";
 import { HoldingsList } from "@/components/crypto/holdings-list";
 import type { AccountOption } from "@/components/crypto/trade-capture";
-import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { useAssets } from "@/lib/assets";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
 
-export function CryptoPanel({ autoOpenTrade }: { autoOpenTrade?: boolean }) {
-  const { masked: privacy } = usePrivacy();
-  const { userId } = useSync();
-  const uid = userId ?? "dev-user";
+export const CryptoPanel = () => {
   const { assets } = useAssets();
   const assetsById = useMemo(
     () => new Map(assets.map((a) => [a.id, a])),
@@ -33,7 +28,7 @@ export function CryptoPanel({ autoOpenTrade }: { autoOpenTrade?: boolean }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <HoldingsList accounts={accounts} userId={uid} isAutoOpenTrade={autoOpenTrade} isMasked={privacy} />
+      <HoldingsList accounts={accounts} />
     </div>
   );
 }

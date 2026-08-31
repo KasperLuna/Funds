@@ -8,7 +8,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
-import { useSync } from "./sync-context";
+import { useSyncStore } from "./sync-store";
 import type { QueryParams, QueryResult, RowRecord } from "./types";
 
 /**
@@ -44,12 +44,15 @@ function createQueryClient(): QueryClient {
   });
 }
 
+interface SyncQueryProviderProps {
+  children: ReactNode;
+}
 /** Wraps the app with a QueryClient. Must sit above any useSyncQuery consumer. */
-export function SyncQueryProvider({ children }: { children: ReactNode }) {
+export const SyncQueryProvider = ({ children }: SyncQueryProviderProps) => {
   const ref = useRef<QueryClient | null>(null);
   if (!ref.current) ref.current = createQueryClient();
   return <QueryClientProvider client={ref.current}>{children}</QueryClientProvider>;
-}
+};
 
 /**
  * Read one collection from the sync db as a TanStack Query.
@@ -79,7 +82,8 @@ export function useSyncQuery<T>({
   scope?: string;
   select?: (row: RowRecord) => T;
 }) {
-  const { db, isReady } = useSync();
+  const db = useSyncStore((s) => s.db);
+  const isReady = useSyncStore((s) => s.isReady);
   const queryClient = useQueryClient();
   const keyRef = useRef(key);
   keyRef.current = key;

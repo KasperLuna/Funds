@@ -2,7 +2,7 @@
 
 import { AreaChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 type DataPoint = { month: string; income: bigint; expense: bigint; net: bigint };
 
@@ -14,7 +14,7 @@ interface SpendingTrendsCardProps {
 }
 
 export const SpendingTrendsCard = ({ data, code }: SpendingTrendsCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
 
   const chartData = data.map((d) => ({
     month: d.month,

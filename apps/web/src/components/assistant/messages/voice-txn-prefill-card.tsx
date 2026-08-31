@@ -3,10 +3,10 @@
 import { ArrowRight, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import type { VoiceTxnPrefillPayload } from "@/lib/assistant/types";
-import { useVoicePrefill } from "@/lib/voice/voice-context";
+import { useVoicePrefillStore } from "@/lib/voice/voice-store";
 
 interface VoiceTxnPrefillCardProps {
   payload: VoiceTxnPrefillPayload;
@@ -21,8 +21,8 @@ interface VoiceTxnPrefillCardProps {
  */
 export const VoiceTxnPrefillCard = ({ payload, onViewData }: VoiceTxnPrefillCardProps) => {
   const router = useRouter();
-  const { masked } = usePrivacy();
-  const { setPrefill } = useVoicePrefill();
+  const masked = usePrivacyStore((s) => s.masked);
+  const setPrefill = useVoicePrefillStore((s) => s.setPrefill);
   const amountMinor = payload.amountMinor ? BigInt(payload.amountMinor) : null;
   const conf = Math.round(payload.confidence * 100);
 

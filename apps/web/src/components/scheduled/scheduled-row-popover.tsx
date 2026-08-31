@@ -17,10 +17,13 @@ interface ScheduledRowPopoverProps {
   onDelete: (row: ScheduledTxn) => void;
 }
 
-function RowPopover({ children }: { children: (controls: { open: boolean; setOpen: (open: boolean) => void }) => React.ReactNode }) {
+interface RowPopoverProps {
+  children: (controls: { open: boolean; setOpen: (open: boolean) => void }) => React.ReactNode;
+}
+const RowPopover = ({ children }: RowPopoverProps) => {
   const [open, setOpen] = useState(false);
   return <Popover open={open} onOpenChange={setOpen}>{children({ open, setOpen })}</Popover>;
-}
+};
 
 export const ScheduledRowPopover = ({
   row,

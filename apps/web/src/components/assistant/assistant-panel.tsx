@@ -1,28 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Sparkles, Send, X, Eraser, AlertTriangle, Download, RefreshCw, Settings, ChevronDown } from "lucide-react";
-import Link from "next/link";
+import { Sparkles, Send, X, Eraser } from "lucide-react";
 import { useChat } from "./use-chat";
 import { AssistantMessageView } from "./assistant-message-view";
 import { cn } from "@/lib/utils";
-import { isIosStorageStale, isIosLikeDevice } from "@/lib/llm/capability";
-import { getLlmEngine } from "@/lib/llm";
-import { MODEL_LABELS } from "@/lib/llm/types";
+import { EmptyChat } from "./empty-chat";
+import { TypingIndicator } from "./typing-indicator";
+import { ThinkingBlock } from "./thinking-block";
+import { ModelLoadingIndicator } from "./model-loading-indicator";
+import { UnsupportedView } from "./unsupported-view";
+import { ModelChip } from "./model-chip";
+import { StaleBanner } from "./stale-banner";
+import type { ChatMessage } from "@/lib/assistant/types";
 
 interface AssistantPanelProps {
   onClose?: () => void;
 }
 
-type EmptyChatProps = { onPick: (text: string) => void };
-type ThinkingBlockProps = { text: string };
-type ModelLoadingIndicatorProps = {
-  support: { ok: true; engine: "webgpu" | "wasm"; recommendedModel: string } | null;
-};
-type UnsupportedViewProps = {
-  reason: "no-webgpu" | "no-cross-origin-isolation" | "no-storage" | "unsupported-environment";
-  onClose?: () => void;
-};
+interface ChatBubbleProps {
+  message: ChatMessage;
+  onPickSuggestion: (text: string) => void;
+}
 
 /**
  * Chat thread + input + model-status banner. Used both inline on the
@@ -94,36 +93,17 @@ export const AssistantPanel = ({ onClose }: AssistantPanelProps) => {
           <EmptyChat onPick={(text) => setDraft(text)} />
         ) : (
           messages.map((m) => (
-            <div
+            <ChatBubble
               key={m.id}
-              className={cn(
-                "flex",
-                m.role === "user" ? "justify-end" : "justify-start",
-              )}
-            >
-              <div
-                className={cn(
-                  "max-w-[85%]",
-                  m.role === "user" &&
-                    "rounded-(--radius-lg) bg-(--accent) px-3 py-2 text-sm text-(--accent-foreground)",
-                )}
-              >
-                {m.role === "user" ? (
-                  <span>{m.content}</span>
-                ) : (
-                  <AssistantMessageView
-                    message={m}
-                    onPickSuggestion={(text) => {
-                      setDraft(text);
-                      if (status === "idle") {
-                        void send(text);
-                        setDraft("");
-                      }
-                    }}
-                  />
-                )}
-              </div>
-            </div>
+              message={m}
+              onPickSuggestion={(text) => {
+                setDraft(text);
+                if (status === "idle") {
+                  void send(text);
+                  setDraft("");
+                }
+              }}
+            />
           ))
         )}
         {status === "thinking" && streamingText && <ThinkingBlock text={streamingText} />}
@@ -163,197 +143,23 @@ export const AssistantPanel = ({ onClose }: AssistantPanelProps) => {
   );
 };
 
-const EmptyChat = ({ onPick }: EmptyChatProps) => {
-  const suggestions = [
-    "How much did I spend on Food this month?",
-    "Am I on track this month?",
-    "Find my payroll transactions.",
-  ];
+const ChatBubble = ({ message, onPickSuggestion }: ChatBubbleProps) => {
+  const isUser = message.role === "user";
   return (
-    <div className="flex flex-col items-center gap-3 pt-4 text-center">
-      <div className="rounded-full bg-(--surface-2) p-2.5" aria-hidden>
-        <Sparkles className="h-5 w-5 text-(--accent)" />
-      </div>
-      <div>
-        <p className="text-sm font-semibold">Ask about your money</p>
-        <p className="mt-0.5 max-w-xs text-xs text-zinc-500">
-          Everything runs on this device. No data leaves the phone.
-        </p>
-      </div>
-      <ul className="flex w-full flex-col gap-1.5">
-        {suggestions.map((s) => (
-          <li key={s}>
-            <button
-              type="button"
-              onClick={() => onPick(s)}
-              className="w-full rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2 text-left text-xs text-zinc-300 transition-colors hover:bg-(--surface-3) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-            >
-              {s}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-const TypingIndicator = () => (
-  <div
-    role="status"
-    aria-label="Assistant is thinking"
-    className="inline-flex items-center gap-1 rounded-(--radius-md) bg-(--surface-2) px-3 py-2 text-xs text-zinc-500"
-  >
-    Thinking on-device
-    <span aria-hidden className="ml-1 inline-flex gap-0.5">
-      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500" />
-      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:120ms]" />
-      <span className="h-1 w-1 animate-bounce rounded-full bg-zinc-500 [animation-delay:240ms]" />
-    </span>
-  </div>
-);
-
-const ThinkingBlock = ({ text }: ThinkingBlockProps) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-xs">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-zinc-400 hover:text-zinc-300"
-      >
-        <ChevronDown
-          className={cn("h-3 w-3 transition-transform", open && "rotate-180")}
-          aria-hidden
-        />
-        <span className="font-medium">Thinking</span>
-        <span className="ml-auto text-[10px] text-zinc-500">
-          {text.split(/\s+/).length} tokens
-        </span>
-      </button>
-      {open && (
-        <div className="border-t border-(--border) px-3 py-2">
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-[10px] leading-relaxed text-zinc-500">
-            {text}
-          </pre>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const ModelLoadingIndicator = ({ support }: ModelLoadingIndicatorProps) => (
-  <div
-    role="status"
-    aria-label="Downloading model"
-    className="flex items-center gap-2 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2 text-xs text-zinc-300"
-  >
-    <Download className="h-3.5 w-3.5 animate-pulse text-(--accent)" aria-hidden />
-    <div>
-      <p>Downloading model on this device</p>
-      <p className="text-[10px] text-zinc-500">
-        {support?.ok
-          ? `${support.recommendedModel} · ${support.engine}`
-          : "probing…"}
-      </p>
-    </div>
-  </div>
-);
-
-const UnsupportedView = ({ reason, onClose }: UnsupportedViewProps) => {
-  const messages: Record<UnsupportedViewProps["reason"], { title: string; body: string }> = {
-    "no-webgpu": {
-      title: "WebGPU not available",
-      body: "Your browser does not expose WebGPU. The on-device assistant needs a recent Chrome, Edge, or Safari Technology Preview.",
-    },
-    "no-cross-origin-isolation": {
-      title: "Cross-origin isolation required",
-      body: "The assistant needs the app to be cross-origin isolated to use shared memory for inference.",
-    },
-    "no-storage": {
-      title: "Not enough free storage",
-      body: "The assistant needs at least 1 GB of free storage to cache the model on this device.",
-    },
-    "unsupported-environment": {
-      title: "Assistant unavailable",
-      body: "The on-device assistant cannot run in this environment. All other app features still work normally.",
-    },
-  };
-  const m = messages[reason];
-  return (
-    <div className="flex h-full flex-col">
-      <header className="flex items-center justify-between border-b border-(--border) bg-(--bg) px-4 py-2.5">
-        <span className="inline-flex items-center gap-2 text-sm font-semibold">
-          <Sparkles className="h-4 w-4 text-(--accent)" aria-hidden />
-          Assistant
-        </span>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close assistant"
-            className="rounded-(--radius-sm) p-1.5 text-zinc-500 hover:bg-(--surface-3) hover:text-inherit"
-          >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
+    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+      <div
+        className={cn(
+          "max-w-[85%]",
+          isUser &&
+            "rounded-(--radius-lg) bg-(--accent) px-3 py-2 text-sm text-(--accent-foreground)",
         )}
-      </header>
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-        <AlertTriangle className="h-8 w-8 text-(--warning)" aria-hidden />
-        <h2 className="text-base font-semibold">{m.title}</h2>
-        <p className="max-w-sm text-sm text-zinc-500">{m.body}</p>
-      </div>
-    </div>
-  );
-};
-
-const ModelChip = () => {
-  const [modelId] = useState<string | null>(() => getLlmEngine().currentModelId());
-  if (!modelId) return null;
-  const label = MODEL_LABELS[modelId as keyof typeof MODEL_LABELS] ?? modelId;
-  return (
-    <Link
-      href="/dashboard/settings"
-      title="Change model in Settings"
-      className="inline-flex items-center gap-1 rounded-full bg-(--surface-2) px-2 py-0.5 text-[10px] font-medium text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-zinc-300"
-    >
-      <Settings className="h-2.5 w-2.5" aria-hidden />
-      {label}
-    </Link>
-  );
-};
-
-/**
- * Stale-storage banner. Shown when the device is iOS-like AND the last
- * successful load was more than 5 days ago. Tap to redownload.
- */
-export const StaleBanner = () => {
-  const [visible, setVisible] = useState(false);
-  // cavetail: OPFS read is async + browser-side; can't be a useState initializer
-  useEffect(() => {
-    if (!isIosLikeDevice()) return;
-    void getLlmEngine()
-      .lastLoadedAt()
-      .then((ts) => {
-        if (isIosStorageStale(ts)) setVisible(true);
-      });
-  }, []);
-  if (!visible) return null;
-  return (
-    <div className="mx-3 mb-2 flex items-center justify-between gap-2 rounded-(--radius-md) border border-(--warning) bg-(--warning)/10 px-3 py-2 text-xs text-(--warning)">
-      <span>Model may need a refresh — re-downloading keeps the assistant available offline.</span>
-      <button
-        type="button"
-        onClick={() => {
-          setVisible(false);
-          // Trigger a reload by re-invoking getLlmEngine. The AssistantPanel
-          // surfaces a fresh load via the status banner on the next send().
-          void getLlmEngine().unload();
-        }}
-        className="inline-flex items-center gap-1 rounded-(--radius-sm) bg-(--warning) px-2 py-1 text-[10px] font-semibold text-zinc-900"
       >
-        <RefreshCw className="h-3 w-3" aria-hidden />
-        Refresh
-      </button>
+        {isUser ? (
+          <span>{message.content}</span>
+        ) : (
+          <AssistantMessageView message={message} onPickSuggestion={onPickSuggestion} />
+        )}
+      </div>
     </div>
   );
 };

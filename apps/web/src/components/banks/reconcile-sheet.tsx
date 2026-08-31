@@ -21,6 +21,7 @@ import {
 } from "@/lib/capture";
 import { formatMoney } from "@/lib/money";
 import type { Account } from "@/lib/accounts/accounts-store";
+import { useSyncStore } from "@/lib/sync/sync-store";
 
 interface ReconcileSheetProps {
   isOpen: boolean;
@@ -29,7 +30,6 @@ interface ReconcileSheetProps {
   currentBalance: bigint;
   assetCode?: string;
   assetDecimals?: number;
-  userId: string;
   onSave: (row: Record<string, unknown>) => void;
 }
 
@@ -45,7 +45,6 @@ interface ReconcileFormProps {
   currentBalance: bigint;
   assetCode?: string;
   assetDecimals: number;
-  userId: string;
   onSave: (row: Record<string, unknown>) => void;
 }
 
@@ -55,9 +54,10 @@ const ReconcileForm = ({
   currentBalance,
   assetCode,
   assetDecimals,
-  userId,
   onSave,
 }: ReconcileFormProps) => {
+  const userId = useSyncStore((s) => s.userId);
+  const uid = userId ?? "dev-user";
   const decimals = assetDecimals;
   const [amount, setAmount] = useState<AmountState>(() => emptyAmount(decimals));
 
@@ -75,7 +75,7 @@ const ReconcileForm = ({
         amountMinor: absDelta,
         accountId: account.id,
         assetId: account.assetId,
-        userId,
+        userId: uid,
         categoryIds: [],
         description: "Balance adjustment",
         date: new Date(),
@@ -139,22 +139,14 @@ const ReconcileForm = ({
             <span className="text-zinc-400">
               Enter your observed balance. Nothing to post when it matches.
             </span>
-          ) : direction === "income" ? (
-            <span className="text-(--accent)">
-              This will add{" "}
-              <strong className="font-semibold tabular-nums">
-                {formatMoney(absDelta, decimals, assetCode)}
-              </strong>{" "}
-              to {account.name} as income.
-            </span>
           ) : (
-            <span className="text-(--danger)">
-              This will remove{" "}
-              <strong className="font-semibold tabular-nums">
-                {formatMoney(absDelta, decimals, assetCode)}
-              </strong>{" "}
-              from {account.name} as an expense.
-            </span>
+            <ReconcileDeltaNote
+              direction={direction ?? "expense"}
+              accountName={account.name}
+              absDelta={absDelta}
+              decimals={decimals}
+              assetCode={assetCode}
+            />
           )}
         </div>
 
@@ -186,13 +178,40 @@ const ReconcileForm = ({
   );
 };
 
+interface ReconcileDeltaNoteProps {
+  direction: "income" | "expense";
+  accountName: string;
+  absDelta: bigint;
+  decimals: number;
+  assetCode?: string;
+}
+
+const ReconcileDeltaNote = ({
+  direction,
+  accountName,
+  absDelta,
+  decimals,
+  assetCode,
+}: ReconcileDeltaNoteProps) => {
+  const isIncome = direction === "income";
+  return (
+    <span className={isIncome ? "text-(--accent)" : "text-(--danger)"}>
+      This will {isIncome ? "add" : "remove"}{" "}
+      <strong className="font-semibold tabular-nums">
+        {formatMoney(absDelta, decimals, assetCode)}
+      </strong>{" "}
+      {isIncome ? "to" : "from"} {accountName} as {isIncome ? "income" : "an expense"}.
+    </span>
+  );
+};
+
 /**
  * Balance reconciliation (logic.md §4.4). The user enters their observed
  * real-world balance; a single income/expense transaction is posted for the
  * difference so the recorded balance matches reality.
  */
 export const ReconcileSheet = (props: ReconcileSheetProps) => {
-  const { isOpen, onOpenChange, account, currentBalance, assetCode, assetDecimals, userId, onSave } = props;
+  const { isOpen, onOpenChange, account, currentBalance, assetCode, assetDecimals, onSave } = props;
   // Hooks must run unconditionally. Guard the render output instead, so an
   // undefined account (e.g. empty account list) can never break the rules.
   const decimals = assetDecimals ?? 2;
@@ -205,7 +224,6 @@ export const ReconcileSheet = (props: ReconcileSheetProps) => {
       currentBalance={currentBalance}
       assetCode={assetCode}
       assetDecimals={decimals}
-      userId={userId}
       onSave={onSave}
     />
   );

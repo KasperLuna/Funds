@@ -5,13 +5,35 @@ import "@testing-library/jest-dom/vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { DEFAULT_CATEGORY_COLORS, categoryColor } from "@/lib/categories/categories-store";
-import { PrivacyProvider } from "@/lib/privacy/privacy-context";
+
+let privacyMasked = false;
+
+vi.mock("@/lib/privacy/privacy-store", () => ({
+  usePrivacyStore: (selector: (s: { masked: boolean; toggle: () => void; setMasked: (v: boolean) => void }) => unknown) =>
+    selector({ masked: privacyMasked, toggle: vi.fn(), setMasked: vi.fn() }),
+}));
 
 vi.mock("@/lib/sync/sync-context", () => ({
   useSync: vi.fn(),
 }));
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => ({
+    get: () => null,
+    toString: () => "",
+    [Symbol.iterator]: function* () {},
+    entries: function* () {},
+    keys: function* () {},
+    values: function* () {},
+    forEach: () => {},
+    has: () => false,
+  }),
+  usePathname: () => "/dashboard/categories",
+  useRouter: () => ({ replace: vi.fn() }),
+}));
+
 import { useSync } from "@/lib/sync/sync-context";
+import { useSyncStore } from "@/lib/sync/sync-store";
 import CategoriesPage from "./page";
 
 const mockQuery = vi.fn();
@@ -25,23 +47,30 @@ function renderPage(ui: ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  privacyMasked = false;
+  const mockDb = {
+    query: mockQuery,
+    execute: mockExecute,
+    watch: vi.fn(() => (async function* () {})()),
+    table: vi.fn((name: string) => ({
+      upsert: name === "categories" ? mockCategoryUpsert : vi.fn(),
+      update: vi.fn(),
+      deleteById: vi.fn(),
+    })),
+  };
   vi.mocked(useSync).mockReturnValue({
-    db: {
-      query: mockQuery,
-      execute: mockExecute,
-      watch: vi.fn(() => (async function* () {})()),
-      table: vi.fn((name: string) => ({
-        upsert: name === "categories" ? mockCategoryUpsert : vi.fn(),
-        update: vi.fn(),
-        deleteById: vi.fn(),
-      })),
-    } as never,
+    db: mockDb as never,
     syncStatus: {
       online: true,
       syncing: false,
       lastSyncedAt: Date.now(),
       failedCount: 0,
     },
+    isReady: true,
+    userId: "dev-user",
+  });
+  useSyncStore.setState({
+    db: mockDb as never,
     isReady: true,
     userId: "dev-user",
   });
@@ -202,11 +231,8 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    const { unmount } = renderPage(
-      <PrivacyProvider initialMasked>
-        <CategoriesPage />
-      </PrivacyProvider>,
-    );
+    privacyMasked = true;
+    const { unmount } = renderPage(<CategoriesPage />);
     await waitFor(() => {
       expect(screen.getAllByText("45%").length).toBeGreaterThanOrEqual(1);
     });
@@ -260,11 +286,8 @@ describe("CategoriesPage", () => {
       ],
     });
 
-    renderPage(
-      <PrivacyProvider initialMasked={false}>
-        <CategoriesPage />
-      </PrivacyProvider>,
-    );
+    privacyMasked = false;
+    renderPage(<CategoriesPage />);
     await waitFor(() => {
       expect(screen.getByText(/· 45%/)).toBeInTheDocument();
     });

@@ -515,7 +515,7 @@ export function executeQuery(
       const limit = parseIntInRange(q.limit, 5, 1, 12);
       const descNorm = (s: string) => s.trim().toLowerCase();
       const catId = cat?.id ?? null;
-      const buckets = new Map<string, { amt: bigint; count: number; display: string }>();
+      const buckets = new Map<string, { key: string; amt: bigint; count: number; display: string }>();
       let total = 0n;
       for (const t of ctx.txns) {
         if (t.deletedAt) continue;
@@ -525,7 +525,7 @@ export function executeQuery(
         if (amt >= 0n) continue;
         if (catId && !t.categoryIds.includes(catId)) continue;
         const key = descNorm(t.description) || "—";
-        const cur = buckets.get(key) ?? { amt: 0n, count: 0, display: t.description.trim() || "Unnamed" };
+        const cur = buckets.get(key) ?? { key, amt: 0n, count: 0, display: t.description.trim() || "Unnamed" };
         cur.amt += -amt;
         cur.count += 1;
         buckets.set(key, cur);
@@ -542,6 +542,7 @@ export function executeQuery(
           decimals,
           totalMinor: fmtMoney(total),
           merchants: ranked.map((m) => ({
+            key: m.key,
             description: m.display,
             amountMinor: m.amt.toString(),
             count: m.count,
@@ -597,6 +598,7 @@ export function executeQuery(
         };
       }
       const hits: Array<{
+        txnId: string;
         description: string;
         amountMinor: string;
         dateLabel: string;
@@ -612,6 +614,7 @@ export function executeQuery(
         if (!t.description.toLowerCase().includes(pattern)) continue;
         if (cat && !t.categoryIds.includes(cat.id)) continue;
         hits.push({
+          txnId: t.id,
           description: t.description.trim() || "Unnamed",
           amountMinor: t.amountMinor.toString(),
           dateLabel: formatDayLabel(date),

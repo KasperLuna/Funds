@@ -31,16 +31,22 @@ import { TransferSheet } from "@/components/capture/transfer-sheet";
 import { insertTransfer } from "@/lib/transfers/transfer-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
+import { useUrlBridge } from "@/lib/url/use-url-bridge";
+import { useUrlBool, useUrlString } from "@/lib/url/use-url-state";
+import { useBanksFilters } from "@/components/banks/use-banks-filters";
+import { useBanksDialogState } from "./banks-panel.hooks";
 import { type VoicePrefill } from "@/components/capture/capture-sheet";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import { BankList } from "@/components/assets/bank-list";
-import {
-  BankTransactionsList,
-  type CategoryInfo,
-  type AccountInfo,
-} from "@/components/assets/bank-transactions-list";
+import { BankTransactionsList } from "@/components/assets/bank-transactions-list";
+
+type AccountInfo = {
+  name: string;
+  code: string;
+  decimals: number;
+};
 
 const PAGE_SIZE = 50;
 
@@ -163,15 +169,10 @@ function formatDayHeader(day: string): string {
   });
 }
 
-interface BanksPanelProps {
-  isAutoOpenTransfer?: boolean;
-}
-
-export const BanksPanel = (props: BanksPanelProps) => {
-  const { isAutoOpenTransfer } = props;
+export const BanksPanel = () => {
   const { db, userId } = useSync();
   const queryClient = useQueryClient();
-  const { masked: privacy } = usePrivacy();
+  const privacy = usePrivacyStore((s) => s.masked);
   const searchParams = useSearchParams();
   const router = useRouter();
   const uid = userId ?? "dev-user";
@@ -180,22 +181,13 @@ export const BanksPanel = (props: BanksPanelProps) => {
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
   );
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editAccount, setEditAccount] = useState<Account | null>(null);
-  const [captureOpen, setCaptureOpen] = useState(false);
-  const [transferOpen, setTransferOpen] = useState(false);
-  const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null);
-  const [editTxn, setEditTxn] = useState<Txn | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useUrlString("account");
   const undoDeleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [filters, setFilters] = useState<TxnFilters>({
-    query: "",
-    categoryIds: [],
-    date: null,
-  });
-  const [showArchived, setShowArchived] = useState(false);
+  const { filters, setFilters } = useBanksFilters();
+  const [showArchived, setShowArchived] = useUrlBool("archived", false);
+  const dialog = useBanksDialogState();
   const [confirmAction, setConfirmAction] = useState<{
     account: Account;
     action: AccountConfirmAction;
@@ -231,12 +223,21 @@ export const BanksPanel = (props: BanksPanelProps) => {
   // Deep link: filter by category from budget pulse / categories page.
   useEffect(() => {
     const catId = searchParams.get("category");
-    if (catId) {
-      setFilters((f) => ({ ...f, categoryIds: [catId] }));
-      setVisibleCount(PAGE_SIZE);
-      router.replace("/dashboard/assets?tab=banks", { scroll: false });
-    }
-  }, [searchParams, router]);
+    if (!catId) return;
+    const fromRaw = searchParams.get("from");
+    const toRaw = searchParams.get("to");
+    const from = fromRaw != null ? Number(fromRaw) : NaN;
+    const to = toRaw != null ? Number(toRaw) : NaN;
+    const date =
+      Number.isFinite(from) && Number.isFinite(to) ? { from, to } : null;
+    setFilters({
+      query: searchParams.get("q") ?? "",
+      categoryIds: [catId],
+      date,
+    });
+    setVisibleCount(PAGE_SIZE);
+    router.replace("/dashboard/assets?tab=banks", { scroll: false });
+  }, [searchParams, router, setFilters]);
 
   // Deep link: scroll to and highlight a specific transaction.
   useEffect(() => {
@@ -258,13 +259,10 @@ export const BanksPanel = (props: BanksPanelProps) => {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
   }, []);
 
-  // cavetail: one-time deep-link signal from the parent's URL search params.
-  // React's controlled-component model can't express "open on mount based on a
-  // prop" without an effect; the effect runs exactly once per flag value and
-  // the parent already strips the query param after consumption.
-  useEffect(() => {
-    if (isAutoOpenTransfer) setTransferOpen(true);
-  }, [isAutoOpenTransfer]);
+  // cavetail: deep-link bridge — opens the transfer sheet when the page is
+  // opened via /dashboard/assets?tab=banks&transfer=1. Reads the URL itself
+  // (and strips the param) so the parent doesn't have to plumb a prop.
+  useUrlBridge({ param: "transfer", onMatch: () => dialog.setTransferOpen(true) });
 
   const handleFiltersChange = (next: TxnFilters) => {
     setFilters(next);
@@ -276,6 +274,10 @@ export const BanksPanel = (props: BanksPanelProps) => {
     setVisibleCount(PAGE_SIZE);
   };
 
+  // honey: five-memo pipeline (visibleTxns → sortedDesc → pagedTxns → grouped →
+// stats) feeds the virtualized BankTransactionsList. Each step is a single pass
+// over the previous; without these, every scroll tick re-filters + re-sorts +
+// re-groups the full txn list, which is the hot path on the screen.
   const visibleTxns = useMemo(
     () => {
       const byAccount = selectedAccountId
@@ -325,13 +327,6 @@ export const BanksPanel = (props: BanksPanelProps) => {
     id: c.id,
     name: c.name,
     color: c.color,
-  }));
-
-  const categoryInfoList: CategoryInfo[] = categories.map((c) => ({
-    id: c.id,
-    name: c.name,
-    color: c.color,
-    hideable: c.hideable,
   }));
 
   const accountSaveMutation = useSyncMutation({
@@ -404,17 +399,14 @@ export const BanksPanel = (props: BanksPanelProps) => {
   const txnSaveMutation = useSyncMutation({
     keys: [queryKeys.transactions],
     mutationFn: async (row: Record<string, unknown>) => {
-      const next = editTxn ? { ...row, id: editTxn.id } : row;
+      const next = dialog.editTxn ? { ...row, id: dialog.editTxn.id } : row;
       await db.table("transactions").upsert(upsertTxnRow(uid, next));
-      setEditTxn(null);
+      dialog.setCaptureOpen(false);
     },
   });
   const handleTxnSave = (row: Record<string, unknown>) => txnSaveMutation.mutate(row);
 
-  const handleTxnEdit = (txn: Txn) => {
-    setEditTxn(txn);
-    setCaptureOpen(true);
-  };
+  const handleTxnEdit = (txn: Txn) => dialog.startEditTxn(txn);
 
   const txnDeleteMutation = useSyncMutation({
     keys: [],
@@ -515,18 +507,18 @@ export const BanksPanel = (props: BanksPanelProps) => {
   const fmt = (minor: bigint) =>
     formatMoney(minor, primaryInfo?.decimals ?? 2, primaryInfo?.code);
 
-  const txnPrefill: VoicePrefill | undefined = editTxn
+  const txnPrefill: VoicePrefill | undefined = dialog.editTxn
     ? {
-        accountId: editTxn.accountId,
+        accountId: dialog.editTxn.accountId,
         amountInput: (() => {
-          const dec = accountInfo[editTxn.accountId]?.decimals ?? 2;
-          const abs = editTxn.amountMinor < 0n ? -editTxn.amountMinor : editTxn.amountMinor;
+          const dec = accountInfo[dialog.editTxn.accountId]?.decimals ?? 2;
+          const abs = dialog.editTxn.amountMinor < 0n ? -dialog.editTxn.amountMinor : dialog.editTxn.amountMinor;
           return (Number(abs) / 10 ** dec).toFixed(dec);
         })(),
-        categoryIds: editTxn.categoryIds,
-        description: editTxn.description,
-        type: editTxn.type,
-        date: editTxn.date,
+        categoryIds: dialog.editTxn.categoryIds,
+        description: dialog.editTxn.description,
+        type: dialog.editTxn.type,
+        date: dialog.editTxn.date,
       }
     : undefined;
 
@@ -562,15 +554,12 @@ export const BanksPanel = (props: BanksPanelProps) => {
     keys: [queryKeys.transactions],
     mutationFn: async (row: Record<string, unknown>) => {
       await db.table("transactions").upsert(upsertTxnRow(uid, row));
-      setReconcileAccount(null);
+      dialog.setReconcileAccount(null);
     },
   });
   const handleReconcileSave = (row: Record<string, unknown>) => reconcileSaveMutation.mutate(row);
 
-  const openRename = (a: Account) => {
-    setEditAccount(a);
-    setDialogOpen(true);
-  };
+  const openRename = (a: Account) => dialog.openRenameAccount(a);
 
   const accountOptions = accounts
     .filter((a) => !a.deletedAt)
@@ -591,8 +580,8 @@ export const BanksPanel = (props: BanksPanelProps) => {
         showArchived={showArchived}
         onSelectAll={() => handleSelectAccount(null)}
         onSelectAccount={handleSelectAccount}
-        onNewAccount={() => { setEditAccount(null); setDialogOpen(true); }}
-        onToggleArchived={() => setShowArchived((s) => !s)}
+        onNewAccount={dialog.openNewAccount}
+        onToggleArchived={() => setShowArchived(!showArchived)}
       />
 
       {showArchived && (
@@ -651,7 +640,7 @@ export const BanksPanel = (props: BanksPanelProps) => {
           onRename={openRename}
           onDelete={(a) => handleAccountActionRequest(a, "delete")}
           onArchive={(a) => handleAccountActionRequest(a, "archive")}
-          onAdjust={setReconcileAccount}
+          onAdjust={dialog.openReconcile}
         />
       )}
 
@@ -675,15 +664,11 @@ export const BanksPanel = (props: BanksPanelProps) => {
         visibleCount={visibleCount}
         filters={filters}
         onFiltersChange={handleFiltersChange}
-        categories={categories}
-        accounts={accounts}
-        categoryInfoList={categoryInfoList}
-        accountInfo={accountInfo}
         dataPending={dataPending}
         hasAccounts={accounts.length > 0}
         loadMoreRef={loadMoreRef}
-        onAddTransaction={() => setCaptureOpen(true)}
-        onNewAccount={() => { setEditAccount(null); setDialogOpen(true); }}
+        onAddTransaction={dialog.openCapture}
+        onNewAccount={dialog.openNewAccount}
         onEditTxn={handleTxnEdit}
         onDuplicateTxn={handleTxnDuplicate}
         onDeleteTxn={handleTxnDelete}
@@ -692,13 +677,10 @@ export const BanksPanel = (props: BanksPanelProps) => {
       />
 
       <AccountDialog
-        isOpen={dialogOpen}
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setEditAccount(null);
-        }}
+        isOpen={dialog.accountDialogOpen}
+        onOpenChange={dialog.setAccountDialogOpen}
         onSave={handleAccountSave}
-        editAccount={editAccount}
+        editAccount={dialog.editAccount}
       />
 
       <AccountConfirmDialog
@@ -711,26 +693,21 @@ export const BanksPanel = (props: BanksPanelProps) => {
       />
 
       <CaptureSheet
-        isOpen={captureOpen}
-        onOpenChange={(isOpen) => {
-          setCaptureOpen(isOpen);
-          if (!isOpen) setEditTxn(null);
-        }}
-        userId={uid}
+        isOpen={dialog.captureOpen}
+        onOpenChange={dialog.setCaptureOpen}
         accounts={accountOptions}
         categories={categoryOptions}
         recentTxns={[]}
         onSave={handleTxnSave}
         defaultAccountId={selectedAccountId ?? undefined}
         voicePrefill={txnPrefill}
-        editing={!!editTxn}
+        editing={!!dialog.editTxn}
         onCreateCategory={handleCreateCategory}
       />
 
       <TransferSheet
-        isOpen={transferOpen}
-        onOpenChange={setTransferOpen}
-        userId={uid}
+        isOpen={dialog.transferOpen}
+        onOpenChange={dialog.setTransferOpen}
         accounts={accountOptions}
         categories={categoryOptions}
         onCreateCategory={handleCreateCategory}
@@ -739,13 +716,12 @@ export const BanksPanel = (props: BanksPanelProps) => {
       />
 
       <ReconcileSheet
-        isOpen={reconcileAccount !== null}
-        onOpenChange={(open) => { if (!open) setReconcileAccount(null); }}
-        account={reconcileAccount ?? (accounts[0] as Account)}
-        currentBalance={reconcileAccount ? computeBalance(reconcileAccount, txns) : 0n}
-        assetCode={reconcileAccount ? accountInfo[reconcileAccount.id]?.code : undefined}
-        assetDecimals={reconcileAccount ? accountInfo[reconcileAccount.id]?.decimals : undefined}
-        userId={uid}
+        isOpen={dialog.reconcileAccount !== null}
+        onOpenChange={(open) => { if (!open) dialog.setReconcileAccount(null); }}
+        account={dialog.reconcileAccount ?? (accounts[0] as Account)}
+        currentBalance={dialog.reconcileAccount ? computeBalance(dialog.reconcileAccount, txns) : 0n}
+        assetCode={dialog.reconcileAccount ? accountInfo[dialog.reconcileAccount.id]?.code : undefined}
+        assetDecimals={dialog.reconcileAccount ? accountInfo[dialog.reconcileAccount.id]?.decimals : undefined}
         onSave={handleReconcileSave}
       />
     </div>

@@ -1,10 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Settings, LogOut, Plus, Eye, EyeOff, ChevronUp } from "lucide-react";
+import { Settings, Plus, ChevronUp } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signOutAndWipe } from "@/lib/sync/sign-out";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NavLink, MobileTab, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
 import { AddMenu, ADD_MENU_TARGETS } from "@/components/app-shell/add-menu";
@@ -12,16 +10,16 @@ import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
 import { FundsLogo } from "@/components/brand/funds-logo";
 import { UserCard } from "@/components/auth/user-card";
 import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicator";
-import { PrivacyProvider, usePrivacy } from "@/lib/privacy/privacy-context";
+
 import { SyncProvider } from "@/lib/sync/sync-context";
 import { SyncQueryProvider } from "@/lib/sync/sync-query";
-import { VoicePrefillProvider } from "@/lib/voice/voice-context";
 import { AssistantButton, AssistantOpener, AssistantSheetMount } from "@/components/assistant/assistant-button";
-import { AssistantSheetProvider } from "@/components/assistant/assistant-sheet-context";
 import { ChatProvider } from "@/components/assistant/use-chat";
 import { CaptureSheetProvider } from "@/components/capture/capture-sheet-context";
 import { CaptureSheetMount } from "@/components/capture/capture-sheet-mount";
 import { CaptureOpener } from "@/components/capture/capture-opener";
+import { PrivacyToggle } from "./privacy-toggle";
+import { SidebarSignOut } from "./sidebar-sign-out";
 
 interface DashboardProvidersProps {
   children: ReactNode;
@@ -29,12 +27,9 @@ interface DashboardProvidersProps {
 
 export const DashboardProviders = ({ children }: DashboardProvidersProps) => {
   return (
-    <PrivacyProvider>
-      <SyncProvider>
+    <SyncProvider>
         <SyncQueryProvider>
-          <VoicePrefillProvider>
-            <ChatProvider>
-              <AssistantSheetProvider>
+          <ChatProvider>
                 <AssistantOpener />
                 <AssistantButton />
                 <AssistantSheetMount />
@@ -43,57 +38,9 @@ export const DashboardProviders = ({ children }: DashboardProvidersProps) => {
                   <CaptureSheetMount />
                   {children}
                 </CaptureSheetProvider>
-              </AssistantSheetProvider>
-            </ChatProvider>
-          </VoicePrefillProvider>
+          </ChatProvider>
         </SyncQueryProvider>
       </SyncProvider>
-    </PrivacyProvider>
-  );
-};
-
-interface PrivacyToggleProps {
-  className?: string;
-  hideLabel?: boolean;
-}
-
-const PrivacyToggle = ({ className, hideLabel = false }: PrivacyToggleProps) => {
-  const { masked, toggle } = usePrivacy();
-  return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={masked ? "Reveal amounts" : "Hide amounts"}
-      aria-pressed={!masked}
-      className={cn(
-        "flex min-h-11 items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm font-medium text-zinc-500 transition-colors hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
-        className,
-      )}
-    >
-      {masked ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
-      {!hideLabel && <span>{masked ? "Hidden" : "Visible"}</span>}
-    </button>
-  );
-};
-
-const SidebarSignOut = () => {
-  const router = useRouter();
-
-  async function handleSignOut() {
-    await signOutAndWipe();
-    router.push("/");
-    router.refresh();
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => void handleSignOut()}
-      className="flex min-h-11 items-center gap-3 rounded-(--radius-md) px-3 py-2 text-sm text-zinc-500 transition-colors hover:bg-(--surface-3) hover:text-inherit"
-    >
-      <LogOut className="h-5 w-5" aria-hidden />
-      <span className="hidden md:inline">Sign out</span>
-    </button>
   );
 };
 

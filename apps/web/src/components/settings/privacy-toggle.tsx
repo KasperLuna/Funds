@@ -2,10 +2,11 @@
 
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 export const PrivacyToggle = () => {
-  const { masked, toggle } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
+  const toggle = usePrivacyStore((s) => s.toggle);
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">

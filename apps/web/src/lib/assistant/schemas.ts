@@ -95,6 +95,7 @@ export const merchantBreakdownSchema = z.object({
   merchants: z
     .array(
       z.object({
+        key: z.string().min(1).max(200),
         description: z.string().min(1).max(200),
         amountMinor: z.string().regex(/^\d+$/),
         count: z.number().int().min(1).max(9999),

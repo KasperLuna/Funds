@@ -25,7 +25,9 @@ export const SignInForm = ({ isGoogleEnabled = false }: SignInFormProps) => {
   );
 };
 
-type GoogleGProps = React.SVGProps<SVGSVGElement>;
+// cavetail: empty interface to keep `interface XProps` shape per style guide; lint sees it as equivalent to SVGProps
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface GoogleGProps extends React.SVGProps<SVGSVGElement> {}
 
 const GoogleG = ({ ...props }: GoogleGProps) => (
   <svg viewBox="0 0 24 24" className="h-4 w-4" {...props}>

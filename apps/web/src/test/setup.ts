@@ -3,6 +3,7 @@
 // (the lib/* and server/* suites use vitest's default node env).
 if (typeof window !== "undefined") {
   stubDom();
+  stubLocalStorage();
 }
 
 function stubDom() {
@@ -74,4 +75,24 @@ function stubDom() {
       },
     });
   }) as typeof window.getComputedStyle;
+}
+
+// cavetail: jsdom doesn't ship localStorage. zustand persist middleware
+// (used by usePrivacyStore) reads it at import time; stubbing here before
+// any test module loads prevents "Cannot read properties of undefined".
+function stubLocalStorage() {
+  if (typeof globalThis.localStorage !== "undefined") return;
+  let store: Record<string, string> = {};
+  Object.defineProperty(globalThis, "localStorage", {
+    value: {
+      getItem: (key: string) => store[key] ?? null,
+      setItem: (key: string, value: string) => { store[key] = value; },
+      removeItem: (key: string) => { delete store[key]; },
+      clear: () => { store = {}; },
+      get length() { return Object.keys(store).length; },
+      key: (i: number) => Object.keys(store)[i] ?? null,
+    },
+    writable: true,
+    configurable: true,
+  });
 }

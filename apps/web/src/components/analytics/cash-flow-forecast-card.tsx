@@ -2,7 +2,7 @@
 
 import { BarChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 type CashFlowPoint = {
   month: string;
@@ -17,7 +17,7 @@ interface CashFlowForecastCardProps {
 }
 
 export const CashFlowForecastCard = ({ data, code }: CashFlowForecastCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
 
   const chartData = data.map((d) => ({
     month: d.month,

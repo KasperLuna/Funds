@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TransactionRow } from "./transaction-row";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useUrlString, useUrlSet } from "@/lib/url/use-url-state";
 
 type CategoryInfo = { id: string; name: string; color: string };
 
@@ -278,19 +279,19 @@ interface TransactionListProps {
 
 export const TransactionList = (props: TransactionListProps) => {
   const { txns, categories, onDuplicate, onDelete } = props;
-  const [search, setSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
-    new Set(),
-  );
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [search, setSearch] = useUrlString("q");
+  const [selectedCategories, setSelectedCategories] = useUrlSet("cat");
+  const [selectedMonth, setSelectedMonth] = useUrlString("month");
 
   const monthOptions = getMonthOptions(txns);
+  const effectiveSearch = search ?? "";
+  const effectiveSelectedMonth = selectedMonth ?? "";
 
   const filteredTxns = (() => {
     let result = txns.filter((t) => !t.deletedAt);
 
-    if (search) {
-      const q = search.toLowerCase();
+    if (effectiveSearch) {
+      const q = effectiveSearch.toLowerCase();
       result = result.filter(
         (t) =>
           t.description.toLowerCase().includes(q) ||
@@ -304,8 +305,8 @@ export const TransactionList = (props: TransactionListProps) => {
       );
     }
 
-    if (selectedMonth) {
-      const [year, month] = selectedMonth.split("-").map(Number);
+    if (effectiveSelectedMonth) {
+      const [year, month] = effectiveSelectedMonth.split("-").map(Number);
       result = result.filter((t) => {
         const d = new Date(t.date);
         return d.getFullYear() === year && d.getMonth() + 1 === month;
@@ -318,15 +319,13 @@ export const TransactionList = (props: TransactionListProps) => {
   const groups = groupByDay(filteredTxns);
 
   const toggleCategory = (catId: string) => {
-    setSelectedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(catId)) {
-        next.delete(catId);
-      } else {
-        next.add(catId);
-      }
-      return next;
-    });
+    const next = new Set(selectedCategories);
+    if (next.has(catId)) {
+      next.delete(catId);
+    } else {
+      next.add(catId);
+    }
+    setSelectedCategories(next);
   };
 
   return (
@@ -335,8 +334,8 @@ export const TransactionList = (props: TransactionListProps) => {
         <Input
           type="text"
           placeholder="Search transactions..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={effectiveSearch}
+          onChange={(e) => setSearch(e.target.value || null)}
           className="flex-1 min-w-[200px]"
           data-testid="search-input"
         />
@@ -365,8 +364,8 @@ export const TransactionList = (props: TransactionListProps) => {
         </div>
 
         <Select
-          value={selectedMonth || "__all__"}
-          onValueChange={(v) => setSelectedMonth(v === "__all__" ? "" : v)}
+          value={effectiveSelectedMonth || "__all__"}
+          onValueChange={(v) => setSelectedMonth(v === "__all__" ? null : v)}
         >
           <SelectTrigger aria-label="Month" className="h-11 w-[160px]" data-testid="month-picker">
             <SelectValue />

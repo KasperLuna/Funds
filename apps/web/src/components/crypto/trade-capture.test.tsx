@@ -42,7 +42,7 @@ const Harness = (props: Partial<TradeCaptureProps>) => {
     <TradeCapture
       isOpen={open}
       onOpenChange={setOpen}
-      userId="usr-1"
+
       accounts={ACCOUNTS}
       tokens={TOKENS}
       prices={PRICES}

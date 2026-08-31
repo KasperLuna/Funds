@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { queryKeys, useSyncMutation } from "@/lib/sync/sync-query";
 import { useSync } from "@/lib/sync/sync-context";
+import { useSyncStore } from "@/lib/sync/sync-store";
 import { useAssets, type Asset } from "@/lib/assets";
 import type { Token } from "@/lib/crypto/crypto-store";
 import { cn } from "@/lib/utils";
@@ -18,19 +19,19 @@ import { cn } from "@/lib/utils";
 interface TokenAddSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  userId: string;
   existingTokens: Token[];
 }
 
 interface TokenAddFormProps {
   onOpenChange: (isOpen: boolean) => void;
-  userId: string;
   availableAssets: Asset[];
 }
 
 const TokenAddForm = (props: TokenAddFormProps) => {
-  const { onOpenChange, userId, availableAssets } = props;
+  const { onOpenChange, availableAssets } = props;
   const { db } = useSync();
+  const userId = useSyncStore((s) => s.userId);
+  const uid = userId ?? "dev-user";
   const [selectedId, setSelectedId] = useState<string>(
     availableAssets[0]?.id ?? "",
   );
@@ -41,7 +42,7 @@ const TokenAddForm = (props: TokenAddFormProps) => {
       const now = Date.now();
       await db.table("tokens").upsert({
         id: `tok-${now.toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        user_id: userId,
+        user_id: uid,
         symbol: asset.code,
         name: asset.name,
         coingecko_id: asset.coingeckoId,
@@ -116,7 +117,7 @@ const TokenAddForm = (props: TokenAddFormProps) => {
 };
 
 export const TokenAddSheet = (props: TokenAddSheetProps) => {
-  const { isOpen, onOpenChange, userId, existingTokens } = props;
+  const { isOpen, onOpenChange, existingTokens } = props;
   const { assets } = useAssets();
   const heldSymbols = new Set(
     existingTokens
@@ -131,7 +132,6 @@ export const TokenAddSheet = (props: TokenAddSheetProps) => {
   return (
     <TokenAddForm
       onOpenChange={onOpenChange}
-      userId={userId}
       availableAssets={availableAssets}
     />
   );

@@ -43,7 +43,7 @@ const Harness = ({
     <TransferSheet
       isOpen={open}
       onOpenChange={setOpen}
-      userId="usr-1"
+
       accounts={ACCOUNTS}
       categories={categories}
       onCreateCategory={onCreateCategory}

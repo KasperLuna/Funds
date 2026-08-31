@@ -2,7 +2,7 @@
 
 import { PieChart } from "@/components/charts";
 import { formatMoney } from "@/lib/money";
-import { usePrivacy } from "@/lib/privacy/privacy-context";
+import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import type { AssetInfo } from "@/app/dashboard/analytics/analytics-screen";
 
 type CategorySlice = {
@@ -18,7 +18,7 @@ interface CategoryBreakdownCardProps {
 }
 
 export const CategoryBreakdownCard = ({ data, accountInfo }: CategoryBreakdownCardProps) => {
-  const { masked } = usePrivacy();
+  const masked = usePrivacyStore((s) => s.masked);
 
   const code = accountInfo ? Object.values(accountInfo)[0]?.code : undefined;
   const decimals = accountInfo ? Object.values(accountInfo)[0]?.decimals : 2;

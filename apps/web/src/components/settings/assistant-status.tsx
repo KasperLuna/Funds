@@ -14,13 +14,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useAssistantSheet } from "@/components/assistant/assistant-sheet-context";
+import { useAssistantSheetStore } from "@/components/assistant/assistant-sheet-store";
 import type { ModelId } from "@/lib/llm/types";
 import { MODEL_LABELS } from "@/lib/llm/types";
 import { Section } from "@/components/settings/section";
 
 export const AssistantStatus = () => {
-  const { setOpen: setAssistantOpen } = useAssistantSheet();
+  const setAssistantOpen = useAssistantSheetStore((s) => s.setOpen);
   const queryClient = useQueryClient();
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
   const [downloadingModel, setDownloadingModel] = useState<ModelId | null>(null);

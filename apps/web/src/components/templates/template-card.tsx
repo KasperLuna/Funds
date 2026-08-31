@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
@@ -26,13 +26,11 @@ export type TemplateCardCategory = {
 interface TemplateCardProps {
   accounts: TemplateCardAccount[];
   categories: TemplateCardCategory[];
-  onChanged?: () => void;
 }
 
 export const TemplateCard = ({
   accounts,
   categories,
-  onChanged,
 }: TemplateCardProps) => {
   const { db, userId } = useSync();
   const uid = userId ?? "local";
@@ -40,10 +38,7 @@ export const TemplateCard = ({
   const [editItem, setEditItem] = useState<Template | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const accountById = useMemo(
-    () => new Map(accounts.map((a) => [a.id, a])),
-    [accounts],
-  );
+  const accountById = new Map(accounts.map((a) => [a.id, a]));
 
   const templatesQuery = useSyncQuery({
     key: queryKeys.templates,
@@ -79,11 +74,11 @@ export const TemplateCard = ({
   });
 
   const handleSave = (item: Template) => {
-    saveMutation.mutate(item, { onSuccess: () => onChanged?.() });
+    saveMutation.mutate(item);
   };
 
   const handleDelete = (item: Template) => {
-    deleteMutation.mutate(item, { onSuccess: () => onChanged?.() });
+    deleteMutation.mutate(item);
   };
 
   return (

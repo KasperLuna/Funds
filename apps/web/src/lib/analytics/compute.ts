@@ -297,6 +297,7 @@ export function cashFlowForecast(
 // ---------------------------------------------------------------------------
 
 export type Anomaly = {
+  txnId: string;
   description: string;
   amount: bigint;
   categoryName: string;
@@ -360,6 +361,7 @@ export function spendingAnomalies(
       if (Math.abs(z) > 2) {
         const cat = catMap.get(catId);
         anomalies.push({
+          txnId: txn.id,
           description: txn.description,
           amount: ensureBigInt(txn.amountMinor),
           categoryName: cat?.name ?? "Unknown",

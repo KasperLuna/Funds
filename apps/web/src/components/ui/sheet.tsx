@@ -22,7 +22,9 @@ function useSheetContext() {
   return ctx;
 }
 
-type SheetProps = React.ComponentProps<typeof SheetPrimitive.Root>;
+// cavetail: empty interface to keep `interface XProps` shape per style guide; lint sees it as equivalent to ComponentProps
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface SheetProps extends React.ComponentProps<typeof SheetPrimitive.Root> {}
 
 const Sheet = ({ open, onOpenChange, children }: SheetProps) => {
   const onOpenChangeRef = React.useRef(onOpenChange);

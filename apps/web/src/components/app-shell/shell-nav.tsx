@@ -32,13 +32,13 @@ function isActive(href: string, pathname: string): boolean {
   return pathname.startsWith(href);
 }
 
-export function NavLink({
+export const NavLink = ({
   item,
   onNavigate,
 }: {
   item: NavItem;
   onNavigate?: () => void;
-}) {
+}) => {
   const pathname = usePathname();
   const active = isActive(item.href, pathname);
   const Icon = item.icon;
@@ -67,15 +67,15 @@ export function NavLink({
       <span className="hidden md:inline">{item.label}</span>
     </Link>
   );
-}
+};
 
-export function MobileTab({
+export const MobileTab = ({
   item,
   onNavigate,
 }: {
   item: NavItem;
   onNavigate?: () => void;
-}) {
+}) => {
   const pathname = usePathname();
   const active = isActive(item.href, pathname);
   const Icon = item.icon;
@@ -102,9 +102,9 @@ export function MobileTab({
       />
     </Link>
   );
-}
+};
 
-export function SyncPill() {
+export const SyncPill = () => {
   const { syncStatus } = useSync();
   const offline = !syncStatus.online;
   const syncing = syncStatus.online && syncStatus.lastSyncedAt == null;
@@ -137,15 +137,15 @@ export function SyncPill() {
       </span>
     </span>
   );
-}
+};
 
-export function AddButton({
+export const AddButton = ({
   label = "Add",
   className,
 }: {
   label?: string;
   className?: string;
-}) {
+}) => {
   const { setOpen, setPrefill } = useCaptureSheet();
   const openCapture = (type: "expense" | "income") => {
     setPrefill({ accountId: null, amountInput: null, categoryIds: [], description: "", type });
@@ -200,4 +200,4 @@ export function AddButton({
       )}
     </AddMenu>
   );
-}
+};

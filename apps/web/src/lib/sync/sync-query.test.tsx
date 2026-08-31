@@ -10,14 +10,6 @@ import type { QueryResult, SyncDatabase } from "./types";
 // shape, so navigating crypto -> banks fed slim rows to banks' mapper and
 // undefined money fields crashed BigInt math. The cache must hold RAW rows;
 // selects apply per-render only.
-vi.mock("./sync-context", () => ({
-  useSync: () => ({
-    db: fakeDb,
-    syncStatus: { online: true, syncing: false, lastSyncedAt: null, failedCount: 0 },
-    isReady: true,
-    userId: "u1",
-  }),
-}));
 
 const rowsBySql = new Map<string, Record<string, unknown>[]>();
 
@@ -29,6 +21,17 @@ const fakeDb = {
     yield { rows: rowsBySql.get(norm(sql)) ?? [] } as unknown as QueryResult;
   }),
 } as unknown as SyncDatabase;
+
+vi.mock("./sync-store", () => ({
+  useSyncStore: (selector: (s: typeof fakeSyncState) => unknown) => selector(fakeSyncState),
+}));
+
+const fakeSyncState = {
+  db: fakeDb,
+  syncStatus: { online: true, syncing: false, lastSyncedAt: null, failedCount: 0 },
+  isReady: true,
+  userId: "u1",
+};
 
 function norm(sql: string): string {
   return sql.replace(/\s+/g, " ").trim();
