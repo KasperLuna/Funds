@@ -50,6 +50,7 @@ const PieChartImpl = ({
           paddingAngle={2}
           dataKey="value"
           stroke="none"
+          isAnimationActive={false}
         >
           {data.map((entry) => (
             <Cell key={entry.name} fill={entry.color} />
