@@ -34,21 +34,23 @@ type AddMenuRender = (controls: {
  * No long-press anywhere — the toggle is an explicit, discoverable control
  * (split-button caret on desktop, caret cap on the mobile FAB).
  */
-export function AddMenu({
-  defaultHref,
-  menuLabel,
-  items,
-  className,
-  menuClassName,
-  children,
-}: {
+interface AddMenuProps {
   defaultHref: string;
   menuLabel: string;
   items: AddMenuTarget[];
   className?: string;
   menuClassName?: string;
   children: AddMenuRender;
-}) {
+}
+
+export const AddMenu = ({
+  defaultHref,
+  menuLabel,
+  items,
+  className,
+  menuClassName,
+  children,
+}: AddMenuProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);

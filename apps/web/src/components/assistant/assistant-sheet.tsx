@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { AssistantPanel } from "./assistant-panel";
 
 interface AssistantSheetProps {
-  open: boolean;
+  isOpen: boolean;
   onClose: () => void;
 }
 
@@ -28,9 +28,9 @@ interface AssistantSheetProps {
  * under `[data-mobile-frame]` and only fires below the sm: breakpoint,
  * so the desktop dialog stays centered.
  */
-export const AssistantSheet = ({ open, onClose }: AssistantSheetProps) => {
+export const AssistantSheet = ({ isOpen, onClose }: AssistantSheetProps) => {
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
         showCloseButton={false}
         className={cn(

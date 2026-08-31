@@ -92,33 +92,31 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
       </div>
 
       <section className="overflow-clip rounded-(--radius-lg) border border-(--border) bg-(--surface-1) divide-y divide-(--border)">
-        {grouped.length === 0 ? (
-          dataPending ? (
-            <div className="flex items-center justify-center py-10 text-sm text-zinc-500" aria-label="Loading">
-              Loading…
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-3 py-10 text-center">
-              {!hasAccounts ? (
-                <>
-                  <p className="text-sm font-semibold text-zinc-200">Add your first account</p>
-                  <p className="max-w-xs text-sm text-zinc-400">
-                    Create a bank, cash, wallet, or exchange account to start tracking.
-                  </p>
-                  <Button onClick={onNewAccount}>
-                    <Plus className="h-4 w-4" aria-hidden /> New account
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-zinc-500">No transactions yet</p>
-                  <Button size="sm" className="hidden md:inline-flex" onClick={onAddTransaction}>
-                    <Plus className="h-4 w-4" aria-hidden /> Add transaction
-                  </Button>
-                </>
-              )}
-            </div>
-          )
+        {dataPending ? (
+          <div className="flex items-center justify-center py-10 text-sm text-zinc-500" aria-label="Loading">
+            Loading…
+          </div>
+        ) : grouped.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            {!hasAccounts ? (
+              <>
+                <p className="text-sm font-semibold text-zinc-200">Add your first account</p>
+                <p className="max-w-xs text-sm text-zinc-400">
+                  Create a bank, cash, wallet, or exchange account to start tracking.
+                </p>
+                <Button onClick={onNewAccount}>
+                  <Plus className="h-4 w-4" aria-hidden /> New account
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-zinc-500">No transactions yet</p>
+                <Button size="sm" className="hidden md:inline-flex" onClick={onAddTransaction}>
+                  <Plus className="h-4 w-4" aria-hidden /> Add transaction
+                </Button>
+              </>
+            )}
+          </div>
         ) : (
           <>
             <div className="hidden justify-end border-b border-(--border) bg-(--surface-2) px-4 py-2 md:flex">

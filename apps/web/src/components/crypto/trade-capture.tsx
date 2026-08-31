@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -109,6 +111,92 @@ const tradeFormSchema = z.object({
 });
 
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
+
+type UseFormSetValue = ReturnType<typeof useForm<TradeFormValues>>["setValue"];
+
+interface BuySideControlsProps {
+  fiatAccounts: AccountOption[];
+  cryptoTokens: Token[];
+  sellAccountId: string;
+  buyTokenId: string;
+  setValue: UseFormSetValue;
+}
+
+const BuySideControls = ({ fiatAccounts, cryptoTokens, sellAccountId, buyTokenId, setValue }: BuySideControlsProps) => (
+  <div className="flex items-center gap-2">
+    <Select
+      value={sellAccountId || "__placeholder__"}
+      onValueChange={(v) => setValue("sellAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
+    >
+      <SelectTrigger aria-label="Spend from" className="h-11 flex-1">
+        <SelectValue placeholder="Spend from…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__placeholder__">Spend from…</SelectItem>
+        {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <span aria-hidden className="text-zinc-500">→</span>
+    <Select
+      value={buyTokenId || "__placeholder__"}
+      onValueChange={(v) => setValue("buyTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
+    >
+      <SelectTrigger aria-label="Buy token" className="h-11 flex-1">
+        <SelectValue placeholder="Select token…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__placeholder__">Select token…</SelectItem>
+        {cryptoTokens.map((t) => (
+          <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
+
+interface SellSideControlsProps {
+  fiatAccounts: AccountOption[];
+  cryptoTokens: Token[];
+  sellTokenId: string;
+  buyAccountId: string;
+  setValue: UseFormSetValue;
+}
+
+const SellSideControls = ({ fiatAccounts, cryptoTokens, sellTokenId, buyAccountId, setValue }: SellSideControlsProps) => (
+  <div className="flex items-center gap-2">
+    <Select
+      value={sellTokenId || "__placeholder__"}
+      onValueChange={(v) => setValue("sellTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
+    >
+      <SelectTrigger aria-label="Sell token" className="h-11 flex-1">
+        <SelectValue placeholder="Select token…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__placeholder__">Select token…</SelectItem>
+        {cryptoTokens.map((t) => (
+          <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+    <span aria-hidden className="text-zinc-500">→</span>
+    <Select
+      value={buyAccountId || "__placeholder__"}
+      onValueChange={(v) => setValue("buyAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
+    >
+      <SelectTrigger aria-label="Receive to" className="h-11 flex-1">
+        <SelectValue placeholder="Receive to…" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__placeholder__">Receive to…</SelectItem>
+        {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
+          <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  </div>
+);
 
 const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: TradeFormProps) => {
   const fiatAccounts = accounts.filter((a) => a.kind !== "exchange" && a.kind !== "wallet");
@@ -254,69 +342,21 @@ const TradeForm = ({ onOpenChange, userId, accounts, tokens, prices, onSave }: T
         )}
 
         {side === "buy" ? (
-          <div className="flex items-center gap-2">
-            <Select
-              value={sellAccountId || "__placeholder__"}
-              onValueChange={(v) => setValue("sellAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-            >
-              <SelectTrigger aria-label="Spend from" className="h-11 flex-1">
-                <SelectValue placeholder="Spend from…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__placeholder__">Spend from…</SelectItem>
-                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span aria-hidden className="text-zinc-500">→</span>
-            <Select
-              value={buyTokenId || "__placeholder__"}
-              onValueChange={(v) => setValue("buyTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-            >
-              <SelectTrigger aria-label="Buy token" className="h-11 flex-1">
-                <SelectValue placeholder="Select token…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__placeholder__">Select token…</SelectItem>
-                {cryptoTokens.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <BuySideControls
+            fiatAccounts={fiatAccounts}
+            cryptoTokens={cryptoTokens}
+            sellAccountId={sellAccountId}
+            buyTokenId={buyTokenId}
+            setValue={setValue}
+          />
         ) : (
-          <div className="flex items-center gap-2">
-            <Select
-              value={sellTokenId || "__placeholder__"}
-              onValueChange={(v) => setValue("sellTokenId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-            >
-              <SelectTrigger aria-label="Sell token" className="h-11 flex-1">
-                <SelectValue placeholder="Select token…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__placeholder__">Select token…</SelectItem>
-                {cryptoTokens.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.name} ({t.symbol})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span aria-hidden className="text-zinc-500">→</span>
-            <Select
-              value={buyAccountId || "__placeholder__"}
-              onValueChange={(v) => setValue("buyAccountId", v === "__placeholder__" ? "" : v, { shouldValidate: true })}
-            >
-              <SelectTrigger aria-label="Receive to" className="h-11 flex-1">
-                <SelectValue placeholder="Receive to…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__placeholder__">Receive to…</SelectItem>
-                {[...fiatAccounts].sort((a, b) => a.name.localeCompare(b.name)).map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <SellSideControls
+            fiatAccounts={fiatAccounts}
+            cryptoTokens={cryptoTokens}
+            sellTokenId={sellTokenId}
+            buyAccountId={buyAccountId}
+            setValue={setValue}
+          />
         )}
 
         <Input

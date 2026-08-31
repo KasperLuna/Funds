@@ -43,7 +43,7 @@ export const AssistantButton = ({ className }: AssistantButtonProps) => {
  */
 export const AssistantSheetMount = () => {
   const { open, setOpen } = useAssistantSheet();
-  return <AssistantSheet open={open} onClose={() => setOpen(false)} />;
+  return <AssistantSheet isOpen={open} onClose={() => setOpen(false)} />;
 };
 
 /**

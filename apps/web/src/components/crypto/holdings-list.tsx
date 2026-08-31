@@ -200,24 +200,19 @@ export const HoldingsList = (props: HoldingsListProps) => {
   });
   const prices = pricesQuery.data ?? new Map();
 
-  const totalValue = useMemo(
-    () => holdings.reduce((sum, h) => sum + computeValueUsd(h, prices), 0),
-    [holdings, prices],
-  );
+  const totalValue = holdings.reduce((sum, h) => sum + computeValueUsd(h, prices), 0);
 
-  const totalPL = useMemo(() => {
-    return holdings.reduce((sum, h) => {
-      const dec = Number(h.token.decimals) || 0;
-      const qty = Number(h.qtyMinor) / 10 ** dec;
-      const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined;
-      const value = qty * (price?.current_price ?? 0);
-      // cavetail: totalCostMinor = qty_minor × price_minor = qty×rate×10^(2·decimals);
-      // /10^(2·decimals) recovers dollars. Display-only, not arithmetic.
-      // eslint-disable-next-line local/no-money-float
-      const costBasis = Number(h.totalCostMinor) / 10 ** (2 * dec);
-      return sum + (value - costBasis);
-    }, 0);
-  }, [holdings, prices]);
+  const totalPL = holdings.reduce((sum, h) => {
+    const dec = Number(h.token.decimals) || 0;
+    const qty = Number(h.qtyMinor) / 10 ** dec;
+    const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined;
+    const value = qty * (price?.current_price ?? 0);
+    // cavetail: totalCostMinor = qty_minor × price_minor = qty×rate×10^(2·decimals);
+    // /10^(2·decimals) recovers dollars. Display-only, not arithmetic.
+    // eslint-disable-next-line local/no-money-float
+    const costBasis = Number(h.totalCostMinor) / 10 ** (2 * dec);
+    return sum + (value - costBasis);
+  }, 0);
 
   const allocationWithPct = holdings.map((h) => ({
     ...h,

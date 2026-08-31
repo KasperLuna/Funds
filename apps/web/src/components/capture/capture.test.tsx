@@ -44,7 +44,11 @@ function withQueryClient(ui: ReactElement) {
   return <QueryClientProvider client={client}>{ui}</QueryClientProvider>;
 }
 
-function Harness({ sync }: { sync: MemorySyncDatabase }) {
+interface HarnessProps {
+  sync: MemorySyncDatabase;
+}
+
+const Harness = ({ sync }: HarnessProps) => {
   const [open, setOpen] = useState(true);
   const { save } = useSaveUndo(sync);
   return (
@@ -61,9 +65,9 @@ function Harness({ sync }: { sync: MemorySyncDatabase }) {
       />
     </div>
   );
-}
+};
 
-function UndoHarness({ sync }: { sync: MemorySyncDatabase }) {
+const UndoHarness = ({ sync }: HarnessProps) => {
   const { save, canUndo, undo } = useSaveUndo(sync);
   return (
     <div>
@@ -77,15 +81,17 @@ function UndoHarness({ sync }: { sync: MemorySyncDatabase }) {
       )}
     </div>
   );
-}
+};
 
-function HarnessWithSuggestions({
-  sync,
-  recentTxns,
-}: {
+interface HarnessWithSuggestionsProps {
   sync: MemorySyncDatabase;
   recentTxns: RecentTxn[];
-}) {
+}
+
+const HarnessWithSuggestions = ({
+  sync,
+  recentTxns,
+}: HarnessWithSuggestionsProps) => {
   const [open, setOpen] = useState(true);
   const { save } = useSaveUndo(sync);
   return (
@@ -102,7 +108,7 @@ function HarnessWithSuggestions({
       />
     </div>
   );
-}
+};
 
 describe("CaptureSheet", () => {
   let sync: MemorySyncDatabase;
@@ -115,20 +121,20 @@ describe("CaptureSheet", () => {
   it("keypad drives the readout", async () => {
     const user = userEvent.setup();
     render(withQueryClient(<Harness sync={sync} />));
-    const readout = screen.getByTestId("amount-readout");
+    const readout = screen.getByLabelText("Amount");
 
     for (const k of ["1", "2", "5"]) await user.click(screen.getByRole("button", { name: k }));
-    expect(readout).toHaveTextContent("125.00");
+    expect(readout).toHaveValue("125");
 
     await user.click(screen.getByRole("button", { name: "Decimal point" }));
     await user.click(screen.getByRole("button", { name: "5" }));
-    expect(readout).toHaveTextContent("125.50");
+    expect(readout).toHaveValue("125.5");
 
     await user.click(screen.getByRole("button", { name: "Backspace" }));
-    expect(readout).toHaveTextContent("125.00");
+    expect(readout).toHaveValue("125.");
 
     await user.click(screen.getByRole("button", { name: "Clear" }));
-    expect(readout).toHaveTextContent("0.00");
+    expect(readout).toHaveValue("");
   });
 
   it("save writes a negative expense locally; undo tombstones it", async () => {
@@ -174,12 +180,12 @@ describe("CaptureSheet", () => {
     const user = userEvent.setup();
     render(withQueryClient(<Harness sync={sync} />));
 
-    const readout = screen.getByTestId("amount-readout");
+    const readout = screen.getByLabelText("Amount");
     // Account selector is a shadcn Select; open it and pick the 8-decimal account.
     await user.click(screen.getByRole("combobox", { name: "Account" }));
     await user.click(screen.getByRole("option", { name: "Wallet" }));
     await user.click(screen.getByRole("button", { name: "1" }));
-    expect(readout).toHaveTextContent("1.00000000");
+    expect(readout).toHaveValue("1");
   });
 
   it("save is disabled when amount is zero", () => {
@@ -221,8 +227,8 @@ describe("CaptureSheet", () => {
     const list = screen.getByRole("list", { name: "Suggestions" });
     await user.click(within(list).getByText(/Rent/));
     // Readout shows the unsigned magnitude; save becomes enabled.
-    const readout = screen.getByTestId("amount-readout");
-    expect(readout).toHaveTextContent("1500.00");
+    const readout = screen.getByLabelText("Amount");
+    expect(readout).toHaveValue("1500.00");
     expect(screen.getByRole("button", { name: "Expense" })).toHaveAttribute("aria-pressed", "true");
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).not.toBeDisabled();
@@ -242,8 +248,8 @@ describe("CaptureSheet", () => {
 
     const list = screen.getByRole("list", { name: "Suggestions" });
     await user.click(within(list).getByText(/Salary/));
-    const readout = screen.getByTestId("amount-readout");
-    expect(readout).toHaveTextContent("2500.00");
+    const readout = screen.getByLabelText("Amount");
+    expect(readout).toHaveValue("2500.00");
     expect(screen.getByRole("button", { name: "Income" })).toHaveAttribute("aria-pressed", "true");
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).not.toBeDisabled();
@@ -293,7 +299,7 @@ describe("CaptureSheet", () => {
     // Popover lists the template; tap it to apply.
     await user.click(screen.getByRole("option", { name: "Rent" }));
     expect(screen.getByRole("combobox", { name: "Templates" })).toHaveTextContent("Rent");
-    expect(screen.getByTestId("amount-readout")).toHaveTextContent("15000.00");
+    expect(screen.getByLabelText("Amount")).toHaveValue("15000.00");
   });
 
   it("deselects the active template when the form drifts from it", async () => {

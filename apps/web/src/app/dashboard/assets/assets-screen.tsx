@@ -115,7 +115,7 @@ export const AssetsScreen = () => {
       <SegmentedControl options={TABS} value={tab} onChange={handleTabChange} />
 
       {tab === "banks" ? (
-        <BanksPanel autoOpenTransfer={autoOpenTransfer} />
+        <BanksPanel isAutoOpenTransfer={autoOpenTransfer} />
       ) : (
         <CryptoPanel autoOpenTrade={autoOpenTrade} />
       )}

@@ -201,50 +201,18 @@ export const AssistantStatus = () => {
                     </span>
                   )}
                 </div>
-                {isActive ? (
-                  <Button variant="ghost" size="sm" onClick={handleUnload}>
-                    Unload
-                  </Button>
-                ) : deleteMutation.isPending && deleteTarget === id ? (
-                  <span className="text-[10px] text-zinc-500">Deleting…</span>
-                ) : downloadingModel === id ? (
-                  downloadProgress !== null ? (
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">
-                        <div
-                          className="h-full rounded-full bg-(--accent) transition-[width]"
-                          style={{ width: `${downloadProgress}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-zinc-400">{downloadProgress}%</span>
-                    </div>
-                  ) : null
-                ) : isCached ? (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(id)}
-                    >
-                      {isCached ? "Load" : "Download"}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeleteTarget(id)}
-                    >
-                      Delete
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownload(id)}
-                  >
-                    Download
-                  </Button>
-                )}
+                <ModelActionButton
+                  modelId={id}
+                  isActive={isActive}
+                  isCached={isCached}
+                  downloadingModel={downloadingModel}
+                  downloadProgress={downloadProgress}
+                  deletePending={deleteMutation.isPending}
+                  deleteTarget={deleteTarget}
+                  onDownload={handleDownload}
+                  onUnload={handleUnload}
+                  onRequestDelete={setDeleteTarget}
+                />
               </div>
             );
           })}
@@ -289,5 +257,77 @@ export const AssistantStatus = () => {
         </AlertDialog>
       )}
     </>
+  );
+};
+
+interface ModelActionButtonProps {
+  modelId: ModelId;
+  isActive: boolean;
+  isCached: boolean;
+  downloadingModel: ModelId | null;
+  downloadProgress: number | null;
+  deletePending: boolean;
+  deleteTarget: ModelId | null;
+  onDownload: (id: ModelId) => void;
+  onUnload: () => void;
+  onRequestDelete: (id: ModelId) => void;
+}
+
+const ModelActionButton = ({
+  modelId,
+  isActive,
+  isCached,
+  downloadingModel,
+  downloadProgress,
+  deletePending,
+  deleteTarget,
+  onDownload,
+  onUnload,
+  onRequestDelete,
+}: ModelActionButtonProps) => {
+  if (isActive) {
+    return (
+      <Button variant="ghost" size="sm" onClick={onUnload}>
+        Unload
+      </Button>
+    );
+  }
+  if (deletePending && deleteTarget === modelId) {
+    return <span className="text-[10px] text-zinc-500">Deleting…</span>;
+  }
+  if (downloadingModel === modelId) {
+    if (downloadProgress === null) return null;
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-700">
+          <div
+            className="h-full rounded-full bg-(--accent) transition-[width]"
+            style={{ width: `${downloadProgress}%` }}
+          />
+        </div>
+        <span className="text-[10px] text-zinc-400">{downloadProgress}%</span>
+      </div>
+    );
+  }
+  if (isCached) {
+    return (
+      <>
+        <Button variant="outline" size="sm" onClick={() => onDownload(modelId)}>
+          Load
+        </Button>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => onRequestDelete(modelId)}
+        >
+          Delete
+        </Button>
+      </>
+    );
+  }
+  return (
+    <Button variant="outline" size="sm" onClick={() => onDownload(modelId)}>
+      Download
+    </Button>
   );
 };

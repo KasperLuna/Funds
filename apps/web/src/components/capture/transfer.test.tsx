@@ -27,15 +27,17 @@ const CATEGORIES: CategoryOption[] = [
   { id: "cat-rent", name: "Rent" },
 ];
 
-function Harness({
-  onSave,
-  categories = [],
-  onCreateCategory,
-}: {
+interface HarnessProps {
   onSave: TransferSheetProps["onSave"];
   categories?: CategoryOption[];
   onCreateCategory?: TransferSheetProps["onCreateCategory"];
-}) {
+}
+
+const Harness = ({
+  onSave,
+  categories = [],
+  onCreateCategory,
+}: HarnessProps) => {
   const [open, setOpen] = useState(true);
   return (
     <TransferSheet
@@ -49,7 +51,7 @@ function Harness({
       defaultFromAccountId="acc-1"
     />
   );
-}
+};
 
 describe("TransferSheet", () => {
   let sync: MemorySyncDatabase;
@@ -62,9 +64,9 @@ describe("TransferSheet", () => {
   it("keypad drives the readout", async () => {
     const user = userEvent.setup();
     render(<Harness onSave={() => {}} />);
-    const readout = screen.getByTestId("amount-readout");
+    const readout = screen.getByLabelText("Amount");
     for (const k of ["1", "2", "5"]) await user.click(screen.getByRole("button", { name: k }));
-    expect(readout).toHaveTextContent("125.00");
+    expect(readout).toHaveValue("125");
   });
 
   it("save is disabled with zero amount", () => {

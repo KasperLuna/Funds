@@ -217,23 +217,17 @@ export const DashboardScreen = () => {
     [txns],
   );
 
-  const bankBalance = useMemo(
-    () =>
-      accounts
-        .filter((a) => !CRYPTO_KINDS.has(a.kind))
-        .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n),
-    [accounts, activeTxns],
-  );
+  const bankBalance =
+    accounts
+      .filter((a) => !CRYPTO_KINDS.has(a.kind))
+      .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n);
 
-  const cryptoAccountBalance = useMemo(
-    () =>
-      accounts
-        .filter((a) => CRYPTO_KINDS.has(a.kind))
-        .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n),
-    [accounts, activeTxns],
-  );
+  const cryptoAccountBalance =
+    accounts
+      .filter((a) => CRYPTO_KINDS.has(a.kind))
+      .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n);
 
-  const bankAccountSlices = useMemo(() => {
+  const bankAccountSlices = (() => {
     const bankAccounts = accounts
       .filter((a) => !CRYPTO_KINDS.has(a.kind))
       .map((a) => ({
@@ -249,20 +243,15 @@ export const DashboardScreen = () => {
       color: s.color === FALLBACK_COLORS[0] ? FALLBACK_COLORS[i % FALLBACK_COLORS.length]! : s.color,
       pct: total > 0n ? Number(((s.balance < 0n ? -s.balance : s.balance) * 100n) / total) : 0,
     }));
-  }, [accounts, activeTxns]);
+  })();
 
   // Token holdings (crypto tab model) — not represented as accounts, so they
   // must be valued separately to count toward net worth.
-  const tokenHoldings = useMemo(
-    () => computeHoldings(tokens, tokenTxns),
-    [tokens, tokenTxns],
-  );
+  const tokenHoldings = computeHoldings(tokens, tokenTxns);
 
-  const recentTxns = useMemo(() => {
-    return [...activeTxns]
-      .sort((a, b) => b.date - a.date)
-      .slice(0, 5);
-  }, [activeTxns]);
+  const recentTxns = [...activeTxns]
+    .sort((a, b) => b.date - a.date)
+    .slice(0, 5);
 
   const recentForCapture: RecentTxn[] = recentTxns.map((t) => ({
     id: t.id,
@@ -323,7 +312,7 @@ export const DashboardScreen = () => {
 
   const primaryCode = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.code : "USD";
 
-  const monthlySpending = useMemo(() => spendingByMonth(activeTxns, categories, 12), [activeTxns, categories]);
+  const monthlySpending = spendingByMonth(activeTxns, categories, 12);
   const sparkData = monthlySpending.map((m) => ({ month: m.month, expense: privacy ? 0 : Number(m.expense) }));
 
   const coingeckoKey = useMemo(
@@ -353,29 +342,27 @@ export const DashboardScreen = () => {
     [tokenHoldings, prices],
   );
 
-  const cryptoBalance = useMemo(
-    () => cryptoAccountBalance + tokenValueMinor,
-    [cryptoAccountBalance, tokenValueMinor],
-  );
+  const cryptoBalance = cryptoAccountBalance + tokenValueMinor;
 
-  const totalBalance = useMemo(
-    () => bankBalance + cryptoBalance,
-    [bankBalance, cryptoBalance],
-  );
+  const totalBalance = bankBalance + cryptoBalance;
 
   const typePrefill: VoicePrefill | undefined =
     typeParam === "income" || typeParam === "expense"
       ? { accountId: null, amountInput: null, categoryIds: [], description: "", type: typeParam }
       : undefined;
 
+  const editAmountInput = editTxn
+    ? (() => {
+        const dec = accountInfo[editTxn.accountId]?.decimals ?? 2;
+        const abs = editTxn.amountMinor < 0n ? -editTxn.amountMinor : editTxn.amountMinor;
+        return (Number(abs) / 10 ** dec).toFixed(dec);
+      })()
+    : null;
+
   const txnPrefill: VoicePrefill | undefined = editTxn
     ? {
         accountId: editTxn.accountId,
-        amountInput: (() => {
-          const dec = accountInfo[editTxn.accountId]?.decimals ?? 2;
-          const abs = editTxn.amountMinor < 0n ? -editTxn.amountMinor : editTxn.amountMinor;
-          return (Number(abs) / 10 ** dec).toFixed(dec);
-        })(),
+        amountInput: editAmountInput!,
         categoryIds: editTxn.categoryIds,
         description: editTxn.description,
         type: editTxn.type,

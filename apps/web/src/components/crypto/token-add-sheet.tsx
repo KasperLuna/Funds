@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import { queryKeys, useSyncMutation } from "@/lib/sync/sync-query";
 import { useSync } from "@/lib/sync/sync-context";
 import { useAssets, type Asset } from "@/lib/assets";
 import type { Token } from "@/lib/crypto/crypto-store";
+import { cn } from "@/lib/utils";
 
 interface TokenAddSheetProps {
   isOpen: boolean;
@@ -84,12 +85,12 @@ const TokenAddForm = (props: TokenAddFormProps) => {
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setSelectedId(asset.id)}
-                      className={
-                        "flex w-full items-center justify-between rounded-(--radius-md) border px-3 py-2 text-left text-sm transition-colors " +
-                        (isSelected
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-(--radius-md) border px-3 py-2 text-left text-sm transition-colors",
+                        isSelected
                           ? "border-(--accent) bg-(--surface-2) text-foreground"
-                          : "border-(--border-strong) text-zinc-300 hover:bg-(--surface-2)")
-                      }
+                          : "border-(--border-strong) text-zinc-300 hover:bg-(--surface-2)",
+                      )}
                     >
                       <span className="font-medium">{asset.name}</span>
                       <span className="text-xs text-zinc-500">{asset.code}</span>
@@ -117,16 +118,14 @@ const TokenAddForm = (props: TokenAddFormProps) => {
 export const TokenAddSheet = (props: TokenAddSheetProps) => {
   const { isOpen, onOpenChange, userId, existingTokens } = props;
   const { assets } = useAssets();
-  const availableAssets = useMemo(() => {
-    const heldSymbols = new Set(
-      existingTokens
-        .filter((t) => !t.deletedAt)
-        .map((t) => t.symbol.toUpperCase()),
-    );
-    return assets
-      .filter((a) => a.kind === "crypto")
-      .filter((a) => !heldSymbols.has(a.code.toUpperCase()));
-  }, [assets, existingTokens]);
+  const heldSymbols = new Set(
+    existingTokens
+      .filter((t) => !t.deletedAt)
+      .map((t) => t.symbol.toUpperCase()),
+  );
+  const availableAssets = assets
+    .filter((a) => a.kind === "crypto")
+    .filter((a) => !heldSymbols.has(a.code.toUpperCase()));
 
   if (!isOpen) return null;
   return (

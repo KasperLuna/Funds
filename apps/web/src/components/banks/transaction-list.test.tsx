@@ -33,7 +33,7 @@ describe("TransactionList", () => {
       makeTxn({ id: "t3", description: "Dinner", date: new Date(2025, 0, 14, 18).getTime() }),
     ];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     expect(within(mobileList).getByText("Coffee")).toBeInTheDocument();
     expect(within(mobileList).getByText("Lunch")).toBeInTheDocument();
     expect(within(mobileList).getByText("Dinner")).toBeInTheDocument();
@@ -45,8 +45,8 @@ describe("TransactionList", () => {
       makeTxn({ id: "t2", description: "Grocery Store" }),
     ];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    fireEvent.change(screen.getByTestId("search-input"), { target: { value: "coffee" } });
-    const mobileList = screen.getByTestId("mobile-list");
+    fireEvent.change(screen.getByPlaceholderText("Search transactions..."), { target: { value: "coffee" } });
+    const mobileList = screen.getByLabelText("Transaction list");
     expect(within(mobileList).getByText("Coffee Shop")).toBeInTheDocument();
     expect(within(mobileList).queryByText("Grocery Store")).not.toBeInTheDocument();
   });
@@ -57,9 +57,9 @@ describe("TransactionList", () => {
       makeTxn({ id: "t2", description: "Bus", categoryIds: ["cat-2"] }),
     ];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    const categoryFilter = screen.getByTestId("category-filter");
+    const categoryFilter = screen.getByLabelText("Category filter");
     fireEvent.click(within(categoryFilter).getByText("Food"));
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     expect(within(mobileList).getByText("Coffee")).toBeInTheDocument();
     expect(within(mobileList).queryByText("Bus")).not.toBeInTheDocument();
   });
@@ -71,9 +71,9 @@ describe("TransactionList", () => {
       makeTxn({ id: "t2", description: "Feb item", date: new Date(2025, 1, 15).getTime() }),
     ];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    await user.click(screen.getByTestId("month-picker"));
+    await user.click(screen.getByLabelText("Month"));
     await user.click(screen.getByRole("option", { name: /Jan 2025/ }));
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     expect(within(mobileList).getByText("Jan item")).toBeInTheDocument();
     expect(within(mobileList).queryByText("Feb item")).not.toBeInTheDocument();
   });
@@ -82,7 +82,7 @@ describe("TransactionList", () => {
     const txns = [makeTxn({ id: "t1", description: "Swipeable" })];
     const onDuplicate = vi.fn();
     render(<TransactionList txns={txns} categories={CATEGORIES} onDuplicate={onDuplicate} />);
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     const descriptions = within(mobileList).getAllByText("Swipeable");
     const targetRow = descriptions[0]!.closest("[class*='touch']")!;
     fireEvent.touchStart(targetRow, { touches: [{ clientX: 0, clientY: 0 }] });
@@ -95,7 +95,7 @@ describe("TransactionList", () => {
     const txns = [makeTxn({ id: "t1", description: "Deletable" })];
     const onDelete = vi.fn();
     render(<TransactionList txns={txns} categories={CATEGORIES} onDelete={onDelete} />);
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     const descriptions = within(mobileList).getAllByText("Deletable");
     const targetRow = descriptions[0]!.closest("[class*='touch']")!;
     fireEvent.touchStart(targetRow, { touches: [{ clientX: 100, clientY: 0 }] });
@@ -109,7 +109,7 @@ describe("TransactionList", () => {
     today.setHours(10, 0, 0, 0);
     const txns = [makeTxn({ id: "t1", description: "Today item", date: today.getTime() })];
     render(<TransactionList txns={txns} categories={CATEGORIES} />);
-    const mobileList = screen.getByTestId("mobile-list");
+    const mobileList = screen.getByLabelText("Transaction list");
     expect(within(mobileList).getByText("Today")).toBeInTheDocument();
   });
 });

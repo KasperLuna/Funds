@@ -125,12 +125,12 @@ export const CaptureFormFields = (props: CaptureFormFieldsProps) => {
                   type="button"
                   aria-pressed={!dateOverride && datePreset === preset}
                   onClick={() => onDatePreset(preset)}
-                  className={
-                    "min-h-11 flex-1 items-center rounded-(--radius-sm) px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none " +
-                    (!dateOverride && datePreset === preset
+                  className={cn(
+                    "min-h-11 flex-1 items-center rounded-(--radius-sm) px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none",
+                    !dateOverride && datePreset === preset
                       ? "bg-(--surface-2) text-inherit"
-                      : "text-zinc-400 hover:bg-(--surface-2) hover:text-inherit")
-                  }
+                      : "text-zinc-400 hover:bg-(--surface-2) hover:text-inherit",
+                  )}
                 >
                   {preset === "today" ? "Today" : "Yesterday"}
                 </button>

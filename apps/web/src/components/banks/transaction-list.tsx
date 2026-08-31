@@ -284,9 +284,9 @@ export const TransactionList = (props: TransactionListProps) => {
   );
   const [selectedMonth, setSelectedMonth] = useState<string>("");
 
-  const monthOptions = useMemo(() => getMonthOptions(txns), [txns]);
+  const monthOptions = getMonthOptions(txns);
 
-  const filteredTxns = useMemo(() => {
+  const filteredTxns = (() => {
     let result = txns.filter((t) => !t.deletedAt);
 
     if (search) {
@@ -313,9 +313,9 @@ export const TransactionList = (props: TransactionListProps) => {
     }
 
     return result;
-  }, [txns, search, selectedCategories, selectedMonth]);
+  })();
 
-  const groups = useMemo(() => groupByDay(filteredTxns), [filteredTxns]);
+  const groups = groupByDay(filteredTxns);
 
   const toggleCategory = (catId: string) => {
     setSelectedCategories((prev) => {
@@ -341,7 +341,7 @@ export const TransactionList = (props: TransactionListProps) => {
           data-testid="search-input"
         />
 
-        <div className="flex flex-wrap gap-1" data-testid="category-filter">
+        <div className="flex flex-wrap gap-1" data-testid="category-filter" aria-label="Category filter">
           {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((cat) => {
             const isActive = selectedCategories.has(cat.id);
             return (
@@ -368,7 +368,7 @@ export const TransactionList = (props: TransactionListProps) => {
           value={selectedMonth || "__all__"}
           onValueChange={(v) => setSelectedMonth(v === "__all__" ? "" : v)}
         >
-          <SelectTrigger className="h-11 w-[160px]" data-testid="month-picker">
+          <SelectTrigger aria-label="Month" className="h-11 w-[160px]" data-testid="month-picker">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -382,7 +382,7 @@ export const TransactionList = (props: TransactionListProps) => {
         </Select>
       </div>
 
-      <div className="flex-1 overflow-hidden lg:hidden" data-testid="mobile-list">
+      <div className="flex-1 overflow-hidden lg:hidden" data-testid="mobile-list" aria-label="Transaction list">
         <VirtualList
           groups={groups}
           categories={categories}
@@ -391,7 +391,7 @@ export const TransactionList = (props: TransactionListProps) => {
         />
       </div>
 
-      <div className="flex-1 overflow-hidden hidden lg:block" data-testid="desktop-table">
+      <div className="flex-1 overflow-hidden hidden lg:block" data-testid="desktop-table" aria-label="Transaction table">
         <DesktopTable
           groups={groups}
           categories={categories}

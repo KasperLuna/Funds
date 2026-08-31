@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface AmountInputProps {
@@ -64,71 +63,66 @@ const labelToneClass: Record<NonNullable<AmountInputProps["tone"]>, string> = {
  * (no input, no soft keyboard, no autofocus). On desktop the user types,
  * so we render a real <input>. Both paths produce the same visual.
  */
-export const AmountInput = React.forwardRef<HTMLInputElement, AmountInputProps>(
-  function AmountInput(
-    {
-      assetCode,
-      tone = "foreground",
-      value,
-      display,
-      onChange,
-      sanitize,
-      decimals,
-      "aria-label": ariaLabel = "Amount",
-      className,
-      autoFocus,
-      testId,
-    },
-    ref,
-  ) {
-    return (
-      <div
-        className={cn(
-          "guilloche relative flex items-stretch rounded-(--radius-md) border border-(--border)",
-          className,
-        )}
-      >
-        {assetCode ? (
-          <div
-            aria-hidden
-            className={cn(
-              "flex shrink-0 items-center pl-4 pr-3 text-display-sm font-semibold tracking-tight",
-              labelToneClass[tone],
-            )}
-          >
-            {assetCode}
-          </div>
-        ) : null}
-        {assetCode ? (
-          <div aria-hidden className="my-3 w-px self-stretch bg-white/10" />
-        ) : null}
+export const AmountInput = (props: AmountInputProps) => {
+  const {
+    assetCode,
+    tone = "foreground",
+    value,
+    display,
+    onChange,
+    sanitize,
+    decimals,
+    "aria-label": ariaLabel = "Amount",
+    className,
+    autoFocus,
+    testId,
+  } = props;
+  return (
+    <div
+      className={cn(
+        "guilloche relative flex items-stretch rounded-(--radius-md) border border-(--border)",
+        className,
+      )}
+    >
+      {assetCode ? (
         <div
-          data-testid={testId ?? "amount-readout"}
-          aria-live="polite"
+          aria-hidden
           className={cn(
-            "flex min-w-0 flex-1 items-center justify-end overflow-hidden px-4 py-3 text-display-sm font-semibold tracking-tight tabular-nums",
-            toneClass[tone],
+            "flex shrink-0 items-center pl-4 pr-3 text-display-sm font-semibold tracking-tight",
+            labelToneClass[tone],
           )}
         >
-          {/* Mobile: keypad drives the buffer, span displays it (formatted). */}
-          <span className="truncate text-right sm:hidden">
-            {(display ?? value) || "0"}
-          </span>
-          {/* Desktop: user types. */}
-          <input
-            ref={ref}
-            type="text"
-            inputMode="decimal"
-            aria-label={ariaLabel}
-            autoFocus={autoFocus}
-            value={value}
-            onChange={(e) => onChange(sanitize(e.target.value))}
-            placeholder="0"
-            maxLength={decimals + 16}
-            className="hidden min-w-0 flex-1 border-0 bg-transparent text-right font-display text-inherit outline-none placeholder:text-zinc-600 focus:ring-0 sm:block"
-          />
+          {assetCode}
         </div>
+      ) : null}
+      {assetCode ? (
+        <div aria-hidden className="my-3 w-px self-stretch bg-white/10" />
+      ) : null}
+      <div
+        data-testid={testId ?? "amount-readout"}
+        aria-live="polite"
+        className={cn(
+          "flex min-w-0 flex-1 items-center justify-end overflow-hidden px-4 py-3 text-display-sm font-semibold tracking-tight tabular-nums",
+          toneClass[tone],
+        )}
+      >
+        {/* Mobile: keypad drives the buffer, span displays it (formatted). */}
+        <span className="truncate text-right sm:hidden">
+          {(display ?? value) || "0"}
+        </span>
+        {/* Desktop: user types. */}
+        <input
+          type="text"
+          inputMode="decimal"
+          aria-label={ariaLabel}
+          autoFocus={autoFocus}
+          value={value}
+          onChange={(e) => onChange(sanitize(e.target.value))}
+          placeholder="0"
+          maxLength={decimals + 16}
+          className="hidden min-w-0 flex-1 border-0 bg-transparent text-right font-display text-inherit outline-none placeholder:text-zinc-600 focus:ring-0 sm:block"
+        />
       </div>
-    );
-  },
-);
+    </div>
+  );
+};

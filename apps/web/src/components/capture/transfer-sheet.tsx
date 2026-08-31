@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+"use client";
+
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -137,9 +139,16 @@ const TransferForm = ({
   const categoryIds = watch("categoryIds");
   const feeInput = watch("feeInput") ?? "";
 
-  const [amount, setAmount] = useState<AmountState>(() =>
+  const [amount, setAmountRaw] = useState<AmountState>(() =>
     emptyAmount(first?.decimals ?? 2),
   );
+  const setAmount = (updater: AmountState | ((s: AmountState) => AmountState)) => {
+    setAmountRaw((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      setValue("amountInput", next.input, { shouldValidate: true });
+      return next;
+    });
+  };
   const [error, setError] = useState<string | null>(null);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const inlineForm = useForm<InlineCategoryValues>({
@@ -184,10 +193,6 @@ const TransferForm = ({
   const from = accounts.find((a) => a.id === fromId);
   const to = accounts.find((a) => a.id === toId);
   const decimals = from?.decimals ?? 2;
-
-  useEffect(() => {
-    form.setValue("amountInput", amount.input, { shouldValidate: true });
-  }, [amount, form]);
 
   const handleKey = (key: DigitKey) => setAmount((s) => applyDigit(s, key));
   const minor = amountToMinor(amount);

@@ -164,11 +164,11 @@ function formatDayHeader(day: string): string {
 }
 
 interface BanksPanelProps {
-  autoOpenTransfer?: boolean;
+  isAutoOpenTransfer?: boolean;
 }
 
 export const BanksPanel = (props: BanksPanelProps) => {
-  const { autoOpenTransfer } = props;
+  const { isAutoOpenTransfer } = props;
   const { db, userId } = useSync();
   const queryClient = useQueryClient();
   const { masked: privacy } = usePrivacy();
@@ -233,6 +233,7 @@ export const BanksPanel = (props: BanksPanelProps) => {
     const catId = searchParams.get("category");
     if (catId) {
       setFilters((f) => ({ ...f, categoryIds: [catId] }));
+      setVisibleCount(PAGE_SIZE);
       router.replace("/dashboard/assets?tab=banks", { scroll: false });
     }
   }, [searchParams, router]);
@@ -257,9 +258,23 @@ export const BanksPanel = (props: BanksPanelProps) => {
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
   }, []);
 
+  // cavetail: one-time deep-link signal from the parent's URL search params.
+  // React's controlled-component model can't express "open on mount based on a
+  // prop" without an effect; the effect runs exactly once per flag value and
+  // the parent already strips the query param after consumption.
   useEffect(() => {
-    if (autoOpenTransfer) setTransferOpen(true);
-  }, [autoOpenTransfer]);
+    if (isAutoOpenTransfer) setTransferOpen(true);
+  }, [isAutoOpenTransfer]);
+
+  const handleFiltersChange = (next: TxnFilters) => {
+    setFilters(next);
+    setVisibleCount(PAGE_SIZE);
+  };
+
+  const handleSelectAccount = (id: string | null) => {
+    setSelectedAccountId(id);
+    setVisibleCount(PAGE_SIZE);
+  };
 
   const visibleTxns = useMemo(
     () => {
@@ -283,8 +298,6 @@ export const BanksPanel = (props: BanksPanelProps) => {
   const pagedTxns = useMemo(() => sortedDesc.slice(0, visibleCount), [sortedDesc, visibleCount]);
 
   const grouped = useMemo(() => groupByDay(pagedTxns), [pagedTxns]);
-
-  useEffect(() => setVisibleCount(PAGE_SIZE), [visibleTxns]);
 
   useEffect(() => {
     const el = loadMoreRef.current;
@@ -357,7 +370,7 @@ export const BanksPanel = (props: BanksPanelProps) => {
         await db.table("transactions").upsert(upsertTxnRow(uid, row));
       }
 
-      if (selectedAccountId === a.id) setSelectedAccountId(null);
+      if (selectedAccountId === a.id) handleSelectAccount(null);
     },
   });
   const handleAccountDelete = (a: Account) => accountDeleteMutation.mutate(a);
@@ -576,8 +589,8 @@ export const BanksPanel = (props: BanksPanelProps) => {
         archivedAccounts={archivedAccounts}
         selectedAccountId={selectedAccountId}
         showArchived={showArchived}
-        onSelectAll={() => setSelectedAccountId(null)}
-        onSelectAccount={setSelectedAccountId}
+        onSelectAll={() => handleSelectAccount(null)}
+        onSelectAccount={handleSelectAccount}
         onNewAccount={() => { setEditAccount(null); setDialogOpen(true); }}
         onToggleArchived={() => setShowArchived((s) => !s)}
       />
@@ -661,7 +674,7 @@ export const BanksPanel = (props: BanksPanelProps) => {
         sortedDesc={sortedDesc}
         visibleCount={visibleCount}
         filters={filters}
-        onFiltersChange={setFilters}
+        onFiltersChange={handleFiltersChange}
         categories={categories}
         accounts={accounts}
         categoryInfoList={categoryInfoList}

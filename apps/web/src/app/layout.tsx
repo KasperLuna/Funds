@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,7 +51,7 @@ interface RootLayoutProps {
 
 const RootLayout = ({ children }: RootLayoutProps) => {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} bg-black`}>
+    <html lang="en" className={cn(inter.variable, spaceGrotesk.variable, "bg-black")}>
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

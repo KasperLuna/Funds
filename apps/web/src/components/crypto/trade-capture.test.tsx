@@ -36,7 +36,7 @@ const PRICES: Map<string, CoinPrice> = new Map([
   ["bitcoin", { current_price: 60000 } as unknown as CoinPrice],
 ]);
 
-function Harness(props: Partial<TradeCaptureProps>) {
+const Harness = (props: Partial<TradeCaptureProps>) => {
   const [open, setOpen] = useState(true);
   return (
     <TradeCapture
@@ -50,7 +50,7 @@ function Harness(props: Partial<TradeCaptureProps>) {
       {...props}
     />
   );
-}
+};
 
 describe("TradeCapture mobile focus", () => {
   it("mobile keypad collapses when a text input gains focus", async () => {

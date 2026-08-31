@@ -175,7 +175,7 @@ export const CategoriesScreen = () => {
   const budgets = budgetsQuery.data ?? [];
 
   const [editCategory, setEditCategory] = useState<Category | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const now = new Date();
   const [viewMonth, setViewMonth] = useState(() => ({
@@ -251,14 +251,21 @@ export const CategoriesScreen = () => {
     [categories, budgets, txns, viewMonth],
   );
 
+  const totalSpent = budgetUsages.reduce((s, u) => s + u.spentMinor, 0n);
+  const totalBudget = budgetUsages.reduce((s, u) => s + u.budgetMinor, 0n);
+  const totalPct = totalBudget > 0n ? Number((totalSpent * 10000n) / totalBudget) / 100 : 0;
+  const totalClamped = Math.min(totalPct, 100);
+  const isTotalWarning = totalPct >= 80 && totalPct <= 100;
+  const isTotalOver = totalPct > 100;
+
   const openNew = () => {
     setEditCategory(null);
-    setDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
   const openEdit = (c: Category) => {
     setEditCategory(c);
-    setDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
   const defaultBudgetAssetId =
@@ -316,46 +323,36 @@ export const CategoriesScreen = () => {
             </div>
           </div>
           <div className="flex flex-col gap-3">
-            {(() => {
-              const totalSpent = budgetUsages.reduce((s, u) => s + u.spentMinor, 0n);
-              const totalBudget = budgetUsages.reduce((s, u) => s + u.budgetMinor, 0n);
-              const totalPct = totalBudget > 0n ? Number((totalSpent * 10000n) / totalBudget) / 100 : 0;
-              const totalClamped = Math.min(totalPct, 100);
-              const isTotalWarning = totalPct >= 80 && totalPct <= 100;
-              const isTotalOver = totalPct > 100;
-              return (
-                <div className="rounded-(--radius-md) bg-(--surface-2) p-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-zinc-400">Overall</span>
-                    <span
-                      className={cn(
-                        "tabular-nums",
-                        isTotalOver
-                          ? "font-medium text-(--danger)"
-                          : isTotalWarning
-                            ? "font-medium text-(--warning)"
-                            : "text-zinc-400",
-                      )}
-                    >
-                      {Math.round(totalPct)}%
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-(--surface-3)">
-                    <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        isTotalOver
-                          ? "bg-(--danger)"
-                          : isTotalWarning
-                            ? "bg-(--warning)"
-                            : "bg-(--accent)",
-                      )}
-                      style={{ width: `${totalClamped}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
+            <div className="rounded-(--radius-md) bg-(--surface-2) p-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">Overall</span>
+                <span
+                  className={cn(
+                    "tabular-nums",
+                    isTotalOver
+                      ? "font-medium text-(--danger)"
+                      : isTotalWarning
+                        ? "font-medium text-(--warning)"
+                        : "text-zinc-400",
+                  )}
+                >
+                  {Math.round(totalPct)}%
+                </span>
+              </div>
+              <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-(--surface-3)">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    isTotalOver
+                      ? "bg-(--danger)"
+                      : isTotalWarning
+                        ? "bg-(--warning)"
+                        : "bg-(--accent)",
+                  )}
+                  style={{ width: `${totalClamped}%` }}
+                />
+              </div>
+            </div>
             {budgetUsages.map(({ category, spentMinor, budgetMinor, budgetAssetId }) => {
               const asset = budgetAssetId ? assetsById.get(budgetAssetId) : undefined;
               const decimals = asset?.decimals ?? 2;
@@ -483,10 +480,10 @@ export const CategoriesScreen = () => {
         </div>
       )}
 
-      {dialogOpen && (
+      {isDialogOpen && (
         <CategoryDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          isOpen={isDialogOpen}
+          onOpenChange={setIsDialogOpen}
           onSave={handleSave}
           editCategory={editCategory}
           assets={assets}
@@ -518,8 +515,8 @@ export const CategoriesScreen = () => {
 };
 
 interface CategoryDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
   onSave: (c: Category) => void;
   editCategory: Category | null;
   assets: Array<{ id: string; code: string; decimals: number }>;
@@ -527,7 +524,7 @@ interface CategoryDialogProps {
 }
 
 interface CategoryFormProps {
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (isOpen: boolean) => void;
   onSave: (c: Category) => void;
   editCategory: Category | null;
   assets: Array<{ id: string; code: string; decimals: number }>;
@@ -646,9 +643,10 @@ const CategoryForm = ({
                   aria-checked={color === c}
                   aria-label={c}
                   onClick={() => setValue("color", c, { shouldValidate: true })}
-                  className={`h-8 w-8 rounded-full transition-transform ${
-                    color === c ? "scale-110 ring-2 ring-white" : "hover:scale-105"
-                  }`}
+                  className={cn(
+                    "h-8 w-8 rounded-full transition-transform",
+                    color === c ? "scale-110 ring-2 ring-white" : "hover:scale-105",
+                  )}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -733,14 +731,14 @@ const CategoryForm = ({
 };
 
 const CategoryDialog = ({
-  open,
+  isOpen,
   onOpenChange,
   onSave,
   editCategory,
   assets,
   defaultAssetId,
 }: CategoryDialogProps) => {
-  if (!open) return null;
+  if (!isOpen) return null;
   return (
     <CategoryForm
       onOpenChange={onOpenChange}
