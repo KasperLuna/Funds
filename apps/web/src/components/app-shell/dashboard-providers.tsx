@@ -8,6 +8,7 @@ import { signOutAndWipe } from "@/lib/sync/sign-out";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NavLink, MobileTab, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
 import { AddMenu, ADD_MENU_TARGETS } from "@/components/app-shell/add-menu";
+import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
 import { FundsLogo } from "@/components/brand/funds-logo";
 import { UserCard } from "@/components/auth/user-card";
 import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicator";
@@ -18,6 +19,9 @@ import { VoicePrefillProvider } from "@/lib/voice/voice-context";
 import { AssistantButton, AssistantOpener, AssistantSheetMount } from "@/components/assistant/assistant-button";
 import { AssistantSheetProvider } from "@/components/assistant/assistant-sheet-context";
 import { ChatProvider } from "@/components/assistant/use-chat";
+import { CaptureSheetProvider } from "@/components/capture/capture-sheet-context";
+import { CaptureSheetMount } from "@/components/capture/capture-sheet-mount";
+import { CaptureOpener } from "@/components/capture/capture-opener";
 
 interface DashboardProvidersProps {
   children: ReactNode;
@@ -34,7 +38,11 @@ export const DashboardProviders = ({ children }: DashboardProvidersProps) => {
                 <AssistantOpener />
                 <AssistantButton />
                 <AssistantSheetMount />
-                {children}
+                <CaptureSheetProvider>
+                  <CaptureOpener />
+                  <CaptureSheetMount />
+                  {children}
+                </CaptureSheetProvider>
               </AssistantSheetProvider>
             </ChatProvider>
           </VoicePrefillProvider>
@@ -92,6 +100,58 @@ const SidebarSignOut = () => {
 interface DashboardShellProps {
   children: ReactNode;
 }
+
+const MobileAddFab = () => {
+  const { setOpen, setPrefill } = useCaptureSheet();
+  const openCapture = (type: "expense" | "income") => {
+    setPrefill({ accountId: null, amountInput: null, categoryIds: [], description: "", type });
+    setOpen(true);
+  };
+  const items = ADD_MENU_TARGETS.map((t) =>
+    t.label === "Expense" ? { ...t, onOpen: () => openCapture("expense") } :
+    t.label === "Income" ? { ...t, onOpen: () => openCapture("income") } :
+    t,
+  );
+  return (
+    <AddMenu
+      defaultHref="/dashboard?capture=1"
+      menuLabel="Log transaction"
+      items={items}
+      className="self-center"
+      menuClassName="bottom-full left-1/2 -translate-x-1/2 mb-2"
+      defaultOnOpen={() => {
+        setPrefill(undefined);
+        setOpen(true);
+      }}
+    >
+      {({ open, onToggle, defaultOnOpen }) => (
+        <div className="flex flex-col items-center -mt-6">
+          <button
+            type="button"
+            aria-label="More transaction types"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={onToggle}
+            className="flex h-5 w-9 items-center justify-center rounded-t-[6px] border border-(--border-strong) border-b-0 bg-(--surface-3) text-zinc-400 transition-colors hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+          >
+            <ChevronUp
+              className={cn("h-3.5 w-3.5 transition-transform duration-150 ease-out", open && "-translate-y-0.5")}
+              aria-hidden
+            />
+          </button>
+          <button
+            type="button"
+            onClick={() => defaultOnOpen?.()}
+            aria-label="Add transaction"
+            className="flex h-16 w-16 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) ring-4 ring-(--bg) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-95"
+          >
+            <Plus className="h-7 w-7" strokeWidth={2.5} aria-hidden />
+          </button>
+        </div>
+      )}
+    </AddMenu>
+  );
+};
 
 export const DashboardShell = ({ children }: DashboardShellProps) => {
   return (
@@ -160,39 +220,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
         <div className="grid grid-cols-5 items-center">
           <MobileTab item={NAV_ITEMS[0]!} />
           <MobileTab item={NAV_ITEMS[1]!} />
-          <AddMenu
-            defaultHref="/dashboard?capture=1"
-            menuLabel="Log transaction"
-            items={ADD_MENU_TARGETS}
-            className="self-center"
-            menuClassName="bottom-full left-1/2 -translate-x-1/2 mb-2"
-          >
-            {({ open, onMain, onToggle, defaultHref }) => (
-              <div className="flex flex-col items-center -mt-6">
-                <button
-                  type="button"
-                  aria-label="More transaction types"
-                  aria-haspopup="menu"
-                  aria-expanded={open}
-                  onClick={onToggle}
-                  className="flex h-5 w-9 items-center justify-center rounded-t-[6px] border border-(--border-strong) border-b-0 bg-(--surface-3) text-zinc-400 transition-colors hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-                >
-                  <ChevronUp
-                    className={cn("h-3.5 w-3.5 transition-transform duration-150 ease-out", open && "-translate-y-0.5")}
-                    aria-hidden
-                  />
-                </button>
-                <Link
-                  href={defaultHref}
-                  onClick={(e) => onMain(e)}
-                  aria-label="Add transaction"
-                  className="flex h-16 w-16 items-center justify-center rounded-full bg-(--accent) text-(--accent-foreground) ring-4 ring-(--bg) transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:scale-95"
-                >
-                  <Plus className="h-7 w-7" strokeWidth={2.5} aria-hidden />
-                </Link>
-              </div>
-            )}
-          </AddMenu>
+          <MobileAddFab />
           <MobileTab item={NAV_ITEMS[2]!} />
           <MobileTab item={NAV_ITEMS[3]!} />
         </div>

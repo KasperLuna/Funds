@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-export type AddMenuTarget = { label: string; href: string };
+export type AddMenuTarget =
+  | { label: string; href: string }
+  | { label: string; onOpen: () => void };
 
 /** DESIGN.md §3.1 — the mini-menu: Expense · Income · Transfer · Trade. */
 export const ADD_MENU_TARGETS: AddMenuTarget[] = [
-  { label: "Expense", href: "/dashboard?capture=1&type=expense" },
-  { label: "Income", href: "/dashboard?capture=1&type=income" },
+  { label: "Expense", onOpen: () => {} },
+  { label: "Income", onOpen: () => {} },
   { label: "Transfer", href: "/dashboard/assets?tab=banks&transfer=1" },
   { label: "Trade", href: "/dashboard/assets?tab=crypto&trade=1" },
 ];
@@ -24,6 +26,10 @@ type AddMenuRender = (controls: {
   onToggle: () => void;
   /** Pre-fetched href to bind the primary action to a Next <Link> for instant nav. */
   defaultHref: string;
+  /** Optional non-navigating primary action. When set, the Link's onClick
+   *  calls this synchronously instead of the router — used for capture-sheet
+   *  entry points that should open the sheet on the current page. */
+  defaultOnOpen?: () => void;
 }) => React.ReactNode;
 
 /**
@@ -40,6 +46,7 @@ interface AddMenuProps {
   items: AddMenuTarget[];
   className?: string;
   menuClassName?: string;
+  defaultOnOpen?: () => void;
   children: AddMenuRender;
 }
 
@@ -49,6 +56,7 @@ export const AddMenu = ({
   items,
   className,
   menuClassName,
+  defaultOnOpen,
   children,
 }: AddMenuProps) => {
   const router = useRouter();
@@ -102,7 +110,7 @@ export const AddMenu = ({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      {children({ open, onMain: handleMain, onToggle: handleToggle, defaultHref })}
+      {children({ open, onMain: handleMain, onToggle: handleToggle, defaultHref, defaultOnOpen })}
 
       {open && (
         <div
@@ -113,17 +121,36 @@ export const AddMenu = ({
             menuClassName,
           )}
         >
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="menuitem"
-              onClick={handleItem(item.href)}
-              className="flex min-h-11 items-center px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {items.map((item) => {
+            if ("href" in item) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  role="menuitem"
+                  onClick={handleItem(item.href)}
+                  className="flex min-h-11 items-center px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                  item.onOpen();
+                }}
+                className="flex min-h-11 w-full items-center px-3 text-sm text-zinc-300 transition-colors hover:bg-(--surface-2) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

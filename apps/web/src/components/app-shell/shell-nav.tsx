@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
 import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
+import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -145,24 +146,39 @@ export function AddButton({
   label?: string;
   className?: string;
 }) {
+  const { setOpen, setPrefill } = useCaptureSheet();
+  const openCapture = (type: "expense" | "income") => {
+    setPrefill({ accountId: null, amountInput: null, categoryIds: [], description: "", type });
+    setOpen(true);
+  };
+  const items = ADD_MENU_TARGETS.map((t) =>
+    t.label === "Expense" ? { ...t, onOpen: () => openCapture("expense") } :
+    t.label === "Income" ? { ...t, onOpen: () => openCapture("income") } :
+    t,
+  );
   return (
     <AddMenu
       defaultHref="/dashboard?capture=1"
       menuLabel="Log transaction"
-      items={ADD_MENU_TARGETS}
+      items={items}
       className={className}
       menuClassName="left-0 top-full mt-2"
+      defaultOnOpen={() => {
+        setPrefill(undefined);
+        setOpen(true);
+      }}
     >
-      {({ open, onMain, onToggle, defaultHref }) => (
+      {({ open, onToggle, defaultOnOpen }) => (
         <div className="flex w-full items-stretch overflow-hidden rounded-(--radius-md) bg-(--accent) text-(--accent-foreground)">
-          <Link
-            href={defaultHref}
-            onClick={(e) => onMain(e)}
+          <button
+            type="button"
+            onClick={() => defaultOnOpen?.()}
+            aria-label="Add transaction"
             className="flex min-h-11 flex-1 items-center justify-center gap-1 px-3 transition-[filter,transform] duration-150 ease-out hover:brightness-110 active:brightness-95"
           >
             <Plus className="h-5 w-5" strokeWidth={2.5} aria-hidden />
             <span className="text-sm font-semibold">{label}</span>
-          </Link>
+          </button>
           <span aria-hidden className="w-px bg-(--accent-foreground)/25" />
           <button
             type="button"
