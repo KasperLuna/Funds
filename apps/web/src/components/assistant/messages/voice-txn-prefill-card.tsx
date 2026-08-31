@@ -1,12 +1,12 @@
 "use client";
 
 import { ArrowRight, Wallet } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { GenUiFooter } from "../gen-ui-footer";
 import type { VoiceTxnPrefillPayload } from "@/lib/assistant/types";
 import { useVoicePrefillStore } from "@/lib/voice/voice-store";
+import { useOptimisticNavigate } from "@/components/app-shell/optimistic-nav";
 
 interface VoiceTxnPrefillCardProps {
   payload: VoiceTxnPrefillPayload;
@@ -20,7 +20,7 @@ interface VoiceTxnPrefillCardProps {
  * not know whether the prefill came from the model or the keyword parser.
  */
 export const VoiceTxnPrefillCard = ({ payload, onViewData }: VoiceTxnPrefillCardProps) => {
-  const router = useRouter();
+  const navigate = useOptimisticNavigate();
   const masked = usePrivacyStore((s) => s.masked);
   const setPrefill = useVoicePrefillStore((s) => s.setPrefill);
   const amountMinor = payload.amountMinor ? BigInt(payload.amountMinor) : null;
@@ -69,7 +69,7 @@ export const VoiceTxnPrefillCard = ({ payload, onViewData }: VoiceTxnPrefillCard
             categoryIds: payload.categoryIds,
             description: payload.description,
           });
-          router.push("/dashboard?capture=1");
+          navigate("/dashboard?capture=1");
         }}
         className="mt-3 inline-flex items-center gap-1 rounded-(--radius-md) bg-(--accent) px-3 py-1.5 text-xs font-semibold text-(--accent-foreground) hover:brightness-110 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
       >

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useOptimisticNavigate } from "./optimistic-nav";
 
 export type AddMenuTarget =
   | { label: string; href: string }
@@ -59,7 +59,7 @@ export const AddMenu = ({
   defaultOnOpen,
   children,
 }: AddMenuProps) => {
-  const router = useRouter();
+  const navigate = useOptimisticNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +76,7 @@ export const AddMenu = ({
       setOpen(false);
       return;
     }
-    router.push(defaultHref, { scroll: false });
+    navigate(defaultHref, { scroll: false });
   };
 
   const handleToggle = () => setOpen((o) => !o);
@@ -87,7 +87,7 @@ export const AddMenu = ({
   const handleItem = (href: string) => (e: React.SyntheticEvent) => {
     e.preventDefault();
     setOpen(false);
-    router.push(href, { scroll: false });
+    navigate(href, { scroll: false });
   };
 
   // cavetail: pointerdown + Escape listeners are browser DOM APIs outside

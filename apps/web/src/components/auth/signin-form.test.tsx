@@ -5,14 +5,15 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { DemoButton } from "./demo-button";
 
-const { fetchMock, pushMock, refreshMock } = vi.hoisted(() => ({
+const { fetchMock, pushMock, replaceMock, refreshMock } = vi.hoisted(() => ({
   fetchMock: vi.fn(),
   pushMock: vi.fn(),
+  replaceMock: vi.fn(),
   refreshMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock, refresh: refreshMock }),
 }));
 
 describe("DemoButton", () => {
@@ -33,7 +34,7 @@ describe("DemoButton", () => {
     await user.click(screen.getByRole("button", { name: "Try the demo" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/auth/demo"));
-    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/dashboard"));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/dashboard", { scroll: false }));
     expect(refreshMock).toHaveBeenCalled();
   });
 

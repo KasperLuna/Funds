@@ -7,6 +7,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { useOptimisticNavigate } from "@/components/app-shell/optimistic-nav";
 
 let clientInstance: QueryClient | null = null;
 function getClient(): QueryClient {
@@ -35,11 +36,12 @@ async function callDemo(): Promise<void> {
 }
 
 const DemoButtonInner = () => {
+  const navigate = useOptimisticNavigate();
   const router = useRouter();
   const mutation = useMutation({
     mutationFn: callDemo,
     onSuccess: () => {
-      router.push("/dashboard");
+      navigate("/dashboard");
       router.refresh();
     },
   });

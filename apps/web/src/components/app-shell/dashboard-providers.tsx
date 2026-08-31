@@ -5,12 +5,12 @@ import { Settings, Plus, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, NavLink, MobileTab, SyncPill, AddButton } from "@/components/app-shell/shell-nav";
+import { NavProvider } from "@/components/app-shell/optimistic-nav";
 import { AddMenu, ADD_MENU_TARGETS } from "@/components/app-shell/add-menu";
 import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
 import { FundsLogo } from "@/components/brand/funds-logo";
 import { UserCard } from "@/components/auth/user-card";
 import { AccountChip, SignedOutBanner } from "@/components/auth/account-indicator";
-
 import { SyncProvider } from "@/lib/sync/sync-context";
 import { SyncQueryProvider } from "@/lib/sync/sync-query";
 import { AssistantButton, AssistantOpener, AssistantSheetMount } from "@/components/assistant/assistant-button";
@@ -27,20 +27,22 @@ interface DashboardProvidersProps {
 
 export const DashboardProviders = ({ children }: DashboardProvidersProps) => {
   return (
-    <SyncProvider>
+    <NavProvider>
+      <SyncProvider>
         <SyncQueryProvider>
           <ChatProvider>
-                <AssistantOpener />
-                <AssistantButton />
-                <AssistantSheetMount />
-                <CaptureSheetProvider>
-                  <CaptureOpener />
-                  <CaptureSheetMount />
-                  {children}
-                </CaptureSheetProvider>
+            <AssistantOpener />
+            <AssistantButton />
+            <AssistantSheetMount />
+            <CaptureSheetProvider>
+              <CaptureOpener />
+              <CaptureSheetMount />
+              {children}
+            </CaptureSheetProvider>
           </ChatProvider>
         </SyncQueryProvider>
       </SyncProvider>
+    </NavProvider>
   );
 };
 

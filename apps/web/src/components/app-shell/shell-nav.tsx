@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Home,
   Wallet,
@@ -17,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useSync } from "@/lib/sync/sync-context";
 import { AddMenu, ADD_MENU_TARGETS } from "./add-menu";
 import { useCaptureSheet } from "@/components/capture/capture-sheet-context";
+import { NavStatusReporter, useLinkActive } from "./optimistic-nav";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -27,11 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/analytics", label: "Insights", icon: BarChart3 },
 ];
 
-function isActive(href: string, pathname: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
-  return pathname.startsWith(href);
-}
-
 export const NavLink = ({
   item,
   onNavigate,
@@ -39,8 +34,7 @@ export const NavLink = ({
   item: NavItem;
   onNavigate?: () => void;
 }) => {
-  const pathname = usePathname();
-  const active = isActive(item.href, pathname);
+  const active = useLinkActive(item.href);
   const Icon = item.icon;
   return (
     <Link
@@ -54,6 +48,7 @@ export const NavLink = ({
           : "font-medium text-zinc-500 hover:bg-(--surface-3) hover:text-inherit",
       )}
     >
+      <NavStatusReporter href={item.href} />
       {active && (
         <span
           aria-hidden
@@ -76,8 +71,7 @@ export const MobileTab = ({
   item: NavItem;
   onNavigate?: () => void;
 }) => {
-  const pathname = usePathname();
-  const active = isActive(item.href, pathname);
+  const active = useLinkActive(item.href);
   const Icon = item.icon;
   return (
     <Link
@@ -90,6 +84,7 @@ export const MobileTab = ({
         active ? "text-inherit" : "text-zinc-500",
       )}
     >
+      <NavStatusReporter href={item.href} />
       {active && (
         <span
           aria-hidden
