@@ -3,6 +3,7 @@
 import {
   BarChart as RechartsBarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -40,6 +41,12 @@ interface BarChartProps {
   yFormatter?: (v: string | number) => string;
   tooltipFormatter?: TooltipFormatter;
   referenceLine?: { value: number; color?: string; label?: string };
+  verticalReferenceLine?: { value: string; color?: string; label?: string };
+  /**
+   * Per-point opacity. Receives the data row and the bar key; return a number in [0, 1]
+   * to dim that specific cell (e.g. for forecast/tentative regions).
+   */
+  cellOpacity?: (row: DataPoint, barKey: string) => number;
 }
 
 const BarChart = ({
@@ -51,10 +58,12 @@ const BarChart = ({
   yFormatter,
   tooltipFormatter,
   referenceLine,
+  verticalReferenceLine,
+  cellOpacity,
 }: BarChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <RechartsBarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <RechartsBarChart data={data} margin={{ top: 20, right: 16, bottom: 0, left: 16 }}>
         <CartesianGrid vertical={false} {...GRID_STYLE} />
         <XAxis
           dataKey={xKey}
@@ -63,6 +72,8 @@ const BarChart = ({
           tick={TICK_STYLE}
           dy={8}
           tickFormatter={xFormatter}
+          padding={{ left: 8, right: 8 }}
+          minTickGap={8}
         />
         <YAxis
           axisLine={false}
@@ -86,6 +97,22 @@ const BarChart = ({
             label={referenceLine.label}
           />
         )}
+        {verticalReferenceLine && (
+          <ReferenceLine
+            x={verticalReferenceLine.value}
+            stroke={verticalReferenceLine.color ?? COLORS.muted}
+            strokeDasharray="4 4"
+            label={{
+              value: verticalReferenceLine.label,
+              position: "insideTop",
+              fill: COLORS.tick,
+              fontSize: 10,
+              fontFamily: "var(--font-sans)",
+              letterSpacing: "0.06em",
+              offset: 6,
+            }}
+          />
+        )}
         {bars.map((b) => (
           <Bar
             key={b.key}
@@ -93,7 +120,12 @@ const BarChart = ({
             fill={b.color ?? COLORS.accent}
             radius={b.radius ?? [3, 3, 0, 0]}
             maxBarSize={32}
-          />
+          >
+            {cellOpacity &&
+              data.map((row, i) => (
+                <Cell key={`${b.key}-${i}`} fillOpacity={cellOpacity(row, b.key)} />
+              ))}
+          </Bar>
         ))}
       </RechartsBarChart>
     </ResponsiveContainer>

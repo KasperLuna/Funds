@@ -17,7 +17,7 @@ const MONTH_NAMES = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-function monthKey(year: number, month: number): string {
+export function monthKey(year: number, month: number): string {
   return `${MONTH_NAMES[month]} ${year}`;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart } from "@/components/charts";
+import { monthKey } from "@/lib/analytics/compute";
 import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
@@ -26,6 +27,9 @@ export const CashFlowForecastCard = ({ data, code }: CashFlowForecastCardProps) 
     projected: d.projected,
   }));
 
+  const now = new Date();
+  const currentMonth = monthKey(now.getFullYear(), now.getMonth());
+
   const formatY = (v: string | number) =>
     masked ? "••••" : formatMoney(BigInt(Math.round(Number(v))), 2, code);
 
@@ -34,7 +38,13 @@ export const CashFlowForecastCard = ({ data, code }: CashFlowForecastCardProps) 
 
   return (
     <section className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-6">
-      <p className="label-micro">Cash flow</p>
+      <div className="flex items-baseline justify-between">
+        <p className="label-micro">Cash flow</p>
+        <p className="text-(--text-2xs) text-(--fg-3)">
+          <span aria-hidden>—</span> Actual ·{" "}
+          <span aria-hidden className="opacity-45">—</span> Projected
+        </p>
+      </div>
 
       <div className="mt-4">
         <BarChart
@@ -47,6 +57,8 @@ export const CashFlowForecastCard = ({ data, code }: CashFlowForecastCardProps) 
           height={220}
           yFormatter={formatY}
           tooltipFormatter={formatTooltip}
+          verticalReferenceLine={{ value: currentMonth, label: "Now" }}
+          cellOpacity={(row) => (row.projected ? 0.45 : 1)}
         />
       </div>
     </section>

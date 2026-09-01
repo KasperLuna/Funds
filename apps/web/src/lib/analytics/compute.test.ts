@@ -5,7 +5,10 @@ import {
   spendingByMonth,
   categoryBreakdown,
   spendingAnomalies,
+  cashFlowForecast,
+  monthKey,
 } from "./compute.js";
+import type { ScheduledTxn } from "@/lib/scheduled/compute";
 
 function cat(overrides: Partial<Category> = {}): Category {
   return {
@@ -93,5 +96,57 @@ describe("excludeFromAnalytics filtering", () => {
     const current = txn({ id: "c", categoryIds: ["transfer"], amountMinor: -1000n });
     const anomalies = spendingAnomalies([...history, current], [transfer]);
     expect(anomalies).toEqual([]);
+  });
+});
+
+function scheduled(overrides: Partial<ScheduledTxn> = {}): ScheduledTxn {
+  return {
+    id: "s-1",
+    userId: "u-1",
+    name: "Rent",
+    description: "",
+    type: "expense",
+    amountMinor: -100n,
+    accountId: "acc-1",
+    categoryIds: [],
+    recurrence: { frequency: "monthly", interval: 1 },
+    timezone: null,
+    invokeDate: new Date().getTime(),
+    previousDate: null,
+    lastNotifiedAt: null,
+    active: true,
+    createdAt: 0,
+    updatedAt: 0,
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+describe("cashFlowForecast boundary", () => {
+  it("returns 6 historical (projected=false) followed by N projected (projected=true)", () => {
+    const food = cat({ id: "food", name: "Food" });
+    const txns: Txn[] = [];
+    for (let i = 0; i < 6; i++) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      txns.push(txn({ id: `h${i}`, categoryIds: ["food"], amountMinor: -200n, date: d.getTime() }));
+    }
+    const future = scheduled({ amountMinor: -500n });
+    const result = cashFlowForecast([future], txns, [food], 3);
+
+    expect(result).toHaveLength(9);
+    const now = new Date();
+    const currentMonth = monthKey(now.getFullYear(), now.getMonth());
+    const firstProjected = result.findIndex((p) => p.projected);
+    expect(firstProjected).toBeGreaterThan(0);
+    const boundary = result[firstProjected - 1]!;
+    expect(boundary.month).toBe(currentMonth);
+    expect(boundary.projected).toBe(false);
+    for (let i = 0; i < firstProjected; i++) {
+      expect(result[i]!.projected).toBe(false);
+    }
+    for (let i = firstProjected; i < result.length; i++) {
+      expect(result[i]!.projected).toBe(true);
+    }
   });
 });

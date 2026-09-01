@@ -50,7 +50,7 @@ const AreaChart = ({
 }: AreaChartProps) => {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <RechartsAreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <RechartsAreaChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 16 }}>
         <CartesianGrid vertical={false} {...GRID_STYLE} />
         <XAxis
           dataKey={xKey}
@@ -59,6 +59,8 @@ const AreaChart = ({
           tick={TICK_STYLE}
           dy={8}
           tickFormatter={xFormatter}
+          padding={{ left: 8, right: 8 }}
+          minTickGap={8}
         />
         <YAxis
           axisLine={false}

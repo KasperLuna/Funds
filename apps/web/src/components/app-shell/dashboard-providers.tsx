@@ -154,7 +154,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
       </header>
 
       {/* Main content */}
-      <main className="min-h-dvh bg-(--bg) pb-20 pt-4 md:ml-56 md:pb-8">
+      <main className="min-h-dvh bg-(--bg) pb-[calc(5rem+env(safe-area-inset-bottom))] pt-4 md:ml-56 md:pb-8">
         <div className="mx-auto max-w-3xl px-4 md:px-6">
           <SignedOutBanner />
         </div>
