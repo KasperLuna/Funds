@@ -128,7 +128,7 @@ const SheetContent = React.forwardRef<
           ref={ref}
           data-slot="sheet-content"
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[100dvh] flex-col rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[100dvh] flex-col overflow-hidden rounded-t-(--radius-sheet) border border-b-0 border-(--plate-edge) bg-(--plate-1)/92 shadow-[inset_0_1px_0_var(--plate-edge-inset)] focus:outline-none",
             className,
           )}
           {...props}
