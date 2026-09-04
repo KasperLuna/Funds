@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useSyncQuery } from "@/lib/sync/sync-query";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import {
@@ -99,16 +100,32 @@ export const ScheduledCard = ({
 
   const visible = expanded ? [...soonItems, ...restItems] : soonItems;
   const hiddenCount = restItems.length;
+  const attentionItems = soonItems.filter(
+    ({ occ }) => occ.status === "due" || occ.status === "overdue",
+  );
+  const hasAttention = attentionItems.length > 0;
 
   return (
     <section
-      aria-label="Scheduled"
-      className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1)"
+      aria-label={hasAttention ? "Scheduled transactions needing attention" : "Scheduled"}
+      className={cn(
+        "rounded-(--radius-lg) border bg-(--surface-1)",
+        hasAttention ? "border-(--accent)/40" : "border-(--border)",
+      )}
     >
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <h2 className="font-display text-base font-bold tracking-tight">
-          Scheduled
-        </h2>
+        <div className="min-w-0">
+          <h2 className="font-display text-base font-bold tracking-tight">
+            {hasAttention ? "Needs attention" : "Scheduled"}
+          </h2>
+          {hasAttention && (
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {attentionItems.length === 1
+                ? "One transaction is ready to log"
+                : `${attentionItems.length} transactions are ready to log`}
+            </p>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="sm"

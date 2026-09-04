@@ -347,6 +347,17 @@ export const DashboardScreen = () => {
           <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
         </header>
 
+      <ScheduledCard
+        accounts={accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          assetId: a.assetId,
+          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+          code: assetsById.get(a.assetId)?.code ?? "",
+        }))}
+        categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+      />
+
         <NetWorthHero
         totalBalance={totalBalance}
         bankBalance={bankBalance}
@@ -385,17 +396,6 @@ export const DashboardScreen = () => {
           )}
         </div>
       </section>
-
-      <ScheduledCard
-        accounts={accounts.map((a) => ({
-          id: a.id,
-          name: a.name,
-          assetId: a.assetId,
-          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
-          code: assetsById.get(a.assetId)?.code ?? "",
-        }))}
-        categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
-      />
 
       <TemplateCard
         accounts={accounts.map((a) => ({

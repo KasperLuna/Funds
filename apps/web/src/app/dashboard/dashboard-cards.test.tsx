@@ -76,6 +76,51 @@ describe("ScheduledCard empty state", () => {
   });
 });
 
+describe("ScheduledCard attention state", () => {
+  it("surfaces a due schedule as ready to log", async () => {
+    const now = Date.now();
+    mockQuery.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("scheduled_transactions")
+          ? [
+              {
+                id: "sch-due",
+                user_id: "dev-user",
+                name: "Rent",
+                description: "Monthly rent",
+                type: "expense",
+                amount_minor: "150000",
+                account_id: "acc-1",
+                category_ids: [],
+                recurrence: { frequency: "monthly", interval: 1 },
+                timezone: null,
+                invoke_date: now,
+                previous_date: now - 86_400_000,
+                last_notified_at: null,
+                active: 1,
+                created_at: now,
+                updated_at: now,
+                deleted_at: null,
+              },
+            ]
+          : [],
+      }),
+    );
+
+    renderCard(
+      <ScheduledCard
+        accounts={[{ id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2, code: "USD" }]}
+        categories={[]}
+      />,
+    );
+
+    expect(await screen.findByRole("region", { name: "Scheduled transactions needing attention" })).toBeInTheDocument();
+    expect(screen.getByText("Needs attention")).toBeInTheDocument();
+    expect(screen.getByText("One transaction is ready to log")).toBeInTheDocument();
+    expect(screen.getByText("Due")).toBeInTheDocument();
+  });
+});
+
 describe("TemplateCard empty state", () => {
   it("renders the card with an empty-state message and Add button when there are no templates", async () => {
     renderCard(<TemplateCard accounts={[]} categories={[]} />);
