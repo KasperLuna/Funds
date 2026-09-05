@@ -210,12 +210,14 @@ describe("ScheduledCard occurrence logging", () => {
     expect(screen.getByTestId("amount-readout")).toHaveTextContent("1500.00");
     expect(screen.getByLabelText("Description")).toHaveValue("Monthly rent");
 
+    await user.click(screen.getByRole("button", { name: "5" }));
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("5.00");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(upsert).toHaveBeenCalledTimes(2);
     const txnRow = upsert.mock.calls[0]![0] as Record<string, unknown>;
     expect(txnRow.account_id).toBe("acc-1");
-    expect(txnRow.amount_minor).toBe(-150000);
+    expect(txnRow.amount_minor).toBe(-500);
     expect(txnRow.type).toBe("expense");
 
     const schedRow = upsert.mock.calls[1]![0] as Record<string, unknown>;

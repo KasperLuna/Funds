@@ -126,6 +126,7 @@ export const CaptureForm = (props: CaptureFormProps) => {
   const [amount, setAmount] = useState<AmountState>(() =>
     emptyAmount(first?.decimals ?? 2),
   );
+  const [replaceAmountOnNextKey, setReplaceAmountOnNextKey] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const templateFormRef = useRef<FormSnapshot | null>(null);
   const [templateSnapshot, setTemplateSnapshot] = useState<{
@@ -219,8 +220,10 @@ export const CaptureForm = (props: CaptureFormProps) => {
           dateOverride: voicePrefill.date ?? null,
         });
         setAmount(prefillAmount);
+        setReplaceAmountOnNextKey(Boolean(voicePrefill.amountInput));
       } else {
         resetFormValues();
+        setReplaceAmountOnNextKey(false);
         setAmount(
           emptyAmount(
             accounts.find((a) => a.id === (defaultAccountId ?? first?.id ?? ""))
@@ -236,6 +239,7 @@ export const CaptureForm = (props: CaptureFormProps) => {
     const nextDec = next?.decimals ?? 2;
     form.setValue("accountId", id, { shouldValidate: true });
     if (nextDec !== decimals) {
+      setReplaceAmountOnNextKey(false);
       setAmount(emptyAmount(nextDec));
     }
   };
@@ -244,7 +248,12 @@ export const CaptureForm = (props: CaptureFormProps) => {
     form.setValue("type", next, { shouldValidate: true });
   };
 
-  const handleKey = (key: DigitKey) => setAmount((s) => applyDigit(s, key));
+  const handleKey = (key: DigitKey) => {
+    setAmount((s) =>
+      replaceAmountOnNextKey ? applyDigit(emptyAmount(s.decimals), key) : applyDigit(s, key),
+    );
+    setReplaceAmountOnNextKey(false);
+  };
   const minor = amountToMinor(amount);
   const canSave = minor > 0n && !!selected;
 
@@ -262,6 +271,7 @@ export const CaptureForm = (props: CaptureFormProps) => {
     const major = Number(absMinor) / 10 ** decimals;
     const input = major.toFixed(decimals);
     const nextAmount: AmountState = { input, decimals };
+    setReplaceAmountOnNextKey(false);
     setAmount(nextAmount);
     form.setValue("amountInput", nextAmount.input, { shouldValidate: true });
     const nextType = isExpense ? "expense" : "income";
@@ -305,6 +315,7 @@ export const CaptureForm = (props: CaptureFormProps) => {
     const dec = acc?.decimals ?? decimals;
     const newAmount = templateAmount(t, dec);
     if (acc) form.setValue("accountId", acc.id, { shouldValidate: true });
+    setReplaceAmountOnNextKey(false);
     setAmount(newAmount);
     form.setValue("amountInput", newAmount.input, { shouldValidate: true });
     form.setValue("type", t.type, { shouldValidate: true });
@@ -335,6 +346,7 @@ export const CaptureForm = (props: CaptureFormProps) => {
       }),
     );
     resetFormValues();
+    setReplaceAmountOnNextKey(false);
     setAmount(emptyAmount(selected.decimals));
     onOpenChange(false);
   };
@@ -421,10 +433,19 @@ export const CaptureForm = (props: CaptureFormProps) => {
       <div className="shrink-0 px-6 pb-1 pt-3">
         <CaptureAmountKeypad
           amount={amount}
-          onAmountInputChange={setAmount}
+          onAmountInputChange={(next) => {
+            setReplaceAmountOnNextKey(false);
+            setAmount(next);
+          }}
           onKey={handleKey}
-          onBackspace={() => setAmount(backspace)}
-          onClear={() => setAmount(clearAmount)}
+          onBackspace={() => {
+            setReplaceAmountOnNextKey(false);
+            setAmount(backspace);
+          }}
+          onClear={() => {
+            setReplaceAmountOnNextKey(false);
+            setAmount(clearAmount);
+          }}
           onSave={save}
           canSave={canSave}
           selected={selected}
@@ -439,8 +460,14 @@ export const CaptureForm = (props: CaptureFormProps) => {
       <div className="shrink-0 border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:hidden">
         <Keypad
           onKey={handleKey}
-          onBackspace={() => setAmount(backspace)}
-          onClear={() => setAmount(clearAmount)}
+          onBackspace={() => {
+            setReplaceAmountOnNextKey(false);
+            setAmount(backspace);
+          }}
+          onClear={() => {
+            setReplaceAmountOnNextKey(false);
+            setAmount(clearAmount);
+          }}
           onSave={save}
           canSave={canSave}
           currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
