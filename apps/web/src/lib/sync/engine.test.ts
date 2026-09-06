@@ -385,6 +385,136 @@ describe("sync engine", () => {
     again.stop();
   });
 
+  it("transient push failure still pulls remote rows (Device A -> B freshness)", async () => {
+    engine.start();
+    await store.table("accounts").upsert({ id: "a-local", name: "Local" });
+    await tick();
+
+    pushMock.mockRejectedValueOnce(new Error("transient"));
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        since: 5000,
+        rows: [
+          {
+            table: "accounts",
+            row: { id: "a-remote", name: "Remote", updated_at: 5000 },
+          },
+        ],
+      }),
+    } as Response);
+    await engine.syncNow();
+    expect(engine.getState().online).toBe(false);
+    expect(await outboxCount()).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((await store.query("SELECT * FROM accounts")).rows.map((r) => r.id)).toContain(
+      "a-remote",
+    );
+    expect((await store.db.table("_meta").get("watermark:user1"))?.value).toBe(5000);
+    engine.stop();
+  });
+
+  it("window focus triggers a sync (Device B open picks up rows)", async () => {
+    engine.start();
+    expect(fetchMock).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event("focus"));
+    for (let i = 0; i < 200 && fetchMock.mock.calls.length === 0; i++) await tick();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    engine.stop();
+    window.dispatchEvent(new Event("focus"));
+    await tick();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("hint triggers a pull and unsubscribes on stop (realtime Device A -> B)", async () => {
+    let onHint: (() => void) | null = null;
+    let unsubscribed = false;
+    const hinted = createSyncEngine({
+      store,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user1",
+      push: pushMock,
+      autoSync: false,
+      subscribeHints: (cb) => {
+        onHint = cb;
+        return () => {
+          unsubscribed = true;
+        };
+      },
+    });
+    hinted.start();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        since: 5000,
+        rows: [
+          {
+            table: "accounts",
+            row: { id: "a-remote", name: "Remote", updated_at: 5000 },
+          },
+        ],
+      }),
+    } as Response);
+    onHint!();
+    for (let i = 0; i < 200 && fetchMock.mock.calls.length === 0; i++) await tick();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    for (let i = 0; i < 200; i++) {
+      if ((await store.db.table("_meta").get("watermark:user1"))?.value === 5000) break;
+      await tick();
+    }
+    expect((await store.query("SELECT * FROM accounts")).rows.map((r) => r.id)).toContain(
+      "a-remote",
+    );
+    hinted.stop();
+    expect(unsubscribed).toBe(true);
+  });
+
+  it("hint bursts coalesce into one pull", async () => {
+    let onHint: (() => void) | null = null;
+    const hinted = createSyncEngine({
+      store,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user1",
+      push: pushMock,
+      autoSync: false,
+      subscribeHints: (cb) => {
+        onHint = cb;
+        return () => {};
+      },
+    });
+    hinted.start();
+    onHint!();
+    onHint!();
+    onHint!();
+    for (let i = 0; i < 200 && fetchMock.mock.calls.length === 0; i++) await tick();
+    await tick();
+    await tick();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    hinted.stop();
+  });
+
+  it("hint while offline does not sync", async () => {
+    let onHint: (() => void) | null = null;
+    const hinted = createSyncEngine({
+      store,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user1",
+      push: pushMock,
+      autoSync: false,
+      subscribeHints: (cb) => {
+        onHint = cb;
+        return () => {};
+      },
+    });
+    hinted.start();
+    hinted.setOnline(false);
+    fetchMock.mockClear();
+    onHint!();
+    for (let i = 0; i < 20; i++) await tick();
+    expect(fetchMock).not.toHaveBeenCalled();
+    hinted.stop();
+  });
+
   it("broadcastWipe notifies onRemoteWipe listeners (multi-tab stop signal)", async () => {
     if (typeof BroadcastChannel === "undefined") {
       // jsdom without BroadcastChannel: feature degrades silently in prod too.

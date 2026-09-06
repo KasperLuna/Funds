@@ -1,6 +1,7 @@
 import { ENTITY_TABLES, broadcastWipe, type DexieStore } from "./store.js";
 import { trpc } from "@/lib/trpc/client";
 import { denormalizeRow } from "./normalize.js";
+import { subscribeToHints } from "./hint-channel.js";
 
 type RowRecord = Record<string, unknown>;
 
@@ -59,6 +60,8 @@ type EngineOptions = {
   push?: (batches: Batch[]) => Promise<unknown>;
   /** cavetail: false = tests drive every sync manually; default true. */
   autoSync?: boolean;
+  /** Hint-only realtime source; defaults to the SSE channel. */
+  subscribeHints?: (onHint: () => void) => () => void;
 };
 
 const PULL_ENDPOINT = "/api/sync/data";
@@ -76,6 +79,8 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   const fetchFn = options.fetch ?? globalThis.fetch;
   const pushFn =
     options.push ?? ((batches: Batch[]) => trpc.applyMutations.mutate({ batches }));
+  const subscribeHintsFn = options.subscribeHints ?? subscribeToHints;
+  let hintUnsub: (() => void) | null = null;
 
   let started = false;
   let applyingPull = false;
@@ -292,17 +297,29 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     // isolation is about to destroy.
     await isolationRun;
     setState({ syncing: true });
+    // cavetail: a transient push failure must not starve the pull — Device B
+    // opening with a stuck outbox would otherwise never see Device A's rows
+    // until the push recovers. Pull always runs; offline status sticks if
+    // either leg failed.
+    let failed = false;
     try {
       await flushPush();
-      await pull();
-      resetBackoff();
-      setState({ online: true, lastSyncedAt: Date.now() });
     } catch {
+      failed = true;
+    }
+    try {
+      await pull();
+    } catch {
+      failed = true;
+    }
+    if (failed) {
       backoff();
       setState({ online: false });
-    } finally {
-      setState({ syncing: false });
+    } else {
+      resetBackoff();
+      setState({ online: true, lastSyncedAt: Date.now() });
     }
+    setState({ syncing: false });
   }
 
   function syncNow(): Promise<void> {
@@ -319,10 +336,24 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   }
 
   const onOnline = (): void => setOnline(true);
+  // cavetail: hints sync even when hidden — a backgrounded Device B pulls
+  // Device A's rows before the user foregrounds it, so open shows fresh
+  // data instead of waiting for the 30s tick. Bursts coalesce via inFlight.
+  const onHint = (): void => {
+    if (!getUserId() || !state.online) return;
+    void syncNow();
+  };
   const onOffline = (): void => setOnline(false);
   const onVisibility = (): void => {
     visible = !document.hidden;
     if (visible && state.online) void syncNow();
+  };
+  // cavetail: visibilitychange misses same-tab refocus (alt-tab back, PWA
+  // resume without pageshow). Focus implies visible — probe so Device B
+  // picks up Device A's rows on open instead of waiting for the 30s tick.
+  const onFocus = (): void => {
+    visible = true;
+    if (state.online) void syncNow();
   };
   // Cavetail: pageshow fires constantly on iOS PWA (resume from notification,
   // tab switch, unlock). An immediate syncNow() races the user tapping a nav
@@ -348,7 +379,9 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     window.addEventListener("pageshow", onPageshow);
+    window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisibility);
+    hintUnsub = subscribeHintsFn(onHint);
     // cavetail: isolation (switch-wipe) completes before the first sync so a
     // wipe can never race a pull; doSync awaits isolationRun.
     isolationRun = isolate(getUserId()!);
@@ -373,7 +406,10 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     window.removeEventListener("online", onOnline);
     window.removeEventListener("offline", onOffline);
     window.removeEventListener("pageshow", onPageshow);
+    window.removeEventListener("focus", onFocus);
     document.removeEventListener("visibilitychange", onVisibility);
+    hintUnsub?.();
+    hintUnsub = null;
   }
 
   async function wipe(): Promise<void> {

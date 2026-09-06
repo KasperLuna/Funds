@@ -4,6 +4,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc.js";
 import { TABLE_REGISTRY } from "../table-registry.js";
+import { publishHint } from "../sync-hints.js";
 import { resolveMutations, type MutationRow } from "@funds/core";
 import { inArray } from "drizzle-orm";
 
@@ -257,6 +258,11 @@ export const mutationsRouter = router({
 
         return batchResults;
       });
+
+      // cavetail: publish AFTER the transaction commits so a hint can never
+      // reference uncommitted rows. No-op batches stay silent — waking every
+      // tab for zero new rows is pure battery cost.
+      if (results.some((r) => r.applied > 0)) publishHint(user.id);
 
       return results;
     }),

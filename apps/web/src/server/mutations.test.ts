@@ -507,4 +507,33 @@ describe("applyMutations", () => {
       .where(eq(schema.pushSubscriptions.id, "sub-jsonb-test")));
     expect(stored.keys).toEqual({ p256dh: "p256", auth: "auth" });
   });
+
+  it("applied batch publishes a hint; no-op batch stays silent", async () => {
+    const { resetHints, subscribeHint, hintVersion } = await import("./sync-hints.js");
+    resetHints();
+    const seen: number[] = [];
+    subscribeHint(testUserId, (v) => seen.push(v));
+
+    const caller = createCaller({ headers: new Headers({ cookie: authCookie }) });
+    const now = Date.now();
+    const result = await caller.applyMutations({
+      batches: [{
+        table: "categories",
+        upserts: [{
+          id: "hint-cat-1",
+          user_id: testUserId,
+          name: "Hint",
+          created_at: now,
+          updated_at: now,
+        }],
+        deletes: [],
+      }],
+    });
+    expect(result[0]!.applied).toBe(1);
+    expect(seen).toEqual([1]);
+    expect(hintVersion(testUserId)).toBe(1);
+
+    await caller.applyMutations({ batches: [] });
+    expect(seen).toEqual([1]);
+  });
 });
