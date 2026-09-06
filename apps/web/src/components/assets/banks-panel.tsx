@@ -285,10 +285,14 @@ export const BanksPanel = () => {
         : txns;
       return filterTxns(byAccount, filters, {
         categories,
-        accounts: accounts.map((a) => ({ id: a.id, name: a.name })),
+        accounts: accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+        })),
       });
     },
-    [txns, selectedAccountId, filters, categories, accounts],
+    [txns, selectedAccountId, filters, categories, accounts, assetsById],
   );
 
   const sortedDesc = useMemo(

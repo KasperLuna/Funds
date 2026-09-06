@@ -73,4 +73,72 @@ describe("filterTxns", () => {
     };
     expect(filterTxns(list, filters, DEPS).map((t) => t.id)).toEqual(["t2"]);
   });
+
+  it("tolerates typos in the description", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee" }),
+      txn({ id: "t2", description: "Bus fare", categoryIds: ["cat-2"] }),
+    ];
+    expect(filterTxns(list, { ...EMPTY, query: "cofee" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+  });
+
+  it("matches query tokens in any order", () => {
+    const list = [txn({ id: "t1", description: "Coffee shop" })];
+    expect(
+      filterTxns(list, { ...EMPTY, query: "shop coffee" }, DEPS).map((t) => t.id),
+    ).toEqual(["t1"]);
+  });
+
+  it("supports * wildcards", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee" }),
+      txn({ id: "t2", description: "Bus fare", categoryIds: ["cat-2"] }),
+    ];
+    expect(filterTxns(list, { ...EMPTY, query: "cof*" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+    expect(filterTxns(list, { ...EMPTY, query: "*fare" }, DEPS).map((t) => t.id)).toEqual(["t2"]);
+  });
+
+  it("folds diacritics", () => {
+    const list = [txn({ id: "t1", description: "Café latte" })];
+    expect(filterTxns(list, { ...EMPTY, query: "cafe" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+  });
+
+  it("matches amounts by display value, ignoring $ and commas", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee", amountMinor: -1000n }),
+      txn({ id: "t2", description: "Refund", amountMinor: 2500n }),
+      txn({ id: "t3", description: "Big shop", amountMinor: -123456n }),
+    ];
+    expect(filterTxns(list, { ...EMPTY, query: "10" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+    expect(filterTxns(list, { ...EMPTY, query: "10.00" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+    expect(filterTxns(list, { ...EMPTY, query: "$10" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+    expect(filterTxns(list, { ...EMPTY, query: "25" }, DEPS).map((t) => t.id)).toEqual(["t2"]);
+    expect(filterTxns(list, { ...EMPTY, query: "1,234.56" }, DEPS).map((t) => t.id)).toEqual([
+      "t3",
+    ]);
+    expect(filterTxns(list, { ...EMPTY, query: "999" }, DEPS)).toEqual([]);
+  });
+
+  it("matches amounts sign-sensitively only when the query has a sign", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee", amountMinor: -1000n }),
+      txn({ id: "t2", description: "Refund", amountMinor: 1000n }),
+    ];
+    expect(filterTxns(list, { ...EMPTY, query: "10" }, DEPS).map((t) => t.id)).toEqual([
+      "t1",
+      "t2",
+    ]);
+    expect(filterTxns(list, { ...EMPTY, query: "-10" }, DEPS).map((t) => t.id)).toEqual(["t1"]);
+    expect(filterTxns(list, { ...EMPTY, query: "+10" }, DEPS).map((t) => t.id)).toEqual(["t2"]);
+  });
+
+  it("combines description and amount tokens", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee", amountMinor: -1000n }),
+      txn({ id: "t2", description: "Coffee beans bulk", amountMinor: -2500n }),
+    ];
+    expect(filterTxns(list, { ...EMPTY, query: "coffee 10" }, DEPS).map((t) => t.id)).toEqual([
+      "t1",
+    ]);
+  });
 });

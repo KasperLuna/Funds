@@ -81,7 +81,7 @@ export const TransactionFilters = (props: TransactionFiltersProps) => {
             aria-label="Search transactions"
             value={query}
             onChange={(e) => commitQuery(e.target.value)}
-            placeholder="Search transactions…"
+            placeholder="Search descriptions or amounts…"
             className="h-11 w-full pl-9 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
