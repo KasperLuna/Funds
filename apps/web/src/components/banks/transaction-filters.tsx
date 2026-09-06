@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarDays, Search, Tag } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -48,6 +48,14 @@ interface TransactionFiltersProps {
 export const TransactionFilters = (props: TransactionFiltersProps) => {
   const { filters, onChange, categories, accounts } = props;
   const [query, setQuery] = useState(filters.query);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // cavetail: adopt outside changes (back/forward, deep link, clear) without
+  // clobbering in-progress typing — a focused input always wins.
+  useEffect(() => {
+    if (document.activeElement !== inputRef.current && filters.query !== query) {
+      setQuery(filters.query);
+    }
+  }, [filters.query, query]);
   const hasQuery = filters.query !== "";
   const hasCategory = filters.categoryIds.length > 0;
   const hasDate = filters.date !== null;
@@ -77,6 +85,7 @@ export const TransactionFilters = (props: TransactionFiltersProps) => {
             aria-hidden
           />
           <Input
+            ref={inputRef}
             type="search"
             aria-label="Search transactions"
             value={query}

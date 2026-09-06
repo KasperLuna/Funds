@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -34,7 +34,7 @@ import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { useUrlBridge } from "@/lib/url/use-url-bridge";
 import { useUrlBool, useUrlString } from "@/lib/url/use-url-state";
-import { useBanksFilters } from "@/components/banks/use-banks-filters";
+import { useBanksFilters, useMirroredQuery } from "@/components/banks/use-banks-filters";
 import { useBanksDialogState } from "./banks-panel.hooks";
 import { type VoicePrefill } from "@/components/capture/capture-sheet";
 import { useSync } from "@/lib/sync/sync-context";
@@ -49,6 +49,18 @@ type AccountInfo = {
 };
 
 const PAGE_SIZE = 50;
+
+function sameIds(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
+function sameDate(
+  a: { from: number; to: number } | null,
+  b: { from: number; to: number } | null,
+): boolean {
+  if (a === null || b === null) return a === b;
+  return a.from === b.from && a.to === b.to;
+}
 
 export function toAccount(row: Record<string, unknown>): Account {
   const colors = row.colors;
@@ -186,6 +198,20 @@ export const BanksPanel = () => {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { filters, setFilters } = useBanksFilters();
+
+  // cavetail: the list filters from React state instantly — no navigation
+  // while typing. ?q= mirrors 300ms after the pause so links and refresh
+  // stay shareable, with a single replace per pause instead of per keystroke.
+  const writeUrlQuery = useCallback(
+    (q: string) => setFilters({ ...filters, query: q }),
+    [filters, setFilters],
+  );
+  const [appliedQuery, setAppliedQuery] = useMirroredQuery(filters.query, writeUrlQuery);
+
+  const effectiveFilters = useMemo(
+    () => ({ ...filters, query: appliedQuery }),
+    [filters, appliedQuery],
+  );
   const [showArchived, setShowArchived] = useUrlBool("archived", false);
   const dialog = useBanksDialogState();
   const [confirmAction, setConfirmAction] = useState<{
@@ -265,8 +291,11 @@ export const BanksPanel = () => {
   useUrlBridge({ param: "transfer", onMatch: () => dialog.setTransferOpen(true) });
 
   const handleFiltersChange = (next: TxnFilters) => {
-    setFilters(next);
+    setAppliedQuery(next.query);
     setVisibleCount(PAGE_SIZE);
+    if (!sameIds(next.categoryIds, filters.categoryIds) || !sameDate(next.date, filters.date)) {
+      setFilters(next);
+    }
   };
 
   const handleSelectAccount = (id: string | null) => {
@@ -283,7 +312,7 @@ export const BanksPanel = () => {
       const byAccount = selectedAccountId
         ? txns.filter((t) => t.accountId === selectedAccountId)
         : txns;
-      return filterTxns(byAccount, filters, {
+      return filterTxns(byAccount, effectiveFilters, {
         categories,
         accounts: accounts.map((a) => ({
           id: a.id,
@@ -292,7 +321,7 @@ export const BanksPanel = () => {
         })),
       });
     },
-    [txns, selectedAccountId, filters, categories, accounts, assetsById],
+    [txns, selectedAccountId, effectiveFilters, categories, accounts, assetsById],
   );
 
   const sortedDesc = useMemo(
@@ -666,7 +695,7 @@ export const BanksPanel = () => {
         grouped={grouped}
         sortedDesc={sortedDesc}
         visibleCount={visibleCount}
-        filters={filters}
+        filters={effectiveFilters}
         onFiltersChange={handleFiltersChange}
         dataPending={dataPending}
         hasAccounts={accounts.length > 0}
