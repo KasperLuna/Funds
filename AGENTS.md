@@ -174,6 +174,10 @@ in the modal semantics and out-of-band from the form dialogs.
 
 ## Repo conventions
 
+- Serena memories are manual (no auto-save): read `mem:core` at task start;
+  at task end, update/create a memory only when the
+  `.serena/memories/memory_maintenance.md` threshold is met (stable,
+  non-obvious convention). Rename via the Serena tool so `mem:` refs follow.
 - No comments unless they encode a `cavetail:` decision or a lint-exemption reason.
 - Client generates all IDs (ULID, text PK) — offline creates never collide.
 - Keep the PWA offline-first contract: writes land in the local Dexie store first, sync
