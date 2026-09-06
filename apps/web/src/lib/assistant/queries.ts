@@ -332,10 +332,12 @@ function dailyToArray(map: Map<string, bigint>): Array<{ day: string; amountMino
 }
 
 function formatDayLabel(ms: number): string {
+  const date = new Date(ms);
   return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
-  }).format(new Date(ms));
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+  }).format(date);
 }
 
 function incomeExpense(ctx: QueryCtx, range: PeriodRange): { income: bigint; expense: bigint } {

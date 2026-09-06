@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState, useRef } from "react";
 import type { Txn } from "@/lib/accounts/accounts-store";
-import { groupByDay } from "@/lib/accounts/accounts-store";
+import { formatDayHeader, groupByDay } from "@/lib/accounts/accounts-store";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -24,23 +24,6 @@ function formatMinor(cents: bigint): string {
   const abs = cents < 0n ? -cents : cents;
   const major = Number(abs) / 100;
   return `${sign}$${major.toFixed(2)}`;
-}
-
-function formatDayHeader(day: string): string {
-  const [year, month, dayNum] = day.split("-").map(Number);
-  const date = new Date(year!, month! - 1, dayNum);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  if (date.toDateString() === today.toDateString()) return "Today";
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function getMonthOptions(txns: Txn[]): Array<{ value: string; label: string }> {

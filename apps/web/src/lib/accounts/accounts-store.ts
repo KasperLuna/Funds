@@ -65,6 +65,24 @@ export function groupByDay(
   return entries.map(([day, items]) => ({ day, items }));
 }
 
+export function formatDayHeader(day: string): string {
+  const [year, month, dayNum] = day.split("-").map(Number);
+  const date = new Date(year!, month! - 1, dayNum);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === today.getFullYear() ? undefined : "numeric",
+  });
+}
+
 export function monthStats(
   txns: Txn[],
   year: number,

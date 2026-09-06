@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeBalance,
+  formatDayHeader,
   groupByDay,
   monthStats,
   dedupeById,
@@ -118,6 +119,35 @@ describe("groupByDay", () => {
     const result = groupByDay([t1, t2]);
     expect(result).toHaveLength(1);
     expect(result[0]!.items).toHaveLength(1);
+  });
+});
+
+describe("formatDayHeader", () => {
+  const keyOf = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  it("returns Today for the current day", () => {
+    expect(formatDayHeader(keyOf(new Date()))).toBe("Today");
+  });
+
+  it("returns Yesterday for the previous day", () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    expect(formatDayHeader(keyOf(yesterday))).toBe("Yesterday");
+  });
+
+  it("omits the year for other days in the current year", () => {
+    const now = new Date();
+    const date = new Date(now.getFullYear(), 0, 15);
+    if (date.toDateString() === now.toDateString()) return;
+    const label = formatDayHeader(keyOf(date));
+    expect(label).not.toContain(String(now.getFullYear()));
+  });
+
+  it("includes the year for days outside the current year", () => {
+    const pastYear = new Date().getFullYear() - 1;
+    const label = formatDayHeader(`${pastYear}-01-15`);
+    expect(label).toContain(String(pastYear));
   });
 });
 

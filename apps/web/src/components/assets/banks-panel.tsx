@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import type { TransferRows } from "@/lib/capture";
 import {
   computeBalance,
+  formatDayHeader,
   groupByDay,
   monthStats,
   type Account,
@@ -164,21 +165,6 @@ function toCategory(row: Record<string, unknown>): Category {
     updatedAt: Number(row.updated_at),
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
   };
-}
-
-function formatDayHeader(day: string): string {
-  const [year, month, dayNum] = day.split("-").map(Number);
-  const date = new Date(year!, month! - 1, dayNum);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (date.toDateString() === today.toDateString()) return "Today";
-  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return date.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export const BanksPanel = () => {

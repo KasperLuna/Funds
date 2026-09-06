@@ -14,6 +14,7 @@ function formatLocalDate(isoDate: string): string {
   return new Date(y, m - 1, d).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
+    year: y === new Date().getFullYear() ? undefined : "numeric",
   });
 }
 

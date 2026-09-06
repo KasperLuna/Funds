@@ -71,11 +71,13 @@ function templateAmount(t: Template, dec: number): AmountState {
 }
 
 function formatCustomDate(ts: number): string {
+  const date = new Date(ts);
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
-  }).format(new Date(ts));
+    year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
+  }).format(date);
 }
 
 export interface CaptureFormProps {

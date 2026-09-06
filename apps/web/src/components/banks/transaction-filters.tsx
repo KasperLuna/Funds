@@ -24,16 +24,17 @@ export type { DateRangeFilter, TxnFilters } from "@/lib/banks/filter-txns";
 export { EMPTY_FILTERS, filterTxns } from "@/lib/banks/filter-txns";
 
 function fmtRange(from: number, to: number): string {
-  const sameYear = new Date(from).getFullYear() === new Date(to).getFullYear();
+  const fromYear = new Date(from).getFullYear();
+  const toYear = new Date(to).getFullYear();
   const fromStr = new Date(from).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year: sameYear ? undefined : "numeric",
+    year: fromYear === toYear ? undefined : "numeric",
   });
   const toStr = new Date(to).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-    year: "numeric",
+    year: toYear === new Date().getFullYear() ? undefined : "numeric",
   });
   return `${fromStr} – ${toStr}`;
 }
