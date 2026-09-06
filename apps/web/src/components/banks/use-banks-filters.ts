@@ -75,6 +75,20 @@ export function useBanksFilters(): {
 export const QUERY_MIRROR_MS = 300;
 
 /**
+ * Fold a one-shot `?category=` deep link into the sticky `?cat=` key,
+ * preserving every other param. Returns the new query string, or null
+ * when there is no deep link to consume.
+ */
+export function consumeCategoryDeepLink(search: string): string | null {
+  const params = new URLSearchParams(search);
+  const catId = params.get("category");
+  if (!catId) return null;
+  params.delete("category");
+  params.set("cat", catId);
+  return params.toString();
+}
+
+/**
  * cavetail: instant applied value, debounced URL echo. Typing filters the
  * list from React state with zero navigations; ?q= mirrors after a pause
  * so links and refresh stay shareable. Outside URL moves (back/forward,

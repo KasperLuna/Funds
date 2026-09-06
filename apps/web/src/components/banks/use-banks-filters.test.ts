@@ -4,6 +4,7 @@ import { act, renderHook } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import {
   QUERY_MIRROR_MS,
+  consumeCategoryDeepLink,
   useBanksFilters,
   useMirroredQuery,
 } from "./use-banks-filters";
@@ -66,6 +67,19 @@ describe("useBanksFilters.setFilters", () => {
     expect(replace.mock.calls.at(-1)?.[0]).toBe(
       "/dashboard/assets?cat=a&q=cofe",
     );
+  });
+});
+
+describe("consumeCategoryDeepLink", () => {
+  it("returns null without a category key", () => {
+    expect(consumeCategoryDeepLink("tab=banks&q=cof")).toBeNull();
+    expect(consumeCategoryDeepLink("")).toBeNull();
+  });
+
+  it("swaps category for cat and preserves everything else", () => {
+    expect(
+      consumeCategoryDeepLink("tab=banks&category=cat-1&q=cof&from=1&to=2"),
+    ).toBe("tab=banks&q=cof&from=1&to=2&cat=cat-1");
   });
 });
 

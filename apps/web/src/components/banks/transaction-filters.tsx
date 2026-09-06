@@ -20,8 +20,13 @@ const FilterPopover = ({ children }: FilterPopoverProps) => {
   return <Popover open={isOpen} onOpenChange={setIsOpen}>{children({ isOpen, setIsOpen })}</Popover>;
 };
 
-export type { DateRangeFilter, TxnFilters } from "@/lib/banks/filter-txns";
-export { EMPTY_FILTERS, filterTxns } from "@/lib/banks/filter-txns";
+export type { DateRangeFilter, TxnFilters, TxnSearchIndex } from "@/lib/banks/filter-txns";
+export {
+  EMPTY_FILTERS,
+  buildTxnSearchIndex,
+  filterTxns,
+  filterTxnsWithIndex,
+} from "@/lib/banks/filter-txns";
 
 function fmtRange(from: number, to: number): string {
   const fromYear = new Date(from).getFullYear();
@@ -92,6 +97,11 @@ export const TransactionFilters = (props: TransactionFiltersProps) => {
             value={query}
             onChange={(e) => commitQuery(e.target.value)}
             placeholder="Search descriptions or amounts…"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
+            enterKeyHint="search"
             className="h-11 w-full pl-9 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>

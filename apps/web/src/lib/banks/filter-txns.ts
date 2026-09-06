@@ -83,46 +83,68 @@ function intersectSets(a: Set<string> | null, b: Set<string>): Set<string> {
   return new Set([...a].filter((id) => b.has(id)));
 }
 
+export type TxnSearchIndex = {
+  hay: Map<string, string>;
+  decimals: Map<string, number>;
+  items: Array<{ id: string; hay: string }>;
+  fuse: Fuse<{ id: string; hay: string }> | null;
+};
+
+// cavetail: hoists the per-keystroke string folding out of the hot path —
+// the panel memoizes one index per dataset and every keystroke only scans.
+export function buildTxnSearchIndex(txns: Txn[], deps: TxnFilterDeps): TxnSearchIndex {
+  const accountById = new Map(deps.accounts.map((a) => [a.id, a]));
+  const categoryName = new Map(deps.categories.map((c) => [c.id, fold(c.name)]));
+  const hay = new Map<string, string>();
+  const decimals = new Map<string, number>();
+  const items: Array<{ id: string; hay: string }> = [];
+  for (const t of txns) {
+    const parts = [fold(t.description ?? "")];
+    for (const id of t.categoryIds) {
+      const n = categoryName.get(id);
+      if (n) parts.push(n);
+    }
+    const acc = accountById.get(t.accountId);
+    if (acc) parts.push(fold(acc.name));
+    const h = parts.join(" ");
+    hay.set(t.id, h);
+    items.push({ id: t.id, hay: h });
+    decimals.set(t.id, acc?.decimals ?? DEFAULT_DECIMALS);
+  }
+  return { hay, decimals, items, fuse: null };
+}
+
+function getFuse(idx: TxnSearchIndex): Fuse<{ id: string; hay: string }> {
+  return (idx.fuse ??= new Fuse(idx.items, {
+    keys: ["hay"],
+    threshold: 0.4,
+    ignoreLocation: true,
+    minMatchCharLength: FUZZY_MIN_TOKEN,
+  }));
+}
+
 /** Pure filter over a transaction list. */
 export function filterTxns(
   txns: Txn[],
   filters: TxnFilters,
   deps: TxnFilterDeps,
 ): Txn[] {
+  return filterTxnsWithIndex(txns, filters, buildTxnSearchIndex(txns, deps));
+}
+
+/** Same as `filterTxns` but reuses a memoized index (see `buildTxnSearchIndex`). */
+export function filterTxnsWithIndex(
+  txns: Txn[],
+  filters: TxnFilters,
+  idx: TxnSearchIndex,
+): Txn[] {
   const rawTokens = filters.query.trim().split(/\s+/).filter(Boolean);
   const catSet = new Set(filters.categoryIds);
-  const accountById = new Map(deps.accounts.map((a) => [a.id, a]));
-  const categoryName = new Map(deps.categories.map((c) => [c.id, fold(c.name)]));
+  const { hay, decimals } = idx;
   const { from, to } = filters.date ?? { from: -Infinity, to: Infinity };
 
   let candidates: Set<string> | null = null;
   if (rawTokens.length > 0) {
-    const hay = new Map<string, string>();
-    const decimals = new Map<string, number>();
-    for (const t of txns) {
-      const parts = [fold(t.description ?? "")];
-      for (const id of t.categoryIds) {
-        const n = categoryName.get(id);
-        if (n) parts.push(n);
-      }
-      const acc = accountById.get(t.accountId);
-      if (acc) parts.push(fold(acc.name));
-      hay.set(t.id, parts.join(" "));
-      decimals.set(t.id, acc?.decimals ?? DEFAULT_DECIMALS);
-    }
-
-    // cavetail: Fuse builds lazily — exact-substring hits never pay the index cost.
-    let fuse: Fuse<{ id: string; hay: string }> | null = null;
-    const getFuse = () =>
-      (fuse ??= new Fuse(
-        txns.map((t) => ({ id: t.id, hay: hay.get(t.id) ?? "" })),
-        {
-          keys: ["hay"],
-          threshold: 0.4,
-          ignoreLocation: true,
-          minMatchCharLength: FUZZY_MIN_TOKEN,
-        },
-      ));
 
     for (const raw of rawTokens) {
       const amount = parseAmountToken(raw);
@@ -151,7 +173,7 @@ export function filterTxns(
         } else {
           ids = new Set([...hay].filter(([, h]) => h.includes(tok)).map(([id]) => id));
           if (ids.size === 0 && tok.length >= FUZZY_MIN_TOKEN) {
-            ids = new Set(getFuse().search(tok).map((r) => r.item.id));
+            ids = new Set(getFuse(idx).search(tok).map((r) => r.item.id));
           }
         }
         candidates = intersectSets(candidates, ids);

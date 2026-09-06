@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
 import { filterTxns, type TxnFilters } from "./transaction-filters";
+import { buildTxnSearchIndex, filterTxnsWithIndex } from "@/lib/banks/filter-txns";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
 
@@ -140,5 +141,38 @@ describe("filterTxns", () => {
     expect(filterTxns(list, { ...EMPTY, query: "coffee 10" }, DEPS).map((t) => t.id)).toEqual([
       "t1",
     ]);
+  });
+});
+describe("filterTxnsWithIndex", () => {
+  it("matches filterTxns on every query shape", () => {
+    const list = [
+      txn({ id: "t1", description: "Coffee", amountMinor: -1000n }),
+      txn({ id: "t2", description: "Bus fare", categoryIds: ["cat-2"], amountMinor: -250n }),
+      txn({ id: "t3", description: "Café latte", amountMinor: -123456n }),
+      txn({ id: "t4", description: "Refund", amountMinor: 2500n }),
+    ];
+    const idx = buildTxnSearchIndex(list, DEPS);
+    for (const query of [
+      "",
+      "coffee",
+      "cofee",
+      "shop coffee",
+      "cof*",
+      "*fare",
+      "cafe",
+      "10",
+      "$10",
+      "-10",
+      "+25",
+      "1,234.56",
+      "coffee 10",
+      "zzz-no-match",
+    ]) {
+      const filters = { ...EMPTY, query };
+      expect(
+        filterTxnsWithIndex(list, filters, idx).map((t) => t.id),
+        `query: ${query}`,
+      ).toEqual(filterTxns(list, filters, DEPS).map((t) => t.id));
+    }
   });
 });

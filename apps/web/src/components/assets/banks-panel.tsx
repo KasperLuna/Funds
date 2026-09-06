@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,7 +24,8 @@ import {
 } from "@/components/banks/bank-confirm-dialogs";
 import { ReconcileSheet } from "@/components/banks/reconcile-sheet";
 import {
-  filterTxns,
+  buildTxnSearchIndex,
+  filterTxnsWithIndex,
   type TxnFilters,
 } from "@/components/banks/transaction-filters";
 import { CaptureSheet } from "@/components/capture/capture-sheet";
@@ -35,7 +36,11 @@ import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { useUrlBridge } from "@/lib/url/use-url-bridge";
 import { useUrlBool, useUrlString } from "@/lib/url/use-url-state";
-import { useBanksFilters, useMirroredQuery } from "@/components/banks/use-banks-filters";
+import {
+  consumeCategoryDeepLink,
+  useBanksFilters,
+  useMirroredQuery,
+} from "@/components/banks/use-banks-filters";
 import { useBanksDialogState } from "./banks-panel.hooks";
 import { type VoicePrefill } from "@/components/capture/capture-sheet";
 import { useSync } from "@/lib/sync/sync-context";
@@ -194,10 +199,6 @@ export const BanksPanel = () => {
   );
   const [appliedQuery, setAppliedQuery] = useMirroredQuery(filters.query, writeUrlQuery);
 
-  const effectiveFilters = useMemo(
-    () => ({ ...filters, query: appliedQuery }),
-    [filters, appliedQuery],
-  );
   const [showArchived, setShowArchived] = useUrlBool("archived", false);
   const dialog = useBanksDialogState();
   const [confirmAction, setConfirmAction] = useState<{
@@ -232,24 +233,40 @@ export const BanksPanel = () => {
   const archivedAccounts = archivedAccountsQuery.data ?? [];
   const dataPending = accountsQuery.isPending || txnsQuery.isPending || categoriesQuery.isPending;
 
+  // cavetail: the list trails the input by a beat on slow devices so
+  // keystrokes never wait on filter/sort/group; the input itself stays live.
+  const deferredQuery = useDeferredValue(appliedQuery);
+  const effectiveFilters = useMemo(
+    () => ({ ...filters, query: deferredQuery }),
+    [filters, deferredQuery],
+  );
+  const filterDeps = useMemo(
+    () => ({
+      categories,
+      accounts: accounts.map((a) => ({
+        id: a.id,
+        name: a.name,
+        decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+      })),
+    }),
+    [categories, accounts, assetsById],
+  );
+  // cavetail: one index per dataset — keystrokes only scan, never refold strings.
+  const searchIndex = useMemo(
+    () => buildTxnSearchIndex(txns, filterDeps),
+    [txns, filterDeps],
+  );
+
   // Deep link: filter by category from budget pulse / categories page.
+  // cavetail: a single replace that only swaps the one-shot `category` key
+  // for the sticky `cat` key — consuming it with a bare-URL replace wiped
+  // the just-applied filter (and any ?q= the user already had).
   useEffect(() => {
-    const catId = searchParams.get("category");
-    if (!catId) return;
-    const fromRaw = searchParams.get("from");
-    const toRaw = searchParams.get("to");
-    const from = fromRaw != null ? Number(fromRaw) : NaN;
-    const to = toRaw != null ? Number(toRaw) : NaN;
-    const date =
-      Number.isFinite(from) && Number.isFinite(to) ? { from, to } : null;
-    setFilters({
-      query: searchParams.get("q") ?? "",
-      categoryIds: [catId],
-      date,
-    });
+    const qs = consumeCategoryDeepLink(searchParams.toString());
+    if (qs === null) return;
     setVisibleCount(PAGE_SIZE);
-    router.replace("/dashboard/assets?tab=banks", { scroll: false });
-  }, [searchParams, router, setFilters]);
+    router.replace(`/dashboard/assets?${qs}`, { scroll: false });
+  }, [searchParams, router]);
 
   // Deep link: scroll to and highlight a specific transaction.
   useEffect(() => {
@@ -298,16 +315,9 @@ export const BanksPanel = () => {
       const byAccount = selectedAccountId
         ? txns.filter((t) => t.accountId === selectedAccountId)
         : txns;
-      return filterTxns(byAccount, effectiveFilters, {
-        categories,
-        accounts: accounts.map((a) => ({
-          id: a.id,
-          name: a.name,
-          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
-        })),
-      });
+      return filterTxnsWithIndex(byAccount, effectiveFilters, searchIndex);
     },
-    [txns, selectedAccountId, effectiveFilters, categories, accounts, assetsById],
+    [txns, selectedAccountId, effectiveFilters, searchIndex],
   );
 
   const sortedDesc = useMemo(
