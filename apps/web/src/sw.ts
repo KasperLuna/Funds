@@ -12,22 +12,33 @@ self.addEventListener("install", () => {
 });
 
 self.addEventListener("activate", (event) => {
-  // Drop outdated precache revisions. The `runtime` cache is kept so a hot
-  // nav to a previously-rendered shell paints instantly while the network
-  // revalidates in the background (the fetch handler below).
+  // Drop outdated precache revisions (handled by Serwist) plus the legacy
+  // `navigation` cache name from an older handler. The `runtime` cache is
+  // deliberately KEPT across updates: with the network-first handler below,
+  // a stale shell is only ever served when the network fails, i.e. truly
+  // offline — where the previous build's HTML + its runtime-cached CSS is
+  // the best available and still styled. Wiping `runtime` here would break
+  // offline across an update with no online benefit (the next online
+  // navigation overwrites the stale entry anyway).
   (event as unknown as { waitUntil(p: Promise<unknown>): void }).waitUntil(
     (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((k) => k === "navigation")
+          .map((k) => caches.delete(k).catch(() => {})),
+      );
       await (self as unknown as { clients: { claim(): Promise<unknown> } }).clients.claim();
     })(),
   );
 });
 
-// Same-origin assets are served cache-first with a background revalidation,
-// and navigations use stale-while-revalidate against the `runtime` cache so
-// taps to previously-rendered routes paint instantly. A previous cache-first
-// (no revalidate) handler pinned clients on stale bundles — the SWR pattern
-// keeps the precache authoritative while letting the runtime cache hot-path
-// repeated navigations. (#418 hydration hazard documented for posterity.)
+// Navigations are network-first so a fresh shell (and its hashed chunk URLs)
+// always wins; same-origin assets are stale-while-revalidate so the runtime
+// cache refreshes in the background. A previous stale-while-revalidate
+// navigation handler served the cached shell instantly — after a deploy that
+// shell referenced hashed CSS/JS the server no longer hosts, so a refresh
+// painted unstyled HTML (and risked #418 hydration mismatch).
 self.addEventListener("fetch", (event) => {
   const e = event as unknown as {
     request: Request;
@@ -39,33 +50,22 @@ self.addEventListener("fetch", (event) => {
   const isNavigate = e.request.mode === "navigate";
   const sameOrigin = e.request.url.startsWith(self.location.origin);
 
-  // Navigations: stale-while-revalidate. Serve the cached shell immediately
-  // (so a tap on a previously-rendered route paints instantly), then refresh
-  // in the background so the next load is current. New routes with no cached
-  // copy fall through to the network with a runtime-cache write-through.
+  // Navigations: network-first, fall back to cache (offline / slow link).
   if (isNavigate) {
     e.respondWith(
-      (async (): Promise<Response> => {
-        const cached = await caches.match(e.request);
-        const network = fetch(e.request)
-          .then((response) => {
-            if (response.ok) {
-              const clone = response.clone();
-              caches.open("runtime").then((cache) => cache.put(e.request, clone));
-            }
-            return response;
-          })
-          .catch((): Response | null => null);
-        if (cached) {
-          // Don't await — revalidate in the background.
-          void network;
-          return cached;
-        }
-        return (
-          (await network) ??
-          new Response(null, { status: 302, headers: { Location: "/dashboard" } })
-        );
-      })(),
+      fetch(e.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open("runtime").then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(async (): Promise<Response> => {
+          const cached = await caches.match(e.request);
+          if (cached) return cached;
+          return new Response(null, { status: 302, headers: { Location: "/dashboard" } });
+        }),
     );
     return;
   }
