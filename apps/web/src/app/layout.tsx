@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { SPLASH_STARTUP_IMAGES } from "@/generated/pwa-splash";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Funds",
+    startupImage: SPLASH_STARTUP_IMAGES,
   },
 };
 
