@@ -57,6 +57,8 @@ const RootLayout = ({ children }: RootLayoutProps) => {
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        {/* cavetail: Next 15 emits only the standard mobile-web-app-capable meta; iOS matches apple-touch-startup-image solely when the Apple-prefixed capable meta is present. */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-black">
         {children}
