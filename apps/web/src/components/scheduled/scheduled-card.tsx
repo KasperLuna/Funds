@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSyncQuery } from "@/lib/sync/sync-query";
@@ -91,20 +91,32 @@ export const ScheduledCard = ({
     assetCode: a.code,
   }));
 
-  const occurrencePrefill: VoicePrefill | undefined = logItem
-    ? (() => {
-        const account = accountById.get(logItem.accountId);
-        const dec = account?.decimals ?? 2;
-        const abs = logItem.amountMinor < 0n ? -logItem.amountMinor : logItem.amountMinor;
-        return {
-          accountId: logItem.accountId,
-          amountInput: (Number(abs) / 10 ** dec).toFixed(dec),
-          categoryIds: logItem.categoryIds,
-          description: logItem.description || logItem.name,
-          type: logItem.type,
-        };
-      })()
-    : undefined;
+  // cavetail: memoized on the row, not the render — rebuilding this object
+  // every render re-fires the capture form's open effect and wipes the user's
+  // in-progress typing on each parent re-render (sync ticks). Deliberately
+  // keyed on logItem only: the account lookup is read at open time, and
+  // keying on the accounts array (new identity per render) would void this.
+  // A zero amount prefills as empty (not "0.00") so typing starts from a
+  // clean buffer on both the keypad and desktop paths with no clear first.
+  const occurrencePrefill: VoicePrefill | undefined = useMemo(
+    () =>
+      logItem
+        ? (() => {
+            const account = accountById.get(logItem.accountId);
+            const dec = account?.decimals ?? 2;
+            const abs =
+              logItem.amountMinor < 0n ? -logItem.amountMinor : logItem.amountMinor;
+            return {
+              accountId: logItem.accountId,
+              amountInput: abs === 0n ? "" : (Number(abs) / 10 ** dec).toFixed(dec),
+              categoryIds: logItem.categoryIds,
+              description: logItem.description || logItem.name,
+              type: logItem.type,
+            };
+          })()
+        : undefined,
+    [logItem],
+  );
 
   const handleEdit = (row: typeof items[number]) => {
     setEditItem(row);

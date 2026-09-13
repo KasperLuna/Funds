@@ -225,4 +225,93 @@ describe("ScheduledCard occurrence logging", () => {
     expect(schedRow.previous_date).toBe(now);
     expect(schedRow.invoke_date).toBeGreaterThan(now);
   });
+
+  it("zero-amount schedule logs by typing straight in and survives re-renders", async () => {
+    const user = userEvent.setup();
+    const upsert = vi.fn().mockResolvedValue(undefined);
+    const update = vi.fn().mockResolvedValue(undefined);
+    const now = Date.now();
+
+    vi.mocked(useSync).mockReturnValue({
+      db: {
+        query: mockQuery,
+        watch: vi.fn(() => (async function* () {})()),
+        table: vi.fn(() => ({ upsert, update })),
+      } as never,
+      syncStatus: {
+        online: true,
+        syncing: false,
+        lastSyncedAt: now,
+        failedCount: 0,
+      },
+      isReady: true,
+      userId: "dev-user",
+    });
+    useSyncStore.setState({
+      db: {
+        query: mockQuery,
+        watch: vi.fn(() => (async function* () {})()),
+        table: vi.fn(() => ({ upsert, update })),
+      } as never,
+      isReady: true,
+      userId: "dev-user",
+    });
+
+    mockQuery.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("scheduled_transactions")
+          ? [
+              {
+                id: "sch-zero",
+                user_id: "dev-user",
+                name: "Zero",
+                description: "",
+                type: "expense",
+                amount_minor: "0",
+                account_id: "acc-1",
+                category_ids: ["cat-1"],
+                recurrence: { frequency: "monthly", interval: 1 },
+                timezone: null,
+                invoke_date: now,
+                previous_date: null,
+                last_notified_at: null,
+                active: 1,
+                created_at: now,
+                updated_at: now,
+                deleted_at: null,
+              },
+            ]
+          : [],
+      }),
+    );
+
+    const tree = (
+      <ScheduledCard
+        accounts={[
+          { id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2, code: "USD" },
+        ]}
+        categories={[{ id: "cat-1", name: "Housing" }]}
+      />
+    );
+    const wrap = (ui: ReactElement) => {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      return <QueryClientProvider client={qc}>{ui}</QueryClientProvider>;
+    };
+    const view = render(wrap(tree));
+
+    await user.click(await screen.findByRole("button", { name: "Log occurrence: Zero" }));
+    expect(await screen.findByText("Log transaction")).toBeInTheDocument();
+
+    // Zero prefills as an empty buffer: typing starts clean, no clear first.
+    await user.click(screen.getByRole("button", { name: "5" }));
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("5.00");
+
+    // A parent re-render (sync tick) must not wipe the in-progress amount.
+    view.rerender(wrap(tree));
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("5.00");
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    const txnRow = upsert.mock.calls[0]![0] as Record<string, unknown>;
+    expect(txnRow.amount_minor).toBe(-500);
+  });
 });
