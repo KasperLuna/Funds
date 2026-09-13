@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SegmentedControl, type SegmentOption } from "@/components/ui/segmented";
 import { BanksPanel, toAccount } from "@/components/assets/banks-panel";
@@ -28,11 +28,9 @@ export const AssetsScreen = () => {
     [assets],
   );
 
-  const initialTab = (searchParams.get("tab") === "crypto" ? "crypto" : "banks") as Tab;
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const tab = (searchParams.get("tab") === "crypto" ? "crypto" : "banks") as Tab;
 
   const handleTabChange = (v: Tab) => {
-    setTab(v);
     router.replace(`/dashboard/assets?tab=${v}`, { scroll: false });
   };
 

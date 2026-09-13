@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 interface UseUrlBridgeOptions {
   /** Query string key to watch for. Triggers `onMatch` when its value is `"1"`. */
@@ -10,25 +11,27 @@ interface UseUrlBridgeOptions {
 }
 
 /**
- * cavetail: URL-param deep-link bridge. On mount, reads `window.location.search`
- * for the given `param`; if present (value `"1"`), runs `onMatch()` once and
- * strips the param via `history.replaceState` so a refresh doesn't re-trigger.
- *
- * Mirrors the existing `AssistantOpener` pattern; this is just a hook form so
- * call sites don't have to hand-roll the same six lines. The match runs only
- * once on mount — flipping a flag like `autoOpenTrade` after mount is the
- * caller's concern (and is generally a smell; prefer URL params for one-shot
- * signals and local state for in-app triggers).
+ * cavetail: URL-param deep-link bridge. Fires `onMatch()` once when
+ * `?param=1` is present — including client-side navigations to the same
+ * page (e.g. banks tab → ?tab=crypto&trade=1), where the panel mounts
+ * after the query changes. Strips the param via `router.replace` so a
+ * refresh doesn't re-trigger and Next's searchParams cache stays in sync
+ * (history.replaceState would leave useSearchParams stale).
  */
 export function useUrlBridge({ param, onMatch }: UseUrlBridgeOptions): void {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const matchRef = useRef(onMatch);
+  matchRef.current = onMatch;
+  const triggered = searchParams.get(param) === "1";
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get(param) !== "1") return;
-    onMatch();
-    params.delete(param);
-    const qs = params.toString();
-    const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-    window.history.replaceState(null, "", url);
-  }, [param, onMatch]);
+    if (!triggered) return;
+    matchRef.current();
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete(param);
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [triggered, searchParams, pathname, router, param]);
 }
