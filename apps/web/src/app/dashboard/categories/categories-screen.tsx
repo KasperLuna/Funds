@@ -107,21 +107,6 @@ function txnRow(userId: string, txn: Txn, categoryIds: string[], assetId: string
   };
 }
 
-function monthOptions(): Array<{ value: string; label: string; year: number; month: number }> {
-  const now = new Date();
-  const options: Array<{ value: string; label: string; year: number; month: number }> = [];
-  for (let i = 0; i < 13; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    options.push({
-      value: budgetPeriodKey(d.getFullYear(), d.getMonth()),
-      label: d.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-      year: d.getFullYear(),
-      month: d.getMonth(),
-    });
-  }
-  return options;
-}
-
 export const CategoriesScreen = () => {
   const { db, userId } = useSync();
   const privacy = usePrivacyStore((s) => s.masked);
@@ -176,7 +161,6 @@ export const CategoriesScreen = () => {
   const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
   const now = new Date();
   const [viewMonth, setViewMonth] = useUrlDate("month");
-  const monthOpts = useMemo(monthOptions, []);
   const effectiveViewMonth = viewMonth ?? {
     year: now.getFullYear(),
     month: now.getMonth(),
@@ -282,7 +266,6 @@ export const CategoriesScreen = () => {
       <BudgetProgressCard
         budgetUsages={budgetUsages}
         effectiveViewMonth={effectiveViewMonth}
-        monthOpts={monthOpts}
         assetsById={assetsById}
         privacy={privacy}
         onShiftMonth={shiftMonth}

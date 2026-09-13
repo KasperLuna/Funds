@@ -2,13 +2,6 @@
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { budgetPeriodKey, type Category } from "@/lib/categories/categories-store";
 import type { Asset } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
@@ -24,7 +17,6 @@ interface BudgetUsage {
 interface BudgetProgressCardProps {
   budgetUsages: BudgetUsage[];
   effectiveViewMonth: { year: number; month: number };
-  monthOpts: Array<{ value: string; label: string; year: number; month: number }>;
   assetsById: Map<string, Asset>;
   privacy: boolean;
   onShiftMonth: (delta: number) => void;
@@ -34,7 +26,6 @@ interface BudgetProgressCardProps {
 export const BudgetProgressCard = ({
   budgetUsages,
   effectiveViewMonth,
-  monthOpts,
   assetsById,
   privacy,
   onShiftMonth,
@@ -74,22 +65,16 @@ export const BudgetProgressCard = ({
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
           </button>
-          <Select
+          <input
+            type="month"
+            aria-label="Budget month"
             value={budgetPeriodKey(effectiveViewMonth.year, effectiveViewMonth.month)}
-            onValueChange={(v) => {
-              const opt = monthOpts.find((o) => o.value === v);
-              if (opt) onSelectMonth(opt.year, opt.month);
+            onChange={(e) => {
+              const [y, m] = e.target.value.split("-").map(Number);
+              if (y && m) onSelectMonth(y, m - 1);
             }}
-          >
-            <SelectTrigger aria-label="Budget month" className="h-9 w-auto min-w-[10ch]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOpts.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-300 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+          />
           <button
             type="button"
             aria-label="Next month"

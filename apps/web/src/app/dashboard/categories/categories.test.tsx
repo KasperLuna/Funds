@@ -137,7 +137,7 @@ describe("CategoriesPage", () => {
     expect(colorButtons.length).toBe(DEFAULT_CATEGORY_COLORS.length);
   });
 
-  it("offers prev/next quick-selectors around the budget month dropdown", async () => {
+  it("offers prev/next quick-selectors around a budget month picker", async () => {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     mockQuery.mockResolvedValueOnce({
@@ -175,8 +175,9 @@ describe("CategoriesPage", () => {
     renderPage(<CategoriesPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("combobox", { name: "Budget month" })).toBeInTheDocument();
+      expect(screen.getByLabelText("Budget month")).toBeInTheDocument();
     });
+    expect(screen.getByLabelText("Budget month")).toHaveAttribute("type", "month");
     expect(screen.getByRole("button", { name: "Previous month" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next month" })).toBeInTheDocument();
   });
