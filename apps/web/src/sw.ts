@@ -1,5 +1,13 @@
 // serwist 9 main entry dropped precacheAndRoute; legacy keeps the classic API.
 import { precacheAndRoute } from "serwist/legacy";
+import { fetchWithTimeout } from "./lib/fetch-timeout";
+
+// cavetail: connected-but-no-route networks hang fetches instead of failing
+// them, so a bare fetch here holds the navigation on a white screen until the
+// OS TCP timeout (minutes). Bound the wait: a timeout falls into the same
+// cache fallback as a fast failure. 8s sits above legit slow-link loads and
+// far below a blackhole hang; the next online navigation refreshes the shell.
+const NETWORK_TIMEOUT_MS = 8_000;
 
 // @ts-expect-error -- injected by @serwist/webpack-plugin
 const manifest: (string | { url: string; revision?: string })[] = self.__SW_MANIFEST;
@@ -53,7 +61,7 @@ self.addEventListener("fetch", (event) => {
   // Navigations: network-first, fall back to cache (offline / slow link).
   if (isNavigate) {
     e.respondWith(
-      fetch(e.request)
+      fetchWithTimeout(e.request, undefined, fetch, NETWORK_TIMEOUT_MS)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();
@@ -76,7 +84,7 @@ if (sameOrigin) {
   e.respondWith(
     (async (): Promise<Response> => {
       const cached = await caches.match(e.request);
-      const network = fetch(e.request)
+      const network = fetchWithTimeout(e.request, undefined, fetch, NETWORK_TIMEOUT_MS)
         .then((response) => {
           if (response.ok) {
             const clone = response.clone();

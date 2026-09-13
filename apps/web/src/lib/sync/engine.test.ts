@@ -515,6 +515,43 @@ describe("sync engine", () => {
     hinted.stop();
   });
 
+  it("hanging pull settles offline without advancing the watermark", async () => {
+    // cavetail: blackhole networks hang instead of failing — the sync loop
+    // must degrade to offline on the timeout, not wedge until TCP gives up.
+    const hanging = createSyncEngine({
+      store,
+      fetch: (() => new Promise<Response>(() => {})) as typeof fetch,
+      getUserId: () => "user1",
+      push: pushMock,
+      autoSync: false,
+      syncTimeoutMs: 20,
+    });
+    await hanging.syncNow();
+    expect(hanging.getState().online).toBe(false);
+    expect(hanging.getState().lastSyncedAt).toBeNull();
+    const meta = await store.db.table("_meta").get("watermark:user1");
+    expect(meta).toBeUndefined();
+    hanging.stop();
+  });
+
+  it("hanging push keeps outbox rows for idempotent retry", async () => {
+    await store.table("accounts").upsert({ id: "a1", name: "A" });
+    await tick();
+    expect(await outboxCount()).toBe(1);
+    const hanging = createSyncEngine({
+      store,
+      fetch: fetchMock as typeof fetch,
+      getUserId: () => "user1",
+      push: () => new Promise<unknown>(() => {}),
+      autoSync: false,
+      syncTimeoutMs: 20,
+    });
+    await hanging.syncNow();
+    expect(hanging.getState().online).toBe(false);
+    expect(await outboxCount()).toBe(1);
+    hanging.stop();
+  });
+
   it("broadcastWipe notifies onRemoteWipe listeners (multi-tab stop signal)", async () => {
     if (typeof BroadcastChannel === "undefined") {
       // jsdom without BroadcastChannel: feature degrades silently in prod too.

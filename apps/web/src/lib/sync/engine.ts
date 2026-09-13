@@ -1,6 +1,7 @@
 import { ENTITY_TABLES, broadcastWipe, type DexieStore } from "./store.js";
 import { trpc } from "@/lib/trpc/client";
 import { denormalizeRow } from "./normalize.js";
+import { fetchWithTimeout, withTimeout } from "@/lib/fetch-timeout.js";
 import { subscribeToHints } from "./hint-channel.js";
 
 type RowRecord = Record<string, unknown>;
@@ -60,6 +61,12 @@ type EngineOptions = {
   push?: (batches: Batch[]) => Promise<unknown>;
   /** cavetail: false = tests drive every sync manually; default true. */
   autoSync?: boolean;
+  /**
+   * Bound for each sync leg. A blackhole network hangs fetches instead of
+   * failing them; without this the sync loop wedges until the OS TCP timeout.
+   * Overridable so tests can use milliseconds.
+   */
+  syncTimeoutMs?: number;
   /** Hint-only realtime source; defaults to the SSE channel. */
   subscribeHints?: (onHint: () => void) => () => void;
 };
@@ -80,6 +87,7 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
   const pushFn =
     options.push ?? ((batches: Batch[]) => trpc.applyMutations.mutate({ batches }));
   const subscribeHintsFn = options.subscribeHints ?? subscribeToHints;
+  const syncTimeoutMs = options.syncTimeoutMs ?? 25_000;
   let hintUnsub: (() => void) | null = null;
 
   let started = false;
@@ -206,7 +214,11 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     }
 
     try {
-      await pushFn(batches);
+      // cavetail: tRPC exposes no abort seam, so race instead of cancelling.
+      // A timed-out push rejects here while the late resolve is ignored; the
+      // outbox rows survive (bulkDelete runs only on success) and are
+      // re-pushed idempotently on the next tick.
+      await withTimeout(pushFn(batches), syncTimeoutMs);
     } catch (err) {
       if (isPermanentError(err)) {
         for (const e of active) {
@@ -227,7 +239,7 @@ export function createSyncEngine(options: EngineOptions): SyncEngine {
     const watermark = await getWatermark(userId);
     const url =
       watermark != null ? `${PULL_ENDPOINT}?since=${watermark}` : PULL_ENDPOINT;
-    const res = await fetchFn(url);
+    const res = await fetchWithTimeout(url, undefined, fetchFn, syncTimeoutMs);
     if (!res.ok) throw new Error(`pull failed: ${res.status}`);
     const data = (await res.json()) as {
       since: number;
