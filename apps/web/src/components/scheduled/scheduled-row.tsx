@@ -39,8 +39,10 @@ export const ScheduledRow = ({
 }: ScheduledRowProps) => {
   const decimals = account?.decimals ?? 2;
   const code = account?.code;
-  const needsConfirm =
-    occ.status === "due" || occ.status === "overdue";
+  // cavetail: due/overdue log the current cycle; upcoming logs early (txn dated
+  // today, schedule rolls from the old invokeDate). Inactive rows stay inert.
+  const loggable = row.active && occ.status !== "none";
+  const needsConfirm = occ.status === "due" || occ.status === "overdue";
   const chip =
     occ.status === "overdue"
       ? { cls: "bg-(--danger)/10 text-(--danger)", label: "Overdue" }
@@ -74,6 +76,11 @@ export const ScheduledRow = ({
             {chip.label}
           </span>
         )}
+        {row.autoDeduct && (
+          <span className="shrink-0 rounded-full bg-(--surface-2) px-2 py-0.5 text-xs font-medium text-zinc-500">
+            Auto
+          </span>
+        )}
       </div>
     </>
   );
@@ -82,11 +89,11 @@ export const ScheduledRow = ({
     <div
       className={cn("flex items-center transition-opacity", row.active ? "" : "opacity-50")}
     >
-      {needsConfirm ? (
+      {loggable ? (
         <button
           type="button"
           onClick={() => onLogOccurrence(row)}
-          aria-label={`Log occurrence: ${row.name}`}
+          aria-label={needsConfirm ? `Log occurrence: ${row.name}` : `Log early: ${row.name}`}
           className="flex min-w-0 flex-1 items-center gap-x-3 gap-y-2 px-4 py-3 text-left transition-colors hover:bg-(--surface-2) focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
         >
           {body}

@@ -238,6 +238,7 @@ export const scheduledTransactions = pgTable("scheduled_transactions", {
   previousDate: timestamp("previous_date", { withTimezone: true }),
   lastNotifiedAt: timestamp("last_notified_at", { withTimezone: true }),
   active: boolean("active").notNull().default(true),
+  autoDeduct: boolean("auto_deduct").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),

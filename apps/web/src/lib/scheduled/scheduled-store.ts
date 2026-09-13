@@ -3,7 +3,7 @@ import type { ScheduledTxn } from "@/lib/scheduled/compute";
 export type { ScheduledTxn };
 
 export const SCHEDULED_COLS =
-  "id,user_id,name,description,type,amount_minor,account_id,category_ids,recurrence,timezone,invoke_date,previous_date,last_notified_at,active,created_at,updated_at,deleted_at";
+  "id,user_id,name,description,type,amount_minor,account_id,category_ids,recurrence,timezone,invoke_date,previous_date,last_notified_at,active,auto_deduct,created_at,updated_at,deleted_at";
 
 export function toScheduledTxn(row: Record<string, unknown>): ScheduledTxn {
   return {
@@ -23,6 +23,7 @@ export function toScheduledTxn(row: Record<string, unknown>): ScheduledTxn {
     previousDate: row.previous_date != null ? Number(row.previous_date) : null,
     lastNotifiedAt: row.last_notified_at != null ? Number(row.last_notified_at) : null,
     active: Boolean(row.active),
+    autoDeduct: Boolean(row.auto_deduct),
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
     deletedAt: row.deleted_at != null ? Number(row.deleted_at) : null,
@@ -56,6 +57,7 @@ export function upsertScheduledSql(s: ScheduledTxn): {
     s.previousDate ?? null,
     s.lastNotifiedAt ?? null,
     s.active,
+    s.autoDeduct,
     s.createdAt,
     s.updatedAt,
     s.deletedAt ?? null,

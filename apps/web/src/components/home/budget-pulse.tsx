@@ -24,6 +24,7 @@ export type BudgetUsageItem = {
   budgetMinor: bigint;
   budgetAssetId: string | null;
   spentMinor: bigint;
+  scheduledMinor: bigint;
   pct: number;
 };
 
@@ -46,6 +47,9 @@ export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
     : 0n;
   const totalSpentMinor = homogeneous
     ? items.reduce((sum, i) => sum + i.spentMinor, 0n)
+    : 0n;
+  const totalScheduledMinor = homogeneous
+    ? items.reduce((sum, i) => sum + (i.scheduledMinor ?? 0n), 0n)
     : 0n;
   const totalPct = totalBudgetMinor > 0n
     ? Number((totalSpentMinor * 10000n) / totalBudgetMinor) / 100
@@ -80,6 +84,7 @@ export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
           totalPct={totalPct}
           totalSpentMinor={totalSpentMinor}
           totalBudgetMinor={totalBudgetMinor}
+          totalScheduledMinor={totalScheduledMinor}
           decimals={decimals}
           code={code}
         />
@@ -94,6 +99,14 @@ export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
             const itemAsset = item.budgetAssetId ? assetsById.get(item.budgetAssetId) : undefined;
             const itemDecimals = itemAsset?.decimals ?? 2;
             const itemCode = itemAsset?.code;
+            // Ghost: scheduled-but-not-yet-spent share of this budget, stacked
+            // after solid spent and capped at the remaining room. Never moves
+            // the pct color thresholds — those stay spent-driven.
+            const scheduled = item.scheduledMinor ?? 0n;
+            const ghostPct = item.budgetMinor > 0n
+              ? Number((scheduled * 10000n) / item.budgetMinor) / 100
+              : 0;
+            const ghostWidth = Math.max(0, Math.min(ghostPct, 100 - Math.min(item.pct, 100)));
             return (
               <Link
                 key={item.category.id}
@@ -106,15 +119,25 @@ export const BudgetPulse = ({ items, assetsById }: BudgetPulseProps) => {
                     <span className="shrink-0 text-xs tabular-nums text-zinc-500" aria-label={privacy ? "Amount masked" : undefined}>
                       {privacy
                         ? `${Math.round(item.pct)}% used`
-                        : `${formatMoney(item.spentMinor, itemDecimals, itemCode)} / ${formatMoney(item.budgetMinor, itemDecimals, itemCode)}`}
+                        : `${formatMoney(item.spentMinor, itemDecimals, itemCode)} / ${formatMoney(item.budgetMinor, itemDecimals, itemCode)}${scheduled > 0n ? ` · +${formatMoney(scheduled, itemDecimals, itemCode)} scheduled` : ""}`}
                     </span>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     <div className="h-1 flex-1 overflow-hidden rounded-full bg-(--surface-3)">
-                      <div
-                        className={cn("h-full rounded-full", usageColor(item.pct))}
-                        style={{ width: `${Math.min(item.pct, 100)}%` }}
-                      />
+                      <div className="flex h-full">
+                        <div
+                          className={cn("h-full rounded-full", usageColor(item.pct))}
+                          style={{ width: `${Math.min(item.pct, 100)}%` }}
+                        />
+                        {ghostWidth > 0 && (
+                          <div
+                            className="h-full border-r-2 border-dashed border-(--accent)/70 bg-(--accent)/25"
+                            style={{ width: `${ghostWidth}%` }}
+                            role="img"
+                            aria-label={privacy ? `${Math.round(ghostPct)}% scheduled` : `${formatMoney(scheduled, itemDecimals, itemCode)} scheduled`}
+                          />
+                        )}
+                      </div>
                     </div>
                     <span className={cn("shrink-0 text-xs font-semibold tabular-nums", usageLabel(item.pct))}>
                       {Math.round(item.pct)}%
@@ -133,6 +156,7 @@ interface BudgetPulseSummaryProps {
   totalPct: number;
   totalSpentMinor: bigint;
   totalBudgetMinor: bigint;
+  totalScheduledMinor: bigint;
   decimals: number;
   code?: string;
 }
@@ -141,6 +165,7 @@ const BudgetPulseSummary = ({
   totalPct,
   totalSpentMinor,
   totalBudgetMinor,
+  totalScheduledMinor,
   decimals,
   code,
 }: BudgetPulseSummaryProps) => {
@@ -158,7 +183,7 @@ const BudgetPulseSummary = ({
     <p className="mt-0.5 text-xs text-zinc-500" aria-label={isPrivate ? "Budget usage masked" : undefined}>
       {isPrivate
         ? `${Math.round(totalPct)}% of budget used`
-        : `${formatMoney(totalSpentMinor, decimals, code)} of ${formatMoney(totalBudgetMinor, decimals, code)} spent`}
+        : `${formatMoney(totalSpentMinor, decimals, code)} of ${formatMoney(totalBudgetMinor, decimals, code)} spent${totalScheduledMinor > 0n ? ` · +${formatMoney(totalScheduledMinor, decimals, code)} scheduled` : ""}`}
     </p>
 
     <div

@@ -23,6 +23,7 @@ export type ScheduledTxn = {
   previousDate: number | null; // epoch ms
   lastNotifiedAt: number | null; // epoch ms
   active: boolean;
+  autoDeduct: boolean;
   createdAt: number;
   updatedAt: number;
   deletedAt?: number | null;
@@ -155,6 +156,55 @@ export function partitionSchedules(
     return (daysUntil(occ.localDate, now) ?? 365) > windowDays;
   });
   return { soon, rest };
+}
+
+/**
+ * Auto-deduct candidates: due/overdue now AND flagged auto-deduct.
+ * Idempotency comes from dueTodaySet's logged-this-cycle guard (previousDate
+ * local >= today) — a second run the same day selects nothing.
+ */
+export function selectAutoDue(rows: ScheduledTxn[], now: Date): ScheduledTxn[] {
+  return dueTodaySet(rows, now).filter((row) => row.autoDeduct);
+}
+
+/**
+ * Occurrence instants (epoch ms) of a schedule falling inside a calendar
+ * month. Steps forward from invokeDate; one-time schedules contribute at most
+ * their single invokeDate. Inactive/deleted/dateless rows yield [].
+ */
+export function occurrencesInMonth(
+  row: ScheduledTxn,
+  year: number,
+  month: number,
+): number[] {
+  if (!row.active || row.deletedAt || row.invokeDate == null) return [];
+  const monthStart = new Date(year, month, 1).getTime();
+  const monthEnd = new Date(year, month + 1, 1).getTime();
+  if (!row.recurrence) {
+    return row.invokeDate >= monthStart && row.invokeDate < monthEnd
+      ? [row.invokeDate]
+      : [];
+  }
+  const out: number[] = [];
+  let cursor = row.invokeDate;
+  for (let safety = 0; safety < 366; safety++) {
+    if (cursor >= monthEnd) break;
+    if (cursor >= monthStart) out.push(cursor);
+    try {
+      const advanced = advanceWaive({
+        frequency: row.recurrence.frequency,
+        interval: row.recurrence.interval,
+        invokeDate: new Date(cursor),
+        previousDate: null,
+      });
+      const next = advanced.invokeDate.getTime();
+      if (next <= cursor) break;
+      cursor = next;
+    } catch {
+      break;
+    }
+  }
+  return out;
 }
 
 /**

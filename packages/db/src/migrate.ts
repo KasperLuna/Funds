@@ -63,6 +63,7 @@ await migrate(db, { migrationsFolder: "./drizzle" });
 // fully migrated even when a migration landed after the schema was created;
 // reconcile the known gaps idempotently so those DBs stay in sync.
 await pool.query(`ALTER TABLE "categories" ADD COLUMN IF NOT EXISTS "color" text`);
+await pool.query(`ALTER TABLE "scheduled_transactions" ADD COLUMN IF NOT EXISTS "auto_deduct" boolean NOT NULL DEFAULT false`);
 
 console.log("Migrations applied.");
 

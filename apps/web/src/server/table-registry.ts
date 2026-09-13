@@ -166,6 +166,7 @@ const scheduledTransactionsSnakeToCamel: FieldMapper = {
   previous_date: "previousDate",
   last_notified_at: "lastNotifiedAt",
   active: "active",
+  auto_deduct: "autoDeduct",
   created_at: "createdAt",
   updated_at: "updatedAt",
   deleted_at: "deletedAt",

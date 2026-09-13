@@ -1,0 +1,1 @@
+ALTER TABLE "scheduled_transactions" ADD COLUMN "auto_deduct" boolean DEFAULT false NOT NULL;

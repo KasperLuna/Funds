@@ -42,6 +42,7 @@ export async function runReminders(deps: ReminderDeps): Promise<ReminderResult> 
   let failures = 0;
 
   for (const row of rows) {
+    if (row.autoDeduct) continue;
     if (!shouldNotify(row, now)) continue;
     const userSubs = subsByUser.get(row.userId) ?? [];
     if (userSubs.length === 0) continue;

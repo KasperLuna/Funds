@@ -84,7 +84,7 @@ describe("BudgetPulse", () => {
   it("renders budget usage with total and categories", () => {
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, scheduledMinor: 0n, pct: 45 },
     ];
     renderPulse(items);
     expect(screen.getByText("Budget pulse")).toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("BudgetPulse", () => {
   it("shows percentage per category", () => {
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, scheduledMinor: 0n, pct: 45 },
     ];
     renderPulse(items);
     expect(screen.getByText("45%")).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("BudgetPulse", () => {
     maskedState = true;
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, pct: 45 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 45000n, scheduledMinor: 0n, pct: 45 },
     ];
     render(<BudgetPulse items={items} assetsById={USD} />);
     expect(screen.getByText("45% of budget used")).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("BudgetPulse", () => {
   it("applies red color for over 90%", () => {
     const cat = makeCategory({ name: "Rent", monthlyBudgetMinor: 200000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 200000n, budgetAssetId: null, spentMinor: 200000n, pct: 100 },
+      { category: cat, budgetMinor: 200000n, budgetAssetId: null, spentMinor: 200000n, scheduledMinor: 0n, pct: 100 },
     ];
     const { container } = render(
       <BudgetPulse items={items} assetsById={USD} />,
@@ -130,7 +130,7 @@ describe("BudgetPulse", () => {
   it("applies yellow color for 70-90%", () => {
     const cat = makeCategory({ name: "Groceries", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 80000n, pct: 80 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 80000n, scheduledMinor: 0n, pct: 80 },
     ];
     const { container } = render(
       <BudgetPulse items={items} assetsById={USD} />,
@@ -142,12 +142,42 @@ describe("BudgetPulse", () => {
   it("applies green color for under 70%", () => {
     const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
     const items: BudgetUsageItem[] = [
-      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 30000n, pct: 30 },
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 30000n, scheduledMinor: 0n, pct: 30 },
     ];
     const { container } = render(
       <BudgetPulse items={items} assetsById={USD} />,
     );
     const fill = container.querySelector('[role="progressbar"] > div');
     expect(fill).toHaveClass("bg-(--accent)");
+  });
+
+  it("stacks a ghost segment for scheduled-but-unspent amounts", () => {
+    const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
+    const items: BudgetUsageItem[] = [
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 30000n, scheduledMinor: 20000n, pct: 30 },
+    ];
+    renderPulse(items);
+    expect(screen.getByText("$300.00 / $1,000.00 · +$200.00 scheduled")).toBeInTheDocument();
+    const ghost = screen.getByRole("img", { name: "$200.00 scheduled" });
+    expect(ghost).toHaveStyle({ width: "20%" });
+  });
+
+  it("hides the ghost segment when nothing is scheduled", () => {
+    const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
+    const items: BudgetUsageItem[] = [
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 30000n, scheduledMinor: 0n, pct: 30 },
+    ];
+    renderPulse(items);
+    expect(screen.queryByRole("img", { name: /scheduled/ })).not.toBeInTheDocument();
+  });
+
+  it("caps the ghost segment at remaining budget room", () => {
+    const cat = makeCategory({ name: "Food", monthlyBudgetMinor: 100000n });
+    const items: BudgetUsageItem[] = [
+      { category: cat, budgetMinor: 100000n, budgetAssetId: null, spentMinor: 90000n, scheduledMinor: 50000n, pct: 90 },
+    ];
+    renderPulse(items);
+    const ghost = screen.getByRole("img", { name: "$500.00 scheduled" });
+    expect(ghost).toHaveStyle({ width: "10%" });
   });
 });

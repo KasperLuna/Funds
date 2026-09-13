@@ -26,6 +26,7 @@ import { BudgetPulse } from "@/components/home/budget-pulse";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
 import { toTemplate } from "@/lib/templates/templates-store";
+import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import { useCaptureSheetTriggers } from "./dashboard-screen.hooks";
 
 function toAccount(row: RowRecord): Account {
@@ -124,6 +125,12 @@ export const DashboardScreen = () => {
     }),
   });
   const budgets = budgetsQuery.data ?? [];
+  const scheduledQuery = useSyncQuery({
+    key: queryKeys.scheduledTransactions,
+    sql: "SELECT * FROM scheduled_transactions WHERE deleted_at IS NULL",
+    select: toScheduledTxn,
+  });
+  const scheduled = scheduledQuery.data ?? [];
 
   // cavetail: templates load via a raw select map (useSyncQuery) rather than
   // the store helper so they stay reactive like every other entity collection.
@@ -232,9 +239,13 @@ export const DashboardScreen = () => {
   // honey: budgetUsage is computed once per month/categories/budgets/activeTxns
   // change; BudgetPulse renders one bar per category so re-running it on every
   // render would touch every row.
+  const accountAssetId = useMemo(
+    () => new Map(accounts.map((a) => [a.id, a.assetId])),
+    [accounts],
+  );
   const budgetUsage = useMemo(
-    () => computeBudgetUsage(categories, budgets, activeTxns, now.getFullYear(), now.getMonth()),
-    [categories, budgets, activeTxns, now.getFullYear(), now.getMonth()],
+    () => computeBudgetUsage(categories, budgets, activeTxns, now.getFullYear(), now.getMonth(), scheduled, accountAssetId),
+    [categories, budgets, activeTxns, now.getFullYear(), now.getMonth(), scheduled, accountAssetId],
   );
 
   // honey: accountInfo is consumed by RecentActivity + ScheduledCard + TemplateCard

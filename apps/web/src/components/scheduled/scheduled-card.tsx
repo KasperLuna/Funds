@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSyncQuery } from "@/lib/sync/sync-query";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import {
   partitionSchedules,
+  selectAutoDue,
   SOON_WINDOW_DAYS,
 } from "@/lib/scheduled/compute";
 import { ScheduledDialog } from "@/components/scheduled/scheduled-dialog";
@@ -50,6 +51,7 @@ export const ScheduledCard = ({
   const {
     notice,
     logOccurrence,
+    autoDeduct,
     toggle,
     remove,
     save,
@@ -63,6 +65,23 @@ export const ScheduledCard = ({
   } = useScheduledMutations(items);
 
   const accountById = new Map(accounts.map((a) => [a.id, a]));
+
+  // cavetail: auto-deduct posts due schedules once per app open. The ref set
+  // dedupes re-renders/StrictMode; the mutation re-checks each schedule fresh
+  // so a second tab racing the same morning skips instead of double-posting.
+  const autoDoneRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (items.length === 0) return;
+    const due = selectAutoDue(items, new Date()).filter(
+      (s) => !autoDoneRef.current.has(s.id),
+    );
+    if (due.length === 0) return;
+    for (const s of due) autoDoneRef.current.add(s.id);
+    autoDeduct(
+      due,
+      (accountId) => accountById.get(accountId)?.assetId,
+    );
+  }, [items]);
 
   const captureAccounts = accounts.map((a) => ({
     id: a.id,

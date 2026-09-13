@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   dueTodaySet,
   nextOccurrence,
+  occurrencesInMonth,
+  selectAutoDue,
   waiveAdvance,
   shouldNotify,
   daysUntil,
@@ -25,6 +27,7 @@ function row(overrides: Partial<ScheduledTxn> = {}): ScheduledTxn {
     previousDate: null,
     lastNotifiedAt: null,
     active: true,
+    autoDeduct: false,
     createdAt: 0,
     updatedAt: 0,
     deletedAt: null,
@@ -253,5 +256,98 @@ describe("partitionSchedules", () => {
     const { soon, rest } = partitionSchedules([mk("day4", 4)], now);
     expect(soon).toHaveLength(0);
     expect(rest.map((s) => s.row.id)).toEqual(["day4"]);
+  });
+});
+
+describe("selectAutoDue", () => {
+  const now = new Date(NOW);
+
+  it("selects due rows flagged auto-deduct", () => {
+    const due = selectAutoDue(
+      [row({ id: "auto", autoDeduct: true }), row({ id: "manual" })],
+      now,
+    );
+    expect(due.map((r) => r.id)).toEqual(["auto"]);
+  });
+
+  it("selects overdue auto-deduct rows", () => {
+    const due = selectAutoDue(
+      [
+        row({
+          id: "overdue",
+          autoDeduct: true,
+          invokeDate: Date.UTC(2026, 7, 20, 9, 0, 0),
+        }),
+      ],
+      now,
+    );
+    expect(due.map((r) => r.id)).toEqual(["overdue"]);
+  });
+
+  it("skips rows already deducted this cycle (previousDate today)", () => {
+    const due = selectAutoDue(
+      [
+        row({
+          id: "done",
+          autoDeduct: true,
+          previousDate: Date.UTC(2026, 7, 23, 8, 0, 0),
+        }),
+      ],
+      now,
+    );
+    expect(due).toEqual([]);
+  });
+
+  it("skips upcoming auto-deduct rows", () => {
+    const due = selectAutoDue(
+      [
+        row({
+          id: "future",
+          autoDeduct: true,
+          invokeDate: Date.UTC(2026, 7, 30, 9, 0, 0),
+        }),
+      ],
+      now,
+    );
+    expect(due).toEqual([]);
+  });
+});
+
+describe("occurrencesInMonth", () => {
+  it("counts weekly occurrences inside the month", () => {
+    const occ = occurrencesInMonth(
+      row({
+        recurrence: { frequency: "weekly", interval: 1 },
+        invokeDate: Date.UTC(2026, 7, 3, 9, 0, 0),
+      }),
+      2026,
+      7,
+    );
+    expect(occ).toHaveLength(5);
+    expect(occ[0]).toBe(Date.UTC(2026, 7, 3, 9, 0, 0));
+  });
+
+  it("returns the single invokeDate for one-time schedules in-month", () => {
+    const occ = occurrencesInMonth(
+      row({ recurrence: null, invokeDate: Date.UTC(2026, 7, 23, 9, 0, 0) }),
+      2026,
+      7,
+    );
+    expect(occ).toEqual([Date.UTC(2026, 7, 23, 9, 0, 0)]);
+  });
+
+  it("returns [] for one-time schedules outside the month", () => {
+    const occ = occurrencesInMonth(
+      row({ recurrence: null, invokeDate: Date.UTC(2026, 8, 5, 9, 0, 0) }),
+      2026,
+      7,
+    );
+    expect(occ).toEqual([]);
+  });
+
+  it("returns [] for inactive, deleted, or dateless rows", () => {
+    expect(occurrencesInMonth(row({ active: false }), 2026, 7)).toEqual([]);
+    expect(occurrencesInMonth(row({ deletedAt: NOW }), 2026, 7)).toEqual([]);
+    expect(occurrencesInMonth(row({ invokeDate: null }), 2026, 7)).toEqual([]);
   });
 });

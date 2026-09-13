@@ -1,3 +1,5 @@
+import { occurrencesInMonth, type ScheduledTxn } from "@/lib/scheduled/compute";
+
 export type Category = {
   id: string;
   name: string;
@@ -70,11 +72,14 @@ export function computeBudgetUsage(
   txns: BudgetTx[],
   year: number,
   month: number,
+  scheduled: ScheduledTxn[] = [],
+  accountAssetId: Map<string, string> = new Map(),
 ): Array<{
   category: Category;
   budgetMinor: bigint;
   budgetAssetId: string | null;
   spentMinor: bigint;
+  scheduledMinor: bigint;
   pct: number;
 }> {
   const results: Array<{
@@ -82,6 +87,7 @@ export function computeBudgetUsage(
     budgetMinor: bigint;
     budgetAssetId: string | null;
     spentMinor: bigint;
+    scheduledMinor: bigint;
     pct: number;
   }> = [];
   const excludedIds = new Set(
@@ -109,11 +115,31 @@ export function computeBudgetUsage(
       }
     }
     const pct = Number((spent * 10000n) / budget.amountMinor) / 100;
+    // Ghost: scheduled-but-not-yet-spent occurrences in this month, under the
+    // same rules as spent (expense-only, exempt-suppressed, same-currency).
+    // Logged occurrences already rolled the schedule forward, so they never
+    // double-count here.
+    let scheduledMinor = 0n;
+    for (const s of scheduled) {
+      if (s.type !== "expense") continue;
+      if (s.amountMinor >= 0n) continue;
+      if (!s.categoryIds.includes(cat.id)) continue;
+      if (s.categoryIds.some((id) => excludedIds.has(id))) continue;
+      if (budget.assetId) {
+        const assetId = accountAssetId.get(s.accountId);
+        if (assetId && assetId !== budget.assetId) continue;
+      }
+      const occurrences = occurrencesInMonth(s, year, month).length;
+      if (occurrences > 0) {
+        scheduledMinor += -s.amountMinor * BigInt(occurrences);
+      }
+    }
     results.push({
       category: cat,
       budgetMinor: budget.amountMinor,
       budgetAssetId: budget.assetId,
       spentMinor: spent,
+      scheduledMinor,
       pct,
     });
   }

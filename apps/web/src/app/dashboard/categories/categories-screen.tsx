@@ -14,6 +14,7 @@ import {
   type CategoryBudget,
 } from "@/lib/categories/categories-store";
 import type { Txn, Account } from "@/lib/accounts/accounts-store";
+import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import { useAssets } from "@/lib/assets";
 import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
@@ -158,11 +159,17 @@ export const CategoriesScreen = () => {
     sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
     select: toBudget,
   });
+  const scheduledQuery = useSyncQuery({
+    key: queryKeys.scheduledTransactions,
+    sql: "SELECT * FROM scheduled_transactions WHERE deleted_at IS NULL",
+    select: toScheduledTxn,
+  });
 
   const categories = categoriesQuery.data ?? [];
   const txns = txnsQuery.data ?? [];
   const accounts = accountsQuery.data ?? [];
   const budgets = budgetsQuery.data ?? [];
+  const scheduled = scheduledQuery.data ?? [];
 
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -238,9 +245,13 @@ export const CategoriesScreen = () => {
   // honey: budgetUsages scans every txn × every category once; the result feeds
   // the overall budget bar + N per-category rows. Re-running on every render
   // would reformat every row's BigInt math.
+  const accountAssetId = useMemo(
+    () => new Map(accounts.map((a) => [a.id, a.assetId])),
+    [accounts],
+  );
   const budgetUsages = useMemo(
-    () => computeBudgetUsage(categories, budgets, txns, effectiveViewMonth.year, effectiveViewMonth.month),
-    [categories, budgets, txns, effectiveViewMonth],
+    () => computeBudgetUsage(categories, budgets, txns, effectiveViewMonth.year, effectiveViewMonth.month, scheduled, accountAssetId),
+    [categories, budgets, txns, effectiveViewMonth, scheduled, accountAssetId],
   );
 
   const openNew = () => {

@@ -57,6 +57,13 @@
       "when": 1787734400000,
       "tag": "0007_fresh_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789271964734,
+      "tag": "0008_tidy_ben_parker",
+      "breakpoints": true
     }
   ]
 }

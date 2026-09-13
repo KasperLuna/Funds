@@ -115,6 +115,7 @@ function scheduled(overrides: Partial<ScheduledTxn> = {}): ScheduledTxn {
     previousDate: null,
     lastNotifiedAt: null,
     active: true,
+    autoDeduct: false,
     createdAt: 0,
     updatedAt: 0,
     deletedAt: null,

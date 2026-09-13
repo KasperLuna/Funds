@@ -125,6 +125,87 @@ describe("computeBudgetUsage", () => {
     // no recorded budget for March -> falls back to the live $500 budget
     expect(result[0]!.budgetMinor).toBe(50000n);
   });
+
+  it("reports scheduled-but-unspent occurrences as scheduledMinor ghosts", () => {
+    const sch = {
+      id: "sch-1",
+      userId: "u-1",
+      name: "Groceries",
+      description: "",
+      type: "expense" as const,
+      amountMinor: -4000n,
+      accountId: "acc-1",
+      categoryIds: ["cat-1"],
+      recurrence: { frequency: "monthly" as const, interval: 1 },
+      timezone: null,
+      invokeDate: new Date(2025, 2, 20).getTime(),
+      previousDate: null,
+      lastNotifiedAt: null,
+      active: true,
+      autoDeduct: false,
+      createdAt: 0,
+      updatedAt: 0,
+      deletedAt: null,
+    };
+    const result = computeBudgetUsage([cat()], [], [txn()], 2025, 2, [sch]);
+    expect(result[0]!.spentMinor).toBe(1500n);
+    expect(result[0]!.scheduledMinor).toBe(4000n);
+  });
+
+  it("multiplies ghosts by occurrence count within the month", () => {
+    const sch = {
+      id: "sch-1",
+      userId: "u-1",
+      name: "Allowance",
+      description: "",
+      type: "expense" as const,
+      amountMinor: -1000n,
+      accountId: "acc-1",
+      categoryIds: ["cat-1"],
+      recurrence: { frequency: "weekly" as const, interval: 1 },
+      timezone: null,
+      invokeDate: new Date(2025, 2, 3, 9, 0, 0).getTime(),
+      previousDate: null,
+      lastNotifiedAt: null,
+      active: true,
+      autoDeduct: false,
+      createdAt: 0,
+      updatedAt: 0,
+      deletedAt: null,
+    };
+    const result = computeBudgetUsage([cat()], [], [], 2025, 2, [sch]);
+    // Mar 2025: Mondays 3/10/17/24/31 -> 5 occurrences
+    expect(result[0]!.scheduledMinor).toBe(5000n);
+  });
+
+  it("excludes income, inactive, and other-month schedules from ghosts", () => {
+    const base = {
+      userId: "u-1",
+      name: "s",
+      description: "",
+      type: "expense" as const,
+      amountMinor: -1000n,
+      accountId: "acc-1",
+      categoryIds: ["cat-1"],
+      recurrence: { frequency: "monthly" as const, interval: 1 },
+      timezone: null,
+      invokeDate: new Date(2025, 2, 20).getTime(),
+      previousDate: null,
+      lastNotifiedAt: null,
+      active: true,
+      autoDeduct: false,
+      createdAt: 0,
+      updatedAt: 0,
+      deletedAt: null,
+    };
+    const schedules = [
+      { ...base, id: "income", type: "income" as const, amountMinor: 1000n },
+      { ...base, id: "paused", active: false },
+      { ...base, id: "next-month", invokeDate: new Date(2025, 3, 20).getTime() },
+    ];
+    const result = computeBudgetUsage([cat()], [], [], 2025, 2, schedules);
+    expect(result[0]!.scheduledMinor).toBe(0n);
+  });
 });
 
 describe("budgetFor", () => {

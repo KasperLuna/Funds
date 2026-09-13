@@ -31,7 +31,7 @@ async function run() {
     const { rows: scheduled } = await pool.query(
       `SELECT id, user_id, name, description, type, amount_minor, account_id,
               category_ids, recurrence, timezone, invoke_date, previous_date,
-              last_notified_at, active
+              last_notified_at, active, auto_deduct
        FROM scheduled_transactions
        WHERE active = true
          AND deleted_at IS NULL
@@ -44,6 +44,9 @@ async function run() {
     let notified = 0;
 
     for (const row of scheduled) {
+      // cavetail: auto-deduct rows self-resolve on the client's next visit;
+      // pushing a "log now" reminder for them would nag after posting.
+      if (row.auto_deduct) continue;
       const schedule: Schedule = {
         frequency: row.recurrence.frequency,
         interval: row.recurrence.interval,

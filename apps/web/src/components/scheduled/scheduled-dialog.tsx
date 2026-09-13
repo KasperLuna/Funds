@@ -83,6 +83,7 @@ const scheduledFormSchema = z.object({
   interval: z.number().int().min(1, "Must be at least 1"),
   timezoneOffset: z.number().int().min(-12).max(12),
   startDate: z.string().min(1, "Pick a start date"),
+  autoDeduct: z.boolean(),
 });
 
 type ScheduledFormValues = z.infer<typeof scheduledFormSchema>;
@@ -103,6 +104,7 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
       frequency: editItem?.recurrence?.frequency ?? "monthly",
       interval: editItem?.recurrence?.interval ?? 1,
       timezoneOffset: 0,
+      autoDeduct: editItem?.autoDeduct ?? false,
       startDate: editItem?.invokeDate
         ? new Date(editItem.invokeDate).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10),
@@ -118,6 +120,7 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
   const frequency = watch("frequency");
   const interval = watch("interval");
   const timezoneOffset = watch("timezoneOffset");
+  const autoDeduct = watch("autoDeduct");
   const startDate = watch("startDate");
 
   const [y, m, d] = startDate.split("-").map(Number);
@@ -152,6 +155,7 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
       previousDate: startDateChanged ? null : (editItem?.previousDate ?? null),
       lastNotifiedAt: editItem?.lastNotifiedAt ?? null,
       active: editItem?.active ?? true,
+      autoDeduct: values.autoDeduct,
       createdAt: editItem?.createdAt ?? now,
       updatedAt: now,
       deletedAt: null,
@@ -334,6 +338,22 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
               })}
             </p>
           )}
+
+          <label className="flex cursor-pointer items-center justify-between gap-3 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-3 py-2.5">
+            <span className="flex flex-col">
+              <span className="text-sm">Auto-deduct on due date</span>
+              <span className="text-xs text-zinc-500">
+                Posts automatically when you open the app on or after the due date.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={autoDeduct}
+              onChange={(e) => setValue("autoDeduct", e.target.checked, { shouldValidate: true })}
+              aria-label="Auto-deduct on due date"
+              className="h-5 w-5 shrink-0 accent-(--accent)"
+            />
+          </label>
 
           <div className="flex justify-end gap-2">
             {editItem && onDelete && (

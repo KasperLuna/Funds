@@ -81,7 +81,7 @@ const NON_TEXT_COLUMNS: Record<string, string[]> = {
   tokens: [],
   token_transactions: ["amount_minor", "price_at_execution_minor", "fee_minor"],
   templates: ["amount_minor", "category_ids"],
-  scheduled_transactions: ["amount_minor", "category_ids", "recurrence", "active"],
+  scheduled_transactions: ["amount_minor", "category_ids", "recurrence", "active", "auto_deduct"],
   push_subscriptions: ["keys"],
 };
 
