@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { DigitKey } from "@/components/capture/keypad";
 import { AmountInput } from "@/components/capture/amount-input";
 import {
@@ -30,6 +31,12 @@ export interface CaptureAmountKeypadProps {
   compact?: boolean;
   /** Forwarded to the outer wrapper. Use to size the readout inside a flex row. */
   className?: string;
+  /** Dictation entry point, forwarded to the amount hero. */
+  onMicClick?: () => void;
+  /** Dictate-mode body; when present it owns the hero's number cell. */
+  dictateContent?: ReactNode;
+  /** Missing-field flag rendered under the hero (e.g. unheard amount). */
+  amountHint?: string | null;
 }
 
 export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
@@ -44,6 +51,9 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
     decimals,
     compact,
     className,
+    onMicClick,
+    dictateContent,
+    amountHint,
   } = props;
 
   return (
@@ -90,7 +100,14 @@ export const CaptureAmountKeypad = (props: CaptureAmountKeypadProps) => {
         decimals={decimals}
         aria-label="Amount"
         autoFocus
+        onMicClick={onMicClick}
+        dictateContent={dictateContent}
       />
+      {amountHint ? (
+        <p role="status" className="mt-2 text-center text-xs font-medium text-(--danger)">
+          {amountHint}
+        </p>
+      ) : null}
 
       {/* Quick-fill zone — suggestions (recent repeats) below the hero. */}
       {suggestions.length > 0 && (

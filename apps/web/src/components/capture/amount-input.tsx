@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+import { Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface AmountInputProps {
@@ -36,6 +38,14 @@ export interface AmountInputProps {
   autoFocus?: boolean;
   /** Test id forwarded to the readout wrapper. */
   testId?: string;
+  /**
+   * Dictation entry point. Renders a mic button at the plate's right edge;
+   * iOS keyboard dictation needs a real focused input, so the parent swaps
+   * `dictateContent` in (replacing readout + input) while listening.
+   */
+  onMicClick?: () => void;
+  /** Dictate-mode body; when present it owns the number cell. */
+  dictateContent?: ReactNode;
 }
 
 const toneClass: Record<NonNullable<AmountInputProps["tone"]>, string> = {
@@ -76,6 +86,8 @@ export const AmountInput = (props: AmountInputProps) => {
     className,
     autoFocus,
     testId,
+    onMicClick,
+    dictateContent,
   } = props;
   return (
     <div
@@ -106,23 +118,37 @@ export const AmountInput = (props: AmountInputProps) => {
           toneClass[tone],
         )}
       >
-        {/* Mobile: keypad drives the buffer, span displays it (formatted). */}
-        <span className="truncate text-right sm:hidden">
-          {(display ?? value) || "0"}
-        </span>
-        {/* Desktop: user types. */}
-        <input
-          type="text"
-          inputMode="decimal"
-          aria-label={ariaLabel}
-          autoFocus={autoFocus}
-          value={value}
-          onChange={(e) => onChange(sanitize(e.target.value))}
-          placeholder="0"
-          maxLength={decimals + 16}
-          className="hidden min-w-0 flex-1 border-0 bg-transparent text-right font-display text-inherit outline-none placeholder:text-zinc-600 focus:ring-0 sm:block"
-        />
+        {dictateContent ?? (
+          <>
+            {/* Mobile: keypad drives the buffer, span displays it (formatted). */}
+            <span className="truncate text-right sm:hidden">
+              {(display ?? value) || "0"}
+            </span>
+            {/* Desktop: user types. */}
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label={ariaLabel}
+              autoFocus={autoFocus}
+              value={value}
+              onChange={(e) => onChange(sanitize(e.target.value))}
+              placeholder="0"
+              maxLength={decimals + 16}
+              className="hidden min-w-0 flex-1 border-0 bg-transparent text-right font-display text-inherit outline-none placeholder:text-zinc-600 focus:ring-0 sm:block"
+            />
+          </>
+        )}
       </div>
+      {onMicClick && !dictateContent ? (
+        <button
+          type="button"
+          aria-label="Dictate transaction"
+          onClick={onMicClick}
+          className="flex shrink-0 items-center pr-4 text-zinc-500 transition-colors hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+        >
+          <Mic className="h-5 w-5" aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 };

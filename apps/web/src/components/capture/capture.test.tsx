@@ -432,3 +432,56 @@ describe("CaptureSheet", () => {
     expect(txns[0]!.category_ids).toEqual([newId]);
   });
 });
+describe("CaptureSheet dictation", () => {
+  it("mic opens dictate mode, utterance applies to amount and description", async () => {
+    const user = userEvent.setup();
+    const sync = new MemorySyncDatabase();
+    render(withQueryClient(<Harness sync={sync} />));
+    expect(await screen.findByTestId("amount-readout")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Dictate transaction" }));
+    const field = screen.getByLabelText("Dictate transaction");
+    expect(field).toBeInTheDocument();
+    // Keypad yields to dictate mode.
+    expect(screen.queryByRole("button", { name: "5" })).not.toBeInTheDocument();
+
+    await user.type(field, "Coffee 120");
+    await user.click(screen.getByRole("button", { name: "Apply dictation" }));
+
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("120.00");
+    expect(screen.getByLabelText("Description")).toHaveValue("Coffee");
+    // Keypad returns after commit.
+    expect(screen.getByRole("button", { name: "5" })).toBeInTheDocument();
+  });
+
+  it("partial parse flags the missing amount and blocks save", async () => {
+    const user = userEvent.setup();
+    const sync = new MemorySyncDatabase();
+    render(withQueryClient(<Harness sync={sync} />));
+    expect(await screen.findByTestId("amount-readout")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Dictate transaction" }));
+    await user.type(screen.getByLabelText("Dictate transaction"), "Lunch with friends");
+    await user.click(screen.getByRole("button", { name: "Apply dictation" }));
+
+    expect(screen.getByText("Couldn't hear an amount — type it")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save transaction" })).toBeDisabled();
+    // Typing the amount clears the flag.
+    await user.click(screen.getByRole("button", { name: "5" }));
+    expect(screen.queryByText("Couldn't hear an amount — type it")).not.toBeInTheDocument();
+  });
+
+  it("cancel restores the sheet untouched", async () => {
+    const user = userEvent.setup();
+    const sync = new MemorySyncDatabase();
+    render(withQueryClient(<Harness sync={sync} />));
+    expect(await screen.findByTestId("amount-readout")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Dictate transaction" }));
+    await user.type(screen.getByLabelText("Dictate transaction"), "Coffee 120");
+    await user.click(screen.getByRole("button", { name: "Cancel dictation" }));
+
+    expect(screen.getByTestId("amount-readout")).toHaveTextContent("0.00");
+    expect(screen.getByLabelText("Description")).toHaveValue("");
+  });
+});

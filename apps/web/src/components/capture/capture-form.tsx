@@ -12,6 +12,8 @@ import { type DigitKey, Keypad } from "@/components/capture/keypad";
 import { Button } from "@/components/ui/button";
 import { CaptureFormFields } from "@/components/capture/capture-form-fields";
 import { CaptureAmountKeypad } from "@/components/capture/capture-amount-keypad";
+import { CaptureDictate } from "@/components/capture/capture-dictate";
+import { dictateToPrefill } from "@/lib/voice/dictate";
 import {
   emptyAmount,
   digit as applyDigit,
@@ -129,6 +131,15 @@ export const CaptureForm = (props: CaptureFormProps) => {
     emptyAmount(first?.decimals ?? 2),
   );
   const [replaceAmountOnNextKey, setReplaceAmountOnNextKey] = useState(false);
+  // cavetail: dictate mode swaps the hero readout for a real text input so
+  // the iOS keyboard (and its mic key) appears; the utterance parses fully
+  // on-device via dictate.ts. Missing-amount derives from the buffer so no
+  // flag state can go stale: it shows only while the buffer is still empty.
+  const [dictating, setDictating] = useState(false);
+  const [utterance, setUtterance] = useState("");
+  const [dictateAmountMissing, setDictateAmountMissing] = useState(false);
+  const showAmountMissing =
+    dictateAmountMissing && amountToMinor(amount) === 0n;
   const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
   const templateFormRef = useRef<FormSnapshot | null>(null);
   const [templateSnapshot, setTemplateSnapshot] = useState<{
@@ -201,6 +212,9 @@ export const CaptureForm = (props: CaptureFormProps) => {
       setTemplateSnapshot(null);
       templateFormRef.current = null;
       setCreatingCategory(false);
+      setDictating(false);
+      setUtterance("");
+      setDictateAmountMissing(false);
       if (voicePrefill) {
         const prefillAccountId =
           voicePrefill.accountId ?? accounts[0]?.id ?? "";
@@ -255,6 +269,49 @@ export const CaptureForm = (props: CaptureFormProps) => {
       replaceAmountOnNextKey ? applyDigit(emptyAmount(s.decimals), key) : applyDigit(s, key),
     );
     setReplaceAmountOnNextKey(false);
+  };
+
+  const startDictation = () => {
+    setUtterance("");
+    setDictateAmountMissing(false);
+    setDictating(true);
+  };
+  const cancelDictation = () => {
+    setDictating(false);
+    setUtterance("");
+  };
+  const commitDictation = () => {
+    const res = dictateToPrefill(
+      utterance,
+      accounts.map((a) => ({ id: a.id, name: a.name, decimals: a.decimals })),
+      categories.map((c) => ({ id: c.id, name: c.name })),
+    );
+    // Blank utterance: stay listening.
+    if (!res) return;
+    const p = res.prefill;
+    // cavetail: resolve the target account first — a decimals change
+    // re-buffers the amount, so the account must land before the amount.
+    // Type is deliberately untouched: the parser emits no income/expense
+    // signal, and the toggle stays one tap away.
+    const target = (p.accountId ? accounts.find((a) => a.id === p.accountId) : undefined) ?? selected;
+    const dec = target?.decimals ?? decimals;
+    if (target && target.id !== accountId) {
+      form.setValue("accountId", target.id, { shouldValidate: true });
+    }
+    if (p.amountInput) {
+      const next = { input: sanitizeAmountInput(p.amountInput, dec), decimals: dec };
+      setAmount(next);
+      form.setValue("amountInput", next.input, { shouldValidate: true });
+    } else {
+      setAmount(emptyAmount(dec));
+      form.setValue("amountInput", "", { shouldValidate: true });
+    }
+    form.setValue("description", p.description, { shouldValidate: true });
+    form.setValue("categoryIds", p.categoryIds, { shouldValidate: true });
+    setReplaceAmountOnNextKey(false);
+    setDictateAmountMissing(res.missingAmount);
+    setDictating(false);
+    setUtterance("");
   };
   const minor = amountToMinor(amount);
   const canSave = minor > 0n && !!selected;
@@ -453,28 +510,42 @@ export const CaptureForm = (props: CaptureFormProps) => {
           selected={selected}
           type={type}
           onTypeChange={handleTypeChange}
-          suggestions={suggestions}
+          suggestions={dictating ? [] : suggestions}
           onApplySuggestion={applySuggestion}
           decimals={decimals}
           compact
+          onMicClick={startDictation}
+          dictateContent={
+            dictating ? (
+              <CaptureDictate
+                value={utterance}
+                onChange={setUtterance}
+                onCommit={commitDictation}
+                onCancel={cancelDictation}
+              />
+            ) : undefined
+          }
+          amountHint={showAmountMissing ? "Couldn't hear an amount — type it" : null}
         />
       </div>
-      <div className="shrink-0 border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:hidden">
-        <Keypad
-          onKey={handleKey}
-          onBackspace={() => {
-            setReplaceAmountOnNextKey(false);
-            setAmount(backspace);
-          }}
-          onClear={() => {
-            setReplaceAmountOnNextKey(false);
-            setAmount(clearAmount);
-          }}
-          onSave={save}
-          canSave={canSave}
-          currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
-        />
-      </div>
+      {!dictating ? (
+        <div className="shrink-0 border-t border-(--border) bg-(--plate-1) px-6 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:hidden">
+          <Keypad
+            onKey={handleKey}
+            onBackspace={() => {
+              setReplaceAmountOnNextKey(false);
+              setAmount(backspace);
+            }}
+            onClear={() => {
+              setReplaceAmountOnNextKey(false);
+              setAmount(clearAmount);
+            }}
+            onSave={save}
+            canSave={canSave}
+            currencySymbol={selected?.assetCode === "USD" ? "$" : undefined}
+          />
+        </div>
+      ) : null}
       <div className="hidden shrink-0 border-t border-(--border) bg-(--plate-1) px-6 py-4 sm:block rounded-b-xl">
         <Button onClick={save} disabled={!canSave} aria-label="Save transaction" className="w-full" size="lg">
           {canSave ? "Save" : "Enter amount"}
