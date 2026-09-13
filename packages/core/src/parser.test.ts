@@ -82,6 +82,30 @@ describe("parseTransaction — account matching", () => {
     const r = parseTransaction("100 gcash wallet", { accounts, categories });
     expect(r.account).toBe("Gcash Wallet");
   });
+
+  it("subsumption: a non-match cannot zero an exact match", () => {
+    // "Checking" scores ~0.06 here but holds a longer lucky window
+    // containing "gcash" — it must not subsume the exact "Gcash" hit.
+    const r = parseTransaction("Lunch 500 gcash", {
+      accounts: [
+        { id: "a1", name: "Gcash" },
+        { id: "a2", name: "Checking" },
+      ],
+      categories,
+    });
+    expect(r.account).toBe("Gcash");
+  });
+
+  it("subsumption: a non-match cannot zero an exact category", () => {
+    const r = parseTransaction("Lunch 500 pesos food", {
+      accounts,
+      categories: [
+        { id: "c1", name: "Food" },
+        { id: "c9", name: "Seafood Buffet" },
+      ],
+    });
+    expect(r.categories).toContain("Food");
+  });
 });
 
 describe("parseTransaction — category matching", () => {

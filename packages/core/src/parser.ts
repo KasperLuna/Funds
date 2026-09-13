@@ -209,11 +209,19 @@ function scoreCandidates(
     .sort((a, b) => b.score - a.score);
 }
 
-function applySubsumption(scored: { id: string; name: string; score: number; span: string[] }[]): { id: string; name: string; score: number; span: string[] }[] {
+function applySubsumption(
+  scored: { id: string; name: string; score: number; span: string[] }[],
+  minScore: number,
+): { id: string; name: string; score: number; span: string[] }[] {
   return scored.map((entry, i) => {
+    // cavetail: only a genuine match may subsume. Every candidate's best
+    // window is chosen independently, so a non-match (e.g. "Checking" at
+    // 0.06) can hold a long lucky window containing the true match's span
+    // ("gcash") and zero it — an exact "Gcash" then resolves to nothing.
     const isSubsumed = scored.some(
       (other, j) =>
         j !== i &&
+        other.score >= minScore &&
         other.span.length > entry.span.length &&
         other.span.join(" ").includes(entry.span.join(" ")),
     );
@@ -250,8 +258,8 @@ export function parseTransaction(
   const currency = extractCurrency(rawText);
   const amountResult = extractAmount(normalized);
 
-  const accountScored = applySubsumption(scoreCandidates(rawTokens, opts.accounts));
-  const categoryScored = applySubsumption(scoreCandidates(rawTokens, opts.categories));
+  const accountScored = applySubsumption(scoreCandidates(rawTokens, opts.accounts), 0.5);
+  const categoryScored = applySubsumption(scoreCandidates(rawTokens, opts.categories), 0.4);
 
   const matchedAccount =
     accountScored.length > 0 && accountScored[0]!.score >= 0.5
