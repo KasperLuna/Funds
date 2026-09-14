@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom/vitest";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { monthHeatmap, monthHighlights, txnsByAccount } from "@/lib/analytics/compute";
 import { AccountActivityCard } from "./account-activity-card";
 import { ActivityHeatmapCard } from "./activity-heatmap-card";
 import { MonthHighlightsCard } from "./month-highlights-card";
+import { SavingsRateCard } from "./savings-rate-card";
 
 const INFO = {
   "acc-1": { code: "PHP", decimals: 2 },
@@ -106,5 +108,26 @@ describe("MonthHighlightsCard", () => {
     const data = monthHighlights(janTxns(), [], 2026, 0);
     render(<MonthHighlightsCard data={data} year={2026} month={0} code="PHP" />);
     expect(screen.getByText(/Jan 3 · ••••/)).toBeInTheDocument();
+  });
+});
+
+describe("SavingsRateCard period", () => {
+  it("switches window via segmented control, headline stays on latest", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const data = [
+      { month: "Jan", rate: 10 },
+      { month: "Feb", rate: 20 },
+      { month: "Mar", rate: 30 },
+    ];
+    const { rerender } = render(
+      <SavingsRateCard data={data} window={6} onWindowChange={onChange} />,
+    );
+    expect(screen.getByText("30%")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "6M" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "3M" }));
+    expect(onChange).toHaveBeenCalledWith(3);
+    rerender(<SavingsRateCard data={data.slice(-1)} window={3} onWindowChange={onChange} />);
+    expect(screen.getByText("30%")).toBeInTheDocument();
   });
 });

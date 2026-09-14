@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
@@ -22,7 +22,7 @@ import {
   monthHeatmap,
   monthHighlights,
 } from "@/lib/analytics/compute";
-import { SavingsRateCard } from "@/components/analytics/savings-rate-card";
+import { SavingsRateCard, type RateWindow } from "@/components/analytics/savings-rate-card";
 import { SpendingTrendsCard } from "@/components/analytics/spending-trends-card";
 import { CategoryBreakdownCard } from "@/components/analytics/category-breakdown-card";
 import { CashFlowForecastCard } from "@/components/analytics/cash-flow-forecast-card";
@@ -134,7 +134,13 @@ export const AnalyticsScreen = () => {
   const scheduled = scheduledQuery.data ?? [];
 
   const spending = useMemo(() => spendingByMonth(txns, categories, 12), [txns, categories]);
-  const rates = useMemo(() => savingsRate(txns, categories, 12), [txns, categories]);
+  // cavetail: 6M default — 3M jumps on irregular income, 12M buries recent
+  // shifts. Headline always reads the current month regardless of window.
+  const [rateWindow, setRateWindow] = useState<RateWindow>(6);
+  const rates = useMemo(
+    () => savingsRate(txns, categories, rateWindow),
+    [txns, categories, rateWindow],
+  );
 
   const now = new Date();
   const catBreakdown = useMemo(
@@ -183,7 +189,7 @@ export const AnalyticsScreen = () => {
         </h1>
       </header>
 
-      <SavingsRateCard data={rates} />
+      <SavingsRateCard data={rates} window={rateWindow} onWindowChange={setRateWindow} />
       <SpendingTrendsCard data={spending} code={primaryCode} />
       <CategoryBreakdownCard data={catBreakdown} accountInfo={accountAssetInfo} />
       <CashFlowForecastCard data={cashFlow} code={primaryCode} />
