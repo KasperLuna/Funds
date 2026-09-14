@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { monthKey, type MonthHeatmap } from "@/lib/analytics/compute";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -32,6 +33,8 @@ export const ActivityHeatmapCard = ({
   decimals = 2,
 }: ActivityHeatmapCardProps) => {
   const masked = usePrivacyStore((s) => s.masked);
+  const money = (v: bigint) =>
+    masked ? "••••" : formatMoney(v, decimals, code);
 
   return (
     <section
@@ -71,25 +74,72 @@ export const ActivityHeatmapCard = ({
                   (d.outflow > 0n && !masked
                     ? `, ${formatMoney(d.outflow, decimals, code)} spent`
                     : "");
+                const cellClass = cn(
+                  "flex aspect-square items-center justify-center rounded-[4px] text-[10px] tabular-nums",
+                  d.count > 0 ? "text-zinc-200" : "text-zinc-600",
+                  level === 0 && "bg-(--surface-3)",
+                );
+                const cellStyle =
+                  level > 0
+                    ? { backgroundColor: `color-mix(in srgb, var(--accent) ${OPACITY[level]! * 100}%, var(--surface-3))` }
+                    : undefined;
+                if (d.count === 0) {
+                  return (
+                    <span
+                      key={d.day}
+                      role="gridcell"
+                      aria-label={label}
+                      className={cellClass}
+                      style={cellStyle}
+                    >
+                      {d.day}
+                    </span>
+                  );
+                }
+                const income = d.income;
+                const net = income - d.outflow;
+                const fullDate = new Date(m.year, m.month, d.day).toLocaleDateString(
+                  undefined,
+                  { weekday: "short", month: "short", day: "numeric", year: "numeric" },
+                );
                 return (
-                  <span
-                    key={d.day}
-                    role="gridcell"
-                    aria-label={label}
-                    title={label}
-                    className={cn(
-                      "flex aspect-square items-center justify-center rounded-[4px] text-[10px] tabular-nums",
-                      d.count > 0 ? "text-zinc-200" : "text-transparent",
-                      level === 0 && "bg-(--surface-3)",
-                    )}
-                    style={
-                      level > 0
-                        ? { backgroundColor: `color-mix(in srgb, var(--accent) ${OPACITY[level]! * 100}%, var(--surface-3))` }
-                        : undefined
-                    }
-                  >
-                    {d.count > 0 ? d.count : ""}
-                  </span>
+                  <Popover key={d.day}>
+                    <PopoverTrigger asChild>
+                      <span
+                        role="gridcell"
+                        aria-label={label}
+                        title={label}
+                        className={cn(cellClass, "cursor-pointer")}
+                        style={cellStyle}
+                      >
+                        {d.day}
+                      </span>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="top"
+                      className="w-60 border-(--border) bg-(--surface-2) p-4"
+                    >
+                      <p className="text-sm font-semibold">{fullDate}</p>
+                      <dl className="mt-2 space-y-1 text-sm tabular-nums">
+                        <div className="flex items-center justify-between">
+                          <dt className="text-zinc-400">Transactions</dt>
+                          <dd>{d.count}</dd>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <dt className="text-zinc-400">Income</dt>
+                          <dd>{money(income)}</dd>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <dt className="text-zinc-400">Expense</dt>
+                          <dd>{money(d.outflow)}</dd>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-(--border) pt-1 font-medium">
+                          <dt className="text-zinc-400">Net</dt>
+                          <dd>{money(net)}</dd>
+                        </div>
+                      </dl>
+                    </PopoverContent>
+                  </Popover>
                 );
               })}
             </div>

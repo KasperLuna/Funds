@@ -164,16 +164,16 @@ export const AnalyticsScreen = () => {
   const section = useMemo(() => {
     const fallback = { year: now.getFullYear(), month: now.getMonth() };
     const { year, month } = viewMonth ?? fallback;
-    const highlights = monthHighlights(txns, year, month);
+    const highlights = monthHighlights(txns, categories, year, month);
     return {
       year,
       month,
       label: monthKey(year, month),
-      activity: txnsByAccount(txns, accounts, year, month),
-      heat: monthHeatmap(txns, year, month),
+      activity: txnsByAccount(txns, accounts, categories, year, month),
+      heat: monthHeatmap(txns, categories, year, month),
       highlights,
     };
-  }, [viewMonth, txns, accounts]);
+  }, [viewMonth, txns, accounts, categories]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
@@ -190,7 +190,7 @@ export const AnalyticsScreen = () => {
       <AnomalyAlertsCard data={anomalies} code={primaryCode} />
 
       <section aria-label={`Monthly activity for ${section.label}`}>
-        <div className="mb-3 flex items-center justify-between">
+        <div className="sticky top-0 z-30 -mx-1 mb-3 flex items-center justify-between bg-(--bg)/95 px-1 py-2 backdrop-blur">
           <h2 className="font-display text-lg font-bold tracking-tight">
             {section.label}
           </h2>

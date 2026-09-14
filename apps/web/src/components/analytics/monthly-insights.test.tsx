@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe("AccountActivityCard", () => {
   it("renders per-account counts, flows, and the top-inflow star", () => {
-    const data = txnsByAccount(janTxns(), ACCOUNTS, 2026, 0);
+    const data = txnsByAccount(janTxns(), ACCOUNTS, [], 2026, 0);
     render(
       <AccountActivityCard
         data={data}
@@ -59,7 +59,7 @@ describe("AccountActivityCard", () => {
 
   it("masks money under privacy but keeps counts", () => {
     usePrivacyStore.setState({ masked: true });
-    const data = txnsByAccount(janTxns(), ACCOUNTS, 2026, 0);
+    const data = txnsByAccount(janTxns(), ACCOUNTS, [], 2026, 0);
     render(<AccountActivityCard data={data} accountInfo={INFO} topInflowAccountId={null} />);
     expect(screen.getByText("2 txns")).toBeInTheDocument();
     expect(screen.getAllByText("••••").length).toBeGreaterThan(0);
@@ -73,18 +73,18 @@ describe("AccountActivityCard", () => {
 
 describe("ActivityHeatmapCard", () => {
   it("renders weekday-aligned cells with counts", () => {
-    const heat = monthHeatmap(janTxns(), 2026, 0);
+    const heat = monthHeatmap(janTxns(), [], 2026, 0);
     render(<ActivityHeatmapCard months={[heat]} code="PHP" />);
     const grid = screen.getByRole("grid", { name: /Daily activity/ });
     // Day cells only — leading blanks are aria-hidden spacers.
     expect(within(grid).getAllByRole("gridcell")).toHaveLength(31);
     expect(
       screen.getByRole("gridcell", { name: /Jan 2026 3: 2 transactions/ }),
-    ).toHaveTextContent("2");
+    ).toHaveTextContent("3");
   });
 
   it("sizes February grids by leap year", () => {
-    const heat = monthHeatmap([], 2024, 1);
+    const heat = monthHeatmap([], [], 2024, 1);
     render(<ActivityHeatmapCard months={[heat]} />);
     const grid = screen.getByRole("grid", { name: /Daily activity/ });
     expect(within(grid).getAllByRole("gridcell")).toHaveLength(29);
@@ -93,7 +93,7 @@ describe("ActivityHeatmapCard", () => {
 
 describe("MonthHighlightsCard", () => {
   it("renders all four stats", () => {
-    const data = monthHighlights(janTxns(), 2026, 0);
+    const data = monthHighlights(janTxns(), [], 2026, 0);
     render(<MonthHighlightsCard data={data} year={2026} month={0} code="PHP" />);
     expect(screen.getByText("Busiest day")).toBeInTheDocument();
     expect(screen.getByText(/Jan 3 · 2 txns/)).toBeInTheDocument();
@@ -103,7 +103,7 @@ describe("MonthHighlightsCard", () => {
 
   it("masks the biggest-outflow amount under privacy", () => {
     usePrivacyStore.setState({ masked: true });
-    const data = monthHighlights(janTxns(), 2026, 0);
+    const data = monthHighlights(janTxns(), [], 2026, 0);
     render(<MonthHighlightsCard data={data} year={2026} month={0} code="PHP" />);
     expect(screen.getByText(/Jan 3 · ••••/)).toBeInTheDocument();
   });
