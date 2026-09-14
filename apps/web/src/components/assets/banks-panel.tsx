@@ -4,6 +4,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { TransferRows } from "@/lib/capture";
 import {
@@ -419,8 +420,12 @@ export const BanksPanel = () => {
   const handleAccountActionConfirm = (a: Account) => {
     if (confirmAction?.action === "delete") {
       handleAccountDelete(a);
+      // cavetail: no Undo — delete tombstones the account plus every txn;
+      // resurrecting via the txn path can't restore the cascade.
+      toast("Account deleted", { duration: 5000 });
     } else {
       handleAccountArchive(a);
+      toast(confirmAction?.action === "unarchive" ? "Account unarchived" : "Account archived", { duration: 5000 });
     }
     setConfirmAction(null);
   };
@@ -459,6 +464,8 @@ export const BanksPanel = () => {
     },
   });
   const handleTxnDelete = (txn: Txn) => {
+    // cavetail: single-leg tombstone — a transfer txn deletes without its pair;
+    // the row skips Undo for transfer legs for the same reason.
     txnDeleteMutation.mutate(txn);
     if (undoDeleteTimer.current) clearTimeout(undoDeleteTimer.current);
     undoDeleteTimer.current = setTimeout(() => {

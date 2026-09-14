@@ -9,6 +9,9 @@ import { AccountDialog } from "./account-dialog";
 import { AccountConfirmDialog } from "./bank-confirm-dialogs";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import { computeBalance } from "@/lib/accounts/accounts-store";
+import { toast } from "sonner";
+
+vi.mock("sonner", () => ({ toast: vi.fn() }));
 
 // cavetail: jsdom lacks ResizeObserver (radix) + pointer-capture/scrollIntoView (vaul)
 class ResizeObserverStub {
@@ -511,5 +514,52 @@ describe("TransactionRow - Icon Actions", () => {
     expect(row?.className).toContain("cursor-pointer");
     expect(row?.className).toContain("hover:bg-(--surface-3)");
     expect(row?.className).toContain("group");
+  });
+});
+
+describe("TransactionRow - Sonner toast confirmations", () => {
+  it("delete fires toast with Undo that resurrects via onUndoDelete", () => {
+    const txn = makeTxn();
+    const onDelete = vi.fn();
+    const onUndoDelete = vi.fn();
+    vi.mocked(toast).mockClear();
+    render(
+      <TransactionRow txn={txn} categories={[]} onDelete={onDelete} onUndoDelete={onUndoDelete} />,
+    );
+    fireEvent.click(screen.getByLabelText("Delete transaction"));
+    expect(onDelete).toHaveBeenCalledWith(txn);
+    expect(toast).toHaveBeenCalledWith(
+      "Transaction deleted",
+      expect.objectContaining({
+        duration: 5000,
+        action: expect.objectContaining({ label: "Undo" }),
+      }),
+    );
+    const action = vi.mocked(toast).mock.calls[0]![1]!.action! as {
+      label: string;
+      onClick: (event: never) => void;
+    };
+    action.onClick({} as never);
+    expect(onUndoDelete).toHaveBeenCalledWith(txn);
+  });
+
+  it("delete on a transfer leg fires a plain toast with no Undo", () => {
+    const txn = makeTxn({ transferId: "tr-1" });
+    render(
+      <TransactionRow txn={txn} categories={[]} onDelete={vi.fn()} onUndoDelete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByLabelText("Delete transaction"));
+    expect(toast).toHaveBeenCalledWith("Transaction deleted", { duration: 5000 });
+  });
+
+  it("duplicate fires a plain toast with no action", () => {
+    const txn = makeTxn();
+    const onDuplicate = vi.fn();
+    render(
+      <TransactionRow txn={txn} categories={[]} onDuplicate={onDuplicate} />,
+    );
+    fireEvent.click(screen.getByLabelText("Duplicate transaction"));
+    expect(onDuplicate).toHaveBeenCalledWith(txn);
+    expect(toast).toHaveBeenCalledWith("Transaction duplicated", { duration: 5000 });
   });
 });

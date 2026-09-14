@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
@@ -93,7 +94,9 @@ export const HoldingsList = (props: HoldingsListProps) => {
     tradeMutation.mutate(trade, {
       onSuccess: () => {
         setTradeOpen(false);
-        setNotice(`Trade logged (${trade.side})`);
+        // cavetail: no Undo — a trade writes paired token legs with basis
+        // side-effects; resurrecting via one path can't unwind the pair.
+        toast(`Trade logged (${trade.side})`, { duration: 5000 });
       },
     });
   };

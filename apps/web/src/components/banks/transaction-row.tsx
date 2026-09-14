@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Copy, Link2, Pencil, Trash2, Tag } from "lucide-react";
+import { toast } from "sonner";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
@@ -9,13 +10,7 @@ import { cn } from "@/lib/utils";
 
 type CategoryInfo = { id: string; name: string; color: string; hideable?: boolean };
 
-type SwipeToast = {
-  message: string;
-  onUndo?: () => void;
-};
-
 const SWIPE_THRESHOLD = 80;
-const UNDO_WINDOW_MS = 5000;
 
 function formatTime(ts: number): string {
   return new Date(Number(ts)).toLocaleTimeString(undefined, {
@@ -64,37 +59,41 @@ export const TransactionRow = (props: TransactionRowProps) => {
       : "text-(--accent)";
 
   const [offsetX, setOffsetX] = useState(0);
-  const [toast, setToast] = useState<SwipeToast | null>(null);
   const startX = useRef(0);
   const startY = useRef(0);
   const swiping = useRef(false);
   const isHorizontal = useRef<boolean | null>(null);
 
-  const clearToast = () => setToast(null);
-
   const runDuplicate = () => {
     if (!onDuplicate) return;
     onDuplicate(txn);
-    setToast({ message: "Transaction duplicated", onUndo: undefined });
-    setTimeout(clearToast, UNDO_WINDOW_MS);
+    // cavetail: no Undo — the copy id is generated inside the panel mutation
+    // and never threaded back, so a toast action could tombstone the wrong row.
+    toast("Transaction duplicated", { duration: 5000 });
   };
 
   const runDelete = () => {
     if (!onDelete) return;
     onDelete(txn);
-    setToast({
-      message: "Transaction deleted",
-      onUndo: () => {
-        if (onUndoDelete) onUndoDelete(txn);
-        else onDuplicate?.(txn);
-        clearToast();
+    if (txn.transferId) {
+      // cavetail: no Undo — single-leg delete orphans the paired leg;
+      // resurrecting one leg via the txn path can't restore the pair.
+      toast("Transaction deleted", { duration: 5000 });
+      return;
+    }
+    toast("Transaction deleted", {
+      duration: 5000,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          if (onUndoDelete) onUndoDelete(txn);
+          else onDuplicate?.(txn);
+        },
       },
     });
-    setTimeout(clearToast, UNDO_WINDOW_MS);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (toast) return;
     const touch = e.touches[0];
     if (!touch) return;
     startX.current = touch.clientX;
@@ -283,19 +282,6 @@ export const TransactionRow = (props: TransactionRowProps) => {
         </div>
       </div>
 
-      {toast && (
-        <div className="absolute bottom-2 left-1/2 z-50 -translate-x-1/2 rounded-md bg-(--surface-3) px-4 py-2 text-sm text-zinc-100 ring-1 ring-(--border-strong)">
-          {toast.message}
-          {toast.onUndo && (
-            <button
-              onClick={toast.onUndo}
-              className="ml-2 font-semibold text-(--accent) hover:underline"
-            >
-              Undo
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 };

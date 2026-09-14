@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
@@ -222,7 +223,12 @@ export const CategoriesScreen = () => {
 
   const confirmDelete = () => {
     if (!pendingDelete) return;
-    void deleteCategory.mutate(pendingDelete);
+    const target = pendingDelete;
+    void deleteCategory.mutate(target, {
+      // cavetail: no Undo — delete strips the tag from every txn;
+      // resurrecting the row can't restore those tags.
+      onSuccess: () => toast("Category deleted", { duration: 5000 }),
+    });
     setPendingDelete(null);
   };
 

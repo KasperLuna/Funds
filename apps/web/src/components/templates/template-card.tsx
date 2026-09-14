@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncMutation, useSyncQuery } from "@/lib/sync/sync-query";
 import { templateRow, toTemplate, type Template } from "@/lib/templates/templates-store";
@@ -78,7 +79,17 @@ export const TemplateCard = ({
   };
 
   const handleDelete = (item: Template) => {
-    deleteMutation.mutate(item);
+    deleteMutation.mutate(item, {
+      onSuccess: () =>
+        toast("Template deleted", {
+          duration: 5000,
+          action: {
+            label: "Undo",
+            onClick: () =>
+              saveMutation.mutate({ ...item, deletedAt: null, updatedAt: Date.now() }),
+          },
+        }),
+    });
   };
 
   return (

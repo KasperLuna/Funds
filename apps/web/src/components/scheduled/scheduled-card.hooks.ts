@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useSync } from "@/lib/sync/sync-context";
 import { useSyncMutation, queryKeys } from "@/lib/sync/sync-query";
 import {
@@ -207,6 +208,20 @@ export function useScheduledMutations(items: ScheduledTxn[]): ScheduledMutations
     },
   });
 
+  const resurrectMutation = useSyncMutation<ScheduledTxn>({
+    keys: [queryKeys.scheduledTransactions],
+    mutationFn: async (row) => {
+      await db.table("scheduled_transactions").update({
+        id: row.id,
+        deleted_at: null,
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to restore scheduled transaction:", error);
+      setNotice("Couldn't restore schedule");
+    },
+  });
+
   const saveMutation = useSyncMutation<ScheduledTxn>({
     keys: [queryKeys.scheduledTransactions],
     mutationFn: async (item) => {
@@ -257,7 +272,14 @@ export function useScheduledMutations(items: ScheduledTxn[]): ScheduledMutations
       autoDeductMutation.mutate({ rows, assetOf });
     },
     toggle: (row) => toggleMutation.mutate(row),
-    remove: (row) => deleteMutation.mutate(row),
+    remove: (row) =>
+      deleteMutation.mutate(row, {
+        onSuccess: () =>
+          toast("Scheduled transaction deleted", {
+            duration: 5000,
+            action: { label: "Undo", onClick: () => resurrectMutation.mutate(row) },
+          }),
+      }),
     save: (item) => saveMutation.mutate(item),
     createCategory: (c) => createCategoryMutation.mutate(c),
     logItem,
