@@ -164,7 +164,24 @@ export const AnalyticsScreen = () => {
 
   const shiftMonth = (delta: number) => {
     const d = new Date(effectiveViewMonth.year, effectiveViewMonth.month + delta, 1);
-    setViewMonth({ year: d.getFullYear(), month: d.getMonth() });
+    selectMonth(d.getFullYear(), d.getMonth());
+  };
+
+  // cavetail: changing months re-renders the section and iOS Safari scrolls
+  // on picker focus/dismiss — pin the scroll position across the update so
+  // the page doesn't jump to the top.
+  const selectMonth = (year: number, month: number) => {
+    const y = window.scrollY;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setViewMonth({ year, month });
+    const restore = () => window.scrollTo(0, y);
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+    } else {
+      restore();
+    }
   };
 
   const section = useMemo(() => {
@@ -218,7 +235,7 @@ export const AnalyticsScreen = () => {
               value={budgetPeriodKey(section.year, section.month)}
               onChange={(e) => {
                 const [y, m] = e.target.value.split("-").map(Number);
-                if (y && m) setViewMonth({ year: y, month: m - 1 });
+                if (y && m) selectMonth(y, m - 1);
               }}
               className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-300 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
             />

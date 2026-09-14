@@ -169,7 +169,23 @@ export const CategoriesScreen = () => {
 
   const shiftMonth = (delta: number) => {
     const d = new Date(effectiveViewMonth.year, effectiveViewMonth.month + delta, 1);
-    setViewMonth({ year: d.getFullYear(), month: d.getMonth() });
+    selectMonth(d.getFullYear(), d.getMonth());
+  };
+
+  // cavetail: month changes re-render below the picker and iOS Safari scrolls
+  // on picker focus/dismiss — pin scroll across the update (see analytics).
+  const selectMonth = (year: number, month: number) => {
+    const y = window.scrollY;
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+    setViewMonth({ year, month });
+    const restore = () => window.scrollTo(0, y);
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => requestAnimationFrame(restore));
+    } else {
+      restore();
+    }
   };
 
   const saveCategory = useSyncMutation({
@@ -275,7 +291,7 @@ export const CategoriesScreen = () => {
         assetsById={assetsById}
         privacy={privacy}
         onShiftMonth={shiftMonth}
-        onSelectMonth={(year, month) => setViewMonth({ year, month })}
+        onSelectMonth={(year, month) => selectMonth(year, month)}
       />
 
       {categories.length === 0 ? (
