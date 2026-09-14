@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { RecentActivity } from "./recent-activity";
 import { BudgetPulse } from "./budget-pulse";
+import { NonBudgetedFlow, computeNonBudgetedFlow } from "./non-budgeted-flow";
 import type { Txn } from "@/lib/accounts/accounts-store";
 import type { BudgetUsageItem } from "./budget-pulse";
 import type { Category } from "@/lib/categories/categories-store";
@@ -179,5 +180,57 @@ describe("BudgetPulse", () => {
     renderPulse(items);
     const ghost = screen.getByRole("img", { name: "$500.00 scheduled" });
     expect(ghost).toHaveStyle({ width: "10%" });
+  });
+});
+
+describe("computeNonBudgetedFlow", () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const date = new Date(year, month, 10, 12).getTime();
+  const budgeted = makeCategory({ id: "b1", name: "Food", monthlyBudgetMinor: 100000n });
+  const plain = makeCategory({ id: "n1", name: "Gifts", monthlyBudgetMinor: null });
+
+  it("excludes transactions tagged to a budgeted category", () => {
+    const txns = [makeTxn({ categoryIds: ["b1"], amountMinor: -2000n, date })];
+    expect(computeNonBudgetedFlow(txns, [budgeted, plain], [], year, month)).toEqual({
+      inflowMinor: 0n,
+      outflowMinor: 0n,
+    });
+  });
+
+  it("splits multi-category tags proportionally to the non-budgeted share", () => {
+    const txns = [makeTxn({ categoryIds: ["b1", "n1"], amountMinor: -2000n, date })];
+    expect(computeNonBudgetedFlow(txns, [budgeted, plain], [], year, month)).toEqual({
+      inflowMinor: 0n,
+      outflowMinor: 1000n,
+    });
+  });
+
+  it("excludes transfer legs and includes uncategorized transactions", () => {
+    const txns = [
+      makeTxn({ id: "leg", categoryIds: ["n1"], amountMinor: -5000n, date, transferId: "xfer-1" }),
+      makeTxn({ id: "uncat", categoryIds: [], amountMinor: 3000n, date }),
+    ];
+    expect(computeNonBudgetedFlow(txns, [budgeted, plain], [], year, month)).toEqual({
+      inflowMinor: 3000n,
+      outflowMinor: 0n,
+    });
+  });
+});
+
+describe("NonBudgetedFlow", () => {
+  it("renders inflow and outflow figures", () => {
+    render(<NonBudgetedFlow inflowMinor={3000n} outflowMinor={1000n} code="USD" />);
+    expect(screen.getByText("$30.00")).toBeInTheDocument();
+    expect(screen.getByText("$10.00")).toBeInTheDocument();
+  });
+
+  it("masks figures in privacy mode", () => {
+    maskedState = true;
+    render(<NonBudgetedFlow inflowMinor={3000n} outflowMinor={1000n} code="USD" />);
+    expect(screen.getAllByText("••••")).toHaveLength(2);
+    expect(screen.queryByText("$30.00")).not.toBeInTheDocument();
+    expect(screen.queryByText("$10.00")).not.toBeInTheDocument();
   });
 });

@@ -23,6 +23,7 @@ import { NetWorthHero } from "@/components/home/net-worth-hero";
 import { BankProportionCard, FALLBACK_COLORS } from "@/components/home/bank-proportion-card";
 import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
+import { NonBudgetedFlow, computeNonBudgetedFlow } from "@/components/home/non-budgeted-flow";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
 import { toTemplate } from "@/lib/templates/templates-store";
@@ -261,6 +262,12 @@ export const DashboardScreen = () => {
   }, [accounts, assetsById]);
 
   const primaryCode = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.code : "USD";
+  const primaryDecimals = accounts.length > 0 ? accountInfo[accounts[0]!.id]?.decimals ?? 2 : 2;
+
+  const nonBudgetedFlow = useMemo(
+    () => computeNonBudgetedFlow(activeTxns, categories, budgets, now.getFullYear(), now.getMonth()),
+    [activeTxns, categories, budgets, now.getFullYear(), now.getMonth()],
+  );
 
   const monthlySpending = spendingByMonth(activeTxns, categories, 12);
   const sparkData = monthlySpending.map((m) => ({ month: m.month, expense: privacy ? 0 : Number(m.expense) }));
@@ -388,6 +395,13 @@ export const DashboardScreen = () => {
       />
 
       <BudgetPulse items={budgetUsage} assetsById={assetsById} />
+
+      <NonBudgetedFlow
+        inflowMinor={nonBudgetedFlow.inflowMinor}
+        outflowMinor={nonBudgetedFlow.outflowMinor}
+        code={primaryCode}
+        decimals={primaryDecimals}
+      />
 
       <section className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-6">
         <div className="flex items-center justify-between">
