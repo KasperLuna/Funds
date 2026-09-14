@@ -31,6 +31,28 @@ function ensureBigInt(v: bigint | number | string): bigint {
   return typeof v === "bigint" ? v : BigInt(v);
 }
 
+// cavetail: exclusion rule — skip a txn iff it has ≥1 tag and every tag is
+// excluded (excludeFromAnalytics && !deletedAt); unknown ids count as
+// included. Partially-excluded multi-tag txns split proportionally like
+// spendingByMonth: (amt * included) / total. Uncategorized txns are included.
+function excludedIdsOf(categories: Category[]): Set<string> {
+  return new Set(
+    categories.filter((c) => c.excludeFromAnalytics && !c.deletedAt).map((c) => c.id),
+  );
+}
+
+function effectiveAmount(
+  amt: bigint,
+  categoryIds: string[],
+  excludedIds: Set<string>,
+): bigint | null {
+  const total = categoryIds.length;
+  if (total === 0) return amt;
+  const included = categoryIds.filter((id) => !excludedIds.has(id)).length;
+  if (included === 0) return null;
+  return included === total ? amt : (amt * BigInt(included)) / BigInt(total);
+}
+
 // ---------------------------------------------------------------------------
 // spendingByMonth — income/expense totals per month for the last N months
 // ---------------------------------------------------------------------------
@@ -307,9 +329,11 @@ export type AccountActivity = {
 export function txnsByAccount(
   txns: Txn[],
   accounts: { id: string; name: string }[],
+  categories: Category[],
   year: number,
   month: number,
 ): AccountActivity[] {
+  const excludedIds = excludedIdsOf(categories);
   const activity = new Map<string, AccountActivity>();
   for (const a of accounts) {
     activity.set(a.id, { accountId: a.id, name: a.name, count: 0, inflow: 0n, outflow: 0n });
@@ -324,12 +348,13 @@ export function txnsByAccount(
     if (d.getFullYear() !== year || d.getMonth() !== month) continue;
     const row = activity.get(t.accountId);
     if (!row) continue;
-    const amt = ensureBigInt(t.amountMinor);
+    const effective = effectiveAmount(ensureBigInt(t.amountMinor), t.categoryIds, excludedIds);
+    if (effective === null) continue;
     row.count += 1;
-    if (amt >= 0n) {
-      row.inflow += amt;
+    if (effective >= 0n) {
+      row.inflow += effective;
     } else {
-      row.outflow += -amt;
+      row.outflow += -effective;
     }
   }
 
@@ -346,6 +371,7 @@ export type HeatmapDay = {
   day: number;
   count: number;
   outflow: bigint;
+  income: bigint;
 };
 
 export type MonthHeatmap = {
@@ -357,12 +383,14 @@ export type MonthHeatmap = {
   maxOutflow: bigint;
 };
 
-export function monthHeatmap(txns: Txn[], year: number, month: number): MonthHeatmap {
+export function monthHeatmap(txns: Txn[], categories: Category[], year: number, month: number): MonthHeatmap {
+  const excludedIds = excludedIdsOf(categories);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const days: HeatmapDay[] = Array.from({ length: daysInMonth }, (_, i) => ({
     day: i + 1,
     count: 0,
     outflow: 0n,
+    income: 0n,
   }));
   const today = new Date();
   const isCurrentMonth =
@@ -374,10 +402,12 @@ export function monthHeatmap(txns: Txn[], year: number, month: number): MonthHea
     if (d.getFullYear() !== year || d.getMonth() !== month) continue;
     // Future-dated rows are plans, not activity.
     if (isCurrentMonth && d.getDate() > today.getDate()) continue;
-    const amt = ensureBigInt(t.amountMinor);
+    const effective = effectiveAmount(ensureBigInt(t.amountMinor), t.categoryIds, excludedIds);
+    if (effective === null) continue;
     const cell = days[d.getDate() - 1]!;
     cell.count += 1;
-    if (amt < 0n) cell.outflow += -amt;
+    if (effective < 0n) cell.outflow += -effective;
+    else cell.income += effective;
   }
 
   let maxOutflow = 0n;
@@ -408,10 +438,12 @@ export type MonthHighlights = {
 
 export function monthHighlights(
   txns: Txn[],
+  categories: Category[],
   year: number,
   month: number,
 ): MonthHighlights {
-  const heat = monthHeatmap(txns, year, month);
+  const excludedIds = excludedIdsOf(categories);
+  const heat = monthHeatmap(txns, categories, year, month);
   const empty: MonthHighlights = {
     busiestDay: null,
     biggestDay: null,
@@ -461,9 +493,9 @@ export function monthHighlights(
     if (t.deletedAt || t.transferId != null) continue;
     const d = new Date(Number(t.date));
     if (d.getFullYear() !== year || d.getMonth() !== month) continue;
-    const amt = ensureBigInt(t.amountMinor);
-    if (amt <= 0n) continue;
-    inflowByAccount.set(t.accountId, (inflowByAccount.get(t.accountId) ?? 0n) + amt);
+    const effective = effectiveAmount(ensureBigInt(t.amountMinor), t.categoryIds, excludedIds);
+    if (effective === null || effective <= 0n) continue;
+    inflowByAccount.set(t.accountId, (inflowByAccount.get(t.accountId) ?? 0n) + effective);
   }
   let topInflowAccountId: string | null = null;
   let topInflow = 0n;

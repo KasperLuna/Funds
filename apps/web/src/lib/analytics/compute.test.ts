@@ -170,6 +170,7 @@ describe("txnsByAccount", () => {
         txn({ id: "t3", accountId: "acc-2", amountMinor: -200n, date: jan(7) }),
       ],
       accounts,
+      [],
       2026,
       0,
     );
@@ -188,6 +189,7 @@ describe("txnsByAccount", () => {
         txn({ id: "t3", accountId: "acc-1", amountMinor: -1000n, date: new Date(2026, 1, 5).getTime() }),
       ],
       accounts,
+      [],
       2026,
       0,
     );
@@ -204,6 +206,7 @@ describe("monthHeatmap", () => {
         txn({ id: "t2", amountMinor: -500n, date: new Date(2026, 0, 3).getTime() }),
         txn({ id: "t3", amountMinor: 9000n, date: new Date(2026, 0, 10).getTime() }),
       ],
+      [],
       2026,
       0,
     );
@@ -216,7 +219,7 @@ describe("monthHeatmap", () => {
   });
 
   it("sizes February correctly in a leap year", () => {
-    const heat = monthHeatmap([], 2024, 1);
+    const heat = monthHeatmap([], [], 2024, 1);
     expect(heat.days).toHaveLength(29);
     expect(heat.maxOutflow).toBe(0n);
   });
@@ -233,6 +236,7 @@ describe("monthHighlights", () => {
         txn({ id: "t4", accountId: "acc-1", amountMinor: -2000n, date: new Date(2026, 0, 6).getTime() }),
         txn({ id: "t5", accountId: "acc-2", amountMinor: 9000n, date: new Date(2026, 0, 8).getTime() }),
       ],
+      [],
       2026,
       0,
     );
@@ -246,9 +250,82 @@ describe("monthHighlights", () => {
     expect(rows.longestStreak).toBe(2);
     expect(rows.topInflowAccountId).toBe("acc-2");
   });
+});
+
+describe("excludeFromAnalytics in txnsByAccount/monthHeatmap/monthHighlights", () => {
+  const transfer = () => cat({ id: "transfer", name: "Transfer", excludeFromAnalytics: true });
+  const food = () => cat({ id: "food", name: "Food" });
+  const jan = (day: number) => new Date(2026, 0, day).getTime();
+  const accounts = [
+    { id: "acc-1", name: "Checking" },
+    { id: "acc-2", name: "Wallet" },
+  ];
+
+  it("txnsByAccount drops fully-excluded, splits partial, keeps uncategorized", () => {
+    const cats = [transfer(), food()];
+    const rows = txnsByAccount(
+      [
+        txn({ id: "e1", accountId: "acc-1", amountMinor: -1000n, categoryIds: ["transfer"], date: jan(5) }),
+        txn({ id: "p1", accountId: "acc-1", amountMinor: -200n, categoryIds: ["transfer", "food"], date: jan(5) }),
+        txn({ id: "u1", accountId: "acc-2", amountMinor: -300n, categoryIds: [], date: jan(6) }),
+      ],
+      accounts,
+      cats,
+      2026,
+      0,
+    );
+    expect(rows).toHaveLength(2);
+    // e1 dropped entirely; p1 split 50/50.
+    expect(rows[0]).toMatchObject({ accountId: "acc-1", count: 1 });
+    expect(rows[0]!.outflow).toBe(100n);
+    expect(rows[1]).toMatchObject({ accountId: "acc-2", count: 1 });
+    expect(rows[1]!.outflow).toBe(300n);
+  });
+
+  it("monthHeatmap drops fully-excluded, splits partial, tracks income per day", () => {
+    const cats = [transfer(), food()];
+    const heat = monthHeatmap(
+      [
+        txn({ id: "e1", amountMinor: -1000n, categoryIds: ["transfer"], date: jan(3) }),
+        txn({ id: "p1", amountMinor: -200n, categoryIds: ["transfer", "food"], date: jan(3) }),
+        txn({ id: "i1", amountMinor: 9000n, categoryIds: [], date: jan(10) }),
+      ],
+      cats,
+      2026,
+      0,
+    );
+    expect(heat.days[2]).toMatchObject({ day: 3, count: 1 });
+    expect(heat.days[2]!.outflow).toBe(100n);
+    expect(heat.days[2]!.income).toBe(0n);
+    expect(heat.days[9]).toMatchObject({ day: 10, count: 1, outflow: 0n });
+    expect(heat.days[9]!.income).toBe(9000n);
+    expect(heat.maxOutflow).toBe(100n);
+  });
+
+  it("monthHighlights ignores excluded txns for days and top inflow", () => {
+    const cats = [transfer(), food()];
+    const rows = monthHighlights(
+      [
+        txn({ id: "t1", accountId: "acc-1", amountMinor: -500n, categoryIds: ["food"], date: jan(3) }),
+        txn({ id: "t2", accountId: "acc-1", amountMinor: -500n, categoryIds: ["food"], date: jan(3) }),
+        txn({ id: "t3", accountId: "acc-1", amountMinor: -5000n, categoryIds: ["transfer"], date: jan(5) }),
+        txn({ id: "t4", accountId: "acc-1", amountMinor: -2000n, categoryIds: ["food"], date: jan(6) }),
+        txn({ id: "t5", accountId: "acc-2", amountMinor: 9000n, categoryIds: ["transfer"], date: jan(8) }),
+        txn({ id: "t6", accountId: "acc-1", amountMinor: 1000n, categoryIds: ["food"], date: jan(8) }),
+      ],
+      cats,
+      2026,
+      0,
+    );
+    expect(rows.busiestDay).toEqual({ day: 3, count: 2 });
+    // Excluded -5000 on the 5th must not win biggest day.
+    expect(rows.biggestDay).toEqual({ day: 6, outflow: 2000n });
+    // Excluded +9000 must not win top inflow.
+    expect(rows.topInflowAccountId).toBe("acc-1");
+  });
 
   it("empty month yields nulls and zero streak", () => {
-    expect(monthHighlights([], 2026, 0)).toEqual({
+    expect(monthHighlights([], [], 2026, 0)).toEqual({
       busiestDay: null,
       biggestDay: null,
       busiestWeekday: null,
