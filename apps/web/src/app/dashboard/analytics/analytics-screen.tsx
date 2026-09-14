@@ -1,12 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import type { Account, Txn } from "@/lib/accounts/accounts-store";
 import type { Category } from "@/lib/categories/categories-store";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
 import type { RowRecord } from "@/lib/sync";
 import { resolveCategoryColor } from "@/lib/categories/categories-store";
+import { budgetPeriodKey } from "@/lib/categories/categories-store";
+import { useUrlDate } from "@/lib/url/use-url-state";
 import { useAssets } from "@/lib/assets";
 import {
   spendingByMonth,
@@ -146,27 +149,31 @@ export const AnalyticsScreen = () => {
 
   const anomalies = useMemo(() => spendingAnomalies(txns, categories), [txns, categories]);
 
-  // Trailing 3 months, newest first — one section per month.
-  const trailingMonths = useMemo(() => {
-    const now = new Date();
-    return [0, 1, 2].map((back) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
-      return { year: d.getFullYear(), month: d.getMonth() };
-    });
-  }, []);
+  // Single viewed month with the same prev/picker/next control as Categories.
+  const [viewMonth, setViewMonth] = useUrlDate("month");
+  const effectiveViewMonth = viewMonth ?? {
+    year: now.getFullYear(),
+    month: now.getMonth(),
+  };
 
-  const monthlySections = useMemo(
-    () =>
-      trailingMonths.map(({ year, month }) => ({
-        year,
-        month,
-        label: monthKey(year, month),
-        activity: txnsByAccount(txns, accounts, year, month),
-        heat: monthHeatmap(txns, year, month),
-        highlights: monthHighlights(txns, year, month),
-      })),
-    [trailingMonths, txns, accounts],
-  );
+  const shiftMonth = (delta: number) => {
+    const d = new Date(effectiveViewMonth.year, effectiveViewMonth.month + delta, 1);
+    setViewMonth({ year: d.getFullYear(), month: d.getMonth() });
+  };
+
+  const section = useMemo(() => {
+    const fallback = { year: now.getFullYear(), month: now.getMonth() };
+    const { year, month } = viewMonth ?? fallback;
+    const highlights = monthHighlights(txns, year, month);
+    return {
+      year,
+      month,
+      label: monthKey(year, month),
+      activity: txnsByAccount(txns, accounts, year, month),
+      heat: monthHeatmap(txns, year, month),
+      highlights,
+    };
+  }, [viewMonth, txns, accounts]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
@@ -182,35 +189,61 @@ export const AnalyticsScreen = () => {
       <CashFlowForecastCard data={cashFlow} code={primaryCode} />
       <AnomalyAlertsCard data={anomalies} code={primaryCode} />
 
-      {monthlySections.map((s) => (
-        <section
-          key={s.label}
-          aria-label={`Monthly activity for ${s.label}`}
-          className="flex flex-col gap-4"
-        >
+      <section aria-label={`Monthly activity for ${section.label}`}>
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-lg font-bold tracking-tight">
-            {s.label}
+            {section.label}
           </h2>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Previous month"
+              onClick={() => shiftMonth(-1)}
+              className="grid h-9 w-9 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+            >
+              <ChevronLeft className="h-4 w-4" aria-hidden />
+            </button>
+            <input
+              type="month"
+              aria-label="Activity month"
+              value={budgetPeriodKey(section.year, section.month)}
+              onChange={(e) => {
+                const [y, m] = e.target.value.split("-").map(Number);
+                if (y && m) setViewMonth({ year: y, month: m - 1 });
+              }}
+              className="h-9 rounded-(--radius-md) border border-(--border) bg-(--surface-2) px-2 text-sm text-zinc-300 focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+            />
+            <button
+              type="button"
+              aria-label="Next month"
+              onClick={() => shiftMonth(1)}
+              className="grid h-9 w-9 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-2) text-zinc-400 transition-colors hover:bg-(--surface-3) hover:text-inherit focus-visible:ring-2 focus-visible:ring-(--accent) focus-visible:outline-none"
+            >
+              <ChevronRight className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
           <MonthHighlightsCard
-            data={s.highlights}
-            year={s.year}
-            month={s.month}
+            data={section.highlights}
+            year={section.year}
+            month={section.month}
             code={primaryCode}
             decimals={primaryDecimals}
           />
           <AccountActivityCard
-            data={s.activity}
+            data={section.activity}
             accountInfo={accountAssetInfo}
-            topInflowAccountId={s.highlights.topInflowAccountId}
-            monthLabel={s.label}
+            topInflowAccountId={section.highlights.topInflowAccountId}
+            monthLabel={section.label}
           />
           <ActivityHeatmapCard
-            months={[s.heat]}
+            months={[section.heat]}
             code={primaryCode}
             decimals={primaryDecimals}
           />
-        </section>
-      ))}
+        </div>
+      </section>
     </div>
   );
 };
