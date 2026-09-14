@@ -14,12 +14,19 @@ import {
   categoryBreakdown,
   cashFlowForecast,
   spendingAnomalies,
+  monthKey,
+  txnsByAccount,
+  monthHeatmap,
+  monthHighlights,
 } from "@/lib/analytics/compute";
 import { SavingsRateCard } from "@/components/analytics/savings-rate-card";
 import { SpendingTrendsCard } from "@/components/analytics/spending-trends-card";
 import { CategoryBreakdownCard } from "@/components/analytics/category-breakdown-card";
 import { CashFlowForecastCard } from "@/components/analytics/cash-flow-forecast-card";
 import { AnomalyAlertsCard } from "@/components/analytics/anomaly-alerts-card";
+import { AccountActivityCard } from "@/components/analytics/account-activity-card";
+import { ActivityHeatmapCard } from "@/components/analytics/activity-heatmap-card";
+import { MonthHighlightsCard } from "@/components/analytics/month-highlights-card";
 
 function toAccount(row: RowRecord): Account {
   return {
@@ -96,6 +103,9 @@ export const AnalyticsScreen = () => {
   const primaryCode = accounts.length > 0
     ? accountAssetInfo[accounts[0]!.id]?.code ?? ""
     : "";
+  const primaryDecimals = accounts.length > 0
+    ? accountAssetInfo[accounts[0]!.id]?.decimals ?? 2
+    : 2;
 
   const txnsQuery = useSyncQuery({
     key: queryKeys.transactions,
@@ -136,6 +146,28 @@ export const AnalyticsScreen = () => {
 
   const anomalies = useMemo(() => spendingAnomalies(txns, categories), [txns, categories]);
 
+  // Trailing 3 months, newest first — one section per month.
+  const trailingMonths = useMemo(() => {
+    const now = new Date();
+    return [0, 1, 2].map((back) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    });
+  }, []);
+
+  const monthlySections = useMemo(
+    () =>
+      trailingMonths.map(({ year, month }) => ({
+        year,
+        month,
+        label: monthKey(year, month),
+        activity: txnsByAccount(txns, accounts, year, month),
+        heat: monthHeatmap(txns, year, month),
+        highlights: monthHighlights(txns, year, month),
+      })),
+    [trailingMonths, txns, accounts],
+  );
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4">
       <header>
@@ -149,6 +181,36 @@ export const AnalyticsScreen = () => {
       <CategoryBreakdownCard data={catBreakdown} accountInfo={accountAssetInfo} />
       <CashFlowForecastCard data={cashFlow} code={primaryCode} />
       <AnomalyAlertsCard data={anomalies} code={primaryCode} />
+
+      {monthlySections.map((s) => (
+        <section
+          key={s.label}
+          aria-label={`Monthly activity for ${s.label}`}
+          className="flex flex-col gap-4"
+        >
+          <h2 className="font-display text-lg font-bold tracking-tight">
+            {s.label}
+          </h2>
+          <MonthHighlightsCard
+            data={s.highlights}
+            year={s.year}
+            month={s.month}
+            code={primaryCode}
+            decimals={primaryDecimals}
+          />
+          <AccountActivityCard
+            data={s.activity}
+            accountInfo={accountAssetInfo}
+            topInflowAccountId={s.highlights.topInflowAccountId}
+            monthLabel={s.label}
+          />
+          <ActivityHeatmapCard
+            months={[s.heat]}
+            code={primaryCode}
+            decimals={primaryDecimals}
+          />
+        </section>
+      ))}
     </div>
   );
 };

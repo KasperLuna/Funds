@@ -293,6 +293,191 @@ export function cashFlowForecast(
 }
 
 // ---------------------------------------------------------------------------
+// txnsByAccount — per-account counts + flows for a given month
+// ---------------------------------------------------------------------------
+
+export type AccountActivity = {
+  accountId: string;
+  name: string;
+  count: number;
+  inflow: bigint;
+  outflow: bigint;
+};
+
+export function txnsByAccount(
+  txns: Txn[],
+  accounts: { id: string; name: string }[],
+  year: number,
+  month: number,
+): AccountActivity[] {
+  const activity = new Map<string, AccountActivity>();
+  for (const a of accounts) {
+    activity.set(a.id, { accountId: a.id, name: a.name, count: 0, inflow: 0n, outflow: 0n });
+  }
+
+  for (const t of txns) {
+    if (t.deletedAt) continue;
+    // cavetail: transfers post a leg in each account — counting legs would
+    // credit both sides for one user action, so legs are excluded here.
+    if (t.transferId != null) continue;
+    const d = new Date(Number(t.date));
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+    const row = activity.get(t.accountId);
+    if (!row) continue;
+    const amt = ensureBigInt(t.amountMinor);
+    row.count += 1;
+    if (amt >= 0n) {
+      row.inflow += amt;
+    } else {
+      row.outflow += -amt;
+    }
+  }
+
+  return [...activity.values()]
+    .filter((a) => a.count > 0)
+    .sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : 1));
+}
+
+// ---------------------------------------------------------------------------
+// monthHeatmap — per-day counts + outflow for a given month
+// ---------------------------------------------------------------------------
+
+export type HeatmapDay = {
+  day: number;
+  count: number;
+  outflow: bigint;
+};
+
+export type MonthHeatmap = {
+  year: number;
+  month: number;
+  /** Blank cells before day 1 so the grid aligns to weekday columns. */
+  leadingBlanks: number;
+  days: HeatmapDay[];
+  maxOutflow: bigint;
+};
+
+export function monthHeatmap(txns: Txn[], year: number, month: number): MonthHeatmap {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days: HeatmapDay[] = Array.from({ length: daysInMonth }, (_, i) => ({
+    day: i + 1,
+    count: 0,
+    outflow: 0n,
+  }));
+  const today = new Date();
+  const isCurrentMonth =
+    today.getFullYear() === year && today.getMonth() === month;
+
+  for (const t of txns) {
+    if (t.deletedAt || t.transferId != null) continue;
+    const d = new Date(Number(t.date));
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+    // Future-dated rows are plans, not activity.
+    if (isCurrentMonth && d.getDate() > today.getDate()) continue;
+    const amt = ensureBigInt(t.amountMinor);
+    const cell = days[d.getDate() - 1]!;
+    cell.count += 1;
+    if (amt < 0n) cell.outflow += -amt;
+  }
+
+  let maxOutflow = 0n;
+  for (const c of days) {
+    if (c.outflow > maxOutflow) maxOutflow = c.outflow;
+  }
+
+  return {
+    year,
+    month,
+    leadingBlanks: new Date(year, month, 1).getDay(),
+    days,
+    maxOutflow,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// monthHighlights — busiest/biggest day, busiest weekday, streak, top inflow
+// ---------------------------------------------------------------------------
+
+export type MonthHighlights = {
+  busiestDay: { day: number; count: number } | null;
+  biggestDay: { day: number; outflow: bigint } | null;
+  busiestWeekday: { weekday: number; count: number } | null;
+  longestStreak: number;
+  topInflowAccountId: string | null;
+};
+
+export function monthHighlights(
+  txns: Txn[],
+  year: number,
+  month: number,
+): MonthHighlights {
+  const heat = monthHeatmap(txns, year, month);
+  const empty: MonthHighlights = {
+    busiestDay: null,
+    biggestDay: null,
+    busiestWeekday: null,
+    longestStreak: 0,
+    topInflowAccountId: null,
+  };
+  if (heat.maxOutflow === 0n && heat.days.every((d) => d.count === 0)) {
+    return empty;
+  }
+
+  // Days ascending + strict greater-than: ties resolve to the earliest day.
+  let busiestDay: { day: number; count: number } | null = null;
+  let biggestDay: { day: number; outflow: bigint } | null = null;
+  for (const d of heat.days) {
+    if (d.count > 0 && (!busiestDay || d.count > busiestDay.count)) {
+      busiestDay = { day: d.day, count: d.count };
+    }
+    if (d.outflow > 0n && (!biggestDay || d.outflow > biggestDay.outflow)) {
+      biggestDay = { day: d.day, outflow: d.outflow };
+    }
+  }
+
+  const weekdayCounts = new Array<number>(7).fill(0);
+  for (const d of heat.days) {
+    if (d.count === 0) continue;
+    const wd = new Date(year, month, d.day).getDay();
+    weekdayCounts[wd]! += d.count;
+  }
+  let busiestWeekday: { weekday: number; count: number } | null = null;
+  for (let wd = 0; wd < 7; wd++) {
+    const count = weekdayCounts[wd]!;
+    if (count > 0 && (!busiestWeekday || count > busiestWeekday.count)) {
+      busiestWeekday = { weekday: wd, count };
+    }
+  }
+
+  let longestStreak = 0;
+  let run = 0;
+  for (const d of heat.days) {
+    run = d.count > 0 ? run + 1 : 0;
+    if (run > longestStreak) longestStreak = run;
+  }
+
+  const inflowByAccount = new Map<string, bigint>();
+  for (const t of txns) {
+    if (t.deletedAt || t.transferId != null) continue;
+    const d = new Date(Number(t.date));
+    if (d.getFullYear() !== year || d.getMonth() !== month) continue;
+    const amt = ensureBigInt(t.amountMinor);
+    if (amt <= 0n) continue;
+    inflowByAccount.set(t.accountId, (inflowByAccount.get(t.accountId) ?? 0n) + amt);
+  }
+  let topInflowAccountId: string | null = null;
+  let topInflow = 0n;
+  for (const [id, total] of inflowByAccount) {
+    if (total > topInflow) {
+      topInflow = total;
+      topInflowAccountId = id;
+    }
+  }
+
+  return { busiestDay, biggestDay, busiestWeekday, longestStreak, topInflowAccountId };
+}
+
+// ---------------------------------------------------------------------------
 // spendingAnomalies — z-score outliers per category
 // ---------------------------------------------------------------------------
 

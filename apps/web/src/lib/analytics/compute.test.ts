@@ -7,6 +7,9 @@ import {
   spendingAnomalies,
   cashFlowForecast,
   monthKey,
+  txnsByAccount,
+  monthHeatmap,
+  monthHighlights,
 } from "./compute.js";
 import type { ScheduledTxn } from "@/lib/scheduled/compute";
 
@@ -149,5 +152,108 @@ describe("cashFlowForecast boundary", () => {
     for (let i = firstProjected; i < result.length; i++) {
       expect(result[i]!.projected).toBe(true);
     }
+  });
+});
+
+describe("txnsByAccount", () => {
+  const accounts = [
+    { id: "acc-1", name: "Checking" },
+    { id: "acc-2", name: "Wallet" },
+  ];
+  const jan = (day: number) => new Date(2026, 0, day).getTime();
+
+  it("counts and splits flows per account, sorted by count", () => {
+    const rows = txnsByAccount(
+      [
+        txn({ id: "t1", accountId: "acc-1", amountMinor: -1000n, date: jan(5) }),
+        txn({ id: "t2", accountId: "acc-1", amountMinor: 5000n, date: jan(6) }),
+        txn({ id: "t3", accountId: "acc-2", amountMinor: -200n, date: jan(7) }),
+      ],
+      accounts,
+      2026,
+      0,
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ accountId: "acc-1", name: "Checking", count: 2 });
+    expect(rows[0]!.inflow).toBe(5000n);
+    expect(rows[0]!.outflow).toBe(1000n);
+    expect(rows[1]).toMatchObject({ accountId: "acc-2", count: 1, outflow: 200n });
+  });
+
+  it("excludes transfer legs, deleted rows, and other months", () => {
+    const rows = txnsByAccount(
+      [
+        txn({ id: "t1", accountId: "acc-1", amountMinor: -1000n, transferId: "xfer-1", date: jan(5) }),
+        txn({ id: "t2", accountId: "acc-1", amountMinor: -1000n, deletedAt: jan(6), date: jan(5) }),
+        txn({ id: "t3", accountId: "acc-1", amountMinor: -1000n, date: new Date(2026, 1, 5).getTime() }),
+      ],
+      accounts,
+      2026,
+      0,
+    );
+    expect(rows).toEqual([]);
+  });
+});
+
+describe("monthHeatmap", () => {
+  it("buckets counts and outflow per day with weekday-aligned blanks", () => {
+    // Jan 2026: 31 days, Jan 1 is a Thursday (4 leading blanks, Sun-first).
+    const heat = monthHeatmap(
+      [
+        txn({ id: "t1", amountMinor: -1000n, date: new Date(2026, 0, 3).getTime() }),
+        txn({ id: "t2", amountMinor: -500n, date: new Date(2026, 0, 3).getTime() }),
+        txn({ id: "t3", amountMinor: 9000n, date: new Date(2026, 0, 10).getTime() }),
+      ],
+      2026,
+      0,
+    );
+    expect(heat.leadingBlanks).toBe(4);
+    expect(heat.days).toHaveLength(31);
+    expect(heat.days[2]).toMatchObject({ day: 3, count: 2 });
+    expect(heat.days[2]!.outflow).toBe(1500n);
+    expect(heat.days[9]).toMatchObject({ day: 10, count: 1, outflow: 0n });
+    expect(heat.maxOutflow).toBe(1500n);
+  });
+
+  it("sizes February correctly in a leap year", () => {
+    const heat = monthHeatmap([], 2024, 1);
+    expect(heat.days).toHaveLength(29);
+    expect(heat.maxOutflow).toBe(0n);
+  });
+});
+
+describe("monthHighlights", () => {
+  it("finds busiest/biggest days with earliest-wins ties, weekday, streak, top inflow", () => {
+    // Jan 2026: Jan 3 = Saturday, Jan 5 = Monday, Jan 6 = Tuesday.
+    const rows = monthHighlights(
+      [
+        txn({ id: "t1", accountId: "acc-1", amountMinor: -500n, date: new Date(2026, 0, 3).getTime() }),
+        txn({ id: "t2", accountId: "acc-1", amountMinor: -500n, date: new Date(2026, 0, 3).getTime() }),
+        txn({ id: "t3", accountId: "acc-1", amountMinor: -2000n, date: new Date(2026, 0, 5).getTime() }),
+        txn({ id: "t4", accountId: "acc-1", amountMinor: -2000n, date: new Date(2026, 0, 6).getTime() }),
+        txn({ id: "t5", accountId: "acc-2", amountMinor: 9000n, date: new Date(2026, 0, 8).getTime() }),
+      ],
+      2026,
+      0,
+    );
+    expect(rows.busiestDay).toEqual({ day: 3, count: 2 });
+    // Tie at 2000 between the 5th and 6th: earliest wins.
+    expect(rows.biggestDay?.day).toBe(5);
+    expect(rows.biggestDay?.outflow).toBe(2000n);
+    // Saturday (weekday 6) has 2 txns, every other day at most 1.
+    expect(rows.busiestWeekday).toEqual({ weekday: 6, count: 2 });
+    // Runs: {3}, {5, 6}, {8} → longest 2.
+    expect(rows.longestStreak).toBe(2);
+    expect(rows.topInflowAccountId).toBe("acc-2");
+  });
+
+  it("empty month yields nulls and zero streak", () => {
+    expect(monthHighlights([], 2026, 0)).toEqual({
+      busiestDay: null,
+      biggestDay: null,
+      busiestWeekday: null,
+      longestStreak: 0,
+      topInflowAccountId: null,
+    });
   });
 });
