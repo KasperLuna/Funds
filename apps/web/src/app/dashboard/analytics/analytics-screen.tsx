@@ -196,10 +196,10 @@ export const AnalyticsScreen = () => {
       <AnomalyAlertsCard data={anomalies} code={primaryCode} />
 
       <section aria-label={`Monthly activity for ${section.label}`}>
-        {/* cavetail: sticks below the mobile header (py-2.5 + h-6 logo + 1px
-            border = 45px; header is md:hidden so desktop pins to viewport top).
+        {/* cavetail: same 65px offset as the assets filter bar — clears the
+            mobile header with room to spare. Desktop pins to viewport top.
             z-20 keeps the header (z-30) on top on overlap. */}
-        <div className="sticky top-[45px] z-20 -mx-1 mb-3 flex items-center justify-between bg-(--bg)/95 px-1 py-2 backdrop-blur md:top-0">
+        <div className="sticky top-[65px] z-20 -mx-1 mb-3 flex items-center justify-between bg-(--bg)/95 px-1 py-2 backdrop-blur md:top-0">
           <h2 className="font-display text-lg font-bold tracking-tight">
             {section.label}
           </h2>
