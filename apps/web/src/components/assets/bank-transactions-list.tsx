@@ -106,7 +106,7 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
 
   return (
     <>
-      <div className="sticky top-[65px] z-20 -mx-4 border-y border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
+      <div className="sticky top-[calc(65px+env(safe-area-inset-top))] z-20 -mx-4 border-y border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
         <TransactionFilters
           filters={filters}
           onChange={onFiltersChange}
@@ -153,7 +153,7 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
               const dayLabel = formatDayMoney(dayNet, primaryDecimals, primaryCode, privacy);
               return (
                 <div key={g.day}>
-                  <div className="sticky top-[182px] z-10 flex items-center justify-between gap-3 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
+                  <div className="sticky top-[calc(182px+env(safe-area-inset-top))] z-10 flex items-center justify-between gap-3 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
                     <p className="label-micro">{formatDayHeader(g.day)}</p>
                     <p
                       className={cn(

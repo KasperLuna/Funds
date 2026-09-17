@@ -216,7 +216,7 @@ export const AnalyticsScreen = () => {
         {/* cavetail: same 65px offset as the assets filter bar — clears the
             mobile header with room to spare. Desktop pins to viewport top.
             z-20 keeps the header (z-30) on top on overlap. */}
-        <div className="sticky top-[65px] z-20 -mx-1 mb-3 flex items-center justify-between bg-(--bg)/95 px-1 py-2 backdrop-blur md:top-0">
+        <div className="sticky top-[calc(65px+env(safe-area-inset-top))] z-20 -mx-1 mb-3 flex items-center justify-between bg-(--bg)/95 px-1 py-2 backdrop-blur md:top-0">
           <h2 className="font-display text-lg font-bold tracking-tight">
             {section.label}
           </h2>

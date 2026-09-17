@@ -142,7 +142,7 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
       </aside>
 
       {/* Mobile top header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 pt-[calc(env(safe-area-inset-top)+0.625rem)] pb-2.5 backdrop-blur md:hidden">
         <span className="flex items-center">
           <FundsLogo className="h-6 w-auto text-zinc-50" />
         </span>
