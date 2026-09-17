@@ -129,8 +129,11 @@ export const ScheduledCard = ({
   // Everything else hides behind an expander so the card stays a glance surface.
   const { soon: soonItems, rest: restItems } = partitionSchedules(items, now, SOON_WINDOW_DAYS);
 
-  const visible = expanded ? [...soonItems, ...restItems] : soonItems;
-  const hiddenCount = restItems.length;
+  // cavetail: collapsed view previews far-future rows when nothing is soon so
+  // existing schedules never read as "none". restItems is nearest-first.
+  const collapsedVisible = soonItems.length > 0 ? soonItems : restItems.slice(0, 3);
+  const visible = expanded ? [...soonItems, ...restItems] : collapsedVisible;
+  const hiddenCount = items.length - collapsedVisible.length;
   const attentionItems = soonItems.filter(
     ({ occ }) => occ.status === "due" || occ.status === "overdue",
   );
@@ -175,7 +178,7 @@ export const ScheduledCard = ({
       )}
 
       <div className="divide-y divide-(--border)">
-        {visible.length === 0 && (
+        {items.length === 0 && (
           <div className="px-4 pb-4">
             <p className="text-sm text-zinc-500">No scheduled transactions yet</p>
             <p className="text-xs text-zinc-500">Set up recurring entries.</p>

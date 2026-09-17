@@ -76,6 +76,73 @@ describe("ScheduledCard empty state", () => {
   });
 });
 
+describe("ScheduledCard rest-only preview", () => {
+  const farRow = (id: string, name: string, now: number) => ({
+    id,
+    user_id: "dev-user",
+    name,
+    description: "",
+    type: "expense",
+    amount_minor: "1000",
+    account_id: "acc-1",
+    category_ids: [],
+    recurrence: { frequency: "monthly", interval: 1 },
+    timezone: null,
+    invoke_date: now + 10 * 86_400_000,
+    previous_date: null,
+    last_notified_at: null,
+    active: 1,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+
+  it("previews far-future schedules instead of the empty state when nothing is soon", async () => {
+    const now = Date.now();
+    mockQuery.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("scheduled_transactions") ? [farRow("sch-far", "Insurance", now)] : [],
+      }),
+    );
+
+    renderCard(
+      <ScheduledCard
+        accounts={[{ id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2, code: "USD" }]}
+        categories={[]}
+      />,
+    );
+
+    expect(await screen.findByRole("button", { name: "Log early: Insurance" })).toBeInTheDocument();
+    expect(screen.queryByText("No scheduled transactions yet")).not.toBeInTheDocument();
+  });
+
+  it("collapses far-future overflow behind the expander and reveals it on click", async () => {
+    const user = userEvent.setup();
+    const now = Date.now();
+    mockQuery.mockImplementation((sql: string) =>
+      Promise.resolve({
+        rows: sql.includes("scheduled_transactions")
+          ? ["A", "B", "C", "D", "E"].map((n, i) => farRow(`sch-${i}`, `Far ${n}`, now))
+          : [],
+      }),
+    );
+
+    renderCard(
+      <ScheduledCard
+        accounts={[{ id: "acc-1", name: "Checking", assetId: "ast-1", decimals: 2, code: "USD" }]}
+        categories={[]}
+      />,
+    );
+
+    expect(await screen.findByRole("button", { name: "Log early: Far A" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Log early: Far/ })).toHaveLength(3);
+    expect(screen.queryByText("No scheduled transactions yet")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "2 more scheduled" }));
+    expect(screen.getAllByRole("button", { name: /Log early: Far/ })).toHaveLength(5);
+  });
+});
+
 describe("ScheduledCard attention state", () => {
   it("surfaces a due schedule as ready to log", async () => {
     const now = Date.now();

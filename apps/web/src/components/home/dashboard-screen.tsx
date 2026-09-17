@@ -28,6 +28,7 @@ import { ScheduledCard } from "@/components/scheduled/scheduled-card";
 import { TemplateCard } from "@/components/templates/template-card";
 import { toTemplate } from "@/lib/templates/templates-store";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
+import { partitionSchedules, SOON_WINDOW_DAYS } from "@/lib/scheduled/compute";
 import { useCaptureSheetTriggers } from "./dashboard-screen.hooks";
 
 function toAccount(row: RowRecord): Account {
@@ -132,6 +133,21 @@ export const DashboardScreen = () => {
     select: toScheduledTxn,
   });
   const scheduled = scheduledQuery.data ?? [];
+
+  // cavetail: ScheduledCard sits up top only when something is soon (due /
+  // overdue / within SOON_WINDOW_DAYS); otherwise it lives at the bottom above
+  // Templates. Loading keeps it top to avoid a bottom-then-top jump.
+  const hasUpcoming =
+    scheduledQuery.isLoading ||
+    partitionSchedules(scheduled, new Date(), SOON_WINDOW_DAYS).soon.length > 0;
+  const scheduledAccounts = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    assetId: a.assetId,
+    decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+    code: assetsById.get(a.assetId)?.code ?? "",
+  }));
+  const scheduledCategories = categories.map((c) => ({ id: c.id, name: c.name, color: c.color }));
 
   // cavetail: templates load via a raw select map (useSyncQuery) rather than
   // the store helper so they stay reactive like every other entity collection.
@@ -365,16 +381,12 @@ export const DashboardScreen = () => {
           <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
         </header>
 
-      <ScheduledCard
-        accounts={accounts.map((a) => ({
-          id: a.id,
-          name: a.name,
-          assetId: a.assetId,
-          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
-          code: assetsById.get(a.assetId)?.code ?? "",
-        }))}
-        categories={categories.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
-      />
+      {hasUpcoming && (
+        <ScheduledCard
+          accounts={scheduledAccounts}
+          categories={scheduledCategories}
+        />
+      )}
 
         <NetWorthHero
         totalBalance={totalBalance}
@@ -421,6 +433,13 @@ export const DashboardScreen = () => {
           )}
         </div>
       </section>
+
+      {!hasUpcoming && (
+        <ScheduledCard
+          accounts={scheduledAccounts}
+          categories={scheduledCategories}
+        />
+      )}
 
       <TemplateCard
         accounts={accounts.map((a) => ({
