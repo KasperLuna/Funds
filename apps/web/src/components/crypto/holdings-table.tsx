@@ -9,10 +9,12 @@ import type { CoinPrice } from "@/lib/crypto/rates";
 export interface HoldingsTableProps {
   rows: (Holding & { allocationPct: number })[];
   prices: Map<string, CoinPrice>;
+  code: string;
+  fiatDecimals: number;
   onLogFirstTrade: () => void;
 }
 
-export const HoldingsTable = ({ rows, prices, onLogFirstTrade }: HoldingsTableProps) => {
+export const HoldingsTable = ({ rows, prices, code, fiatDecimals, onLogFirstTrade }: HoldingsTableProps) => {
   if (rows.length === 0) {
     return (
       <div className="divide-y divide-(--border) rounded-(--radius-lg) border border-(--border) bg-(--surface-1)">
@@ -39,7 +41,9 @@ export const HoldingsTable = ({ rows, prices, onLogFirstTrade }: HoldingsTablePr
         <HoldingRow
           key={h.token.id}
           holding={h}
-          price={h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined}
+          prices={prices}
+          code={code}
+          fiatDecimals={fiatDecimals}
           allocationPct={h.allocationPct}
         />
       ))}

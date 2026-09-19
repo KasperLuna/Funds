@@ -34,6 +34,7 @@ import {
 } from "@/lib/capture";
 import type { Token } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
+import { assetSymbol } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useSyncStore } from "@/lib/sync/sync-store";
 import { BuySideControls, SellSideControls } from "./trade-side-controls";
@@ -53,6 +54,7 @@ export interface TradeCaptureProps {
   accounts: AccountOption[];
   tokens: Token[];
   prices: Map<string, CoinPrice>;
+  fiatCode?: string;
   onSave: (trade: TradePayload) => void;
 }
 
@@ -79,6 +81,7 @@ interface TradeFormProps {
   accounts: AccountOption[];
   tokens: Token[];
   prices: Map<string, CoinPrice>;
+  fiatCode?: string;
   onSave: (trade: TradePayload) => void;
 }
 
@@ -111,7 +114,7 @@ const tradeFormSchema = z.object({
 
 type TradeFormValues = z.infer<typeof tradeFormSchema>;
 
-const TradeForm = ({ onOpenChange, accounts, tokens, prices, onSave }: TradeFormProps) => {
+const TradeForm = ({ onOpenChange, accounts, tokens, prices, fiatCode = "USD", onSave }: TradeFormProps) => {
   const userId = useSyncStore((s) => s.userId);
   const uid = userId ?? "dev-user";
   const fiatAccounts = accounts.filter((a) => a.kind !== "exchange" && a.kind !== "wallet");
@@ -284,7 +287,7 @@ const TradeForm = ({ onOpenChange, accounts, tokens, prices, onSave }: TradeForm
           />
           {autoRate > 0 && !rateInput && (
             <span className="text-[10px] text-emerald-400">
-              Rate: ${autoRate.toLocaleString()}
+              Rate: {assetSymbol(fiatCode)}{autoRate.toLocaleString()}
             </span>
           )}
         </div>
@@ -319,7 +322,7 @@ const TradeForm = ({ onOpenChange, accounts, tokens, prices, onSave }: TradeForm
           aria-label="Rate"
           inputMode="decimal"
           className="h-11"
-          placeholder={`Rate (auto: $${autoRate.toLocaleString()})`}
+          placeholder={`Rate (auto: ${assetSymbol(fiatCode)}${autoRate.toLocaleString()})`}
           {...register("rateInput")}
           onFocus={(e) => setFocusedField(e.currentTarget)}
           onBlur={() => setFocusedField(null)}
@@ -380,7 +383,7 @@ const TradeForm = ({ onOpenChange, accounts, tokens, prices, onSave }: TradeForm
 };
 
 export const TradeCapture = (props: TradeCaptureProps) => {
-  const { isOpen: open, onOpenChange, accounts, tokens, prices, onSave } = props;
+  const { isOpen: open, onOpenChange, accounts, tokens, prices, fiatCode, onSave } = props;
   if (!open) return null;
-  return <TradeForm onOpenChange={onOpenChange} accounts={accounts} tokens={tokens} prices={prices} onSave={onSave} />;
+  return <TradeForm onOpenChange={onOpenChange} accounts={accounts} tokens={tokens} prices={prices} fiatCode={fiatCode} onSave={onSave} />;
 };

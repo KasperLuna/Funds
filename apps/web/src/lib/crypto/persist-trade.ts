@@ -26,7 +26,7 @@ export async function persistTrade(
   // The capture stores crypto qty on a 10^8 base; rescale to the token's decimals.
   const capturedQtyMinor = trade.side === "buy" ? trade.buyAmountMinor : trade.sellAmountMinor;
   const qtyMinor = rescaleMinor(capturedQtyMinor, 8, token.decimals);
-  // cavetail: CoinGecko rate is a plain USD float; store scaled integer minor units
+  // cavetail: CoinGecko rate is a display-currency float; store scaled integer minor units
   const priceExecMinor = BigInt(Math.round(trade.rate * 10 ** token.decimals));
 
   await db.table("token_transactions").upsert({

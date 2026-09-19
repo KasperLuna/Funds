@@ -17,9 +17,9 @@ type CacheEntry = {
   fetchedAt: number;
 };
 
-// cavetail: cache is keyed by vs-currency — the dashboard values holdings in
-// the user's fiat while the crypto tab shows USD; one global cache would
-// poison one surface with the other's currency.
+// cavetail: cache is keyed by vs-currency — both the dashboard and the
+// crypto tab value holdings in the display code, so they share one slot per
+// currency; switching display currency must not reuse another one's prices.
 const cache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<Map<string, CoinPrice>>>();
 

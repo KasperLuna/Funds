@@ -15,9 +15,14 @@ import {
   toTokenTxn,
   type Token,
   type TokenTransaction,
-  type Holding,
 } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
+import {
+  coingeckoKeyForHoldings,
+  computeTokenCostMinor,
+  computeTokenValueMinor,
+  cryptoPriceQueryKey,
+} from "@/lib/crypto/valuation";
 import { persistTrade } from "@/lib/crypto/persist-trade";
 import { useAssets } from "@/lib/assets";
 import { AllocationBar } from "@/components/crypto/allocation-bar";
@@ -30,13 +35,6 @@ import {
 } from "@/components/crypto/trade-capture";
 import { Button } from "@/components/ui/button";
 import { TokenAddSheet, TokenAddTrigger } from "@/components/crypto/token-add-sheet";
-
-function computeValueUsd(holding: Holding, prices: Map<string, CoinPrice>): number {
-  const dec = Number(holding.token.decimals) || 0;
-  const qty = Number(holding.qtyMinor) / 10 ** dec;
-  const price = holding.token.coingeckoId ? prices.get(holding.token.coingeckoId) : undefined;
-  return qty * (price?.current_price ?? 0);
-}
 
 export interface HoldingsListProps {
   accounts?: AccountOption[];
@@ -104,42 +102,35 @@ export const HoldingsList = (props: HoldingsListProps) => {
   const holdings = useMemo(() => computeHoldings(tokens, txns), [tokens, txns]);
   const allocation = useMemo(() => portfolioAllocation(holdings), [holdings]);
 
-  // cavetail: coingeckoIds feeds the react-query key; allocating a fresh
-  // array per render would re-key the query and re-fetch prices. KEEP.
-  const coingeckoIds = useMemo(
-    () => tokens.map((t) => t.coingeckoId).filter((id): id is string => !!id),
-    [tokens],
-  );
-
+  // cavetail: same non-zero-holdings derivation as dashboard-screen.tsx, so
+  // both screens share the ["prices", key, code] TanStack slot; tradeOpen
+  // mirrors the dashboard's captureOpen skip while the sheet covers prices.
   const coingeckoKey = useMemo(
-    () => [...new Set(coingeckoIds)].sort().join(","),
-    [coingeckoIds],
+    () => coingeckoKeyForHoldings(holdings),
+    [holdings],
   );
   const primaryCode = accounts.length > 0 ? assetsById.get(accounts[0]!.assetId)?.code ?? "USD" : "USD";
+  const primaryDecimals = accounts.length > 0 ? accounts[0]!.decimals ?? 2 : 2;
 
   // honey: shared cache slot with dashboard-screen.tsx — both screens fetch
   // the same CoinGecko prices; keying on the same (coingeckoKey, primaryCode)
   // dedupes the request in the TanStack cache.
   const pricesQuery = useQuery({
-    queryKey: ["prices", coingeckoKey, primaryCode],
-    enabled: coingeckoIds.length > 0,
-    queryFn: () => fetchPrices(coingeckoIds, (primaryCode || "USD").toLowerCase()),
+    queryKey: cryptoPriceQueryKey(coingeckoKey, primaryCode),
+    enabled: coingeckoKey.length > 0 && !tradeOpen,
+    queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
   });
-  const prices = pricesQuery.data ?? new Map();
+  const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
 
-  const totalValue = holdings.reduce((sum, h) => sum + computeValueUsd(h, prices), 0);
-
-  const totalPL = holdings.reduce((sum, h) => {
-    const dec = Number(h.token.decimals) || 0;
-    const qty = Number(h.qtyMinor) / 10 ** dec;
-    const price = h.token.coingeckoId ? prices.get(h.token.coingeckoId) : undefined;
-    const value = qty * (price?.current_price ?? 0);
-    // cavetail: totalCostMinor = qty_minor × price_minor = qty×rate×10^(2·decimals);
-    // /10^(2·decimals) recovers dollars. Display-only, not arithmetic.
-    // eslint-disable-next-line local/no-money-float
-    const costBasis = Number(h.totalCostMinor) / 10 ** (2 * dec);
-    return sum + (value - costBasis);
-  }, 0);
+  const totalValueMinor = useMemo(
+    () => computeTokenValueMinor(holdings, prices, primaryDecimals),
+    [holdings, prices, primaryDecimals],
+  );
+  const totalCostMinor = useMemo(
+    () => computeTokenCostMinor(holdings, primaryDecimals),
+    [holdings, primaryDecimals],
+  );
+  const totalPLMinor = totalValueMinor - totalCostMinor;
 
   const allocationWithPct = holdings.map((h) => ({
     ...h,
@@ -149,7 +140,12 @@ export const HoldingsList = (props: HoldingsListProps) => {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <HoldingsTotals totalValue={totalValue} totalPL={totalPL} />
+        <HoldingsTotals
+          totalValueMinor={totalValueMinor}
+          totalPLMinor={totalPLMinor}
+          code={primaryCode}
+          fiatDecimals={primaryDecimals}
+        />
         <div className="flex items-center gap-2">
           <TokenAddTrigger onClick={() => setAddTokenOpen(true)} />
           <Button size="sm" onClick={() => setTradeOpen(true)}>
@@ -172,6 +168,8 @@ export const HoldingsList = (props: HoldingsListProps) => {
       <HoldingsTable
         rows={allocationWithPct}
         prices={prices}
+        code={primaryCode}
+        fiatDecimals={primaryDecimals}
         onLogFirstTrade={() => setTradeOpen(true)}
       />
 
@@ -181,6 +179,7 @@ export const HoldingsList = (props: HoldingsListProps) => {
         accounts={accounts}
         tokens={tokens}
         prices={prices}
+        fiatCode={primaryCode}
         onSave={handleTradeSave}
       />
 

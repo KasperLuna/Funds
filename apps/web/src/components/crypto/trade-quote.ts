@@ -9,7 +9,7 @@ export interface TradeQuote {
 }
 
 /**
- * Compute the auto-rate (live USD price for the active token) and the
+ * Compute the auto-rate (live display-currency price for the active token) and the
  * complementary minor-unit amount the other leg of the trade posts.
  * side = "buy":   `minor` is fiat → `computedBuyMinor` is crypto (8 dp).
  * side = "sell":  `minor` is crypto (8 dp) → `computedBuyMinor` is fiat.
@@ -37,13 +37,13 @@ export function computeTradeQuote(
   if (side === "buy") {
     // cavetail: display-only formatting, not arithmetic
     // eslint-disable-next-line local/no-money-float
-    const usdValue = Number(minor) / 10 ** fiatDecimals;
-    const cryptoQty = usdValue / effectiveRate;
+    const fiatValue = Number(minor) / 10 ** fiatDecimals;
+    const cryptoQty = fiatValue / effectiveRate;
     return { autoRate, computedBuyMinor: BigInt(Math.round(cryptoQty * 10 ** 8)) };
   }
   // cavetail: display-only formatting, not arithmetic
   // eslint-disable-next-line local/no-money-float
   const cryptoQty = Number(minor) / 10 ** 8;
-  const usdValue = cryptoQty * effectiveRate;
-  return { autoRate, computedBuyMinor: BigInt(Math.round(usdValue * 10 ** fiatDecimals)) };
+  const fiatValue = cryptoQty * effectiveRate;
+  return { autoRate, computedBuyMinor: BigInt(Math.round(fiatValue * 10 ** fiatDecimals)) };
 }

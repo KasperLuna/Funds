@@ -1,22 +1,28 @@
 import { Bitcoin, TrendingUp, TrendingDown } from "lucide-react";
 import type { Holding } from "@/lib/crypto/crypto-store";
 import type { CoinPrice } from "@/lib/crypto/rates";
+import {
+  computeHoldingCostMinor,
+  computeHoldingUnitCostMinor,
+  computeHoldingValueMinor,
+} from "@/lib/crypto/valuation";
+import { formatMoney } from "@/lib/money";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 import { cn } from "@/lib/utils";
 
-function formatUsdFromNumber(value: number): string {
-  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 export interface HoldingRowProps {
   holding: Holding;
-  price?: CoinPrice;
+  prices: Map<string, CoinPrice>;
+  code: string;
+  fiatDecimals: number;
   allocationPct?: number;
 }
 
 export const HoldingRow = ({
   holding,
-  price,
+  prices,
+  code,
+  fiatDecimals,
   allocationPct,
 }: HoldingRowProps) => {
   const masked = usePrivacyStore((s) => s.masked);
@@ -25,13 +31,18 @@ export const HoldingRow = ({
   const qty = Number(qtyMinor) / 10 ** dec;
   const decimals = dec > 4 ? 4 : dec;
 
-  const currentPrice = price?.current_price ?? 0;
-  const valueUsd = qty * currentPrice;
+  const price = token.coingeckoId ? prices.get(token.coingeckoId) : undefined;
+  const valueMinor = computeHoldingValueMinor(holding, prices, fiatDecimals);
+  const costMinor = computeHoldingCostMinor(holding, fiatDecimals);
+  const plMinor = valueMinor - costMinor;
   // cavetail: avgCostMinor is the rate scaled to token.decimals, not the
   // display-capped `decimals` used for qty formatting.
+  const unitCostMinor = computeHoldingUnitCostMinor(holding, fiatDecimals);
+  const currentPrice = price?.current_price ?? 0;
+  const valueFiat = qty * currentPrice;
   const costBasis = Number(avgCostMinor) / 10 ** dec;
   const costBasisTotal = costBasis * qty;
-  const unrealizedPL = valueUsd - costBasisTotal;
+  const unrealizedPL = valueFiat - costBasisTotal;
   const plPct = costBasisTotal > 0 ? (unrealizedPL / costBasisTotal) * 100 : 0;
 
   const change24h = price?.price_change_percentage_24h ?? 0;
@@ -40,7 +51,7 @@ export const HoldingRow = ({
   const changeBadgeClass = isUp ? "text-(--accent)" : "text-(--danger)";
   const plClass = masked
     ? "text-zinc-500"
-    : unrealizedPL >= 0
+    : plMinor >= 0n
       ? "text-(--accent)"
       : "text-(--danger)";
 
@@ -84,7 +95,6 @@ export const HoldingRow = ({
           </div>
         </div>
       </div>
-
       <div className="text-right shrink-0">
         <p className="text-sm tabular-nums">
           {qty.toFixed(decimals)}
@@ -92,7 +102,7 @@ export const HoldingRow = ({
         {price && (
           <div className="flex flex-col items-end gap-0.5">
             <p className="text-sm font-semibold tabular-nums text-zinc-100" aria-label={masked ? "Value masked" : undefined}>
-              {masked ? "••••" : formatUsdFromNumber(valueUsd)}
+              {masked ? "••••" : formatMoney(valueMinor, fiatDecimals, code)}
             </p>
             <p
               className={cn("text-[10px] font-medium tabular-nums", plClass)}
@@ -100,13 +110,13 @@ export const HoldingRow = ({
             >
               {masked
                 ? `(${plPct >= 0 ? "+" : ""}${plPct.toFixed(1)}%)`
-                : `${unrealizedPL >= 0 ? "+" : ""}${formatUsdFromNumber(unrealizedPL)} (${plPct >= 0 ? "+" : ""}${plPct.toFixed(1)}%)`}
+                : `${plMinor >= 0n ? "+" : ""}${formatMoney(plMinor, fiatDecimals, code)} (${plPct >= 0 ? "+" : ""}${plPct.toFixed(1)}%)`}
             </p>
           </div>
         )}
         {!price && (
           <p className="text-xs text-zinc-500" aria-label={masked ? "Average cost masked" : undefined}>
-            {masked ? "avg ••••" : `avg ${formatUsdFromNumber(Number(avgCostMinor) / 10 ** dec)}`}
+            {masked ? "avg ••••" : `avg ${formatMoney(unitCostMinor, fiatDecimals, code)}`}
           </p>
         )}
       </div>

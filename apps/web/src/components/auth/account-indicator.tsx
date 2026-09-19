@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
+import {
+  NavStatusReporter,
+  useOptimisticNavigate,
+} from "@/components/app-shell/optimistic-nav";
 
 function useUser() {
   const { data: session, isPending } = useSession();
@@ -10,13 +14,27 @@ function useUser() {
 
 export const AccountChip = () => {
   const { user, isPending } = useUser();
+  const navigate = useOptimisticNavigate();
+  // cavetail: next/link wraps onClick in startTransition, which the scheduler
+  // can defer past a cold iOS PWA open — the tap is eaten. Navigate
+  // synchronously via router.push in the same task; the Link still prefetches.
+  const goSettings = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    navigate("/dashboard/settings", { scroll: false });
+  };
 
   if (isPending) {
     return (
-      <span
-        aria-hidden
-        className="h-8 w-8 rounded-(--radius-md) bg-(--surface-3)"
-      />
+      <Link
+        href="/dashboard/settings"
+        prefetch
+        onClick={goSettings}
+        aria-busy
+        aria-label="Account"
+        className="grid min-h-11 min-w-11 animate-pulse place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-zinc-100"
+      >
+        <NavStatusReporter href="/dashboard/settings" />
+      </Link>
     );
   }
 
@@ -42,9 +60,12 @@ export const AccountChip = () => {
   return (
     <Link
       href="/dashboard/settings"
+      prefetch
+      onClick={goSettings}
       aria-label={`Account: ${label}`}
       className="grid min-h-11 min-w-11 place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-zinc-100"
     >
+      <NavStatusReporter href="/dashboard/settings" />
       {initial}
     </Link>
   );

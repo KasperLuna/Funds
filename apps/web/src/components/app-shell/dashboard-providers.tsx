@@ -142,9 +142,9 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
       </aside>
 
       {/* Mobile top header */}
-      {/* cavetail: standalone PWA draws the status bar over the page (black-translucent + viewport-fit=cover); the safe-area strip stays solid so scrolled content never blurs behind the status icons — blur lives on the bar below only. */}
+      {/* cavetail: standalone PWA draws the status bar over the page (black-translucent + viewport-fit=cover); the bar is deliberately opaque (no frosted effect) because any backdrop-filter touching the top edge blurs scrolled content behind the iOS status icons and bleeds a halo across the seam. */}
       <header className="sticky top-0 z-30 bg-(--bg) pt-[env(safe-area-inset-top)] md:hidden">
-        <div className="flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 pt-2.5 pb-2.5 backdrop-blur">
+        <div className="flex items-center justify-between border-b border-(--border) bg-(--bg) px-4 pt-2.5 pb-2.5">
           <span className="flex items-center">
             <FundsLogo className="h-6 w-auto text-zinc-50" />
           </span>

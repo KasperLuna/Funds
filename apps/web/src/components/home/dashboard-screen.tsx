@@ -18,6 +18,11 @@ import { computeBudgetUsage, resolveCategoryColor } from "@/lib/categories/categ
 import { useAssets } from "@/lib/assets";
 import { computeHoldings, toToken, toTokenTxn } from "@/lib/crypto/crypto-store";
 import { fetchPrices, type CoinPrice } from "@/lib/crypto/rates";
+import {
+  coingeckoKeyForHoldings,
+  computeTokenValueMinor,
+  cryptoPriceQueryKey,
+} from "@/lib/crypto/valuation";
 import { spendingByMonth } from "@/lib/analytics/compute";
 import { SparkLine } from "@/components/charts";
 import Link from "next/link";
@@ -82,8 +87,6 @@ function toCategory(row: RowRecord): Category {
     deletedAt: row.deleted_at ? Number(row.deleted_at) : null,
   };
 }
-
-const CRYPTO_KINDS = new Set(["wallet", "exchange"]);
 
 export const DashboardScreen = () => {
   const { userId } = useSync();
@@ -323,19 +326,17 @@ export const DashboardScreen = () => {
     [txns],
   );
 
-  const bankBalance =
-    accounts
-      .filter((a) => !CRYPTO_KINDS.has(a.kind))
-      .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n);
-
-  const cryptoAccountBalance =
-    accounts
-      .filter((a) => CRYPTO_KINDS.has(a.kind))
-      .reduce((sum, acc) => sum + computeBalance(acc, activeTxns), 0n);
+  // cavetail: the accounts total counts every active account once (wallet /
+  // exchange balances live here, not in the crypto row) while the crypto row
+  // is token value only — the assets screen totals the same two sources, so
+  // the rows match by construction instead of double-counting divisions.
+  const bankBalance = accounts.reduce(
+    (sum, acc) => sum + computeBalance(acc, activeTxns),
+    0n,
+  );
 
   const bankAccountSlices = (() => {
     const bankAccounts = accounts
-      .filter((a) => !CRYPTO_KINDS.has(a.kind))
       .map((a) => ({
         name: a.name,
         color: a.primaryColor || FALLBACK_COLORS[0]!,
@@ -403,8 +404,7 @@ export const DashboardScreen = () => {
   const sparkData = monthlySpending.map((m) => ({ month: m.month, expense: privacy ? 0 : Number(m.expense) }));
 
   const coingeckoKey = useMemo(
-    () =>
-      [...new Set(tokenHoldings.map((h) => h.token.coingeckoId).filter((id): id is string => !!id))].sort().join(","),
+    () => coingeckoKeyForHoldings(tokenHoldings),
     [tokenHoldings],
   );
   // Cavetail: skip the CoinGecko fetch when the capture sheet is open — it is
@@ -413,27 +413,18 @@ export const DashboardScreen = () => {
   // honey: shared cache slot with holdings-list.tsx — same key shape dedupes
   // the CoinGecko request across the home dashboard and the crypto page.
   const pricesQuery = useQuery({
-    queryKey: ["prices", coingeckoKey, primaryCode],
-    enabled: !!coingeckoKey && !captureOpen,
+    queryKey: cryptoPriceQueryKey(coingeckoKey, primaryCode ?? "USD"),
+    enabled: coingeckoKey.length > 0 && !captureOpen,
     queryFn: () => fetchPrices(coingeckoKey.split(","), (primaryCode || "USD").toLowerCase()),
   });
   const prices = pricesQuery.data ?? new Map<string, CoinPrice>();
 
-  // cavetail: display valuation only (float price × qty → fiat minor)
-  // honey: net-worth hero re-renders on every price tick; BigInt reduce over
-  // all holdings must not re-run on unrelated state changes.
   const tokenValueMinor = useMemo(
-    () =>
-      tokenHoldings.reduce((sum, h) => {
-        const dec = Number(h.token.decimals) || 0;
-        const qty = Number(h.qtyMinor) / 10 ** dec;
-        const price = Number(h.token.coingeckoId ? prices.get(h.token.coingeckoId)?.current_price ?? 0 : 0);
-        return sum + BigInt(Math.round(qty * price * 100));
-      }, 0n),
-    [tokenHoldings, prices],
+    () => computeTokenValueMinor(tokenHoldings, prices, primaryDecimals),
+    [tokenHoldings, prices, primaryDecimals],
   );
 
-  const cryptoBalance = cryptoAccountBalance + tokenValueMinor;
+  const cryptoBalance = tokenValueMinor;
 
   const totalBalance = bankBalance + cryptoBalance;
 

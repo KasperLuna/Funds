@@ -1,18 +1,21 @@
 "use client";
 
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { usePrivacyStore } from "@/lib/privacy/privacy-store";
 
 export interface HoldingsTotalsProps {
-  totalValue: number;
-  totalPL: number;
+  totalValueMinor: bigint;
+  totalPLMinor: bigint;
+  code: string;
+  fiatDecimals: number;
 }
 
-export const HoldingsTotals = ({ totalValue, totalPL }: HoldingsTotalsProps) => {
+export const HoldingsTotals = ({ totalValueMinor, totalPLMinor, code, fiatDecimals }: HoldingsTotalsProps) => {
   const isMasked = usePrivacyStore((s) => s.masked);
   const totalPLClass = isMasked
     ? "text-zinc-500"
-    : totalPL >= 0
+    : totalPLMinor >= 0n
       ? "text-emerald-400"
       : "text-rose-400";
 
@@ -25,16 +28,16 @@ export const HoldingsTotals = ({ totalValue, totalPL }: HoldingsTotalsProps) => 
       >
         {isMasked
           ? "••••••"
-          : `$${totalValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          : formatMoney(totalValueMinor, fiatDecimals, code)}
       </p>
-      {totalPL !== 0 && (
+      {totalPLMinor !== 0n && (
         <p
           className={cn("text-xs tabular-nums", totalPLClass)}
           aria-label={isMasked ? "Profit or loss masked" : undefined}
         >
           {isMasked
             ? "••••"
-            : `${totalPL >= 0 ? "+" : ""}$${totalPL.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            : `${totalPLMinor >= 0n ? "+" : ""}${formatMoney(totalPLMinor, fiatDecimals, code)}`}
         </p>
       )}
     </div>

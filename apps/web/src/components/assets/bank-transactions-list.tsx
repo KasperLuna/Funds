@@ -106,7 +106,7 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
 
   return (
     <>
-      <div className="sticky top-[calc(65px+env(safe-area-inset-top))] z-20 -mx-4 border-y border-(--border) bg-(--bg)/95 px-4 py-2.5 backdrop-blur md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
+      <div className="sticky top-[var(--chrome-header-h)] z-20 -mx-4 border-y border-(--border) bg-(--bg) px-4 py-2.5 md:top-0 md:-mx-0 md:border-x md:rounded-b-(--radius-md) md:px-4">
         <TransactionFilters
           filters={filters}
           onChange={onFiltersChange}
