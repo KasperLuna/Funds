@@ -96,6 +96,15 @@
     --chrome-header-h: calc(56px + env(safe-area-inset-top));
     --chrome-footer-h: 88px;
   }
+  /* cavetail: sonner pins top-center toasts to viewport top, under the iOS
+     notch/Dynamic Island in the standalone PWA (viewport-fit=cover makes
+     env() live). Drop the stack below the safe area; bottom toasts likewise. */
+  [data-sonner-toaster][data-y-position="top"] {
+    top: max(12px, env(safe-area-inset-top)) !important;
+  }
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
 }
 
 @layer base {

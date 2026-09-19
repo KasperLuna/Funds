@@ -30,6 +30,9 @@ Never merge a schema change without running `db:check` against a migrated DB.
     then push to trigger the deploy CI.
   - Never end a work session with unpushed commits that skipped the build —
     prod pulls `:latest` only from the hook's push or a manual equivalent.
+  - Every push to main restarts the prod stack (~1 min 502 window) even when the
+    image is unchanged — batch docs-only changes into code commits, never push
+    them alone, and never push while the user is live-testing.
 - `.github/workflows/ci.yml` (self-hosted runner) is deploy-only: pulls the image,
   runs `migrate` then `db:check` against prod Postgres, restarts the stack.
 - **If the pre-commit image build or a CI step fails, production is silently
