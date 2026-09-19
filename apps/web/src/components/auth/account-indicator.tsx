@@ -51,13 +51,17 @@ export const AccountChip = () => {
     );
   }
 
-  const initial = (
-    (user as { username?: string }).username ?? user.name ?? "U"
-  )
-    .trim()
-    .slice(0, 1)
-    .toUpperCase() || "U";
-  const label = (user as { username?: string }).username ?? user.name ?? "Account";
+  // cavetail: username defaults to "" (see server/auth.ts additionalFields),
+  // and ?? keeps empty strings — skip blanks or an empty username shadows a
+  // real name and the chip degrades to "U".
+  const rawLabel =
+    [
+      (user as { username?: string }).username,
+      user.name,
+      user.email,
+    ].find((s): s is string => !!s && s.trim().length > 0) ?? "U";
+  const initial = rawLabel.trim().slice(0, 1).toUpperCase();
+  const label = rawLabel.trim();
 
   return (
     <Link

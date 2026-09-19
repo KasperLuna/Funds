@@ -25,7 +25,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    // cavetail: opaque black status bar, not black-translucent — translucent
+    // lets web content (and any backdrop-filter halo from the sticky header)
+    // render under the iOS status icons, which reads as blur on the header's
+    // top edge. The app is pure black, so the opaque bar is seamless.
+    statusBarStyle: "black",
     title: "Funds",
     startupImage: SPLASH_STARTUP_IMAGES,
   },
