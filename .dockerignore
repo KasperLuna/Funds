@@ -3,4 +3,5 @@
 .pnpm-store
 infra/.env
 infra/.env.prod
+apps/web/.env*
 apps/web/.next

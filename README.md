@@ -2,7 +2,16 @@
 
 Local-first, multi-currency personal finance tracker. Next.js (App Router) PWA + Dexie local-first store with delta sync, Postgres behind it, deployed on a single VPS behind a Cloudflare tunnel.
 
-- **Product/UX/domain specs:** `docs/design.md`, `docs/product.md`, `docs/logic.md`
+**Status:** personal project, live in production — issues and PRs welcome. License: MIT (`LICENSE`).
+
+```bash
+git clone https://github.com/KasperLuna/Funds.git && cd Funds
+git config core.hooksPath .githooks   # verification + image build gate — keep it on
+pnpm install --frozen-lockfile
+pnpm --filter @funds/web dev          # needs apps/web/.env — see §4
+```
+
+- **Product/UX/domain specs:** `docs/design.md`, `docs/product.md`, `docs/logic.md`, `docs/spec.md`
 - **Architecture + stack decisions:** `docs/architecture.md`
 - **Implementation plan + live operational notes:** `docs/implementation.md`
 
@@ -19,7 +28,7 @@ apps/web          Next.js app (tRPC routes, PWA, sync engine + Dexie store, auth
 packages/core     pure logic: money, parser, recurrence, lots/cost-basis (framework-free, unit-tested)
 packages/db       Drizzle schema + migrations + seeds
 infra/            docker-compose.yml, .env.example (template)
-ops/              deploy.sh (manual deploy), worker/ (not yet deployed)
+ops/              deploy.sh (manual deploy), worker/ (reminders worker, deployed)
 scripts/          import-pocketbase.sh (PocketBase backup → Postgres)
 docs/             architecture, design, implementation, logic, product
 .githooks/        pre-commit: verification + image build/push gate
@@ -37,6 +46,7 @@ Cloudflare tunnel (cloudflared systemd service on the VPS) ── TLS, DNS
    ▼
 VPS (Debian) — Docker Compose, 127.0.0.1-bound ports only:
    web        Next.js standalone (linux/amd64 image pulled from ghcr.io)
+   worker     reminders worker (linux/amd64 image pulled from ghcr.io)
    postgres   PG16, volume `pgdata`
 ```
 
@@ -65,6 +75,7 @@ The VPS is also a proxy and **OOMs under a heavy `next build`**. The whole pipel
 Consequences:
 
 - **Commits are slow.** The pre-commit image build runs qemu `linux/amd64` emulation on Apple Silicon. It's cached after the first run, but the first build of a changed `apps/web` is minutes. Skip it for non-app changes: `SKIP_DOCKER_PUSH=1 git commit`.
+- **Multiple commits → build once.** `SKIP_DOCKER_PUSH=1` on intermediates, plain commit on the LAST one so exactly one image build+push covers the batch. Never end a session with unpushed commits that skipped the build.
 - **`latest` tag.** Deploys pull `:latest`. The image for any commit is reproducible in git history (re-checkout + build + push), so rollback = redeploying an older commit.
 - **The pipeline is deploy-only.** Broken code is caught by the pre-commit hook, not by CI. Keep the hook on.
 
@@ -84,8 +95,10 @@ Prerequisites: Node ≥ 22.13 (pnpm 11.6 requires it), pnpm 9+, Docker.
 
 ```bash
 pnpm install --frozen-lockfile
-cp infra/.env.example infra/.env        # fill in dev values (or use infra/.env.prod)
+cp infra/.env.example apps/web/.env        # fill in dev values; use localhost (not container) hostnames — see below
 ```
+
+Dev `DATABASE_URL` points at your local stack (`postgres://…@localhost:5432/funds`); only the production `infra/.env` (written by CI) uses the `postgres` container hostname.
 
 Run the app:
 
@@ -93,7 +106,7 @@ Run the app:
 pnpm --filter @funds/web dev             # http://localhost:3000
 ```
 
-DB tooling (all against `infra/.env`-provided `DATABASE_URL`, or the `DATABASE_URL` env var):
+DB tooling (all against the `DATABASE_URL` env var, or `apps/web/.env`):
 
 ```bash
 pnpm db:migrate     # Drizzle migrations
@@ -181,7 +194,7 @@ Google Cloud Console → *OAuth consent screen* → Credentials → your Web cli
 - **Authorized JavaScript origins:** `https://funds.kasperluna.com`
 - **Authorized redirect URIs:** `https://funds.kasperluna.com/api/auth/callback/google`
 
-Exact match — no trailing slash, no `www`. Errors like `redirect_uri_mismatch` mean these don't match `BETTER_AUTH_URL` (auth.ts:16). No redeploy needed after editing; saves in seconds.
+Exact match — no trailing slash, no `www`. Errors like `redirect_uri_mismatch` mean these don't match `BETTER_AUTH_URL` (`apps/web/src/server/auth.ts`). No redeploy needed after editing; saves in seconds.
 
 ### 5.6 GitHub repository secrets
 
@@ -192,7 +205,6 @@ Repo → Settings → Secrets and variables → Actions → *New repository secr
 | `ENV_FILE` | Full contents of the production `infra/.env` (from `infra/.env.prod`). Container-style URLs (`postgres:` host), real secrets. |
 | `DATABASE_URL` | **Host-style** URL for CI's host-side migrate: `postgres://<user>:<pw>@localhost:5432/funds`. Same password, `localhost` host. |
 | `GHCR_TOKEN` | GitHub PAT (classic) with `write:packages` — used to pull ghcr images on the host. |
-| `REMINDER_ENDPOINT` | (unused — legacy) | PocketBase-era leftover; no workflow or code reads it. Safe to delete. |
 
 One-time on the dev machine: `echo <PAT> | docker login ghcr.io -u KasperLuna --password-stdin`.
 
@@ -223,7 +235,7 @@ Source of truth: `infra/.env.example`. `infra/.env` is written by CI from the `E
 | `APP_URL` | `ops/worker` reminder links | Falls back to `PUBLIC_APP_URL`; set only if the worker must link elsewhere |
 | `CRON_AUTH` | `ops/worker` cron auth header | Alternative to `CRON_SECRET` bearer for trigger endpoints |
 | `WEB_IMAGE_TAG` | compose image tags | Default `latest`; both images share the tag var |
-| `JWT_SECRET`, `POWER_SYNC_*`, `PS_DATABASE_URL` | (unused — legacy) | PocketBase-era leftovers in the VPS env; no code reads them. Safe to drop on next `ENV_FILE` rotation |
+| `JWT_SECRET`, `POWER_SYNC_*`, `PS_DATABASE_URL` | (unused — legacy) | No code reads them; absent from the live env. Do not reintroduce. |
 
 ---
 
@@ -286,7 +298,7 @@ DATABASE_URL="postgres://<user>:<pw>@localhost:5432/funds" \
 
 Env it honors: `POCKETBASE_BIN` (binary on PATH) or `PB_DOCKER_IMAGE` (default `ghcr.io/muchobien/pocketbase:latest`), `POCKETBASE_PORT` (8099), `DATABASE_URL`.
 
-### 8.2 Running the import on the VPS (no repo checkout there)
+### 8.2 Running the import on the VPS (via the runner workspace)
 
 The runner workspace keeps a checkout + node_modules. Node 24 lives at `/home/debian/funds-runner/externals/node24/bin`.
 
@@ -362,5 +374,6 @@ DB tests need a throwaway Postgres on `127.0.0.1:54329` (`funds_test`). The pre-
 | `docs/design.md` | UX/UI spec (Intaglio Plate visual language) |
 | `docs/implementation.md` | Phase plan + live operational notes |
 | `docs/logic.md` | Full domain rules (entities, invariants, calculations) |
+| `docs/spec.md` | Product specification: business logic and data contracts (implementation-free) |
 | `docs/product.md` | Product brief |
 | `README.md` | This manual |
