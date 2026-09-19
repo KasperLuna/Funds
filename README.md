@@ -215,7 +215,7 @@ Source of truth: `infra/.env.example`. `infra/.env` is written by CI from the `E
 | `BETTER_AUTH_URL` | auth.ts baseURL | Full origin; drives OAuth `redirect_uri` |
 | `BETTER_AUTH_SECRET` | auth.ts | ≥32 chars |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | auth.ts | Google provider enabled only when both set |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | push | Generate with `node scripts/gen-vapid.mjs`; without these no device can enroll and every send path silently no-ops |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | push | Generate with `node scripts/gen-vapid.mjs` (PKCS8 DER) — a raw 32-byte `web-push`-CLI private key is also accepted; without these no device can enroll |
 | `CRON_SECRET` | cron/webhook endpoints | |
 | `COINGECKO_API_KEY` | rates refresh (future worker) | |
 | `BACKEND_BASE_URL` | (unused — dead) | Kept in template |

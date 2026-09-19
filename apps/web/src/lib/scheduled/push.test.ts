@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { generateKeyPairSync } from "node:crypto";
+import { createECDH, generateKeyPairSync } from "node:crypto";
 import {
   createVapidSender,
   decryptPayload,
   encryptPayload,
   generateVapidKeys,
+  privateKeyFromB64url,
   rawPublicKey,
   vapidAuthorization,
   type PushPayload,
@@ -80,8 +81,33 @@ describe("vapidAuthorization", () => {
 
 describe("generateVapidKeys", () => {
   it("returns base64url keys; public is a 65-byte uncompressed point", () => {
-    const keys = generateVapidKeys();
-    expect(Buffer.from(keys.publicKey, "base64url").length).toBe(65);
+    const keys = generateVapidKeys();    expect(Buffer.from(keys.publicKey, "base64url").length).toBe(65);
+  });
+});
+
+describe("privateKeyFromB64url", () => {
+  it("accepts a raw 32-byte scalar (web-push CLI format) and derives the matching public point", () => {
+    const ecdh = createECDH("prime256v1");
+    ecdh.generateKeys();
+    const raw = ecdh.getPrivateKey().toString("base64url");
+    const priv = privateKeyFromB64url(raw);
+    expect(rawPublicKey(priv).toString("base64url")).toBe(
+      ecdh.getPublicKey(null, "uncompressed").toString("base64url"),
+    );
+    // raw-format server key round-trips a payload end to end
+    const ck = clientKeys();
+    const body = encryptPayload(
+      { title: "t", body: "b", url: "u" },
+      makeSub(ck),
+      { privateKey: priv },
+    );
+    expect(
+      decryptPayload(
+        body,
+        { privateKey: ck.privateKey, publicKey: ck.publicKey },
+        authSecret,
+      ),
+    ).toEqual({ title: "t", body: "b", url: "u" });
   });
 });
 

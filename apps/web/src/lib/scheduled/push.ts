@@ -4,6 +4,7 @@
  * function is a value passed around, so tests can stub it.
  */
 import {
+  createECDH,
   createPrivateKey,
   createPublicKey,
   generateKeyPairSync,
@@ -137,8 +138,34 @@ export function decryptPayload(
 
 export interface VapidKeys {
   publicKey: string; // base64url (uncompressed point)
-  privateKey: string; // base64url PKCS8 DER
+  // base64url PKCS8 DER (scripts/gen-vapid.mjs) OR raw 32-byte P-256 scalar
+  // (web-push CLI format) — both accepted, see privateKeyFromB64url.
+  privateKey: string;
   subject: string; // mailto:
+}
+
+/**
+ * Parse a VAPID private key in either accepted encoding. A 32-byte value is
+ * the raw P-256 scalar; anything else goes through as PKCS8 DER.
+ */
+export function privateKeyFromB64url(s: string): KeyObject {
+  const raw = b64urlToBuf(s);
+  if (raw.length !== 32) {
+    return createPrivateKey({ key: raw, format: "der", type: "pkcs8" });
+  }
+  const ecdh = createECDH("prime256v1");
+  ecdh.setPrivateKey(raw);
+  const pub = ecdh.getPublicKey(null, "uncompressed");
+  return createPrivateKey({
+    key: {
+      kty: "EC",
+      crv: "P-256",
+      x: bufToB64url(pub.subarray(1, 33)),
+      y: bufToB64url(pub.subarray(33, 65)),
+      d: bufToB64url(raw),
+    },
+    format: "jwk",
+  });
 }
 
 /**
@@ -150,7 +177,7 @@ export function vapidAuthorization(
   audience: string, // push service origin, e.g. https://fcm.googleapis.com
   now: Date,
 ): string {
-  const priv = createPrivateKey({ key: b64urlToBuf(keys.privateKey), format: "der", type: "pkcs8" });
+  const priv = privateKeyFromB64url(keys.privateKey);
   const header = { typ: "JWT", alg: "ES256" };
   const claims = {
     aud: audience,
@@ -203,11 +230,7 @@ export function generateVapidKeys(): { publicKey: string; privateKey: string } {
  * Env: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT.
  */
 export function createVapidSender(keys: VapidKeys, fetchImpl: typeof fetch = fetch): SendFn {
-  const privateKey = createPrivateKey({
-    key: b64urlToBuf(keys.privateKey),
-    format: "der",
-    type: "pkcs8",
-  });
+  const privateKey = privateKeyFromB64url(keys.privateKey);
   return async (sub, payload) => {
     try {
       const body = encryptPayload(payload, sub, { privateKey });
