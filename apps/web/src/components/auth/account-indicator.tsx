@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { User } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
 import {
   NavStatusReporter,
@@ -34,6 +35,7 @@ export const AccountChip = () => {
         className="grid min-h-11 min-w-11 animate-pulse place-items-center rounded-(--radius-md) border border-(--border) bg-(--surface-3) text-xs font-bold text-zinc-100"
       >
         <NavStatusReporter href="/dashboard/settings" />
+        <User className="h-4 w-4" aria-hidden />
       </Link>
     );
   }
@@ -54,7 +56,7 @@ export const AccountChip = () => {
   )
     .trim()
     .slice(0, 1)
-    .toUpperCase();
+    .toUpperCase() || "U";
   const label = (user as { username?: string }).username ?? user.name ?? "Account";
 
   return (
