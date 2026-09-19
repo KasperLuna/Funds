@@ -192,6 +192,7 @@ Repo → Settings → Secrets and variables → Actions → *New repository secr
 | `ENV_FILE` | Full contents of the production `infra/.env` (from `infra/.env.prod`). Container-style URLs (`postgres:` host), real secrets. |
 | `DATABASE_URL` | **Host-style** URL for CI's host-side migrate: `postgres://<user>:<pw>@localhost:5432/funds`. Same password, `localhost` host. |
 | `GHCR_TOKEN` | GitHub PAT (classic) with `write:packages` — used to pull ghcr images on the host. |
+| `REMINDER_ENDPOINT` | (unused — legacy) | PocketBase-era leftover; no workflow or code reads it. Safe to delete. |
 
 One-time on the dev machine: `echo <PAT> | docker login ghcr.io -u KasperLuna --password-stdin`.
 
@@ -211,7 +212,7 @@ Source of truth: `infra/.env.example`. `infra/.env` is written by CI from the `E
 | `DATABASE_URL` | web container (env_file) | Container-style: `postgres://…@postgres:5432/funds` |
 | `WEB_HOST_PORT` | compose binding | Default 13000 |
 | `DOMAIN` | (ops scripts) | `funds.kasperluna.com` |
-| `PUBLIC_APP_URL` | auth.ts trustedOrigins | Full origin, e.g. `https://funds.kasperluna.com` |
+| `PUBLIC_APP_URL` | auth.ts trustedOrigins, notification URLs | Full origin, e.g. `https://funds.kasperluna.com`. First choice for absolute push URLs (`resolveAppOrigin`); forwarded host is the fallback |
 | `BETTER_AUTH_URL` | auth.ts baseURL | Full origin; drives OAuth `redirect_uri` |
 | `BETTER_AUTH_SECRET` | auth.ts | ≥32 chars |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | auth.ts | Google provider enabled only when both set |
@@ -219,7 +220,10 @@ Source of truth: `infra/.env.example`. `infra/.env` is written by CI from the `E
 | `CRON_SECRET` | cron/webhook endpoints | |
 | `COINGECKO_API_KEY` | rates refresh (future worker) | |
 | `BACKEND_BASE_URL` | (unused — dead) | Kept in template |
-| `APP_URL` / `CRON_AUTH` | `ops/worker` (not yet deployed) | |
+| `APP_URL` | `ops/worker` reminder links | Falls back to `PUBLIC_APP_URL`; set only if the worker must link elsewhere |
+| `CRON_AUTH` | `ops/worker` cron auth header | Alternative to `CRON_SECRET` bearer for trigger endpoints |
+| `WEB_IMAGE_TAG` | compose image tags | Default `latest`; both images share the tag var |
+| `JWT_SECRET`, `POWER_SYNC_*`, `PS_DATABASE_URL` | (unused — legacy) | PocketBase-era leftovers in the VPS env; no code reads them. Safe to drop on next `ENV_FILE` rotation |
 
 ---
 
