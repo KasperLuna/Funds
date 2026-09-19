@@ -60,10 +60,12 @@
   --radius-md: 5px;
   --radius-lg: 8px;
   --radius-sheet: 10px;
-  /* Chrome heights for layout-aware sizing. The mobile top header is
-     `py-2.5` (10+10) + content (~36pt) = ~56pt plus the PWA safe-area inset
-     (Dynamic Island); the bottom nav is the same plus the protruding +
-     button row = ~88pt. Desktop has neither. */
+  /* Chrome heights for layout-aware sizing. The mobile top header bar is
+     `pt-2.5` (10) + tallest control (`min-h-11` = 44) + `pb-2.5` (10) +
+     `border-b` (1) = 65px, plus the PWA safe-area inset (opaque status bar);
+     the bottom nav is ~88pt with the protruding + button. Desktop has
+     neither. Keep in sync with dashboard-providers.tsx — sticky sub-headers
+     park on this var, and a wrong value opens a gap in the sticky stack. */
   --chrome-header-h: 0px;
   --chrome-footer-h: 0px;
   /* shadcn token aliases. The Intaglio Plate token system is the source of
@@ -93,7 +95,7 @@
 
 @media (max-width: 767px) {
   :root {
-    --chrome-header-h: calc(56px + env(safe-area-inset-top));
+    --chrome-header-h: calc(65px + env(safe-area-inset-top));
     --chrome-footer-h: 88px;
   }
   /* cavetail: sonner pins top-center toasts to viewport top, under the iOS

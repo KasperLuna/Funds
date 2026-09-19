@@ -153,7 +153,8 @@ export const BankTransactionsList = (props: BankTransactionsListProps) => {
               const dayLabel = formatDayMoney(dayNet, primaryDecimals, primaryCode, privacy);
               return (
                 <div key={g.day}>
-                  <div className="sticky top-[calc(182px+env(safe-area-inset-top))] z-10 flex items-center justify-between gap-3 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
+                  {/* cavetail: parks directly under the sticky filter bar (var(--chrome-header-h) + filter height) so no gap opens in the sticky stack. Desktop has no mobile header; filter pins to viewport top. */}
+                  <div className="sticky top-[calc(var(--chrome-header-h)+117px)] z-10 flex items-center justify-between gap-3 bg-(--surface-2) px-4 py-1.5 md:top-[117px]">
                     <p className="label-micro">{formatDayHeader(g.day)}</p>
                     <p
                       className={cn(
