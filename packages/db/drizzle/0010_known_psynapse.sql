@@ -1,0 +1,2 @@
+ALTER TABLE "push_subscriptions" DROP CONSTRAINT "push_subscriptions_endpoint_unique";--> statement-breakpoint
+CREATE UNIQUE INDEX "push_subscriptions_endpoint_live_unique" ON "push_subscriptions" USING btree ("endpoint") WHERE "push_subscriptions"."deleted_at" is null;

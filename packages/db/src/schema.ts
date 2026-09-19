@@ -1,5 +1,5 @@
-import { pgTable, text, bigint, integer, boolean, jsonb, timestamp, unique, pgEnum } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { pgTable, text, bigint, integer, boolean, jsonb, timestamp, unique, uniqueIndex, pgEnum } from "drizzle-orm/pg-core";
+import { sql, isNull } from "drizzle-orm";
 import { newId } from "./id.js";
 
 // Enums
@@ -255,7 +255,11 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (table) => ({
-  endpointIdx: unique("push_subscriptions_endpoint_unique").on(table.endpoint),
+  // cavetail: partial — tombstoned rows must not block rotation re-inserts.
+  // A full unique constraint turned every re-subscribe into a constraint skip.
+  endpointLiveIdx: uniqueIndex("push_subscriptions_endpoint_live_unique")
+    .on(table.endpoint)
+    .where(isNull(table.deletedAt)),
 }));
 
 // Voice Drafts

@@ -168,6 +168,7 @@ asset_id, vs_base_asset_id, price_minor_scaled, fetched_at
 ## 6. Reminders & Worker (per D11)
 
 - Worker container runs reminder cron: due-today check per scheduled txn using its IANA timezone; dedupe window 3h/day per logic.md §8.4; sends VAPID pushes to all subscriptions; batch-acks `last_notified_at` via Postgres directly (replicates out to clients).
+- Push housekeeping: SW `push`/`notificationclick`/`pushsubscriptionchange` handlers are top-level (an idle-woken worker runs no fetch first); rotation re-subscribes and persists via authed `POST /api/push/subscriptions` (endpoint-unique live index, tombstones retired); 410s prune dead endpoints on every send path; `POST /api/push/test` lets the user self-verify from Settings.
 - Also owns: expired voice-draft cleanup, CoinGecko refresh (respecting rate limits), rates history retention.
 - Deep link `?scheduledId=` opens prefilled log dialog exactly as before.
 

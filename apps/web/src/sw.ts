@@ -98,6 +98,12 @@ if (sameOrigin) {
     })(),
   );
 }
+});
+
+// cavetail: push/notificationclick MUST stay top-level. A worker woken by a
+// push event runs only top-level code — listeners registered inside the fetch
+// handler above never exist in that fresh instance, so the notification is
+// silently dropped whenever the worker was idle (the normal phone case).
 
 // Web Push display (reminders). The worker POSTs an aes128gcm body that the
 // browser decrypts and delivers here as a `push` event carrying the payload
@@ -121,7 +127,7 @@ self.addEventListener("push", (event) => {
   e.waitUntil((self as unknown as { registration: ServiceWorkerRegistration }).registration.showNotification(title, options));
 });
 
-// Tapping the reminder opens the app at the deep-linked scheduled entry.
+// Tapping a notification focuses the matching dashboard tab, else opens it.
 self.addEventListener("notificationclick", (event) => {
   const e = event as unknown as {
     notification: Notification & { data?: { url?: string } };
@@ -130,9 +136,77 @@ self.addEventListener("notificationclick", (event) => {
   const url = e.notification.data?.url ?? "/dashboard";
   e.notification.close();
   e.waitUntil(
-    (self as unknown as { clients: { openWindow(u: string): Promise<unknown> } }).clients
-      .openWindow(url)
-      .catch(() => {}),
+    (async () => {
+      const w = self as unknown as {
+        clients: {
+          matchAll(o?: object): Promise<{ url: string; focus(): Promise<unknown> }[]>;
+          openWindow(u: string): Promise<unknown>;
+        };
+      };
+      let pathname = "/dashboard";
+      try {
+        pathname = new URL(url, self.location.origin).pathname;
+      } catch {
+        // unparseable url; fall through to openWindow
+      }
+      try {
+        const list = await w.clients.matchAll({ type: "window", includeUncontrolled: true });
+        const existing = list.find((c) => {
+          try {
+            return new URL(c.url).pathname === pathname;
+          } catch {
+            return false;
+          }
+        });
+        if (existing) {
+          await existing.focus().catch(() => {});
+          return;
+        }
+      } catch {
+        // matchAll unavailable; fall through to openWindow
+      }
+      await w.clients.openWindow(url).catch(() => {});
+    })(),
   );
 });
+
+// Subscription rotation: browsers may invalidate a push subscription at any
+// time. Without renewal the server keeps pushing to a dead endpoint (pruned
+// only on the next 410) and the device goes quietly dark. Re-subscribe with
+// the public VAPID key and persist via the session-authed endpoint.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  const e = event as unknown as { waitUntil(p: Promise<unknown>): void };
+  e.waitUntil(
+    (async () => {
+      try {
+        const w = self as unknown as { registration: ServiceWorkerRegistration };
+        const config = (await fetch("/api/push/config").then((r) => r.json())) as {
+          vapidPublicKey?: string;
+        };
+        if (!config.vapidPublicKey) return;
+        const sub = await w.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: config.vapidPublicKey,
+        });
+        const raw = (name: "p256dh" | "auth") => {
+          const buf = sub.getKey(name);
+          if (!buf) throw new Error(`missing ${name}`);
+          const bytes = new Uint8Array(buf);
+          let bin = "";
+          for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
+          return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        };
+        await fetch("/api/push/subscriptions", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            endpoint: sub.endpoint,
+            keys: { p256dh: raw("p256dh"), auth: raw("auth") },
+          }),
+        }).catch(() => {});
+      } catch {
+        // best-effort; the stale row is pruned on the next 410
+      }
+    })(),
+  );
 });

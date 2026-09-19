@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
 import {
@@ -55,6 +56,29 @@ export const NotificationPermission = () => {
     }
   };
 
+  const sendTest = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/push/test", { method: "POST" });
+      const body = (await res.json().catch(() => null)) as {
+        delivered?: number;
+        total?: number;
+      } | null;
+      if (res.ok && (body?.delivered ?? 0) > 0) {
+        toast("Test sent — check your notifications");
+      } else if (res.ok) {
+        toast("No subscriptions on the server — toggle off and on again");
+      } else {
+        toast("Test failed — try again");
+      }
+    } catch (err) {
+      console.error("Failed to send test push:", err);
+      toast("Test failed — try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const label =
     permission === "granted"
       ? "Enabled"
@@ -74,9 +98,14 @@ export const NotificationPermission = () => {
         </div>
       </div>
       {permission === "granted" ? (
-        <Button variant="outline" size="sm" onClick={() => void disable()} disabled={busy}>
-          Disable
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => void sendTest()} disabled={busy}>
+            Test
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => void disable()} disabled={busy}>
+            Disable
+          </Button>
+        </div>
       ) : permission !== "denied" ? (
         <Button variant="outline" size="sm" onClick={() => void request()} disabled={busy}>
           Enable
