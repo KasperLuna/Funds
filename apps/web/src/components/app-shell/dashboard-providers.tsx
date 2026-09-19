@@ -142,15 +142,18 @@ export const DashboardShell = ({ children }: DashboardShellProps) => {
       </aside>
 
       {/* Mobile top header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 pt-[calc(env(safe-area-inset-top)+0.625rem)] pb-2.5 backdrop-blur md:hidden">
-        <span className="flex items-center">
-          <FundsLogo className="h-6 w-auto text-zinc-50" />
-        </span>
-        <span className="flex items-center gap-2">
-          <PrivacyToggle hideLabel className="gap-1 px-2" />
-          <SyncPill />
-          <AccountChip />
-        </span>
+      {/* cavetail: standalone PWA draws the status bar over the page (black-translucent + viewport-fit=cover); the safe-area strip stays solid so scrolled content never blurs behind the status icons — blur lives on the bar below only. */}
+      <header className="sticky top-0 z-30 bg-(--bg) pt-[env(safe-area-inset-top)] md:hidden">
+        <div className="flex items-center justify-between border-b border-(--border) bg-(--bg)/95 px-4 pt-2.5 pb-2.5 backdrop-blur">
+          <span className="flex items-center">
+            <FundsLogo className="h-6 w-auto text-zinc-50" />
+          </span>
+          <span className="flex items-center gap-2">
+            <PrivacyToggle hideLabel className="gap-1 px-2" />
+            <SyncPill />
+            <AccountChip />
+          </span>
+        </div>
       </header>
 
       {/* Main content */}
