@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ChunkReloadHandler } from "@/components/chunk-reload-handler";
 import { SPLASH_STARTUP_IMAGES } from "@/generated/pwa-splash";
 import { cn } from "@/lib/utils";
 import "./globals.css";
@@ -61,6 +62,7 @@ const RootLayout = ({ children }: RootLayoutProps) => {
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-black">
+        <ChunkReloadHandler />
         {children}
         <Toaster richColors position="top-center" />
       </body>
