@@ -11,7 +11,8 @@ import { getDb, closeDb } from "@/server/db";
 import { auth } from "@/server/auth";
 import * as schema from "@funds/db/schema";
 import { generateVapidKeys } from "@/lib/scheduled/push";
-import { POST, draftPushCopy, notifyDraftPush } from "./route";
+import { draftPushCopy, notifyDraftPush } from "@/server/voice-push";
+import { POST } from "./route";
 
 const TEST_EMAIL = "shortcut-loop-test@example.com";
 const TEST_PASSWORD = "testpass123";
