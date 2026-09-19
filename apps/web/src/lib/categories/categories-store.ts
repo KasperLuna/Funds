@@ -42,15 +42,18 @@ export function budgetPeriodKey(year: number, month: number): string {
 }
 
 /**
- * Resolve the budget for a category in a given period: a recorded
- * `category_budgets` row wins; otherwise fall back to the category's live
- * `monthlyBudgetMinor` (legacy/not-yet-recorded current month).
+ * Resolve the budget for a category in a given period (effective-dated):
+ * an exact `category_budgets` row wins (a tombstone means cleared that
+ * month); otherwise the current/future month inherits the live
+ * `monthlyBudgetMinor`, while a past month carries forward the latest row
+ * at or before it so later edits never rewrite history.
  */
 export function budgetFor(
   category: Category,
   budgets: CategoryBudget[],
   year: number,
   month: number,
+  now: Date = new Date(),
 ): { amountMinor: bigint; assetId: string | null } | null {
   const period = budgetPeriodStart(year, month);
   const recorded = budgets.find(
@@ -60,10 +63,29 @@ export function budgetFor(
       b.monthStart === period,
   );
   if (recorded) return { amountMinor: recorded.amountMinor, assetId: recorded.assetId };
-  if (category.monthlyBudgetMinor != null && category.monthlyBudgetMinor > 0n) {
-    return { amountMinor: category.monthlyBudgetMinor, assetId: category.assetId };
+  if (
+    budgets.some(
+      (b) => b.deletedAt && b.categoryId === category.id && b.monthStart === period,
+    )
+  ) {
+    return null;
   }
-  return null;
+  const currentStart = budgetPeriodStart(now.getFullYear(), now.getMonth());
+  if (period >= currentStart) {
+    if (category.monthlyBudgetMinor != null && category.monthlyBudgetMinor > 0n) {
+      return { amountMinor: category.monthlyBudgetMinor, assetId: category.assetId };
+    }
+    return null;
+  }
+  let best: CategoryBudget | null = null;
+  for (const b of budgets) {
+    if (b.categoryId !== category.id) continue;
+    if (b.monthStart > period) continue;
+    if (best && b.monthStart <= best.monthStart) continue;
+    best = b;
+  }
+  if (!best || best.deletedAt) return null;
+  return { amountMinor: best.amountMinor, assetId: best.assetId };
 }
 
 export function computeBudgetUsage(
@@ -74,6 +96,7 @@ export function computeBudgetUsage(
   month: number,
   scheduled: ScheduledTxn[] = [],
   accountAssetId: Map<string, string> = new Map(),
+  now: Date = new Date(),
 ): Array<{
   category: Category;
   budgetMinor: bigint;
@@ -96,7 +119,7 @@ export function computeBudgetUsage(
   for (const cat of categories) {
     if (cat.deletedAt) continue;
     if (cat.excludeFromAnalytics) continue;
-    const budget = budgetFor(cat, budgets, year, month);
+    const budget = budgetFor(cat, budgets, year, month, now);
     if (!budget) continue;
     let spent = 0n;
     for (const t of txns) {

@@ -47,14 +47,15 @@ function txn(overrides: { categoryIds?: string[]; amountMinor?: bigint; assetId?
 }
 
 describe("computeBudgetUsage", () => {
+  const NOW = new Date(2025, 2, 15);
   it("returns empty when no categories have budgets", () => {
     const noBudget = cat({ monthlyBudgetMinor: null });
-    expect(computeBudgetUsage([noBudget], [], [txn()], 2025, 2)).toEqual([]);
+    expect(computeBudgetUsage([noBudget], [], [txn()], 2025, 2, [], new Map(), NOW)).toEqual([]);
   });
 
   it("computes spent amount for matching month", () => {
     const t = txn({ amountMinor: -3000n, date: new Date(2025, 2, 15).getTime() });
-    const result = computeBudgetUsage([cat()], [], [t], 2025, 2);
+    const result = computeBudgetUsage([cat()], [], [t], 2025, 2, [], new Map(), NOW);
     expect(result).toHaveLength(1);
     expect(result[0]!.spentMinor).toBe(3000n);
     expect(result[0]!.pct).toBe(6);
@@ -62,32 +63,32 @@ describe("computeBudgetUsage", () => {
 
   it("ignores income transactions", () => {
     const t = txn({ amountMinor: 5000n, date: new Date(2025, 2, 15).getTime() });
-    const result = computeBudgetUsage([cat()], [], [t], 2025, 2);
+    const result = computeBudgetUsage([cat()], [], [t], 2025, 2, [], new Map(), NOW);
     expect(result[0]!.spentMinor).toBe(0n);
   });
 
   it("ignores transactions from other months", () => {
     const t = txn({ amountMinor: -3000n, date: new Date(2025, 3, 10).getTime() });
-    const result = computeBudgetUsage([cat()], [], [t], 2025, 2);
+    const result = computeBudgetUsage([cat()], [], [t], 2025, 2, [], new Map(), NOW);
     expect(result[0]!.spentMinor).toBe(0n);
   });
 
   it("ignores deleted transactions", () => {
     const t = txn({ amountMinor: -3000n, date: new Date(2025, 2, 15).getTime(), deletedAt: Date.now() });
-    const result = computeBudgetUsage([cat()], [], [t], 2025, 2);
+    const result = computeBudgetUsage([cat()], [], [t], 2025, 2, [], new Map(), NOW);
     expect(result[0]!.spentMinor).toBe(0n);
   });
 
   it("ignores deleted categories", () => {
     const deleted = cat({ deletedAt: Date.now() });
     const t = txn({ amountMinor: -3000n });
-    const result = computeBudgetUsage([deleted], [], [t], 2025, 2);
+    const result = computeBudgetUsage([deleted], [], [t], 2025, 2, [], new Map(), NOW);
     expect(result).toEqual([]);
   });
 
   it("suppresses categories marked as excludeFromAnalytics from the budget list", () => {
     const exempt = cat({ id: "exempt", name: "Transfer", excludeFromAnalytics: true, monthlyBudgetMinor: 50000n });
-    const result = computeBudgetUsage([exempt], [], [txn()], 2025, 2);
+    const result = computeBudgetUsage([exempt], [], [txn()], 2025, 2, [], new Map(), NOW);
     expect(result).toEqual([]);
   });
 
@@ -95,7 +96,7 @@ describe("computeBudgetUsage", () => {
     const exempt = cat({ id: "exempt", name: "Transfer", excludeFromAnalytics: true, monthlyBudgetMinor: 50000n });
     const food = cat({ id: "food", name: "Food" });
     const t = txn({ amountMinor: -3000n, categoryIds: ["exempt", "food"] });
-    const result = computeBudgetUsage([exempt, food], [], [t], 2025, 2);
+    const result = computeBudgetUsage([exempt, food], [], [t], 2025, 2, [], new Map(), NOW);
     const foodResult = result.find((r) => r.category.id === "food");
     expect(foodResult?.spentMinor).toBe(0n);
   });
@@ -103,27 +104,60 @@ describe("computeBudgetUsage", () => {
   it("sums multiple transactions for same category", () => {
     const t1 = txn({ amountMinor: -1000n, date: new Date(2025, 2, 5).getTime() });
     const t2 = txn({ amountMinor: -2000n, date: new Date(2025, 2, 20).getTime(), categoryIds: ["cat-1"] });
-    const result = computeBudgetUsage([cat()], [], [t1, t2], 2025, 2);
+    const result = computeBudgetUsage([cat()], [], [t1, t2], 2025, 2, [], new Map(), NOW);
     expect(result[0]!.spentMinor).toBe(3000n);
   });
 
   it("uses a recorded budget for the period over the live value", () => {
-    const result = computeBudgetUsage([cat()], [budget({ amountMinor: 40000n })], [txn()], 2025, 2);
+    const result = computeBudgetUsage([cat()], [budget({ amountMinor: 40000n })], [txn()], 2025, 2, [], new Map(), NOW);
     expect(result[0]!.budgetMinor).toBe(40000n);
     expect(result[0]!.budgetAssetId).toBe("php");
   });
 
   it("excludes spending in a different currency from the budget", () => {
     const other = txn({ amountMinor: -9000n, assetId: "usd" });
-    const result = computeBudgetUsage([cat()], [budget()], [txn(), other], 2025, 2);
+    const result = computeBudgetUsage([cat()], [budget()], [txn(), other], 2025, 2, [], new Map(), NOW);
     // php budget: only the php txn (1500) counts; the usd txn is ignored
     expect(result[0]!.spentMinor).toBe(1500n);
   });
 
-  it("does not apply the recorded budget to another month (history preserved)", () => {
-    const result = computeBudgetUsage([cat()], [budget()], [txn()], 2025, 3);
-    // no recorded budget for March -> falls back to the live $500 budget
+  it("a future month without a row inherits the live budget", () => {
+    const result = computeBudgetUsage([cat()], [budget()], [txn()], 2025, 3, [], new Map(), NOW);
+    // April is after NOW (March) with no row -> falls back to the live $500 budget
     expect(result[0]!.budgetMinor).toBe(50000n);
+  });
+
+  it("a past month without a row carries forward the latest earlier row", () => {
+    const later = new Date(2025, 5, 15);
+    const jan = budget({ id: "bud-jan", monthStart: new Date(2025, 0, 1).getTime(), amountMinor: 50000n });
+    const result = computeBudgetUsage(
+      [cat({ monthlyBudgetMinor: 90000n })],
+      [jan],
+      [txn()],
+      2025, 2, [], new Map(), later,
+    );
+    // March 2025 is past with no row -> carries January's 500, not the live 900
+    expect(result[0]!.budgetMinor).toBe(50000n);
+  });
+
+  it("a past month with no history returns null instead of the live budget", () => {
+    const later = new Date(2025, 5, 15);
+    const result = computeBudgetUsage([cat()], [], [txn()], 2025, 2, [], new Map(), later);
+    expect(result).toEqual([]);
+  });
+
+  it("a past clear propagates until the next recorded budget", () => {
+    const later = new Date(2025, 5, 15);
+    const jan = budget({ id: "bud-jan", monthStart: new Date(2025, 0, 1).getTime(), amountMinor: 50000n });
+    const clearedFeb = budget({
+      id: "bud-feb",
+      monthStart: new Date(2025, 1, 1).getTime(),
+      deletedAt: Date.now(),
+    });
+    const before = computeBudgetUsage([cat()], [jan, clearedFeb], [txn()], 2025, 0, [], new Map(), later);
+    expect(before[0]!.budgetMinor).toBe(50000n);
+    const after = computeBudgetUsage([cat()], [jan, clearedFeb], [txn()], 2025, 2, [], new Map(), later);
+    expect(after).toEqual([]);
   });
 
   it("reports scheduled-but-unspent occurrences as scheduledMinor ghosts", () => {
@@ -147,7 +181,7 @@ describe("computeBudgetUsage", () => {
       updatedAt: 0,
       deletedAt: null,
     };
-    const result = computeBudgetUsage([cat()], [], [txn()], 2025, 2, [sch]);
+    const result = computeBudgetUsage([cat()], [], [txn()], 2025, 2, [sch], new Map(), NOW);
     expect(result[0]!.spentMinor).toBe(1500n);
     expect(result[0]!.scheduledMinor).toBe(4000n);
   });
@@ -173,7 +207,7 @@ describe("computeBudgetUsage", () => {
       updatedAt: 0,
       deletedAt: null,
     };
-    const result = computeBudgetUsage([cat()], [], [], 2025, 2, [sch]);
+    const result = computeBudgetUsage([cat()], [], [], 2025, 2, [sch], new Map(), NOW);
     // Mar 2025: Mondays 3/10/17/24/31 -> 5 occurrences
     expect(result[0]!.scheduledMinor).toBe(5000n);
   });
@@ -203,18 +237,19 @@ describe("computeBudgetUsage", () => {
       { ...base, id: "paused", active: false },
       { ...base, id: "next-month", invokeDate: new Date(2025, 3, 20).getTime() },
     ];
-    const result = computeBudgetUsage([cat()], [], [], 2025, 2, schedules);
+    const result = computeBudgetUsage([cat()], [], [], 2025, 2, schedules, new Map(), NOW);
     expect(result[0]!.scheduledMinor).toBe(0n);
   });
 });
 
 describe("budgetFor", () => {
+  const NOW = new Date(2025, 2, 15);
   it("returns null when nothing is set", () => {
-    expect(budgetFor(cat({ monthlyBudgetMinor: null }), [], 2025, 2)).toBeNull();
+    expect(budgetFor(cat({ monthlyBudgetMinor: null }), [], 2025, 2, NOW)).toBeNull();
   });
 
-  it("ignores tombstones of a recorded budget", () => {
+  it("a tombstone for the viewed month means cleared", () => {
     const b = budget({ deletedAt: Date.now() });
-    expect(budgetFor(cat(), [b], 2025, 2)).toEqual({ amountMinor: 50000n, assetId: null });
+    expect(budgetFor(cat(), [b], 2025, 2, NOW)).toBeNull();
   });
 });

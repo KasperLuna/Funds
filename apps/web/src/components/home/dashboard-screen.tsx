@@ -122,7 +122,7 @@ export const DashboardScreen = () => {
 
   const budgetsQuery = useSyncQuery({
     key: queryKeys.categoryBudgets,
-    sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
+    sql: "SELECT * FROM category_budgets",
     select: (row) => ({
       id: String(row.id),
       categoryId: String(row.category_id),

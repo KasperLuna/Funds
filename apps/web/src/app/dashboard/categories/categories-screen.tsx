@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -142,7 +142,7 @@ export const CategoriesScreen = () => {
   });
   const budgetsQuery = useSyncQuery({
     key: queryKeys.categoryBudgets,
-    sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
+    sql: "SELECT * FROM category_budgets",
     select: toBudget,
   });
   const scheduledQuery = useSyncQuery({
@@ -166,6 +166,55 @@ export const CategoriesScreen = () => {
     year: now.getFullYear(),
     month: now.getMonth(),
   };
+
+  const anchoredRef = useRef<string>("");
+  useEffect(() => {
+    if (categoriesQuery.isLoading || budgetsQuery.isLoading) return;
+    if (categories.length === 0) return;
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const periodKey = budgetPeriodKey(y, m);
+    if (anchoredRef.current === periodKey) return;
+    const monthStart = new Date(y, m, 1).getTime();
+    const missing = categories.filter(
+      (c) =>
+        !c.deletedAt &&
+        c.monthlyBudgetMinor != null &&
+        c.monthlyBudgetMinor > 0n &&
+        !budgets.some((b) => b.categoryId === c.id && b.monthStart === monthStart),
+    );
+    if (missing.length === 0) {
+      anchoredRef.current = periodKey;
+      return;
+    }
+    anchoredRef.current = periodKey;
+    void (async () => {
+      const ts = Date.now();
+      for (const c of missing) {
+        await db.table("category_budgets").upsert({
+          id: `budget-${c.id}-${periodKey}`,
+          user_id: uid,
+          category_id: c.id,
+          asset_id: c.assetId ?? null,
+          month_start: monthStart,
+          amount_minor: Number(c.monthlyBudgetMinor),
+          created_at: ts,
+          updated_at: ts,
+          deleted_at: null,
+        });
+      }
+    })();
+  }, [categoriesQuery.isLoading, budgetsQuery.isLoading, categories, budgets, db, uid, now]);
+
+  const dialogCategory = useMemo(() => {
+    if (!editCategory) return null;
+    const b = budgetFor(editCategory, budgets, effectiveViewMonth.year, effectiveViewMonth.month);
+    return {
+      ...editCategory,
+      monthlyBudgetMinor: b ? b.amountMinor : null,
+      assetId: b ? b.assetId : editCategory.assetId,
+    };
+  }, [editCategory, budgets, effectiveViewMonth]);
 
   const shiftMonth = (delta: number) => {
     const d = new Date(effectiveViewMonth.year, effectiveViewMonth.month + delta, 1);
@@ -191,9 +240,24 @@ export const CategoriesScreen = () => {
   const saveCategory = useSyncMutation({
     keys: [queryKeys.categories, queryKeys.categoryBudgets],
     mutationFn: async (c: Category) => {
-      await db.table("categories").upsert(categoryRow(uid, c));
+      // Live budget fields only move when editing the current month; past
+      // and future months get their own row so history never rewrites.
+      const isCurrent =
+        effectiveViewMonth.year === now.getFullYear() &&
+        effectiveViewMonth.month === now.getMonth();
+      const existing = categories.find((k) => k.id === c.id);
+      const row =
+        existing && !isCurrent
+          ? {
+              ...categoryRow(uid, c),
+              monthly_budget_minor:
+                existing.monthlyBudgetMinor != null ? Number(existing.monthlyBudgetMinor) : null,
+              asset_id: existing.assetId ?? null,
+            }
+          : categoryRow(uid, c);
+      await db.table("categories").upsert(row);
 
-      // Record the budget for the current period (auditable history): past
+      // Record the budget for the viewed period (auditable history): past
       // months keep their own entries untouched by later edits.
       const periodKey = budgetPeriodKey(effectiveViewMonth.year, effectiveViewMonth.month);
       const id = `budget-${c.id}-${periodKey}`;
@@ -365,7 +429,7 @@ export const CategoriesScreen = () => {
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           onSave={handleSave}
-          editCategory={editCategory}
+          editCategory={dialogCategory}
           assets={assets}
           defaultAssetId={defaultBudgetAssetId}
         />

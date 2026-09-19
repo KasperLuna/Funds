@@ -173,7 +173,7 @@ function ChatDataEnabled() {
   });
   const budgetsQ = useSyncQuery({
     key: queryKeys.categoryBudgets,
-    sql: "SELECT * FROM category_budgets WHERE deleted_at IS NULL",
+    sql: "SELECT * FROM category_budgets",
     select: toBudget,
   });
 
