@@ -68,4 +68,23 @@ describe("NotificationPermission test push", () => {
       );
     });
   });
+
+  it("names missing server keys instead of blaming subscriptions", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ delivered: 0, total: 0, vapidConfigured: false }),
+      }),
+    );
+
+    render(<NotificationPermission />);
+    fireEvent.click(screen.getByText("Test"));
+
+    await waitFor(() => {
+      expect(toast).toHaveBeenCalledWith(
+        "Push keys missing on the server — generate VAPID keys",
+      );
+    });
+  });
 });

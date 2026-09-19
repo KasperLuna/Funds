@@ -108,7 +108,7 @@ describe("POST /api/push/test", () => {
   it("reports zero without subscriptions", async () => {
     const res = await pushTest(post("/api/push/test", cookieB, {}));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ delivered: 0, total: 0 });
+    expect(await res.json()).toEqual({ delivered: 0, total: 0, vapidConfigured: false });
   });
 
   it("delivers to a live subscription", async () => {
@@ -141,7 +141,7 @@ describe("POST /api/push/test", () => {
 
     const res = await pushTest(post("/api/push/test", cookieA, {}));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ delivered: 1, total: 1 });
+    expect(await res.json()).toEqual({ delivered: 1, total: 1, vapidConfigured: true });
     expect(seen).toEqual(["https://push.example/selftest"]);
   });
 });

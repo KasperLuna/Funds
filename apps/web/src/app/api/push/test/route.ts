@@ -13,11 +13,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const vapidConfigured = Boolean(
+    process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY,
+  );
   const { delivered, total } = await sendPushToUser(session.user.id, {
     title: "Funds test notification",
     body: "Push is working on this device.",
     url: "/dashboard",
   });
 
-  return NextResponse.json({ delivered, total });
+  return NextResponse.json({ delivered, total, vapidConfigured });
 }

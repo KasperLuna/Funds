@@ -13,6 +13,7 @@ import {
 export const NotificationPermission = () => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [busy, setBusy] = useState(false);
+  const [pushConfigured, setPushConfigured] = useState<boolean | null>(null);
   const { db, userId } = useSync();
 
   // cavetail: Notification.permission is a browser API read once on mount;
@@ -22,6 +23,12 @@ export const NotificationPermission = () => {
     if (typeof Notification !== "undefined") {
       setPermission(Notification.permission);
     }
+    // The server guards enrollment on this key; an empty key means pushes can
+    // never work — surface it instead of a silently dead Enable button.
+    fetch("/api/push/config")
+      .then((res) => res.json())
+      .then((cfg) => setPushConfigured(Boolean((cfg as { vapidPublicKey?: string }).vapidPublicKey)))
+      .catch(() => setPushConfigured(null));
   }, []);
 
   const request = async () => {
@@ -33,8 +40,11 @@ export const NotificationPermission = () => {
       try {
         const res = await fetch("/api/push/config");
         const { vapidPublicKey } = (await res.json()) as { vapidPublicKey: string };
+        setPushConfigured(Boolean(vapidPublicKey));
         if (vapidPublicKey) {
           await subscribeToPush(db, userId, vapidPublicKey);
+        } else {
+          toast("Push isn't configured on the server yet — VAPID keys missing");
         }
       } catch (err) {
         console.error("Failed to enable reminders:", err);
@@ -63,9 +73,14 @@ export const NotificationPermission = () => {
       const body = (await res.json().catch(() => null)) as {
         delivered?: number;
         total?: number;
+        vapidConfigured?: boolean;
       } | null;
       if (res.ok && (body?.delivered ?? 0) > 0) {
         toast("Test sent — check your notifications");
+      } else if (res.ok && body?.vapidConfigured === false) {
+        toast("Push keys missing on the server — generate VAPID keys");
+      } else if (res.ok && (body?.total ?? 0) > 0) {
+        toast(`Server couldn't reach the push service (0/${body?.total} delivered)`);
       } else if (res.ok) {
         toast("No subscriptions on the server — toggle off and on again");
       } else {
@@ -95,6 +110,11 @@ export const NotificationPermission = () => {
           <p className="text-xs text-zinc-500">
             {label} — receive notifications for planned transactions
           </p>
+          {pushConfigured === false && (
+            <p className="text-xs text-amber-500">
+              Push isn't configured on the server yet (VAPID keys missing).
+            </p>
+          )}
         </div>
       </div>
       {permission === "granted" ? (
