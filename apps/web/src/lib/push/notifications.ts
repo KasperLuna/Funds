@@ -90,10 +90,82 @@ type PushSubscriptionLike = {
 };
 
 /**
- * Subscribe the current device and persist the subscription for the session
- * user. Returns the stored row id. Call only after notification permission is
- * granted (the prompt itself must originate from a user gesture).
+ * This device's browser subscription endpoint, or null when there is none
+ * (or no service worker). Never throws — callers treat null as unregistered.
  */
+export async function currentDeviceEndpoint(): Promise<string | null> {
+  try {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+      return null;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return sub?.endpoint ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function toSubscriptionData(sub: PushSubscriptionLike): PushSubscriptionData {
+  return {
+    endpoint: sub.endpoint,
+    keys: {
+      p256dh: b64url(sub.getKey("p256dh")!),
+      auth: b64url(sub.getKey("auth")!),
+    },
+  };
+}
+
+/**
+ * Register this device with the server write-through (POST persists
+ * immediately; the row pulls back down into the local store on next sync).
+ * Returns the endpoint. Throws on failure — callers toast, never pretend.
+ */
+export async function registerDeviceSubscription(
+  vapidPublicKey: string,
+): Promise<string> {
+  const reg = await navigator.serviceWorker.ready;
+  let sub: PushSubscriptionLike | null = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidPublicKey,
+    });
+  }
+  const data = toSubscriptionData(sub);
+  const res = await fetch("/api/push/subscriptions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`register failed: ${res.status}`);
+  return data.endpoint;
+}
+
+/**
+ * Server truth for one endpoint of the session user.
+ */
+export async function fetchDeviceLive(endpoint: string): Promise<boolean> {
+  const res = await fetch(
+    `/api/push/subscriptions?endpoint=${encodeURIComponent(endpoint)}`,
+  );
+  if (!res.ok) return false;
+  const body = (await res.json().catch(() => null)) as { live?: unknown } | null;
+  return body?.live === true;
+}
+
+/**
+ * Server tombstone for one endpoint of the session user. Best-effort —
+ * the local tombstone (synced via outbox) is the backstop.
+ */
+export async function deleteDeviceSubscription(endpoint: string): Promise<void> {
+  await fetch("/api/push/subscriptions", {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  }).catch(() => {});
+}
+/** Outbox-based enroll (eventual server write). Prefer registerDeviceSubscription for UI flows that must verify. */
 export async function subscribeToPush(
   db: SyncDatabase,
   userId: string,

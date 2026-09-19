@@ -5,6 +5,7 @@ import { getDb } from "@/server/db";
 import * as schema from "@funds/db/schema";
 import { parseTransaction, type ParsedResult } from "@funds/core/parser";
 import { draftPushCopy, notifyDraftPush } from "@/server/voice-push";
+import { resolveAppOrigin } from "@/server/app-origin";
 
 const WINDOW_MS = 60_000;
 const MAX_PER_WINDOW = 20;
@@ -140,7 +141,7 @@ export async function POST(request: Request) {
   }
 
   const accountName = accountRows.find((a) => a.id === accountId)?.name ?? parsed.account ?? null;
-  const origin = new URL(request.url).origin;
+  const origin = resolveAppOrigin(request);
   // cavetail: push is best-effort — a push outage must never fail the intake.
   void notifyDraftPush(user.id, draftPushCopy(parsed, accountName, draftId, origin)).catch(() => {});
 

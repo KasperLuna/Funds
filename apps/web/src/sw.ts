@@ -165,10 +165,20 @@ self.addEventListener("notificationclick", (event) => {
       } catch {
         // matchAll unavailable; fall through to openWindow
       }
-      await w.clients.openWindow(url).catch(() => {});
+      await w.clients.openWindow(sameOriginUrl(url)).catch(() => {});
     })(),
   );
 });
+
+function sameOriginUrl(url: string): string {
+  // A payload baked with a wrong absolute origin (e.g. the container hostname
+  // behind the proxy) must never strand the tap on a foreign blank page —
+  // keep our path+query, force our origin.
+  const target = new URL(url, self.location.origin);
+  return target.origin === self.location.origin
+    ? target.href
+    : self.location.origin + target.pathname + target.search;
+}
 
 // Subscription rotation: browsers may invalidate a push subscription at any
 // time. Without renewal the server keeps pushing to a dead endpoint (pruned

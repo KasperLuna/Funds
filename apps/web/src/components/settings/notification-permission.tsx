@@ -1,66 +1,120 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSync } from "@/lib/sync/sync-context";
 import {
-  subscribeToPush,
+  currentDeviceEndpoint,
+  deleteDeviceSubscription,
+  fetchDeviceLive,
+  registerDeviceSubscription,
   unsubscribeFromPush,
 } from "@/lib/push/notifications";
 
+// Device truth, not just Notification.permission: granted means the OS will
+// deliver, but only a live server row means we will send.
+type DeviceState =
+  | "checking"
+  | "blocked"
+  | "off"
+  | "unregistered"
+  | "stale"
+  | "live";
+
+async function vapidKey(): Promise<string> {
+  const res = await fetch("/api/push/config");
+  const { vapidPublicKey } = (await res.json()) as { vapidPublicKey?: string };
+  return vapidPublicKey ?? "";
+}
+
 export const NotificationPermission = () => {
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [state, setState] = useState<DeviceState>("checking");
   const [busy, setBusy] = useState(false);
   const [pushConfigured, setPushConfigured] = useState<boolean | null>(null);
-  const { db, userId } = useSync();
+  const { db } = useSync();
 
-  // cavetail: Notification.permission is a browser API read once on mount;
-  // not derivable from props/state. Defer to Wave 3 (rule 15) for the TanStack
-  // Query migration if we want a `useQuery`-driven version.
-  useEffect(() => {
-    if (typeof Notification !== "undefined") {
-      setPermission(Notification.permission);
-    }
-    // The server guards enrollment on this key; an empty key means pushes can
-    // never work — surface it instead of a silently dead Enable button.
-    fetch("/api/push/config")
-      .then((res) => res.json())
-      .then((cfg) => setPushConfigured(Boolean((cfg as { vapidPublicKey?: string }).vapidPublicKey)))
-      .catch(() => setPushConfigured(null));
+  const probe = useCallback(async (): Promise<DeviceState> => {
+    if (typeof Notification === "undefined") return "off";
+    const permission = Notification.permission;
+    if (permission === "denied") return "blocked";
+    if (permission !== "granted") return "off";
+    const endpoint = await currentDeviceEndpoint();
+    if (!endpoint) return "unregistered";
+    return (await fetchDeviceLive(endpoint)) ? "live" : "stale";
   }, []);
 
-  const request = async () => {
+  const refresh = useCallback(async () => {
+    setState(await probe());
+  }, [probe]);
+
+  useEffect(() => {
+    void vapidKey()
+      .then((key) => setPushConfigured(Boolean(key)))
+      .catch(() => setPushConfigured(null));
+    void refresh();
+  }, [refresh]);
+
+  const register = async (): Promise<boolean> => {
+    const key = await vapidKey();
+    setPushConfigured(Boolean(key));
+    if (!key) {
+      toast("Push isn't configured on the server yet — VAPID keys missing");
+      return false;
+    }
+    try {
+      const endpoint = await registerDeviceSubscription(key);
+      const live = await fetchDeviceLive(endpoint);
+      setState(live ? "live" : "stale");
+      return live;
+    } catch (err) {
+      console.error("Failed to register push:", err);
+      setState("stale");
+      return false;
+    }
+  };
+
+  const enable = async () => {
     if (typeof Notification === "undefined") return;
     const result = await Notification.requestPermission();
-    setPermission(result);
-    if (result === "granted" && userId) {
-      setBusy(true);
-      try {
-        const res = await fetch("/api/push/config");
-        const { vapidPublicKey } = (await res.json()) as { vapidPublicKey: string };
-        setPushConfigured(Boolean(vapidPublicKey));
-        if (vapidPublicKey) {
-          await subscribeToPush(db, userId, vapidPublicKey);
-        } else {
-          toast("Push isn't configured on the server yet — VAPID keys missing");
-        }
-      } catch (err) {
-        console.error("Failed to enable reminders:", err);
-      } finally {
-        setBusy(false);
-      }
+    if (result !== "granted") {
+      setState(result === "denied" ? "blocked" : "off");
+      return;
+    }
+    setBusy(true);
+    try {
+      toast((await register()) ? "Push on for this device" : "Registration didn't stick — try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const syncNow = async () => {
+    setBusy(true);
+    try {
+      toast((await register()) ? "This device is registered again" : "Sync failed — try again");
+    } finally {
+      setBusy(false);
     }
   };
 
   const disable = async () => {
     setBusy(true);
     try {
+      const endpoint = await currentDeviceEndpoint();
+      if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+      }
       await unsubscribeFromPush(db);
-      setPermission("default");
+      if (endpoint) await deleteDeviceSubscription(endpoint);
+      await refresh();
+      toast("Push off for this device");
     } catch (err) {
       console.error("Failed to disable reminders:", err);
+      toast("Couldn't fully disable — try again");
     } finally {
       setBusy(false);
     }
@@ -82,7 +136,10 @@ export const NotificationPermission = () => {
       } else if (res.ok && (body?.total ?? 0) > 0) {
         toast(`Server couldn't reach the push service (0/${body?.total} delivered)`);
       } else if (res.ok) {
-        toast("No subscriptions on the server — toggle off and on again");
+        // A 410 prune may have retired this device mid-test — re-probe so the
+        // state below tells the truth instead of blaming the user.
+        await refresh();
+        toast("This device isn't registered — tap Sync now");
       } else {
         toast("Test failed — try again");
       }
@@ -94,22 +151,34 @@ export const NotificationPermission = () => {
     }
   };
 
-  const label =
-    permission === "granted"
-      ? "Enabled"
-      : permission === "denied"
-        ? "Blocked"
-        : "Not set";
+  const copy: Record<DeviceState, { title: string; sub: string }> = {
+    checking: { title: "Reminders", sub: "Checking this device…" },
+    blocked: {
+      title: "Reminders",
+      sub: "Blocked — allow notifications in iOS Settings › Funds",
+    },
+    off: { title: "Reminders", sub: "Off — receive notifications for planned transactions" },
+    unregistered: {
+      title: "Reminders",
+      sub: "Allowed, but this device isn't registered — register to receive them",
+    },
+    stale: {
+      title: "Reminders",
+      sub: "This device's registration lapsed — sync to receive them again",
+    },
+    live: {
+      title: "Reminders",
+      sub: "On for this device — receive notifications for planned transactions",
+    },
+  };
 
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
         <Bell className="h-5 w-5 shrink-0 text-zinc-500" />
         <div>
-          <p className="text-sm font-medium">Reminders</p>
-          <p className="text-xs text-zinc-500">
-            {label} — receive notifications for planned transactions
-          </p>
+          <p className="text-sm font-medium">{copy[state].title}</p>
+          <p className="text-xs text-zinc-500">{copy[state].sub}</p>
           {pushConfigured === false && (
             <p className="text-xs text-amber-500">
               Push isn't configured on the server yet (VAPID keys missing).
@@ -117,20 +186,33 @@ export const NotificationPermission = () => {
           )}
         </div>
       </div>
-      {permission === "granted" ? (
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => void sendTest()} disabled={busy}>
-            Test
+      <div className="flex gap-2">
+        {(state === "off") && (
+          <Button variant="outline" size="sm" onClick={() => void enable()} disabled={busy}>
+            Enable
           </Button>
-          <Button variant="outline" size="sm" onClick={() => void disable()} disabled={busy}>
-            Disable
+        )}
+        {state === "unregistered" && (
+          <Button variant="outline" size="sm" onClick={() => void syncNow()} disabled={busy}>
+            Register
           </Button>
-        </div>
-      ) : permission !== "denied" ? (
-        <Button variant="outline" size="sm" onClick={() => void request()} disabled={busy}>
-          Enable
-        </Button>
-      ) : null}
+        )}
+        {state === "stale" && (
+          <Button variant="outline" size="sm" onClick={() => void syncNow()} disabled={busy}>
+            Sync now
+          </Button>
+        )}
+        {state === "live" && (
+          <>
+            <Button variant="outline" size="sm" onClick={() => void sendTest()} disabled={busy}>
+              Test
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void disable()} disabled={busy}>
+              Disable
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

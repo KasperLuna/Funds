@@ -10,7 +10,7 @@ import { getDb, closeDb } from "@/server/db";
 import { auth } from "@/server/auth";
 import * as schema from "@funds/db/schema";
 import { generateVapidKeys } from "@/lib/scheduled/push";
-import { POST as subscribe } from "./subscriptions/route";
+import { POST as subscribe, GET as subStatus, DELETE as subDelete } from "./subscriptions/route";
 import { POST as pushTest } from "./test/route";
 
 let cookieA = "";
@@ -36,6 +36,21 @@ function post(path: string, cookie: string | null, payload: unknown) {
   });
 }
 
+function get(path: string, cookie: string | null) {
+  const headers: Record<string, string> = {};
+  if (cookie !== null) headers.cookie = cookie;
+  return new NextRequest(`http://localhost${path}`, { method: "GET", headers });
+}
+
+function del(path: string, cookie: string | null, payload: unknown) {
+  const headers: Record<string, string> = { "content-type": "application/json" };
+  if (cookie !== null) headers.cookie = cookie;
+  return new NextRequest(`http://localhost${path}`, {
+    method: "DELETE",
+    headers,
+    body: JSON.stringify(payload),
+  });
+}
 const SUB = {
   endpoint: "https://push.example/renew-1",
   keys: { p256dh: "k1", auth: "a1" },
@@ -143,5 +158,56 @@ describe("POST /api/push/test", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ delivered: 1, total: 1, vapidConfigured: true });
     expect(seen).toEqual(["https://push.example/selftest"]);
+  });
+});
+
+describe("GET /api/push/subscriptions (status)", () => {
+  it("rejects anonymous callers", async () => {
+    const res = await subStatus(get("/api/push/subscriptions?endpoint=https://x.example", null));
+    expect(res.status).toBe(401);
+  });
+
+  it("reports live only for the caller's own live rows", async () => {
+    const db = getDb();
+    await db.insert(schema.pushSubscriptions).values({
+      id: "sub-status-live",
+      userId: userAId,
+      endpoint: "https://push.example/status-live",
+      keys: { p256dh: "k", auth: "a" },
+    });
+    const live = await subStatus(
+      get("/api/push/subscriptions?endpoint=https://push.example/status-live", cookieA),
+    );
+    expect(await live.json()).toEqual({ live: true });
+    // other user's cookie sees nothing
+    const foreign = await subStatus(
+      get("/api/push/subscriptions?endpoint=https://push.example/status-live", cookieB),
+    );
+    expect(await foreign.json()).toEqual({ live: false });
+    const missing = await subStatus(
+      get("/api/push/subscriptions?endpoint=https://push.example/nope", cookieA),
+    );
+    expect(await missing.json()).toEqual({ live: false });
+  });
+});
+
+describe("DELETE /api/push/subscriptions", () => {
+  it("tombstones only the caller's row", async () => {
+    const db = getDb();
+    await db.insert(schema.pushSubscriptions).values({
+      id: "sub-status-gone",
+      userId: userAId,
+      endpoint: "https://push.example/status-gone",
+      keys: { p256dh: "k", auth: "a" },
+    });
+    const res = await subDelete(
+      del("/api/push/subscriptions", cookieA, { endpoint: "https://push.example/status-gone" }),
+    );
+    expect(res.status).toBe(200);
+    expect(await activeRows("https://push.example/status-gone")).toHaveLength(0);
+    const check = await subStatus(
+      get("/api/push/subscriptions?endpoint=https://push.example/status-gone", cookieA),
+    );
+    expect(await check.json()).toEqual({ live: false });
   });
 });
