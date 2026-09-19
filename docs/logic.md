@@ -292,10 +292,12 @@ Hands-free entry driven by an external automation (phone shortcut / webhook):
 1. Client sends `{ text }` with `Authorization: Bearer {voiceApiKey}`.
 2. Server resolves user by exact `voiceApiKey` match; rejects unknown keys (401).
 3. Server loads that user's account names + category names and runs the deterministic parser (§9.1) on the raw text.
-4. Parsed result stored as a VoiceDraft with a fresh random token, TTL 5 minutes.
-5. Response returns `draftToken` + preview immediately.
-6. When the app opens (or polls), it redeems the token → draft preview pre-populates the new-transaction form. Missing/expired token → 404.
-7. Housekeeping job deletes drafts where `expiresAt ≤ now`.
+4. Identical text from the same user within 10 minutes returns the existing draft (automation double-fire dedupe).
+5. Pending drafts are capped at 20 per user (oldest evicted). The matched account is resolved to its id at insert (name kept as fallback).
+6. Parsed result stored as a VoiceDraft with a 3-day TTL. Response returns `draftId` + preview immediately.
+7. The webhook fire-and-forget sends a VAPID push to all of the user's devices (tap opens `/dashboard?draftId=`); push failure never fails the intake.
+8. The Home inbox section (hidden when empty) lists pending drafts newest-first. Tapping a row opens the prefilled capture sheet; saving clears the draft, closing keeps it, and each row offers explicit discard.
+9. Housekeeping job deletes drafts where `expiresAt ≤ now`.
 
 ### 9.1 Parser algorithm (deterministic, offline, no ML)
 
@@ -457,7 +459,7 @@ Environment surface (names only): backend base URL, backend admin credentials (s
 6. Token `total`/`costAvg` are pure functions of lot history (average-cost method, floored at zero).
 7. Planned-transaction advancement is identical whether logged or waived.
 8. Reminder dedupe: max one notification per planned item per ~3h, once daily under normal cadence.
-9. Voice drafts expire in 5 minutes, single-use intent, garbage-collected.
+9. Voice drafts expire in 3 days, are listed until logged/discarded, capped at 20 per user, garbage-collected.
 10. Parser is fully deterministic/offline; confidence formula fixed as §9.1.
 11. `total_exempt` categories drop out of positive/negative monthly totals but stay inside overall categorized balance.
 12. Proportional category splitting governs ALL per-category aggregations.

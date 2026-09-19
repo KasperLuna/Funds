@@ -261,7 +261,10 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 // Voice Drafts
 export const voiceDrafts = pgTable("voice_drafts", {
   id: text("id").primaryKey().$defaultFn(() => newId()),
-  // cavetail: app layer generates ids via @funds/core ulid; local helper only for seed/tests
+  // cavetail: nullable with no FK — the account may be renamed or deleted
+  // during the draft's life; the client falls back to the parsed name, then
+  // to a blank account picker.
+  accountId: text("account_id"),
   userId: text("user_id").notNull().references(() => users.id),
   token: text("token").notNull(),
   preview: jsonb("preview").notNull(),

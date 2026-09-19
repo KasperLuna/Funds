@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { useSync } from "@/lib/sync/sync-context";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 import { computeBalance } from "@/lib/accounts/accounts-store";
@@ -25,6 +27,9 @@ import { RecentActivity } from "@/components/home/recent-activity";
 import { BudgetPulse } from "@/components/home/budget-pulse";
 import { NonBudgetedFlow, computeNonBudgetedFlow } from "@/components/home/non-budgeted-flow";
 import { ScheduledCard } from "@/components/scheduled/scheduled-card";
+import { DraftInboxCard } from "@/components/home/draft-inbox-card";
+import { resolvePrefill } from "@/lib/voice/resolve";
+import { discardDraft, listDrafts, type DraftItem } from "@/lib/voice/drafts";
 import { TemplateCard } from "@/components/templates/template-card";
 import { toTemplate } from "@/lib/templates/templates-store";
 import { toScheduledTxn } from "@/lib/scheduled/scheduled-store";
@@ -177,12 +182,121 @@ export const DashboardScreen = () => {
   const {
     captureOpen,
     editTxn,
-    sheetOpen,
+    sheetOpen: hookSheetOpen,
     voicePrefillValue: hookVoicePrefillValue,
     handleSave,
     handleCreateCategory,
-    handleClose,
-  } = useCaptureSheetTriggers(uid, accounts, categories);
+    handleClose: hookHandleClose,
+  } = useCaptureSheetTriggers(uid);
+
+  // cavetail: Shortcut/voice drafts are ephemeral inbox rows fetched from the
+  // server (not synced entities): they are born online and expire in 3 days.
+  const [drafts, setDrafts] = useState<DraftItem[]>([]);
+  const [draftsReady, setDraftsReady] = useState(false);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [draftPrefill, setDraftPrefill] = useState<VoicePrefill | undefined>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const draftIdParam = searchParams.get("draftId");
+  const handledDraftRef = useRef("");
+
+  const refreshDrafts = useCallback(async () => {
+    try {
+      setDrafts(await listDrafts());
+    } catch (err) {
+      console.error("Failed to load drafts:", err);
+    } finally {
+      setDraftsReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshDrafts();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshDrafts();
+    };
+    const onOnline = () => void refreshDrafts();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [refreshDrafts]);
+
+  const openDraft = useCallback(
+    (draft: DraftItem) => {
+      const prefill = resolvePrefill(
+        draft.preview,
+        accounts.map((a) => ({
+          id: a.id,
+          name: a.name,
+          decimals: assetsById.get(a.assetId)?.decimals ?? 2,
+        })),
+        categories.map((c) => ({ id: c.id, name: c.name })),
+      );
+      // cavetail: prefer the stored account binding over the fuzzy name match;
+      // fall back to the resolved name when the account still exists by name,
+      // else the picker opens blank for the user to choose.
+      const accountId =
+        draft.accountId && accounts.some((a) => a.id === draft.accountId)
+          ? draft.accountId
+          : prefill.accountId;
+      setActiveDraftId(draft.id);
+      setDraftPrefill({
+        accountId,
+        amountInput: prefill.amountInput,
+        categoryIds: prefill.categoryIds,
+        description: prefill.description,
+      });
+    },
+    [accounts, categories, assetsById],
+  );
+
+  // cavetail: drafts are persistent rows (not one-shot tokens), so re-running
+  // this effect on sync ticks is idempotent — the handled ref only stops a
+  // repeat toast/open for the same param.
+  useEffect(() => {
+    if (!draftIdParam) {
+      handledDraftRef.current = "";
+      return;
+    }
+    if (!draftsReady || draftIdParam === handledDraftRef.current) return;
+    handledDraftRef.current = draftIdParam;
+    const draft = drafts.find((d) => d.id === draftIdParam);
+    router.replace("/dashboard", { scroll: false });
+    if (!draft) {
+      toast("Draft already logged or expired");
+      return;
+    }
+    openDraft(draft);
+  }, [draftIdParam, draftsReady, drafts, openDraft, router]);
+
+  const handleDiscardDraft = (id: string) => {
+    discardDraft(id)
+      .then(() => refreshDrafts())
+      .catch((err) => console.error("Failed to discard draft:", err));
+  };
+
+  const handleDraftSave = (row: Record<string, unknown>) => {
+    handleSave(row);
+    if (activeDraftId) {
+      const id = activeDraftId;
+      setActiveDraftId(null);
+      setDraftPrefill(undefined);
+      discardDraft(id)
+        .then(() => refreshDrafts())
+        .catch((err) => console.error("Failed to clear logged draft:", err));
+    }
+  };
+
+  const handleSheetClose = () => {
+    setActiveDraftId(null);
+    setDraftPrefill(undefined);
+    hookHandleClose();
+  };
+
+  const sheetOpen = hookSheetOpen || !!draftPrefill;
 
   const failedQuery = [
     accountsQuery,
@@ -365,7 +479,7 @@ export const DashboardScreen = () => {
   // Cavetail: only mount CaptureSheet when actually open. Dialog always
   // renders its children otherwise, which would spin up useForm + Zod
   // validation on every dashboard render.
-  const voicePrefillValue = hookVoicePrefillValue ?? txnPrefill;
+  const voicePrefillValue = draftPrefill ?? hookVoicePrefillValue ?? txnPrefill;
 
   if (errorMessage) {
       return (
@@ -380,6 +494,15 @@ export const DashboardScreen = () => {
         <header className="flex items-center justify-between">
           <h1 className="font-display text-2xl font-bold tracking-tight">Home</h1>
         </header>
+
+      {drafts.length > 0 && (
+        <DraftInboxCard
+          drafts={drafts}
+          accounts={accounts}
+          onOpen={openDraft}
+          onDiscard={handleDiscardDraft}
+        />
+      )}
 
       {hasUpcoming && (
         <ScheduledCard
@@ -455,13 +578,13 @@ export const DashboardScreen = () => {
         <CaptureSheet
           isOpen={sheetOpen}
           onOpenChange={(o) => {
-            if (!o) handleClose();
+            if (!o) handleSheetClose();
           }}
           accounts={captureAccounts}
           categories={captureCategories}
           recentTxns={captureRecent}
           templates={templates}
-          onSave={handleSave}
+          onSave={handleDraftSave}
           voicePrefill={voicePrefillValue}
           editing={!!editTxn}
           onCreateCategory={handleCreateCategory}

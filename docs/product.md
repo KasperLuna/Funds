@@ -29,7 +29,7 @@ Local-first and private-first finance tracking where capture is the product: eve
 - The app must work on low-mid-tier Android OLED phones (the performance budget is written for them) and on desktop.
 - Background sync keeps the local Dexie store in sync; sync state is surfaced honestly but never blocks input.
 - Voice/webhook capture pipeline (phone shortcut posts text, parsed draft prefills the capture sheet).
-- Deep links: `?capture=1` opens the sheet, `?scheduledId=` prefills from a reminder, `?draftToken=` redeems a voice draft.
+- Deep links: `?capture=1` opens the sheet, `?scheduledId=` prefills from a reminder, `?draftId=` opens a pending inbox draft.
 - Privacy toggle (session-scoped, defaults on) masks all money values.
 
 ## Capabilities and Constraints

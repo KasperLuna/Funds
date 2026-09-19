@@ -263,15 +263,16 @@ the transaction form (bank, type, amount, description, categories).
    | Description | raw text minus amount, account, and matched category tokens |
    | Confidence | 0.5 base + 0.3 (amount) + 0.1 (account) + 0.1 (category), capped at 1.0 |
 
-3. The parse result is stored as a `voice_draft` with a 5-minute TTL; the webhook
-   returns the draft token.
-4. The app fetches the draft by token (`/api/voice-draft?token=…`, token is the
-   capability; no other auth), opens the transaction dialog prefilled from the
-   parse result — description prefixed with a mic marker, default `expense`,
-   bank/category resolved by name (exact match, then substring) — and the user
-   confirms or edits before saving.
-5. Drafts expire server-side; an expired draft is deleted on access; a cleanup
-   cron deletes expired drafts; the client drops drafts within ~15 s of expiry.
+3. The parse result is stored as a `voice_draft` with a 3-day TTL and the
+   matched account resolved to its id; the webhook returns the draft id and
+   pushes a review notification to the user's devices.
+4. Pending drafts render in the Home inbox section (hidden when empty),
+   newest first — tapping a row opens the transaction dialog prefilled from
+   the parse result (description, default `expense`, stored account binding
+   with name fallback), and saving clears the draft. Rows offer explicit
+   discard; closing the dialog keeps the draft.
+5. Drafts expire server-side; a cleanup cron deletes expired drafts. Tapping a
+   push for a gone draft shows "already logged or expired".
 
 ### 3.8 Privacy and currency
 
@@ -338,5 +339,5 @@ transaction exists.
 4. `tokens.total` and `tokens.costAvg` are exactly what replaying the ledger yields; never edited directly.
 5. Deleting a bank or category never orphans transaction references (cascade).
 6. Planned transactions never auto-create money movements; a human always confirms the log.
-7. Draft tokens and `voiceApiKey` are bearer credentials; the former expire in 5 minutes.
+7. `voiceApiKey` is a bearer credential; drafts are session-scoped inbox rows (never a capability URL).
 8. Privacy mode is on by default and masks every amount display.

@@ -110,8 +110,9 @@ export const VoiceKeySection = () => {
           text so it lands under the right one.
         </li>
         <li>
-          Open <code className="font-mono">{`${origin}/dashboard?draftToken=<draftToken>`}</code> from
-          the response and tap Save to confirm.
+          The draft lands in your Home inbox for 3 days and pings your devices — tap the
+          notification (or an inbox row) to review and save. No need to open any link
+          from the Shortcut itself.
         </li>
       </ol>
     </div>

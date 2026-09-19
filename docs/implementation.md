@@ -90,7 +90,7 @@ Card is a glance surface: shows only active items coming up within 3 days (neare
 Gate: reminder arrives on phone at due time in correct timezone; waive advances without creating txn.
 
 ## Phase 10 — Voice Pipeline
-Extract parser verbatim into `packages/core/parser` (+ port existing tests if none exist, write golden-file tests first from current behavior). In-PWA path: shortcut/share-target/deep-link → parse against local accounts/categories → prefilled sheet. Webhook path: Bearer hashed-key endpoint reuses same package → ephemeral voice_draft → redemption poller → prefilled sheet. Worker TTL cleanup.
+Extract parser verbatim into `packages/core/parser` (+ port existing tests if none exist, write golden-file tests first from current behavior). In-PWA path: shortcut/share-target/deep-link → parse against local accounts/categories → prefilled sheet. Webhook path: Bearer hashed-key endpoint reuses same package → persistent voice_draft (3-day TTL, inbox) → instant push → prefilled sheet. Worker TTL cleanup.
 Gate: same input text produces identical parse output old vs new (diff harness).
 
 ## Phase 11 — Analytics & Home Hub

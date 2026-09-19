@@ -160,7 +160,7 @@ asset_id, vs_base_asset_id, price_minor_scaled, fetched_at
 
 - Parser extracted into shared package (pure, deterministic — spec in logic.md §9.1 unchanged).
 - In-PWA path: shortcut/share-target/deep-link hands raw text to PWA → parser runs client-side against locally-synced account/category names → prefilled draft form instantly, even offline.
-- External webhook path (unchanged UX): POST text + Bearer voiceApiKey → server parses with the same shared package → ephemeral voice_draft row → phone redeems by token within TTL.
+- External webhook path: POST text + Bearer voiceApiKey → server parses with the same shared package → persistent voice_draft row (3-day TTL, account resolved to id at insert) → instant VAPID push to all devices → draft lands in the Home inbox; tap opens the prefilled capture sheet, save clears the draft.
 - Key stored hashed; lookup by hash.
 
 ---
