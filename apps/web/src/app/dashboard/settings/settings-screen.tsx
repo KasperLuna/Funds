@@ -7,6 +7,7 @@ import { SyncStatus } from "@/components/settings/sync-status";
 import { NotificationPermission } from "@/components/settings/notification-permission";
 import { PrivacyToggle } from "@/components/settings/privacy-toggle";
 import { AccountSection } from "@/components/settings/account-section";
+import { VoiceKeySection } from "@/components/settings/voice-key-section";
 import { AssistantStatus } from "@/components/settings/assistant-status";
 import { queryKeys, useSyncQuery } from "@/lib/sync/sync-query";
 
@@ -76,6 +77,10 @@ export const SettingsScreen = () => {
 
       <Section title="Account">
         <AccountSection />
+      </Section>
+
+      <Section title="Apple Shortcuts">
+        <VoiceKeySection />
       </Section>
 
       <Section title="Privacy">

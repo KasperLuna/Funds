@@ -3,6 +3,7 @@
  */
 import { router, publicProcedure, createCallerFactory, createTRPCContext } from "../trpc.js";
 import { mutationsRouter } from "./mutations.js";
+import { voiceKeyRouter } from "./voice-key.js";
 import { getDb } from "../db.js";
 import { assets } from "@funds/db/schema";
 
@@ -23,6 +24,7 @@ const assetsRouter = router({
 
 export const appRouter = router({
   applyMutations: mutationsRouter.applyMutations,
+  voiceKey: voiceKeyRouter,
   assets: assetsRouter,
 });
 
