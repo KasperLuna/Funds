@@ -50,7 +50,10 @@ export const BudgetProgressCard = ({
       ? "bg-(--warning)"
       : "bg-(--accent)";
 
-  if (budgetUsages.length === 0) return null;
+  const monthLabel = new Date(effectiveViewMonth.year, effectiveViewMonth.month, 1).toLocaleDateString(
+    undefined,
+    { month: "long", year: "numeric" },
+  );
 
   return (
     <div className="rounded-(--radius-lg) border border-(--border) bg-(--surface-1) p-4">
@@ -85,6 +88,9 @@ export const BudgetProgressCard = ({
           </button>
         </div>
       </div>
+      {budgetUsages.length === 0 ? (
+        <p className="py-2 text-sm text-zinc-500">No budgets recorded for {monthLabel}.</p>
+      ) : (
       <div className="flex flex-col gap-3">
         <div className="rounded-(--radius-md) bg-(--surface-2) p-3">
           <div className="flex items-center justify-between text-sm">
@@ -153,6 +159,7 @@ export const BudgetProgressCard = ({
           );
         })}
       </div>
+      )}
       <p className="mt-3 text-xs text-zinc-500">
         Budgets are recorded per month — changing one only affects this and future months.
       </p>

@@ -27,6 +27,7 @@ interface CategoryFormProps {
   editCategory: Category | null;
   assets: Array<{ id: string; code: string; decimals: number }>;
   defaultAssetId: string | null;
+  isCurrentMonth: boolean;
 }
 
 const categoryFormSchema = z.object({
@@ -46,6 +47,7 @@ export const CategoryForm = ({
   editCategory,
   assets,
   defaultAssetId,
+  isCurrentMonth,
 }: CategoryFormProps) => {
   const editDec = assets.find((a) => a.id === editCategory?.assetId)?.decimals ?? 2;
   const form = useForm<CategoryFormValues>({
@@ -183,6 +185,7 @@ export const CategoryForm = ({
           {budget.trim() && assetId && (
             <p className="-mt-2 text-xs text-zinc-500">
               Budget in {assets.find((a) => a.id === assetId)?.code ?? "USD"}; recorded per month.
+              {!isCurrentMonth && " Applies to the current month."}
             </p>
           )}
 

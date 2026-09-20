@@ -10,6 +10,7 @@ interface CategoryDialogProps {
   editCategory: Category | null;
   assets: Array<{ id: string; code: string; decimals: number }>;
   defaultAssetId: string | null;
+  isCurrentMonth: boolean;
 }
 
 export const CategoryDialog = ({
@@ -19,6 +20,7 @@ export const CategoryDialog = ({
   editCategory,
   assets,
   defaultAssetId,
+  isCurrentMonth,
 }: CategoryDialogProps) => {
   if (!isOpen) return null;
   return (
@@ -28,6 +30,7 @@ export const CategoryDialog = ({
       editCategory={editCategory}
       assets={assets}
       defaultAssetId={defaultAssetId}
+      isCurrentMonth={isCurrentMonth}
     />
   );
 };

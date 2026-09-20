@@ -206,15 +206,9 @@ export const CategoriesScreen = () => {
     })();
   }, [categoriesQuery.isLoading, budgetsQuery.isLoading, categories, budgets, db, uid, now]);
 
-  const dialogCategory = useMemo(() => {
-    if (!editCategory) return null;
-    const b = budgetFor(editCategory, budgets, effectiveViewMonth.year, effectiveViewMonth.month);
-    return {
-      ...editCategory,
-      monthlyBudgetMinor: b ? b.amountMinor : null,
-      assetId: b ? b.assetId : editCategory.assetId,
-    };
-  }, [editCategory, budgets, effectiveViewMonth]);
+  const isCurrentMonth =
+    effectiveViewMonth.year === now.getFullYear() &&
+    effectiveViewMonth.month === now.getMonth();
 
   const shiftMonth = (delta: number) => {
     const d = new Date(effectiveViewMonth.year, effectiveViewMonth.month + delta, 1);
@@ -240,28 +234,15 @@ export const CategoriesScreen = () => {
   const saveCategory = useSyncMutation({
     keys: [queryKeys.categories, queryKeys.categoryBudgets],
     mutationFn: async (c: Category) => {
-      // Live budget fields only move when editing the current month; past
-      // and future months get their own row so history never rewrites.
-      const isCurrent =
-        effectiveViewMonth.year === now.getFullYear() &&
-        effectiveViewMonth.month === now.getMonth();
-      const existing = categories.find((k) => k.id === c.id);
-      const row =
-        existing && !isCurrent
-          ? {
-              ...categoryRow(uid, c),
-              monthly_budget_minor:
-                existing.monthlyBudgetMinor != null ? Number(existing.monthlyBudgetMinor) : null,
-              asset_id: existing.assetId ?? null,
-            }
-          : categoryRow(uid, c);
-      await db.table("categories").upsert(row);
+      await db.table("categories").upsert(categoryRow(uid, c));
 
-      // Record the budget for the viewed period (auditable history): past
-      // months keep their own entries untouched by later edits.
-      const periodKey = budgetPeriodKey(effectiveViewMonth.year, effectiveViewMonth.month);
+      // Budgets are set NOW and carry forward: always record the current
+      // period; the month picker is view-only history.
+      const y = now.getFullYear();
+      const m = now.getMonth();
+      const periodKey = budgetPeriodKey(y, m);
       const id = `budget-${c.id}-${periodKey}`;
-      const monthStart = new Date(effectiveViewMonth.year, effectiveViewMonth.month, 1).getTime();
+      const monthStart = new Date(y, m, 1).getTime();
       const ts = Date.now();
       const hasBudget = c.monthlyBudgetMinor != null && c.monthlyBudgetMinor > 0n;
       await db.table("category_budgets").upsert({
@@ -429,7 +410,8 @@ export const CategoriesScreen = () => {
           isOpen={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           onSave={handleSave}
-          editCategory={dialogCategory}
+          editCategory={editCategory}
+          isCurrentMonth={isCurrentMonth}
           assets={assets}
           defaultAssetId={defaultBudgetAssetId}
         />
