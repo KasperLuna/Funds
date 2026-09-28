@@ -178,7 +178,10 @@ const ScheduledForm = ({ onOpenChange, onSave, onDelete, editItem, accounts, cat
               : "Set up a recurring transaction entry."}
           </SheetDescription>
         </div>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-6 pb-6">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-6 pb-6"
+        >
           <label className="flex flex-col gap-1.5">
             <span className="text-sm text-zinc-500">Name</span>
             <input
