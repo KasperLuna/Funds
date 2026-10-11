@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
+// cavetail: env read must happen at request time (runtime container env), not
+// build time (prerender) or the Google button is baked out of the image.
+export const dynamic = "force-dynamic";
+
 const SignInPage = () => {
   const googleEnabled = !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
   return (
